@@ -21,7 +21,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
-import { format } from "date-fns";
+import { format, differenceInYears, differenceInMonths } from "date-fns";
 import {
   ArrowLeft, Edit, Plus, Trash2, User, Users, Phone, Mail, FileText,
   Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2,
@@ -364,13 +364,18 @@ export default function ChildProfile() {
                 </>
               )}
               <div className="space-y-1">
-                <div className="text-sm text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4" />Date of Birth</div>
-                <p className="font-medium">{safeDate(child.dateOfBirth, "MMMM d, yyyy")}</p>
-              </div>
-              <Separator />
-              <div className="space-y-1">
-                <div className="text-sm text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4" />Enrollment Date</div>
-                <p className="font-medium">{safeDate(child.enrollmentDate, "MMMM d, yyyy")}</p>
+                <div className="text-sm text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4" />Age</div>
+                <p className="font-medium">{(() => {
+                  const dob = child.dateOfBirth;
+                  const birth = new Date(String(dob).length === 10 ? dob + "T00:00:00" : dob);
+                  const now = new Date();
+                  const years = differenceInYears(now, birth);
+                  if (years < 1) {
+                    const months = differenceInMonths(now, birth);
+                    return `${months} month${months !== 1 ? "s" : ""}`;
+                  }
+                  return `${years} year${years !== 1 ? "s" : ""}`;
+                })()}</p>
               </div>
               <Separator />
               <div className="space-y-1">

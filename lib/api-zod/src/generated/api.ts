@@ -165,6 +165,7 @@ export const ListStaffResponseItem = zod.object({
   bio: zod.string().nullish(),
   profilePicturePath: zod.string().nullish(),
   employmentNotes: zod.string().nullish(),
+  siteId: zod.number().nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 export const ListStaffResponse = zod.array(ListStaffResponseItem);
@@ -182,6 +183,7 @@ export const CreateStaffBody = zod.object({
     .default(createStaffBodyStatusDefault),
   phone: zod.string().optional(),
   wwccNumber: zod.string().optional(),
+  siteId: zod.number().optional(),
 });
 
 export const GetStaffParams = zod.object({
@@ -201,6 +203,7 @@ export const GetStaffResponse = zod.object({
   bio: zod.string().nullish(),
   profilePicturePath: zod.string().nullish(),
   employmentNotes: zod.string().nullish(),
+  siteId: zod.number().nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 
@@ -222,6 +225,7 @@ export const UpdateStaffBody = zod.object({
   bio: zod.string().optional(),
   profilePicturePath: zod.string().optional(),
   employmentNotes: zod.string().optional(),
+  siteId: zod.number().nullish(),
 });
 
 export const UpdateStaffResponse = zod.object({
@@ -237,6 +241,7 @@ export const UpdateStaffResponse = zod.object({
   bio: zod.string().nullish(),
   profilePicturePath: zod.string().nullish(),
   employmentNotes: zod.string().nullish(),
+  siteId: zod.number().nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 

@@ -4,6 +4,7 @@ import {
   useGetStaff,
   useUpdateStaff,
   useDeleteStaff,
+  useListSites,
   useGetStaffProfessionalDevelopment,
   useCreateProfessionalDevelopment,
   useDeleteProfessionalDevelopment,
@@ -90,6 +91,7 @@ export default function StaffProfile() {
   const { data: qualifications, isLoading: loadingQuals } = useGetStaffQualifications(staffId, { query: { enabled: !!staffId } });
 
   const [, navigate] = useLocation();
+  const { data: sites } = useListSites();
   const updateStaffMutation = useUpdateStaff();
   const deleteStaffMutation = useDeleteStaff();
   const createPdMutation = useCreateProfessionalDevelopment();
@@ -116,7 +118,7 @@ export default function StaffProfile() {
   const [notesSaving, setNotesSaving] = useState(false);
 
   const [profileEditOpen, setProfileEditOpen] = useState(false);
-  const [profileEditForm, setProfileEditForm] = useState({ firstName: "", lastName: "", email: "", phone: "", role: "", status: "", qualifications: "", wwccNumber: "" });
+  const [profileEditForm, setProfileEditForm] = useState({ firstName: "", lastName: "", email: "", phone: "", role: "", status: "", qualifications: "", wwccNumber: "", siteId: "" });
   const [profileEditSaving, setProfileEditSaving] = useState(false);
 
   function openProfileEdit() {
@@ -130,6 +132,7 @@ export default function StaffProfile() {
       status: staff.status,
       qualifications: staff.qualifications,
       wwccNumber: staff.wwccNumber ?? "",
+      siteId: staff.siteId != null ? String(staff.siteId) : "",
     });
     setProfileEditOpen(true);
   }
@@ -148,6 +151,7 @@ export default function StaffProfile() {
           status: profileEditForm.status as "active" | "inactive",
           qualifications: profileEditForm.qualifications,
           wwccNumber: profileEditForm.wwccNumber || undefined,
+          siteId: profileEditForm.siteId ? parseInt(profileEditForm.siteId) : null,
         },
       });
       await queryClient.invalidateQueries({ queryKey: ["getStaff", staffId] });
@@ -403,6 +407,7 @@ export default function StaffProfile() {
           {(() => {
             const wwccRef = qualifications?.find((q) => q.name === "WWCC")?.referenceNumber ?? null;
             const qualLevel = qualifications ? computeQualLevel(qualifications as QualItem[]) : null;
+            const assignedSite = staff.siteId != null ? (sites ?? []).find((s) => s.id === staff.siteId) : null;
             return (
               <Card>
                 <CardHeader className="pb-3 flex flex-row items-center justify-between">
@@ -432,16 +437,24 @@ export default function StaffProfile() {
                     </div>
                   </div>
 
-                  {/* Row 2: Qualification level */}
-                  <div className="flex items-center gap-3 pt-1 border-t">
-                    <p className="text-xs text-muted-foreground">Qualification Level</p>
-                    {loadingQuals ? (
-                      <span className="text-xs text-muted-foreground italic">Loading…</span>
-                    ) : qualLevel ? (
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${QUAL_LEVEL_STYLES[qualLevel]}`}>
-                        {QUAL_LEVEL_LABELS[qualLevel]}
+                  {/* Row 2: Site + Qualification level */}
+                  <div className="flex items-center justify-between pt-1 border-t">
+                    <div className="flex items-center gap-3">
+                      <p className="text-xs text-muted-foreground">Qualification Level</p>
+                      {loadingQuals ? (
+                        <span className="text-xs text-muted-foreground italic">Loading…</span>
+                      ) : qualLevel ? (
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${QUAL_LEVEL_STYLES[qualLevel]}`}>
+                          {QUAL_LEVEL_LABELS[qualLevel]}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>Site:</span>
+                      <span className="font-medium text-foreground">
+                        {assignedSite ? assignedSite.name : <span className="italic text-muted-foreground">Not assigned</span>}
                       </span>
-                    ) : null}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -779,6 +792,20 @@ export default function StaffProfile() {
             <div className="space-y-1.5">
               <Label>WWCC Number</Label>
               <Input value={profileEditForm.wwccNumber} onChange={(e) => setProfileEditForm((f) => ({ ...f, wwccNumber: e.target.value }))} placeholder="e.g. WWC1234567A" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Site / Location</Label>
+              <Select value={profileEditForm.siteId} onValueChange={(v) => setProfileEditForm((f) => ({ ...f, siteId: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="No site assigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No site assigned</SelectItem>
+                  {(sites ?? []).map((site) => (
+                    <SelectItem key={site.id} value={String(site.id)}>{site.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setProfileEditOpen(false)} disabled={profileEditSaving}>Cancel</Button>

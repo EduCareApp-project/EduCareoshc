@@ -1783,6 +1783,8 @@ components:
           type: ["string", "null"]
         employmentNotes:
           type: ["string", "null"]
+        siteId:
+          type: ["integer", "null"]
         createdAt:
           type: string
           format: date-time
@@ -1810,6 +1812,8 @@ components:
           type: string
         wwccNumber:
           type: string
+        siteId:
+          type: integer
 
     StaffUpdate:
       type: object
@@ -1838,6 +1842,8 @@ components:
           type: string
         employmentNotes:
           type: string
+        siteId:
+          type: ["integer", "null"]
 
     Observation:
       type: object

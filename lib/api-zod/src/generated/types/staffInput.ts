@@ -17,4 +17,5 @@ export interface StaffInput {
   status?: StaffInputStatus;
   phone?: string;
   wwccNumber?: string;
+  siteId?: number;
 }

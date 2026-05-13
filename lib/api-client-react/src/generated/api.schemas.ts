@@ -179,6 +179,8 @@ export interface Staff {
   profilePicturePath?: string | null;
   /** @nullable */
   employmentNotes?: string | null;
+  /** @nullable */
+  siteId?: number | null;
   createdAt?: string;
 }
 
@@ -209,6 +211,7 @@ export interface StaffInput {
   status?: StaffInputStatus;
   phone?: string;
   wwccNumber?: string;
+  siteId?: number;
 }
 
 export type StaffUpdateRole =
@@ -241,6 +244,8 @@ export interface StaffUpdate {
   bio?: string;
   profilePicturePath?: string;
   employmentNotes?: string;
+  /** @nullable */
+  siteId?: number | null;
 }
 
 export interface Observation {

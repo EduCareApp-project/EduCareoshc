@@ -1,6 +1,7 @@
-import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { sitesTable } from "./sites";
 
 export const staffTable = pgTable("staff", {
   id: serial("id").primaryKey(),
@@ -15,6 +16,7 @@ export const staffTable = pgTable("staff", {
   bio: text("bio"),
   profilePicturePath: text("profile_picture_path"),
   employmentNotes: text("employment_notes"),
+  siteId: integer("site_id").references(() => sitesTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -26,5 +26,7 @@ export interface Staff {
   profilePicturePath?: string | null;
   /** @nullable */
   employmentNotes?: string | null;
+  /** @nullable */
+  siteId?: number | null;
   createdAt?: Date;
 }

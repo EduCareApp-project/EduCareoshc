@@ -20,4 +20,6 @@ export interface StaffUpdate {
   bio?: string;
   profilePicturePath?: string;
   employmentNotes?: string;
+  /** @nullable */
+  siteId?: number | null;
 }

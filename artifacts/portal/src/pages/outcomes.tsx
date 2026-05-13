@@ -33,7 +33,7 @@ export default function Outcomes() {
                   <div className="space-y-1.5 text-sm">
                     {outcome.subOutcomes.map((sub, idx) => (
                       <div key={idx} className="flex items-start gap-3">
-                        <span className="shrink-0 font-semibold text-primary w-8 text-right leading-snug">
+                        <span className="shrink-0 font-semibold text-primary w-8 leading-snug">
                           {outcome.number}.{idx + 1}
                         </span>
                         <span className="text-foreground/90 leading-snug">{sub}</span>

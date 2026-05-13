@@ -50,6 +50,6 @@ export interface PlanningExperience {
   documentPaths?: string[];
   documentNames?: string[];
   isTemplate: boolean;
-  assessmentData?: AssessmentData;
+  assessmentData?: AssessmentData | null;
   createdAt: Date;
 }

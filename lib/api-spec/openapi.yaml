@@ -2938,7 +2938,9 @@ components:
           type: boolean
           default: false
         assessmentData:
-          $ref: "#/components/schemas/AssessmentData"
+          anyOf:
+            - $ref: "#/components/schemas/AssessmentData"
+            - type: "null"
         createdAt:
           type: string
           format: date-time
@@ -3010,7 +3012,9 @@ components:
           type: boolean
           default: false
         assessmentData:
-          $ref: "#/components/schemas/AssessmentData"
+          anyOf:
+            - $ref: "#/components/schemas/AssessmentData"
+            - type: "null"
 
     PlanningExperienceUpdate:
       type: object
@@ -3076,7 +3080,9 @@ components:
         isTemplate:
           type: boolean
         assessmentData:
-          $ref: "#/components/schemas/AssessmentData"
+          anyOf:
+            - $ref: "#/components/schemas/AssessmentData"
+            - type: "null"
 
     AssessmentData:
       type: object

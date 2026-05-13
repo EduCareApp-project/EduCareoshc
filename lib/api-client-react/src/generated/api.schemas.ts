@@ -1126,7 +1126,7 @@ export interface PlanningExperience {
   documentPaths?: string[];
   documentNames?: string[];
   isTemplate: boolean;
-  assessmentData?: AssessmentData;
+  assessmentData?: AssessmentData | null;
   createdAt: string;
 }
 
@@ -1165,7 +1165,7 @@ export interface PlanningExperienceInput {
   documentPaths?: string[];
   documentNames?: string[];
   isTemplate?: boolean;
-  assessmentData?: AssessmentData;
+  assessmentData?: AssessmentData | null;
 }
 
 export type PlanningExperienceUpdateStage =
@@ -1204,7 +1204,7 @@ export interface PlanningExperienceUpdate {
   documentPaths?: string[];
   documentNames?: string[];
   isTemplate?: boolean;
-  assessmentData?: AssessmentData;
+  assessmentData?: AssessmentData | null;
 }
 
 export type LearningStoriesReportByChildItem = {

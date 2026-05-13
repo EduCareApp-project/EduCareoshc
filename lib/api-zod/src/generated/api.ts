@@ -1272,33 +1272,36 @@ export const ListPlanningExperiencesResponseItem = zod.object({
     .boolean()
     .default(listPlanningExperiencesResponseIsTemplateDefault),
   assessmentData: zod
-    .object({
-      mtop: zod
-        .array(
-          zod.object({
-            details: zod.string().optional(),
-            strengths: zod.string().optional(),
-            weaknesses: zod.string().optional(),
-          }),
-        )
-        .optional(),
-      educatorReview: zod
-        .object({
-          documentedLearning: zod.string().optional(),
-          programIssues: zod.string().optional(),
-          educatorSupport: zod.string().optional(),
-          childChoices: zod.string().optional(),
-        })
-        .optional(),
-      askTheChildren: zod
-        .object({
-          favouriteActivity: zod.string().optional(),
-          enjoyment: zod.string().optional(),
-          learning: zod.string().optional(),
-          improvements: zod.string().optional(),
-        })
-        .optional(),
-    })
+    .union([
+      zod.object({
+        mtop: zod
+          .array(
+            zod.object({
+              details: zod.string().optional(),
+              strengths: zod.string().optional(),
+              weaknesses: zod.string().optional(),
+            }),
+          )
+          .optional(),
+        educatorReview: zod
+          .object({
+            documentedLearning: zod.string().optional(),
+            programIssues: zod.string().optional(),
+            educatorSupport: zod.string().optional(),
+            childChoices: zod.string().optional(),
+          })
+          .optional(),
+        askTheChildren: zod
+          .object({
+            favouriteActivity: zod.string().optional(),
+            enjoyment: zod.string().optional(),
+            learning: zod.string().optional(),
+            improvements: zod.string().optional(),
+          })
+          .optional(),
+      }),
+      zod.null(),
+    ])
     .optional(),
   createdAt: zod.coerce.date(),
 });
@@ -1339,33 +1342,36 @@ export const CreatePlanningExperienceBody = zod.object({
     .boolean()
     .default(createPlanningExperienceBodyIsTemplateDefault),
   assessmentData: zod
-    .object({
-      mtop: zod
-        .array(
-          zod.object({
-            details: zod.string().optional(),
-            strengths: zod.string().optional(),
-            weaknesses: zod.string().optional(),
-          }),
-        )
-        .optional(),
-      educatorReview: zod
-        .object({
-          documentedLearning: zod.string().optional(),
-          programIssues: zod.string().optional(),
-          educatorSupport: zod.string().optional(),
-          childChoices: zod.string().optional(),
-        })
-        .optional(),
-      askTheChildren: zod
-        .object({
-          favouriteActivity: zod.string().optional(),
-          enjoyment: zod.string().optional(),
-          learning: zod.string().optional(),
-          improvements: zod.string().optional(),
-        })
-        .optional(),
-    })
+    .union([
+      zod.object({
+        mtop: zod
+          .array(
+            zod.object({
+              details: zod.string().optional(),
+              strengths: zod.string().optional(),
+              weaknesses: zod.string().optional(),
+            }),
+          )
+          .optional(),
+        educatorReview: zod
+          .object({
+            documentedLearning: zod.string().optional(),
+            programIssues: zod.string().optional(),
+            educatorSupport: zod.string().optional(),
+            childChoices: zod.string().optional(),
+          })
+          .optional(),
+        askTheChildren: zod
+          .object({
+            favouriteActivity: zod.string().optional(),
+            enjoyment: zod.string().optional(),
+            learning: zod.string().optional(),
+            improvements: zod.string().optional(),
+          })
+          .optional(),
+      }),
+      zod.null(),
+    ])
     .optional(),
 });
 
@@ -1404,33 +1410,36 @@ export const GetPlanningExperienceResponse = zod.object({
     .boolean()
     .default(getPlanningExperienceResponseIsTemplateDefault),
   assessmentData: zod
-    .object({
-      mtop: zod
-        .array(
-          zod.object({
-            details: zod.string().optional(),
-            strengths: zod.string().optional(),
-            weaknesses: zod.string().optional(),
-          }),
-        )
-        .optional(),
-      educatorReview: zod
-        .object({
-          documentedLearning: zod.string().optional(),
-          programIssues: zod.string().optional(),
-          educatorSupport: zod.string().optional(),
-          childChoices: zod.string().optional(),
-        })
-        .optional(),
-      askTheChildren: zod
-        .object({
-          favouriteActivity: zod.string().optional(),
-          enjoyment: zod.string().optional(),
-          learning: zod.string().optional(),
-          improvements: zod.string().optional(),
-        })
-        .optional(),
-    })
+    .union([
+      zod.object({
+        mtop: zod
+          .array(
+            zod.object({
+              details: zod.string().optional(),
+              strengths: zod.string().optional(),
+              weaknesses: zod.string().optional(),
+            }),
+          )
+          .optional(),
+        educatorReview: zod
+          .object({
+            documentedLearning: zod.string().optional(),
+            programIssues: zod.string().optional(),
+            educatorSupport: zod.string().optional(),
+            childChoices: zod.string().optional(),
+          })
+          .optional(),
+        askTheChildren: zod
+          .object({
+            favouriteActivity: zod.string().optional(),
+            enjoyment: zod.string().optional(),
+            learning: zod.string().optional(),
+            improvements: zod.string().optional(),
+          })
+          .optional(),
+      }),
+      zod.null(),
+    ])
     .optional(),
   createdAt: zod.coerce.date(),
 });
@@ -1465,33 +1474,36 @@ export const UpdatePlanningExperienceBody = zod.object({
   documentNames: zod.array(zod.string()).optional(),
   isTemplate: zod.boolean().optional(),
   assessmentData: zod
-    .object({
-      mtop: zod
-        .array(
-          zod.object({
-            details: zod.string().optional(),
-            strengths: zod.string().optional(),
-            weaknesses: zod.string().optional(),
-          }),
-        )
-        .optional(),
-      educatorReview: zod
-        .object({
-          documentedLearning: zod.string().optional(),
-          programIssues: zod.string().optional(),
-          educatorSupport: zod.string().optional(),
-          childChoices: zod.string().optional(),
-        })
-        .optional(),
-      askTheChildren: zod
-        .object({
-          favouriteActivity: zod.string().optional(),
-          enjoyment: zod.string().optional(),
-          learning: zod.string().optional(),
-          improvements: zod.string().optional(),
-        })
-        .optional(),
-    })
+    .union([
+      zod.object({
+        mtop: zod
+          .array(
+            zod.object({
+              details: zod.string().optional(),
+              strengths: zod.string().optional(),
+              weaknesses: zod.string().optional(),
+            }),
+          )
+          .optional(),
+        educatorReview: zod
+          .object({
+            documentedLearning: zod.string().optional(),
+            programIssues: zod.string().optional(),
+            educatorSupport: zod.string().optional(),
+            childChoices: zod.string().optional(),
+          })
+          .optional(),
+        askTheChildren: zod
+          .object({
+            favouriteActivity: zod.string().optional(),
+            enjoyment: zod.string().optional(),
+            learning: zod.string().optional(),
+            improvements: zod.string().optional(),
+          })
+          .optional(),
+      }),
+      zod.null(),
+    ])
     .optional(),
 });
 
@@ -1526,33 +1538,36 @@ export const UpdatePlanningExperienceResponse = zod.object({
     .boolean()
     .default(updatePlanningExperienceResponseIsTemplateDefault),
   assessmentData: zod
-    .object({
-      mtop: zod
-        .array(
-          zod.object({
-            details: zod.string().optional(),
-            strengths: zod.string().optional(),
-            weaknesses: zod.string().optional(),
-          }),
-        )
-        .optional(),
-      educatorReview: zod
-        .object({
-          documentedLearning: zod.string().optional(),
-          programIssues: zod.string().optional(),
-          educatorSupport: zod.string().optional(),
-          childChoices: zod.string().optional(),
-        })
-        .optional(),
-      askTheChildren: zod
-        .object({
-          favouriteActivity: zod.string().optional(),
-          enjoyment: zod.string().optional(),
-          learning: zod.string().optional(),
-          improvements: zod.string().optional(),
-        })
-        .optional(),
-    })
+    .union([
+      zod.object({
+        mtop: zod
+          .array(
+            zod.object({
+              details: zod.string().optional(),
+              strengths: zod.string().optional(),
+              weaknesses: zod.string().optional(),
+            }),
+          )
+          .optional(),
+        educatorReview: zod
+          .object({
+            documentedLearning: zod.string().optional(),
+            programIssues: zod.string().optional(),
+            educatorSupport: zod.string().optional(),
+            childChoices: zod.string().optional(),
+          })
+          .optional(),
+        askTheChildren: zod
+          .object({
+            favouriteActivity: zod.string().optional(),
+            enjoyment: zod.string().optional(),
+            learning: zod.string().optional(),
+            improvements: zod.string().optional(),
+          })
+          .optional(),
+      }),
+      zod.null(),
+    ])
     .optional(),
   createdAt: zod.coerce.date(),
 });

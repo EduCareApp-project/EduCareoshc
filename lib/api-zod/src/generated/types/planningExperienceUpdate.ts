@@ -34,5 +34,5 @@ export interface PlanningExperienceUpdate {
   documentPaths?: string[];
   documentNames?: string[];
   isTemplate?: boolean;
-  assessmentData?: AssessmentData;
+  assessmentData?: AssessmentData | null;
 }

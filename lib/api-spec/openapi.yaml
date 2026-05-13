@@ -2872,7 +2872,7 @@ components:
 
     PlanningExperience:
       type: object
-      required: [id, title, stage, outcomeIds, childIds, ageGroups, createdAt]
+      required: [id, title, stage, outcomeIds, childIds, ageGroups, isTemplate, createdAt]
       properties:
         id:
           type: integer
@@ -2934,6 +2934,9 @@ components:
           type: array
           items:
             type: string
+        isTemplate:
+          type: boolean
+          default: false
         createdAt:
           type: string
           format: date-time
@@ -3001,6 +3004,9 @@ components:
           type: array
           items:
             type: string
+        isTemplate:
+          type: boolean
+          default: false
 
     PlanningExperienceUpdate:
       type: object
@@ -3063,6 +3069,8 @@ components:
           type: array
           items:
             type: string
+        isTemplate:
+          type: boolean
 
     LearningStoriesReport:
       type: object

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "wouter";
+import { useParams, useSearch } from "wouter";
 import {
   useGetPlanningExperience,
   useCreatePlanningExperience,
@@ -33,7 +33,7 @@ type DocEntry = { path: string; name: string };
 type FormState = {
   title: string;
   startDate: string;
-  siteId: string;
+  siteId: string; // "__template__" | "none" | "<id>"
   childIds: number[];
   stage: string;
   collaborateExplore: string;
@@ -109,6 +109,8 @@ function PromptTextarea({
 
 export default function PlanningDetail() {
   const params = useParams<{ id?: string }>();
+  const search = useSearch();
+  const isTemplateQuery = new URLSearchParams(search).get("template") === "1";
   const id = params.id && params.id !== "new" ? parseInt(params.id, 10) : null;
   const isNew = id === null;
 
@@ -143,7 +145,7 @@ export default function PlanningDetail() {
       setForm({
         title: experience.title ?? "",
         startDate: experience.startDate ?? "",
-        siteId: experience.siteId ? String(experience.siteId) : "none",
+        siteId: experience.isTemplate ? "__template__" : (experience.siteId ? String(experience.siteId) : "none"),
         childIds: experience.childIds ?? [],
         stage: experience.stage ?? "brainstorm",
         collaborateExplore: experience.collaborateExplore ?? "",
@@ -161,8 +163,11 @@ export default function PlanningDetail() {
       });
       setInitialized(true);
     }
-    if (isNew && !initialized) setInitialized(true);
-  }, [experience, isNew, initialized]);
+    if (isNew && !initialized) {
+      if (isTemplateQuery) setForm((f) => ({ ...f, siteId: "__template__" }));
+      setInitialized(true);
+    }
+  }, [experience, isNew, initialized, isTemplateQuery]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -181,8 +186,8 @@ export default function PlanningDetail() {
   function handleSiteChange(newSiteId: string) {
     setForm((f) => {
       const filtered =
-        newSiteId === "none" || newSiteId === "all"
-          ? f.childIds
+        newSiteId === "__template__" || newSiteId === "none" || newSiteId === "all"
+          ? []
           : f.childIds.filter((cid) => {
               const child = (allChildren ?? []).find((c) => c.id === cid);
               return child?.siteId === parseInt(newSiteId, 10);
@@ -191,9 +196,12 @@ export default function PlanningDetail() {
     });
   }
 
-  // Active children filtered by selected site
+  const isTemplateMode = form.siteId === "__template__";
+
+  // Active children filtered by selected site (templates have no focus children)
   const visibleChildren = (allChildren ?? []).filter((c) => {
     if (c.status !== "active") return false;
+    if (isTemplateMode) return false;
     if (form.siteId === "none" || form.siteId === "all") return true;
     return c.siteId === parseInt(form.siteId, 10);
   });
@@ -226,10 +234,11 @@ export default function PlanningDetail() {
       ageGroups: experience?.ageGroups ?? [],
       documentPaths: form.documents.map((d) => d.path),
       documentNames: form.documents.map((d) => d.name),
+      isTemplate: isTemplateMode,
     };
     if (form.startDate) payload.startDate = form.startDate;
-    if (form.siteId !== "none") payload.siteId = parseInt(form.siteId, 10);
-    else payload.siteId = null;
+    if (isTemplateMode || form.siteId === "none") payload.siteId = null;
+    else payload.siteId = parseInt(form.siteId, 10);
 
     const textFields: (keyof FormState)[] = [
       "collaborateExplore", "identifySkills", "researchIdeas",
@@ -286,6 +295,7 @@ export default function PlanningDetail() {
   function handleDuplicate() {
     const payload = buildPayload();
     payload.title = `Copy of ${form.title}`;
+    payload.isTemplate = false; // duplicate is always a real record, not a template
     createMutation.mutate({ data: payload as any }, {
       onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: ["/api/planning"] });
@@ -352,7 +362,11 @@ export default function PlanningDetail() {
               </AlertDialogContent>
             </AlertDialog>
           )}
-          <Button onClick={handleSave} disabled={isSaving}>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || isTemplateMode}
+            title={isTemplateMode ? "Templates cannot be saved directly — duplicate to create a real planning cycle" : undefined}
+          >
             <Save className="h-4 w-4 mr-1.5" />{isSaving ? "Saving…" : "Save"}
           </Button>
         </div>
@@ -382,12 +396,16 @@ export default function PlanningDetail() {
             <Select value={form.siteId} onValueChange={handleSiteChange}>
               <SelectTrigger><SelectValue placeholder="Select site…" /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="__template__">⭐ Templates</SelectItem>
                 <SelectItem value="none">No location</SelectItem>
                 {(sites ?? []).map((s) => (
                   <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {isTemplateMode && (
+              <p className="text-xs text-amber-600">This is a template — select a real site to enable saving, or use Duplicate to create a copy.</p>
+            )}
           </div>
 
           <div className="space-y-1.5">

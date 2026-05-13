@@ -38,6 +38,8 @@ export default function Planning() {
   };
 
   const filtered = (experiences ?? []).filter((exp) => {
+    if (siteFilter === "templates") return exp.isTemplate === true;
+    if (exp.isTemplate) return false; // exclude templates from all other views
     if (siteFilter === "all") return true;
     if (siteFilter === "none") return !exp.siteId;
     return exp.siteId === parseInt(siteFilter, 10);
@@ -50,8 +52,8 @@ export default function Planning() {
           <h1 className="text-3xl font-bold tracking-tight">Planning Cycle</h1>
           <p className="text-muted-foreground mt-1">Document and track educational experiences through the planning cycle.</p>
         </div>
-        <Button onClick={() => navigate("/planning/new")}>
-          <Plus className="h-4 w-4 mr-2" />New Planning Cycle
+        <Button onClick={() => navigate(siteFilter === "templates" ? "/planning/new?template=1" : "/planning/new")}>
+          <Plus className="h-4 w-4 mr-2" />{siteFilter === "templates" ? "New Template" : "New Planning Cycle"}
         </Button>
       </div>
 
@@ -63,6 +65,7 @@ export default function Planning() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All sites</SelectItem>
+            <SelectItem value="templates">⭐ Templates</SelectItem>
             <SelectItem value="none">No location</SelectItem>
             {(sites ?? []).map((s) => (
               <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>

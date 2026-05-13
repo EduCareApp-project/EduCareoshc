@@ -1099,6 +1099,7 @@ export interface PlanningExperience {
   editedBy?: string | null;
   documentPaths?: string[];
   documentNames?: string[];
+  isTemplate: boolean;
   createdAt: string;
 }
 
@@ -1136,6 +1137,7 @@ export interface PlanningExperienceInput {
   editedBy?: string;
   documentPaths?: string[];
   documentNames?: string[];
+  isTemplate?: boolean;
 }
 
 export type PlanningExperienceUpdateStage =
@@ -1173,6 +1175,7 @@ export interface PlanningExperienceUpdate {
   editedBy?: string;
   documentPaths?: string[];
   documentNames?: string[];
+  isTemplate?: boolean;
 }
 
 export type LearningStoriesReportByChildItem = {

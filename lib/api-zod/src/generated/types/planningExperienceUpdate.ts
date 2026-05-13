@@ -32,4 +32,5 @@ export interface PlanningExperienceUpdate {
   editedBy?: string;
   documentPaths?: string[];
   documentNames?: string[];
+  isTemplate?: boolean;
 }

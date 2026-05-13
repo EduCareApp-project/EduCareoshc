@@ -1241,6 +1241,8 @@ export const DeleteProfessionalDevelopmentParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const listPlanningExperiencesResponseIsTemplateDefault = false;
+
 export const ListPlanningExperiencesResponseItem = zod.object({
   id: zod.number(),
   title: zod.string(),
@@ -1266,6 +1268,9 @@ export const ListPlanningExperiencesResponseItem = zod.object({
   editedBy: zod.string().nullish(),
   documentPaths: zod.array(zod.string()).optional(),
   documentNames: zod.array(zod.string()).optional(),
+  isTemplate: zod
+    .boolean()
+    .default(listPlanningExperiencesResponseIsTemplateDefault),
   createdAt: zod.coerce.date(),
 });
 export const ListPlanningExperiencesResponse = zod.array(
@@ -1273,6 +1278,7 @@ export const ListPlanningExperiencesResponse = zod.array(
 );
 
 export const createPlanningExperienceBodyStageDefault = `brainstorm`;
+export const createPlanningExperienceBodyIsTemplateDefault = false;
 
 export const CreatePlanningExperienceBody = zod.object({
   title: zod.string(),
@@ -1300,11 +1306,16 @@ export const CreatePlanningExperienceBody = zod.object({
   editedBy: zod.string().optional(),
   documentPaths: zod.array(zod.string()).optional(),
   documentNames: zod.array(zod.string()).optional(),
+  isTemplate: zod
+    .boolean()
+    .default(createPlanningExperienceBodyIsTemplateDefault),
 });
 
 export const GetPlanningExperienceParams = zod.object({
   id: zod.coerce.number(),
 });
+
+export const getPlanningExperienceResponseIsTemplateDefault = false;
 
 export const GetPlanningExperienceResponse = zod.object({
   id: zod.number(),
@@ -1331,6 +1342,9 @@ export const GetPlanningExperienceResponse = zod.object({
   editedBy: zod.string().nullish(),
   documentPaths: zod.array(zod.string()).optional(),
   documentNames: zod.array(zod.string()).optional(),
+  isTemplate: zod
+    .boolean()
+    .default(getPlanningExperienceResponseIsTemplateDefault),
   createdAt: zod.coerce.date(),
 });
 
@@ -1364,7 +1378,10 @@ export const UpdatePlanningExperienceBody = zod.object({
   editedBy: zod.string().optional(),
   documentPaths: zod.array(zod.string()).optional(),
   documentNames: zod.array(zod.string()).optional(),
+  isTemplate: zod.boolean().optional(),
 });
+
+export const updatePlanningExperienceResponseIsTemplateDefault = false;
 
 export const UpdatePlanningExperienceResponse = zod.object({
   id: zod.number(),
@@ -1391,6 +1408,9 @@ export const UpdatePlanningExperienceResponse = zod.object({
   editedBy: zod.string().nullish(),
   documentPaths: zod.array(zod.string()).optional(),
   documentNames: zod.array(zod.string()).optional(),
+  isTemplate: zod
+    .boolean()
+    .default(updatePlanningExperienceResponseIsTemplateDefault),
   createdAt: zod.coerce.date(),
 });
 

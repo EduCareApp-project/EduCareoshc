@@ -122,11 +122,7 @@ export default function ChildrenList() {
                 <CardContent>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Age</span>
-                      <span className="font-medium">{calcAge(child.dateOfBirth)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">DOB</span>
+                      <span className="text-muted-foreground">Date of Birth</span>
                       <span className="font-medium">{format(new Date(child.dateOfBirth.length === 10 ? child.dateOfBirth + "T00:00:00" : child.dateOfBirth), "MMM d, yyyy")}</span>
                     </div>
                     <div className="flex justify-between">

@@ -84,7 +84,7 @@ export default function AddStaff() {
                 <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="phone" render={({ field }) => (
-                <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input type="text" autoComplete="tel" placeholder="e.g. 0412 345 678" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="role" render={({ field }) => (
                 <FormItem><FormLabel>Role</FormLabel>

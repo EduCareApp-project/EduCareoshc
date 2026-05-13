@@ -234,7 +234,7 @@ export default function EnrollChild() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Phone Number</FormLabel>
-                      <FormControl><Input placeholder="0400 000 000" {...field} /></FormControl>
+                      <FormControl><Input type="text" autoComplete="tel" placeholder="0400 000 000" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

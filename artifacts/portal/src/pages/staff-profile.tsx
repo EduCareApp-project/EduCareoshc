@@ -667,7 +667,7 @@ export default function StaffProfile() {
             </div>
             <div className="space-y-1.5">
               <Label>Phone</Label>
-              <Input value={profileEditForm.phone} onChange={(e) => setProfileEditForm((f) => ({ ...f, phone: e.target.value }))} placeholder="e.g. 0412 345 678" />
+              <Input type="text" autoComplete="tel" value={profileEditForm.phone} onChange={(e) => setProfileEditForm((f) => ({ ...f, phone: e.target.value }))} placeholder="e.g. 0412 345 678" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

@@ -772,7 +772,7 @@ export default function ChildProfile() {
               <TabsContent value="guardian" className="space-y-4">
                 <div className="space-y-1"><Label>Guardian Name</Label><Input value={form.guardianName} onChange={(e) => setForm({ ...form, guardianName: e.target.value })} required /></div>
                 <div className="space-y-1"><Label>Guardian Email</Label><Input type="email" value={form.guardianEmail} onChange={(e) => setForm({ ...form, guardianEmail: e.target.value })} required /></div>
-                <div className="space-y-1"><Label>Guardian Phone</Label><Input value={form.guardianPhone} onChange={(e) => setForm({ ...form, guardianPhone: e.target.value })} required /></div>
+                <div className="space-y-1"><Label>Guardian Phone</Label><Input type="text" autoComplete="tel" placeholder="e.g. 0400 000 000" value={form.guardianPhone} onChange={(e) => setForm({ ...form, guardianPhone: e.target.value })} required /></div>
               </TabsContent>
 
               <TabsContent value="profile" className="space-y-4">

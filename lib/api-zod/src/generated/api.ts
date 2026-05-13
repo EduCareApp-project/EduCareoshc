@@ -1247,7 +1247,7 @@ export const ListPlanningExperiencesResponseItem = zod.object({
   id: zod.number(),
   title: zod.string(),
   description: zod.string().nullish(),
-  stage: zod.enum(["brainstorm", "planned", "implemented", "evaluated"]),
+  stage: zod.enum(["brainstorm", "planned", "assessment", "closed"]),
   outcomeIds: zod.array(zod.number()),
   childIds: zod.array(zod.number()),
   ageGroups: zod.array(zod.string()),
@@ -1271,6 +1271,35 @@ export const ListPlanningExperiencesResponseItem = zod.object({
   isTemplate: zod
     .boolean()
     .default(listPlanningExperiencesResponseIsTemplateDefault),
+  assessmentData: zod
+    .object({
+      mtop: zod
+        .array(
+          zod.object({
+            details: zod.string().optional(),
+            strengths: zod.string().optional(),
+            weaknesses: zod.string().optional(),
+          }),
+        )
+        .optional(),
+      educatorReview: zod
+        .object({
+          documentedLearning: zod.string().optional(),
+          programIssues: zod.string().optional(),
+          educatorSupport: zod.string().optional(),
+          childChoices: zod.string().optional(),
+        })
+        .optional(),
+      askTheChildren: zod
+        .object({
+          favouriteActivity: zod.string().optional(),
+          enjoyment: zod.string().optional(),
+          learning: zod.string().optional(),
+          improvements: zod.string().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
   createdAt: zod.coerce.date(),
 });
 export const ListPlanningExperiencesResponse = zod.array(
@@ -1284,7 +1313,7 @@ export const CreatePlanningExperienceBody = zod.object({
   title: zod.string(),
   description: zod.string().optional(),
   stage: zod
-    .enum(["brainstorm", "planned", "implemented", "evaluated"])
+    .enum(["brainstorm", "planned", "assessment", "closed"])
     .default(createPlanningExperienceBodyStageDefault),
   outcomeIds: zod.array(zod.number()).optional(),
   childIds: zod.array(zod.number()).optional(),
@@ -1309,6 +1338,35 @@ export const CreatePlanningExperienceBody = zod.object({
   isTemplate: zod
     .boolean()
     .default(createPlanningExperienceBodyIsTemplateDefault),
+  assessmentData: zod
+    .object({
+      mtop: zod
+        .array(
+          zod.object({
+            details: zod.string().optional(),
+            strengths: zod.string().optional(),
+            weaknesses: zod.string().optional(),
+          }),
+        )
+        .optional(),
+      educatorReview: zod
+        .object({
+          documentedLearning: zod.string().optional(),
+          programIssues: zod.string().optional(),
+          educatorSupport: zod.string().optional(),
+          childChoices: zod.string().optional(),
+        })
+        .optional(),
+      askTheChildren: zod
+        .object({
+          favouriteActivity: zod.string().optional(),
+          enjoyment: zod.string().optional(),
+          learning: zod.string().optional(),
+          improvements: zod.string().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 
 export const GetPlanningExperienceParams = zod.object({
@@ -1321,7 +1379,7 @@ export const GetPlanningExperienceResponse = zod.object({
   id: zod.number(),
   title: zod.string(),
   description: zod.string().nullish(),
-  stage: zod.enum(["brainstorm", "planned", "implemented", "evaluated"]),
+  stage: zod.enum(["brainstorm", "planned", "assessment", "closed"]),
   outcomeIds: zod.array(zod.number()),
   childIds: zod.array(zod.number()),
   ageGroups: zod.array(zod.string()),
@@ -1345,6 +1403,35 @@ export const GetPlanningExperienceResponse = zod.object({
   isTemplate: zod
     .boolean()
     .default(getPlanningExperienceResponseIsTemplateDefault),
+  assessmentData: zod
+    .object({
+      mtop: zod
+        .array(
+          zod.object({
+            details: zod.string().optional(),
+            strengths: zod.string().optional(),
+            weaknesses: zod.string().optional(),
+          }),
+        )
+        .optional(),
+      educatorReview: zod
+        .object({
+          documentedLearning: zod.string().optional(),
+          programIssues: zod.string().optional(),
+          educatorSupport: zod.string().optional(),
+          childChoices: zod.string().optional(),
+        })
+        .optional(),
+      askTheChildren: zod
+        .object({
+          favouriteActivity: zod.string().optional(),
+          enjoyment: zod.string().optional(),
+          learning: zod.string().optional(),
+          improvements: zod.string().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
   createdAt: zod.coerce.date(),
 });
 
@@ -1355,9 +1442,7 @@ export const UpdatePlanningExperienceParams = zod.object({
 export const UpdatePlanningExperienceBody = zod.object({
   title: zod.string().optional(),
   description: zod.string().optional(),
-  stage: zod
-    .enum(["brainstorm", "planned", "implemented", "evaluated"])
-    .optional(),
+  stage: zod.enum(["brainstorm", "planned", "assessment", "closed"]).optional(),
   outcomeIds: zod.array(zod.number()).optional(),
   childIds: zod.array(zod.number()).optional(),
   ageGroups: zod.array(zod.string()).optional(),
@@ -1379,6 +1464,35 @@ export const UpdatePlanningExperienceBody = zod.object({
   documentPaths: zod.array(zod.string()).optional(),
   documentNames: zod.array(zod.string()).optional(),
   isTemplate: zod.boolean().optional(),
+  assessmentData: zod
+    .object({
+      mtop: zod
+        .array(
+          zod.object({
+            details: zod.string().optional(),
+            strengths: zod.string().optional(),
+            weaknesses: zod.string().optional(),
+          }),
+        )
+        .optional(),
+      educatorReview: zod
+        .object({
+          documentedLearning: zod.string().optional(),
+          programIssues: zod.string().optional(),
+          educatorSupport: zod.string().optional(),
+          childChoices: zod.string().optional(),
+        })
+        .optional(),
+      askTheChildren: zod
+        .object({
+          favouriteActivity: zod.string().optional(),
+          enjoyment: zod.string().optional(),
+          learning: zod.string().optional(),
+          improvements: zod.string().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 
 export const updatePlanningExperienceResponseIsTemplateDefault = false;
@@ -1387,7 +1501,7 @@ export const UpdatePlanningExperienceResponse = zod.object({
   id: zod.number(),
   title: zod.string(),
   description: zod.string().nullish(),
-  stage: zod.enum(["brainstorm", "planned", "implemented", "evaluated"]),
+  stage: zod.enum(["brainstorm", "planned", "assessment", "closed"]),
   outcomeIds: zod.array(zod.number()),
   childIds: zod.array(zod.number()),
   ageGroups: zod.array(zod.string()),
@@ -1411,6 +1525,35 @@ export const UpdatePlanningExperienceResponse = zod.object({
   isTemplate: zod
     .boolean()
     .default(updatePlanningExperienceResponseIsTemplateDefault),
+  assessmentData: zod
+    .object({
+      mtop: zod
+        .array(
+          zod.object({
+            details: zod.string().optional(),
+            strengths: zod.string().optional(),
+            weaknesses: zod.string().optional(),
+          }),
+        )
+        .optional(),
+      educatorReview: zod
+        .object({
+          documentedLearning: zod.string().optional(),
+          programIssues: zod.string().optional(),
+          educatorSupport: zod.string().optional(),
+          childChoices: zod.string().optional(),
+        })
+        .optional(),
+      askTheChildren: zod
+        .object({
+          favouriteActivity: zod.string().optional(),
+          enjoyment: zod.string().optional(),
+          learning: zod.string().optional(),
+          improvements: zod.string().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
   createdAt: zod.coerce.date(),
 });
 

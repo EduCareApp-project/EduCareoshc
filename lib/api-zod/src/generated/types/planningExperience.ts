@@ -5,6 +5,7 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+import type { AssessmentData } from "./assessmentData";
 import type { PlanningExperienceStage } from "./planningExperienceStage";
 
 export interface PlanningExperience {
@@ -49,5 +50,6 @@ export interface PlanningExperience {
   documentPaths?: string[];
   documentNames?: string[];
   isTemplate: boolean;
+  assessmentData?: AssessmentData;
   createdAt: Date;
 }

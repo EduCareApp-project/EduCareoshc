@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, date, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, date, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { sitesTable } from "./sites";
@@ -29,6 +29,7 @@ export const planningExperiencesTable = pgTable("planning_experiences", {
   documentPaths: text("document_paths").array().notNull().default([]),
   documentNames: text("document_names").array().notNull().default([]),
   isTemplate: boolean("is_template").notNull().default(false),
+  assessmentData: jsonb("assessment_data"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

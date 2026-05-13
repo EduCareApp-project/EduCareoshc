@@ -2882,7 +2882,7 @@ components:
           type: ["string", "null"]
         stage:
           type: string
-          enum: [brainstorm, planned, implemented, evaluated]
+          enum: [brainstorm, planned, assessment, closed]
         outcomeIds:
           type: array
           items:
@@ -2937,6 +2937,8 @@ components:
         isTemplate:
           type: boolean
           default: false
+        assessmentData:
+          $ref: "#/components/schemas/AssessmentData"
         createdAt:
           type: string
           format: date-time
@@ -2951,7 +2953,7 @@ components:
           type: string
         stage:
           type: string
-          enum: [brainstorm, planned, implemented, evaluated]
+          enum: [brainstorm, planned, assessment, closed]
           default: brainstorm
         outcomeIds:
           type: array
@@ -3007,6 +3009,8 @@ components:
         isTemplate:
           type: boolean
           default: false
+        assessmentData:
+          $ref: "#/components/schemas/AssessmentData"
 
     PlanningExperienceUpdate:
       type: object
@@ -3017,7 +3021,7 @@ components:
           type: string
         stage:
           type: string
-          enum: [brainstorm, planned, implemented, evaluated]
+          enum: [brainstorm, planned, assessment, closed]
         outcomeIds:
           type: array
           items:
@@ -3071,6 +3075,45 @@ components:
             type: string
         isTemplate:
           type: boolean
+        assessmentData:
+          $ref: "#/components/schemas/AssessmentData"
+
+    AssessmentData:
+      type: object
+      properties:
+        mtop:
+          type: array
+          items:
+            type: object
+            properties:
+              details:
+                type: string
+              strengths:
+                type: string
+              weaknesses:
+                type: string
+        educatorReview:
+          type: object
+          properties:
+            documentedLearning:
+              type: string
+            programIssues:
+              type: string
+            educatorSupport:
+              type: string
+            childChoices:
+              type: string
+        askTheChildren:
+          type: object
+          properties:
+            favouriteActivity:
+              type: string
+            enjoyment:
+              type: string
+            learning:
+              type: string
+            improvements:
+              type: string
 
     LearningStoriesReport:
       type: object

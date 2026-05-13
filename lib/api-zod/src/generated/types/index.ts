@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.2.0
  */
 
+export * from "./assessmentData";
+export * from "./assessmentDataAskTheChildren";
+export * from "./assessmentDataEducatorReview";
+export * from "./assessmentDataMtopItem";
 export * from "./checklist";
 export * from "./checklistCompletion";
 export * from "./checklistCompletionInput";

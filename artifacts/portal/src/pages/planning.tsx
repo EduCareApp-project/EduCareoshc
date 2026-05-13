@@ -10,14 +10,14 @@ import { format } from "date-fns";
 const STAGE_LABELS: Record<string, string> = {
   brainstorm: "Brainstorm",
   planned: "Planned",
-  implemented: "Implemented",
-  evaluated: "Evaluated",
+  assessment: "Assessment Stage",
+  closed: "Closed",
 };
 const STAGE_COLORS: Record<string, string> = {
   brainstorm: "bg-slate-100 text-slate-700 border-slate-300",
   planned: "bg-blue-100 text-blue-700 border-blue-300",
-  implemented: "bg-amber-100 text-amber-700 border-amber-300",
-  evaluated: "bg-green-100 text-green-700 border-green-300",
+  assessment: "bg-amber-100 text-amber-700 border-amber-300",
+  closed: "bg-green-100 text-green-700 border-green-300",
 };
 
 export default function Planning() {

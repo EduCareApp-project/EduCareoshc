@@ -12,6 +12,6 @@ export type PlanningExperienceInputStage =
 export const PlanningExperienceInputStage = {
   brainstorm: "brainstorm",
   planned: "planned",
-  implemented: "implemented",
-  evaluated: "evaluated",
+  assessment: "assessment",
+  closed: "closed",
 } as const;

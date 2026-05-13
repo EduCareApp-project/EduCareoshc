@@ -1054,9 +1054,35 @@ export type PlanningExperienceStage =
 export const PlanningExperienceStage = {
   brainstorm: "brainstorm",
   planned: "planned",
-  implemented: "implemented",
-  evaluated: "evaluated",
+  assessment: "assessment",
+  closed: "closed",
 } as const;
+
+export type AssessmentDataMtopItem = {
+  details?: string;
+  strengths?: string;
+  weaknesses?: string;
+};
+
+export type AssessmentDataEducatorReview = {
+  documentedLearning?: string;
+  programIssues?: string;
+  educatorSupport?: string;
+  childChoices?: string;
+};
+
+export type AssessmentDataAskTheChildren = {
+  favouriteActivity?: string;
+  enjoyment?: string;
+  learning?: string;
+  improvements?: string;
+};
+
+export interface AssessmentData {
+  mtop?: AssessmentDataMtopItem[];
+  educatorReview?: AssessmentDataEducatorReview;
+  askTheChildren?: AssessmentDataAskTheChildren;
+}
 
 export interface PlanningExperience {
   id: number;
@@ -1100,6 +1126,7 @@ export interface PlanningExperience {
   documentPaths?: string[];
   documentNames?: string[];
   isTemplate: boolean;
+  assessmentData?: AssessmentData;
   createdAt: string;
 }
 
@@ -1109,8 +1136,8 @@ export type PlanningExperienceInputStage =
 export const PlanningExperienceInputStage = {
   brainstorm: "brainstorm",
   planned: "planned",
-  implemented: "implemented",
-  evaluated: "evaluated",
+  assessment: "assessment",
+  closed: "closed",
 } as const;
 
 export interface PlanningExperienceInput {
@@ -1138,6 +1165,7 @@ export interface PlanningExperienceInput {
   documentPaths?: string[];
   documentNames?: string[];
   isTemplate?: boolean;
+  assessmentData?: AssessmentData;
 }
 
 export type PlanningExperienceUpdateStage =
@@ -1146,8 +1174,8 @@ export type PlanningExperienceUpdateStage =
 export const PlanningExperienceUpdateStage = {
   brainstorm: "brainstorm",
   planned: "planned",
-  implemented: "implemented",
-  evaluated: "evaluated",
+  assessment: "assessment",
+  closed: "closed",
 } as const;
 
 export interface PlanningExperienceUpdate {
@@ -1176,6 +1204,7 @@ export interface PlanningExperienceUpdate {
   documentPaths?: string[];
   documentNames?: string[];
   isTemplate?: boolean;
+  assessmentData?: AssessmentData;
 }
 
 export type LearningStoriesReportByChildItem = {

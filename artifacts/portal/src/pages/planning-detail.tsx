@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ArrowLeft, Save, Trash2, Users, Upload, FileText, X, Loader2, Copy, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -25,23 +26,90 @@ import { format } from "date-fns";
 const STAGE_LABELS: Record<string, string> = {
   brainstorm: "Brainstorm",
   planned: "Planned",
-  implemented: "Implemented",
-  evaluated: "Evaluated",
+  assessment: "Assessment Stage",
+  closed: "Closed",
 };
 
 const STAGE_COLORS: Record<string, string> = {
   brainstorm: "bg-slate-100 text-slate-700 border-slate-300",
   planned: "bg-blue-100 text-blue-700 border-blue-300",
-  implemented: "bg-amber-100 text-amber-700 border-amber-300",
-  evaluated: "bg-green-100 text-green-700 border-green-300",
+  assessment: "bg-amber-100 text-amber-700 border-amber-300",
+  closed: "bg-green-100 text-green-700 border-green-300",
 };
+
+const MTOP_OUTCOMES = [
+  "Children have a strong sense of identity",
+  "Children are connected with and contribute to their world",
+  "Children have a strong sense of wellbeing",
+  "Children are confident and involved learners",
+  "Children are effective communicators",
+];
+
+type MtopEntry = { details: string; strengths: string; weaknesses: string };
+
+type AssessmentData = {
+  mtop: MtopEntry[];
+  educatorReview: {
+    documentedLearning: string;
+    programIssues: string;
+    educatorSupport: string;
+    childChoices: string;
+  };
+  askTheChildren: {
+    favouriteActivity: string;
+    enjoyment: string;
+    learning: string;
+    improvements: string;
+  };
+};
+
+const emptyAssessment = (): AssessmentData => ({
+  mtop: MTOP_OUTCOMES.map(() => ({ details: "", strengths: "", weaknesses: "" })),
+  educatorReview: { documentedLearning: "", programIssues: "", educatorSupport: "", childChoices: "" },
+  askTheChildren: { favouriteActivity: "", enjoyment: "", learning: "", improvements: "" },
+});
+
+function mergeAssessment(raw: unknown): AssessmentData {
+  const base = emptyAssessment();
+  if (!raw || typeof raw !== "object") return base;
+  const r = raw as Record<string, unknown>;
+  if (Array.isArray(r.mtop)) {
+    base.mtop = MTOP_OUTCOMES.map((_, i) => {
+      const entry = r.mtop && (r.mtop as any)[i];
+      return {
+        details: entry?.details ?? "",
+        strengths: entry?.strengths ?? "",
+        weaknesses: entry?.weaknesses ?? "",
+      };
+    });
+  }
+  const er = r.educatorReview as Record<string, string> | undefined;
+  if (er) {
+    base.educatorReview = {
+      documentedLearning: er.documentedLearning ?? "",
+      programIssues: er.programIssues ?? "",
+      educatorSupport: er.educatorSupport ?? "",
+      childChoices: er.childChoices ?? "",
+    };
+  }
+  const atc = r.askTheChildren as Record<string, string> | undefined;
+  if (atc) {
+    base.askTheChildren = {
+      favouriteActivity: atc.favouriteActivity ?? "",
+      enjoyment: atc.enjoyment ?? "",
+      learning: atc.learning ?? "",
+      improvements: atc.improvements ?? "",
+    };
+  }
+  return base;
+}
 
 type DocEntry = { path: string; name: string };
 
 type FormState = {
   title: string;
   startDate: string;
-  siteId: string; // "__template__" | "none" | "<id>"
+  siteId: string;
   childIds: number[];
   stage: string;
   collaborateExplore: string;
@@ -56,6 +124,7 @@ type FormState = {
   preparedBy: string;
   editedBy: string;
   documents: DocEntry[];
+  assessmentData: AssessmentData;
 };
 
 const emptyForm = (): FormState => ({
@@ -76,6 +145,7 @@ const emptyForm = (): FormState => ({
   preparedBy: "none",
   editedBy: "none",
   documents: [],
+  assessmentData: emptyAssessment(),
 });
 
 function SectionHeader({ title }: { title: string }) {
@@ -89,7 +159,7 @@ function SectionHeader({ title }: { title: string }) {
 function ViewField({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="space-y-1">
-      <p className="text-sm font-medium text-foreground">{label}</p>
+      {label && <p className="text-sm font-medium text-foreground">{label}</p>}
       {value ? (
         <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{value}</p>
       ) : (
@@ -99,30 +169,14 @@ function ViewField({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-function PromptTextarea({
-  label,
-  prompt,
-  value,
-  onChange,
-  rows = 4,
-}: {
-  label: string;
-  prompt: string;
-  value: string;
-  onChange: (v: string) => void;
-  rows?: number;
+function PromptTextarea({ label, prompt, value, onChange, rows = 4 }: {
+  label: string; prompt: string; value: string; onChange: (v: string) => void; rows?: number;
 }) {
   return (
     <div className="space-y-1.5">
       {label && <Label className="text-sm font-medium">{label}</Label>}
       <p className="text-xs text-muted-foreground leading-relaxed">{prompt}</p>
-      <Textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={rows}
-        placeholder="Type here..."
-        className="resize-y"
-      />
+      <Textarea value={value} onChange={(e) => onChange(e.target.value)} rows={rows} placeholder="Type here..." className="resize-y" />
     </div>
   );
 }
@@ -158,6 +212,13 @@ export default function PlanningDetail() {
   const [savedForm, setSavedForm] = useState<FormState>(emptyForm());
   const [initialized, setInitialized] = useState(false);
   const [isEditing, setIsEditing] = useState(isNew);
+  const [activeTab, setActiveTab] = useState("planning");
+
+  const showAssessmentTab = form.stage === "assessment" || form.stage === "closed";
+
+  useEffect(() => {
+    if (!showAssessmentTab && activeTab === "assessment") setActiveTab("planning");
+  }, [showAssessmentTab, activeTab]);
 
   useEffect(() => {
     if (!isNew && experience && !initialized) {
@@ -182,6 +243,7 @@ export default function PlanningDetail() {
         preparedBy: experience.preparedBy ?? "none",
         editedBy: experience.editedBy ?? "none",
         documents: docs,
+        assessmentData: mergeAssessment(experience.assessmentData),
       };
       setForm(loaded);
       setSavedForm(loaded);
@@ -197,12 +259,25 @@ export default function PlanningDetail() {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  function setMtop(index: number, field: keyof MtopEntry, value: string) {
+    setForm((f) => {
+      const updated = f.assessmentData.mtop.map((m, i) => i === index ? { ...m, [field]: value } : m);
+      return { ...f, assessmentData: { ...f.assessmentData, mtop: updated } };
+    });
+  }
+
+  function setEducatorReview(field: keyof AssessmentData["educatorReview"], value: string) {
+    setForm((f) => ({ ...f, assessmentData: { ...f.assessmentData, educatorReview: { ...f.assessmentData.educatorReview, [field]: value } } }));
+  }
+
+  function setAskChildren(field: keyof AssessmentData["askTheChildren"], value: string) {
+    setForm((f) => ({ ...f, assessmentData: { ...f.assessmentData, askTheChildren: { ...f.assessmentData.askTheChildren, [field]: value } } }));
+  }
+
   function toggleChild(childId: number) {
     setForm((f) => ({
       ...f,
-      childIds: f.childIds.includes(childId)
-        ? f.childIds.filter((c) => c !== childId)
-        : [...f.childIds, childId],
+      childIds: f.childIds.includes(childId) ? f.childIds.filter((c) => c !== childId) : [...f.childIds, childId],
     }));
   }
 
@@ -239,10 +314,7 @@ export default function PlanningDetail() {
     for (const file of files) {
       const response = await uploadFile(file);
       if (response) {
-        setForm((f) => ({
-          ...f,
-          documents: [...f.documents, { path: response.objectPath, name: file.name }],
-        }));
+        setForm((f) => ({ ...f, documents: [...f.documents, { path: response.objectPath, name: file.name }] }));
       }
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -262,11 +334,11 @@ export default function PlanningDetail() {
       documentPaths: form.documents.map((d) => d.path),
       documentNames: form.documents.map((d) => d.name),
       isTemplate: isTemplateMode,
+      assessmentData: form.assessmentData,
     };
     if (form.startDate) payload.startDate = form.startDate;
     if (isTemplateMode || form.siteId === "none") payload.siteId = null;
     else payload.siteId = parseInt(form.siteId, 10);
-
     const textFields: (keyof FormState)[] = [
       "collaborateExplore", "identifySkills", "researchIdeas",
       "frameworkLinks", "qualityAreas", "additionalResources",
@@ -348,18 +420,22 @@ export default function PlanningDetail() {
   const activeStaff = (staffList ?? []).filter((s) => s.status === "active");
 
   const siteName =
-    form.siteId === "__template__"
-      ? "⭐ Template"
-      : form.siteId === "none"
-      ? "—"
-      : (sites ?? []).find((s) => s.id === parseInt(form.siteId, 10))?.name ?? "—";
+    form.siteId === "__template__" ? "⭐ Template"
+    : form.siteId === "none" ? "—"
+    : (sites ?? []).find((s) => s.id === parseInt(form.siteId, 10))?.name ?? "—";
 
   const focusChildrenNames = (allChildren ?? [])
     .filter((c) => form.childIds.includes(c.id))
     .map((c) => `${c.firstName} ${c.lastName}`);
 
+  const ad = form.assessmentData;
+  const hasAssessmentContent =
+    ad.mtop.some((m) => m.details || m.strengths || m.weaknesses) ||
+    Object.values(ad.educatorReview).some(Boolean) ||
+    Object.values(ad.askTheChildren).some(Boolean);
+
   return (
-    <div className="max-w-3xl mx-auto space-y-8 pb-16">
+    <div className="max-w-4xl mx-auto space-y-6 pb-16">
       {/* Top bar */}
       <div className="flex items-center justify-between">
         <button
@@ -370,12 +446,7 @@ export default function PlanningDetail() {
         </button>
         <div className="flex items-center gap-2">
           {!isNew && !isEditing && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDuplicate}
-              disabled={createMutation.isPending}
-            >
+            <Button variant="outline" size="sm" onClick={handleDuplicate} disabled={createMutation.isPending}>
               <Copy className="h-4 w-4 mr-1.5" />Duplicate
             </Button>
           )}
@@ -395,9 +466,7 @@ export default function PlanningDetail() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Delete
-                  </AlertDialogAction>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -408,9 +477,7 @@ export default function PlanningDetail() {
             </Button>
           )}
           {isEditing && !isNew && (
-            <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>
           )}
           {isEditing && (
             <Button onClick={handleSave} disabled={isSaving}>
@@ -420,380 +487,473 @@ export default function PlanningDetail() {
         </div>
       </div>
 
-      {isEditing ? (
-        <>
-          {/* Header section — edit */}
-          <div className="bg-white border rounded-xl p-6 space-y-6">
-            <SectionHeader title="Planning Cycle" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="sm:col-span-2 space-y-1.5">
-                <Label>Experience Title <span className="text-destructive">*</span></Label>
-                <Input
-                  value={form.title}
-                  onChange={(e) => set("title", e.target.value)}
-                  placeholder="Enter a title for this experience"
-                />
+      {/* Tabs — shown when stage is assessment or closed */}
+      {showAssessmentTab ? (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="planning">Planning Cycle</TabsTrigger>
+            <TabsTrigger value="assessment">Assessment</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="planning" className="space-y-6 mt-0">
+            {isEditing ? <PlanningEditContent {...{ form, set, sites, allChildren, visibleChildren, isTemplateMode, handleSiteChange, toggleChild, fileInputRef, handleFileSelect, removeDocument, isUploading, activeStaff }} />
+              : <PlanningViewContent {...{ form, siteName, focusChildrenNames }} />}
+            {isEditing && (
+              <div className="flex justify-end gap-3">
+                {!isNew && <Button variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>}
+                <Button onClick={handleSave} disabled={isSaving} size="lg">
+                  <Save className="h-4 w-4 mr-1.5" />{isSaving ? "Saving…" : "Save"}
+                </Button>
               </div>
-              <div className="space-y-1.5">
-                <Label>Commencement Date</Label>
-                <Input type="date" value={form.startDate} onChange={(e) => set("startDate", e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Location</Label>
-                <Select value={form.siteId} onValueChange={handleSiteChange}>
-                  <SelectTrigger><SelectValue placeholder="Select site…" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__template__">⭐ Templates</SelectItem>
-                    <SelectItem value="none">No location</SelectItem>
-                    {(sites ?? []).map((s) => (
-                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {isTemplateMode && (
-                  <p className="text-xs text-amber-600">This is a template — duplicate to create a site-specific copy.</p>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                <Label>Stage</Label>
-                <Select value={form.stage} onValueChange={(v) => set("stage", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(STAGE_LABELS).map(([v, l]) => (
-                      <SelectItem key={v} value={v}>{l}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5">
-                <Users className="h-4 w-4" />Focus Children
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                {isTemplateMode
-                  ? "Templates don't have focus children."
-                  : form.siteId === "none"
-                  ? "Select a location above to filter children by site."
-                  : "Showing active children enrolled at the selected location."}
-              </p>
-              {!isTemplateMode && visibleChildren.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">
-                  {form.siteId === "none" ? "No active children enrolled yet." : "No active children at this location."}
-                </p>
-              ) : !isTemplateMode && (
-                <div className="flex flex-wrap gap-2 max-h-44 overflow-y-auto">
-                  {visibleChildren.map((child) => {
-                    const selected = form.childIds.includes(child.id);
-                    return (
-                      <button
-                        key={child.id}
-                        type="button"
-                        onClick={() => toggleChild(child.id)}
-                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                          selected
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "border-border hover:bg-muted"
-                        }`}
-                      >
-                        {child.firstName} {child.lastName}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Collaborate / Explore — edit */}
-          <div className="bg-white border rounded-xl p-6 space-y-6">
-            <SectionHeader title="Collaborate / Explore Options" />
-            <PromptTextarea
-              label="Where did the theme come from?"
-              prompt="Where did the theme for the experience come from? What could be accomplished with this theme? Who was involved in generating ideas?"
-              value={form.collaborateExplore}
-              onChange={(v) => set("collaborateExplore", v)}
-              rows={5}
-            />
-            <PromptTextarea
-              label="Identify Skills"
-              prompt="What skills do staff and children have to support the experience? Will information need to be researched or will additional support need to be sourced for the experience?"
-              value={form.identifySkills}
-              onChange={(v) => set("identifySkills", v)}
-              rows={5}
-            />
-          </div>
-
-          {/* Research Ideas — edit */}
-          <div className="bg-white border rounded-xl p-6 space-y-4">
-            <SectionHeader title="Research Ideas" />
-            <p className="text-xs text-muted-foreground leading-relaxed">Begin formulating a plan that includes activities, games, resources, and opportunities that would help support the experience for the focus child. These activities could be one on one, group activities, experience tables/boxes, literature, fine motor, gross motor, science, technology, or wellness.</p>
-            <Textarea value={form.researchIdeas} onChange={(e) => set("researchIdeas", e.target.value)} rows={6} placeholder="Type here..." className="resize-y" />
-          </div>
-
-          {/* Framework Links — edit */}
-          <div className="bg-white border rounded-xl p-6 space-y-4">
-            <SectionHeader title="Framework Links" />
-            <p className="text-xs text-muted-foreground leading-relaxed">Take a look at documents such as the National Quality Standards, My Time Our Place and the outcomes for school aged children and match elements with the activities you have planned.</p>
-            <Textarea value={form.frameworkLinks} onChange={(e) => set("frameworkLinks", e.target.value)} rows={5} placeholder="Type here..." className="resize-y" />
-          </div>
-
-          {/* Quality Areas — edit */}
-          <div className="bg-white border rounded-xl p-6 space-y-4">
-            <SectionHeader title="Quality Areas" />
-            <p className="text-xs text-muted-foreground leading-relaxed">Take a look at the quality areas for OSHC and see if there are any that can be connected or strengthened with your experience. List down any areas that would gain significant benefit from this experience.</p>
-            <Textarea value={form.qualityAreas} onChange={(e) => set("qualityAreas", e.target.value)} rows={5} placeholder="Type here..." className="resize-y" />
-          </div>
-
-          {/* Additional Resources — edit */}
-          <div className="bg-white border rounded-xl p-6 space-y-4">
-            <SectionHeader title="Additional Resources" />
-            <p className="text-xs text-muted-foreground leading-relaxed">Can you list any additional resources needed for this experience?</p>
-            <Textarea value={form.additionalResources} onChange={(e) => set("additionalResources", e.target.value)} rows={4} placeholder="Type here..." className="resize-y" />
-          </div>
-
-          {/* Assess and Review — edit */}
-          <div className="bg-white border rounded-xl p-6 space-y-4">
-            <SectionHeader title="Assess and Review" />
-            <p className="text-xs text-muted-foreground leading-relaxed">How will this experience be assessed and reviewed? Who will take part in the review?</p>
-            <Textarea value={form.assessAndReview} onChange={(e) => set("assessAndReview", e.target.value)} rows={5} placeholder="Type here..." className="resize-y" />
-          </div>
-
-          {/* Learning — edit */}
-          <div className="bg-white border rounded-xl p-6 space-y-4">
-            <SectionHeader title="Learning" />
-            <p className="text-xs text-muted-foreground leading-relaxed">How will the content be delivered in the learning environment? Will there need to be different strategies for different children or experiences? How will children recognise their own learning?</p>
-            <Textarea value={form.learning} onChange={(e) => set("learning", e.target.value)} rows={6} placeholder="Type here..." className="resize-y" />
-          </div>
-
-          {/* Background Information — edit */}
-          <div className="bg-white border rounded-xl p-6 space-y-4">
-            <SectionHeader title="Background Information" />
-            <p className="text-xs text-muted-foreground leading-relaxed">What background information is needed for educators or children?</p>
-            <Textarea value={form.backgroundInformation} onChange={(e) => set("backgroundInformation", e.target.value)} rows={5} placeholder="Type here..." className="resize-y" />
-          </div>
-
-          {/* Documents — edit */}
-          <div className="bg-white border rounded-xl p-6 space-y-4">
-            <SectionHeader title="Documents" />
-            {form.documents.length > 0 && (
-              <ul className="space-y-2">
-                {form.documents.map((doc, i) => (
-                  <li key={i} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
-                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <a
-                      href={`/api/storage/objects/${doc.path.replace(/^\/objects\//, "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 text-sm font-medium hover:underline truncate"
-                    >
-                      {doc.name}
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => removeDocument(i)}
-                      className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded"
-                      aria-label="Remove document"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
             )}
-            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} />
-            <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-              {isUploading ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading…</>
-              ) : (
-                <><Upload className="h-4 w-4 mr-2" />Upload Documents</>
-              )}
-            </Button>
-          </div>
+          </TabsContent>
 
-          {/* Sign-off — edit */}
-          <div className="bg-white border rounded-xl p-6 space-y-4">
-            <SectionHeader title="Sign-off" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>Prepared by</Label>
-                <Select value={form.preparedBy} onValueChange={(v) => set("preparedBy", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select staff member…" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">— Not selected —</SelectItem>
-                    {activeStaff.map((s) => (
-                      <SelectItem key={s.id} value={`${s.firstName} ${s.lastName}`}>
-                        {s.firstName} {s.lastName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Edited by</Label>
-                <Select value={form.editedBy} onValueChange={(v) => set("editedBy", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select staff member…" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">— Not selected —</SelectItem>
-                    {activeStaff.map((s) => (
-                      <SelectItem key={s.id} value={`${s.firstName} ${s.lastName}`}>
-                        {s.firstName} {s.lastName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom save */}
-          <div className="flex justify-end gap-3">
-            {!isNew && (
-              <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
-                Cancel
-              </Button>
+          <TabsContent value="assessment" className="space-y-6 mt-0">
+            {isEditing ? (
+              <AssessmentEditContent ad={ad} setMtop={setMtop} setEducatorReview={setEducatorReview} setAskChildren={setAskChildren} />
+            ) : (
+              <AssessmentViewContent ad={ad} hasContent={hasAssessmentContent} />
             )}
-            <Button onClick={handleSave} disabled={isSaving} size="lg">
-              <Save className="h-4 w-4 mr-1.5" />{isSaving ? "Saving…" : "Save"}
-            </Button>
-          </div>
-        </>
+            {isEditing && (
+              <div className="flex justify-end gap-3">
+                {!isNew && <Button variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>}
+                <Button onClick={handleSave} disabled={isSaving} size="lg">
+                  <Save className="h-4 w-4 mr-1.5" />{isSaving ? "Saving…" : "Save"}
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       ) : (
-        <>
-          {/* Header section — view */}
-          <div className="bg-white border rounded-xl p-6 space-y-6">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STAGE_COLORS[form.stage] ?? STAGE_COLORS.brainstorm}`}>
-                  {STAGE_LABELS[form.stage] ?? form.stage}
-                </span>
-                {isTemplateMode && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-yellow-50 text-yellow-700 border-yellow-300">
-                    ⭐ Template
-                  </span>
-                )}
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight">{form.title || "Untitled"}</h1>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-              <ViewField label="Commencement Date" value={form.startDate ? format(new Date(form.startDate), "d MMM yyyy") : null} />
-              <ViewField label="Location" value={siteName} />
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-foreground">Focus Children</p>
-                {focusChildrenNames.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {focusChildrenNames.map((name) => (
-                      <span key={name} className="px-2.5 py-0.5 rounded-full text-xs border bg-muted text-muted-foreground">
-                        {name}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground italic">—</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Collaborate / Explore — view */}
-          {(form.collaborateExplore || form.identifySkills) && (
-            <div className="bg-white border rounded-xl p-6 space-y-5">
-              <SectionHeader title="Collaborate / Explore Options" />
-              {form.collaborateExplore && <ViewField label="Where did the theme come from?" value={form.collaborateExplore} />}
-              {form.identifySkills && <ViewField label="Identify Skills" value={form.identifySkills} />}
+        <div className="space-y-6">
+          {isEditing ? <PlanningEditContent {...{ form, set, sites, allChildren, visibleChildren, isTemplateMode, handleSiteChange, toggleChild, fileInputRef, handleFileSelect, removeDocument, isUploading, activeStaff }} />
+            : <PlanningViewContent {...{ form, siteName, focusChildrenNames }} />}
+          {isEditing && (
+            <div className="flex justify-end gap-3">
+              {!isNew && <Button variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>}
+              <Button onClick={handleSave} disabled={isSaving} size="lg">
+                <Save className="h-4 w-4 mr-1.5" />{isSaving ? "Saving…" : "Save"}
+              </Button>
             </div>
           )}
-
-          {/* Research Ideas — view */}
-          {form.researchIdeas && (
-            <div className="bg-white border rounded-xl p-6 space-y-3">
-              <SectionHeader title="Research Ideas" />
-              <ViewField label="" value={form.researchIdeas} />
-            </div>
-          )}
-
-          {/* Framework Links — view */}
-          {form.frameworkLinks && (
-            <div className="bg-white border rounded-xl p-6 space-y-3">
-              <SectionHeader title="Framework Links" />
-              <ViewField label="" value={form.frameworkLinks} />
-            </div>
-          )}
-
-          {/* Quality Areas — view */}
-          {form.qualityAreas && (
-            <div className="bg-white border rounded-xl p-6 space-y-3">
-              <SectionHeader title="Quality Areas" />
-              <ViewField label="" value={form.qualityAreas} />
-            </div>
-          )}
-
-          {/* Additional Resources — view */}
-          {form.additionalResources && (
-            <div className="bg-white border rounded-xl p-6 space-y-3">
-              <SectionHeader title="Additional Resources" />
-              <ViewField label="" value={form.additionalResources} />
-            </div>
-          )}
-
-          {/* Assess and Review — view */}
-          {form.assessAndReview && (
-            <div className="bg-white border rounded-xl p-6 space-y-3">
-              <SectionHeader title="Assess and Review" />
-              <ViewField label="" value={form.assessAndReview} />
-            </div>
-          )}
-
-          {/* Learning — view */}
-          {form.learning && (
-            <div className="bg-white border rounded-xl p-6 space-y-3">
-              <SectionHeader title="Learning" />
-              <ViewField label="" value={form.learning} />
-            </div>
-          )}
-
-          {/* Background Information — view */}
-          {form.backgroundInformation && (
-            <div className="bg-white border rounded-xl p-6 space-y-3">
-              <SectionHeader title="Background Information" />
-              <ViewField label="" value={form.backgroundInformation} />
-            </div>
-          )}
-
-          {/* Documents — view */}
-          {form.documents.length > 0 && (
-            <div className="bg-white border rounded-xl p-6 space-y-3">
-              <SectionHeader title="Documents" />
-              <ul className="space-y-2">
-                {form.documents.map((doc, i) => (
-                  <li key={i} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
-                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <a
-                      href={`/api/storage/objects/${doc.path.replace(/^\/objects\//, "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 text-sm font-medium hover:underline truncate"
-                    >
-                      {doc.name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Sign-off — view */}
-          {(form.preparedBy !== "none" || form.editedBy !== "none") && (
-            <div className="bg-white border rounded-xl p-6 space-y-4">
-              <SectionHeader title="Sign-off" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <ViewField label="Prepared by" value={form.preparedBy !== "none" ? form.preparedBy : null} />
-                <ViewField label="Edited by" value={form.editedBy !== "none" ? form.editedBy : null} />
-              </div>
-            </div>
-          )}
-        </>
+        </div>
       )}
     </div>
+  );
+}
+
+// ─── Planning tab: edit ────────────────────────────────────────────────────────
+
+function PlanningEditContent({ form, set, sites, allChildren, visibleChildren, isTemplateMode, handleSiteChange, toggleChild, fileInputRef, handleFileSelect, removeDocument, isUploading, activeStaff }: {
+  form: FormState;
+  set: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
+  sites: any[] | undefined;
+  allChildren: any[] | undefined;
+  visibleChildren: any[];
+  isTemplateMode: boolean;
+  handleSiteChange: (v: string) => void;
+  toggleChild: (id: number) => void;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  removeDocument: (i: number) => void;
+  isUploading: boolean;
+  activeStaff: any[];
+}) {
+  return (
+    <>
+      <div className="bg-white border rounded-xl p-6 space-y-6">
+        <SectionHeader title="Planning Cycle" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="sm:col-span-2 space-y-1.5">
+            <Label>Experience Title <span className="text-destructive">*</span></Label>
+            <Input value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="Enter a title for this experience" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Commencement Date</Label>
+            <Input type="date" value={form.startDate} onChange={(e) => set("startDate", e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Location</Label>
+            <Select value={form.siteId} onValueChange={handleSiteChange}>
+              <SelectTrigger><SelectValue placeholder="Select site…" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__template__">⭐ Templates</SelectItem>
+                <SelectItem value="none">No location</SelectItem>
+                {(sites ?? []).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {isTemplateMode && <p className="text-xs text-amber-600">This is a template — duplicate to create a site-specific copy.</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label>Stage</Label>
+            <Select value={form.stage} onValueChange={(v) => set("stage", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(STAGE_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1.5"><Users className="h-4 w-4" />Focus Children</Label>
+          <p className="text-xs text-muted-foreground">
+            {isTemplateMode ? "Templates don't have focus children." : form.siteId === "none" ? "Select a location above to filter children by site." : "Showing active children enrolled at the selected location."}
+          </p>
+          {!isTemplateMode && visibleChildren.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">{form.siteId === "none" ? "No active children enrolled yet." : "No active children at this location."}</p>
+          ) : !isTemplateMode && (
+            <div className="flex flex-wrap gap-2 max-h-44 overflow-y-auto">
+              {visibleChildren.map((child: any) => {
+                const selected = form.childIds.includes(child.id);
+                return (
+                  <button key={child.id} type="button" onClick={() => toggleChild(child.id)}
+                    className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}>
+                    {child.firstName} {child.lastName}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-white border rounded-xl p-6 space-y-6">
+        <SectionHeader title="Collaborate / Explore Options" />
+        <PromptTextarea label="Where did the theme come from?" prompt="Where did the theme for the experience come from? What could be accomplished with this theme? Who was involved in generating ideas?" value={form.collaborateExplore} onChange={(v) => set("collaborateExplore", v)} rows={5} />
+        <PromptTextarea label="Identify Skills" prompt="What skills do staff and children have to support the experience? Will information need to be researched or will additional support need to be sourced for the experience?" value={form.identifySkills} onChange={(v) => set("identifySkills", v)} rows={5} />
+      </div>
+
+      <div className="bg-white border rounded-xl p-6 space-y-4">
+        <SectionHeader title="Research Ideas" />
+        <p className="text-xs text-muted-foreground leading-relaxed">Begin formulating a plan that includes activities, games, resources, and opportunities that would help support the experience for the focus child.</p>
+        <Textarea value={form.researchIdeas} onChange={(e) => set("researchIdeas", e.target.value)} rows={6} placeholder="Type here..." className="resize-y" />
+      </div>
+
+      <div className="bg-white border rounded-xl p-6 space-y-4">
+        <SectionHeader title="Framework Links" />
+        <p className="text-xs text-muted-foreground leading-relaxed">Take a look at documents such as the National Quality Standards, My Time Our Place and the outcomes for school aged children and match elements with the activities you have planned.</p>
+        <Textarea value={form.frameworkLinks} onChange={(e) => set("frameworkLinks", e.target.value)} rows={5} placeholder="Type here..." className="resize-y" />
+      </div>
+
+      <div className="bg-white border rounded-xl p-6 space-y-4">
+        <SectionHeader title="Quality Areas" />
+        <p className="text-xs text-muted-foreground leading-relaxed">Take a look at the quality areas for OSHC and see if there are any that can be connected or strengthened with your experience.</p>
+        <Textarea value={form.qualityAreas} onChange={(e) => set("qualityAreas", e.target.value)} rows={5} placeholder="Type here..." className="resize-y" />
+      </div>
+
+      <div className="bg-white border rounded-xl p-6 space-y-4">
+        <SectionHeader title="Additional Resources" />
+        <p className="text-xs text-muted-foreground leading-relaxed">Can you list any additional resources needed for this experience?</p>
+        <Textarea value={form.additionalResources} onChange={(e) => set("additionalResources", e.target.value)} rows={4} placeholder="Type here..." className="resize-y" />
+      </div>
+
+      <div className="bg-white border rounded-xl p-6 space-y-4">
+        <SectionHeader title="Assess and Review" />
+        <p className="text-xs text-muted-foreground leading-relaxed">How will this experience be assessed and reviewed? Who will take part in the review?</p>
+        <Textarea value={form.assessAndReview} onChange={(e) => set("assessAndReview", e.target.value)} rows={5} placeholder="Type here..." className="resize-y" />
+      </div>
+
+      <div className="bg-white border rounded-xl p-6 space-y-4">
+        <SectionHeader title="Learning" />
+        <p className="text-xs text-muted-foreground leading-relaxed">How will the content be delivered in the learning environment? Will there need to be different strategies for different children or experiences?</p>
+        <Textarea value={form.learning} onChange={(e) => set("learning", e.target.value)} rows={6} placeholder="Type here..." className="resize-y" />
+      </div>
+
+      <div className="bg-white border rounded-xl p-6 space-y-4">
+        <SectionHeader title="Background Information" />
+        <p className="text-xs text-muted-foreground leading-relaxed">What background information is needed for educators or children?</p>
+        <Textarea value={form.backgroundInformation} onChange={(e) => set("backgroundInformation", e.target.value)} rows={5} placeholder="Type here..." className="resize-y" />
+      </div>
+
+      <div className="bg-white border rounded-xl p-6 space-y-4">
+        <SectionHeader title="Documents" />
+        {form.documents.length > 0 && (
+          <ul className="space-y-2">
+            {form.documents.map((doc, i) => (
+              <li key={i} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
+                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                <a href={`/api/storage/objects/${doc.path.replace(/^\/objects\//, "")}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-sm font-medium hover:underline truncate">{doc.name}</a>
+                <button type="button" onClick={() => removeDocument(i)} className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded" aria-label="Remove document"><X className="h-4 w-4" /></button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} />
+        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+          {isUploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading…</> : <><Upload className="h-4 w-4 mr-2" />Upload Documents</>}
+        </Button>
+      </div>
+
+      <div className="bg-white border rounded-xl p-6 space-y-4">
+        <SectionHeader title="Sign-off" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label>Prepared by</Label>
+            <Select value={form.preparedBy} onValueChange={(v) => set("preparedBy", v)}>
+              <SelectTrigger><SelectValue placeholder="Select staff member…" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— Not selected —</SelectItem>
+                {activeStaff.map((s: any) => <SelectItem key={s.id} value={`${s.firstName} ${s.lastName}`}>{s.firstName} {s.lastName}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Edited by</Label>
+            <Select value={form.editedBy} onValueChange={(v) => set("editedBy", v)}>
+              <SelectTrigger><SelectValue placeholder="Select staff member…" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— Not selected —</SelectItem>
+                {activeStaff.map((s: any) => <SelectItem key={s.id} value={`${s.firstName} ${s.lastName}`}>{s.firstName} {s.lastName}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Planning tab: view ────────────────────────────────────────────────────────
+
+function PlanningViewContent({ form, siteName, focusChildrenNames }: { form: FormState; siteName: string; focusChildrenNames: string[] }) {
+  return (
+    <>
+      <div className="bg-white border rounded-xl p-6 space-y-6">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${STAGE_COLORS[form.stage] ?? STAGE_COLORS.brainstorm}`}>
+              {STAGE_LABELS[form.stage] ?? form.stage}
+            </span>
+            {form.siteId === "__template__" && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border bg-yellow-50 text-yellow-700 border-yellow-300">⭐ Template</span>
+            )}
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">{form.title || "Untitled"}</h1>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+          <ViewField label="Commencement Date" value={form.startDate ? format(new Date(form.startDate), "d MMM yyyy") : null} />
+          <ViewField label="Location" value={siteName} />
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">Focus Children</p>
+            {focusChildrenNames.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {focusChildrenNames.map((name) => (
+                  <span key={name} className="px-2.5 py-0.5 rounded-full text-xs border bg-muted text-muted-foreground">{name}</span>
+                ))}
+              </div>
+            ) : <p className="text-sm text-muted-foreground italic">—</p>}
+          </div>
+        </div>
+      </div>
+
+      {(form.collaborateExplore || form.identifySkills) && (
+        <div className="bg-white border rounded-xl p-6 space-y-5">
+          <SectionHeader title="Collaborate / Explore Options" />
+          {form.collaborateExplore && <ViewField label="Where did the theme come from?" value={form.collaborateExplore} />}
+          {form.identifySkills && <ViewField label="Identify Skills" value={form.identifySkills} />}
+        </div>
+      )}
+      {form.researchIdeas && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Research Ideas" /><ViewField label="" value={form.researchIdeas} /></div>}
+      {form.frameworkLinks && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Framework Links" /><ViewField label="" value={form.frameworkLinks} /></div>}
+      {form.qualityAreas && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Quality Areas" /><ViewField label="" value={form.qualityAreas} /></div>}
+      {form.additionalResources && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Additional Resources" /><ViewField label="" value={form.additionalResources} /></div>}
+      {form.assessAndReview && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Assess and Review" /><ViewField label="" value={form.assessAndReview} /></div>}
+      {form.learning && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Learning" /><ViewField label="" value={form.learning} /></div>}
+      {form.backgroundInformation && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Background Information" /><ViewField label="" value={form.backgroundInformation} /></div>}
+
+      {form.documents.length > 0 && (
+        <div className="bg-white border rounded-xl p-6 space-y-3">
+          <SectionHeader title="Documents" />
+          <ul className="space-y-2">
+            {form.documents.map((doc, i) => (
+              <li key={i} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
+                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                <a href={`/api/storage/objects/${doc.path.replace(/^\/objects\//, "")}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-sm font-medium hover:underline truncate">{doc.name}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {(form.preparedBy !== "none" || form.editedBy !== "none") && (
+        <div className="bg-white border rounded-xl p-6 space-y-4">
+          <SectionHeader title="Sign-off" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <ViewField label="Prepared by" value={form.preparedBy !== "none" ? form.preparedBy : null} />
+            <ViewField label="Edited by" value={form.editedBy !== "none" ? form.editedBy : null} />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── Assessment tab: edit ──────────────────────────────────────────────────────
+
+function AssessmentEditContent({ ad, setMtop, setEducatorReview, setAskChildren }: {
+  ad: AssessmentData;
+  setMtop: (i: number, f: keyof MtopEntry, v: string) => void;
+  setEducatorReview: (f: keyof AssessmentData["educatorReview"], v: string) => void;
+  setAskChildren: (f: keyof AssessmentData["askTheChildren"], v: string) => void;
+}) {
+  return (
+    <>
+      {/* MTOP Elements table */}
+      <div className="bg-white border rounded-xl p-6 space-y-5">
+        <SectionHeader title="MTOP Framework Assessment" />
+        <div className="space-y-6">
+          {MTOP_OUTCOMES.map((outcome, i) => (
+            <div key={i} className="border rounded-lg p-4 space-y-3">
+              <p className="text-sm font-semibold text-foreground">{i + 1}. {outcome}</p>
+              <div className="grid grid-cols-1 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Details</Label>
+                  <Textarea value={ad.mtop[i].details} onChange={(e) => setMtop(i, "details", e.target.value)} rows={3} placeholder="Details about this outcome…" className="resize-y" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Strengths</Label>
+                    <Textarea value={ad.mtop[i].strengths} onChange={(e) => setMtop(i, "strengths", e.target.value)} rows={3} placeholder="Strengths observed…" className="resize-y" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Weaknesses</Label>
+                    <Textarea value={ad.mtop[i].weaknesses} onChange={(e) => setMtop(i, "weaknesses", e.target.value)} rows={3} placeholder="Areas for improvement…" className="resize-y" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Educator Review */}
+      <div className="bg-white border rounded-xl p-6 space-y-5">
+        <SectionHeader title="Educator Review" />
+        <PromptTextarea
+          label="Documented Learning"
+          prompt="What documented learning did you accomplish in the program? What family feedback has been gathered (if any)?"
+          value={ad.educatorReview.documentedLearning}
+          onChange={(v) => setEducatorReview("documentedLearning", v)}
+          rows={4}
+        />
+        <PromptTextarea
+          label="Program Issues"
+          prompt="What are the issues affecting your program this week?"
+          value={ad.educatorReview.programIssues}
+          onChange={(v) => setEducatorReview("programIssues", v)}
+          rows={4}
+        />
+        <PromptTextarea
+          label="Educator Support"
+          prompt="How did educators support the needs of children in the program? How might you do things differently?"
+          value={ad.educatorReview.educatorSupport}
+          onChange={(v) => setEducatorReview("educatorSupport", v)}
+          rows={4}
+        />
+        <PromptTextarea
+          label="Child Choices & Further Enquiry"
+          prompt="How were children able to make choices and decisions and influence? What items require further enquiry?"
+          value={ad.educatorReview.childChoices}
+          onChange={(v) => setEducatorReview("childChoices", v)}
+          rows={4}
+        />
+      </div>
+
+      {/* Ask the Children */}
+      <div className="bg-white border rounded-xl p-6 space-y-5">
+        <SectionHeader title="Ask the Children" />
+        <PromptTextarea
+          label="Favourite Activity"
+          prompt="What was your favourite activity?"
+          value={ad.askTheChildren.favouriteActivity}
+          onChange={(v) => setAskChildren("favouriteActivity", v)}
+          rows={3}
+        />
+        <PromptTextarea
+          label="Enjoyment"
+          prompt="What did you / didn't you enjoy? Why? Did you play each activity? What did you play outside?"
+          value={ad.askTheChildren.enjoyment}
+          onChange={(v) => setAskChildren("enjoyment", v)}
+          rows={4}
+        />
+        <PromptTextarea
+          label="Learning"
+          prompt="What did you learn?"
+          value={ad.askTheChildren.learning}
+          onChange={(v) => setAskChildren("learning", v)}
+          rows={3}
+        />
+        <PromptTextarea
+          label="Ideas & Improvements"
+          prompt="Ideas, improvements or changes?"
+          value={ad.askTheChildren.improvements}
+          onChange={(v) => setAskChildren("improvements", v)}
+          rows={3}
+        />
+      </div>
+    </>
+  );
+}
+
+// ─── Assessment tab: view ──────────────────────────────────────────────────────
+
+function AssessmentViewContent({ ad, hasContent }: { ad: AssessmentData; hasContent: boolean }) {
+  if (!hasContent) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <p className="text-muted-foreground text-sm">No assessment data recorded yet.</p>
+        <p className="text-muted-foreground text-xs mt-1">Click Edit to complete the assessment.</p>
+      </div>
+    );
+  }
+
+  const anyMtop = ad.mtop.some((m) => m.details || m.strengths || m.weaknesses);
+  const anyEdu = Object.values(ad.educatorReview).some(Boolean);
+  const anyAtc = Object.values(ad.askTheChildren).some(Boolean);
+
+  return (
+    <>
+      {anyMtop && (
+        <div className="bg-white border rounded-xl p-6 space-y-5">
+          <SectionHeader title="MTOP Framework Assessment" />
+          <div className="space-y-4">
+            {MTOP_OUTCOMES.map((outcome, i) => {
+              const m = ad.mtop[i];
+              if (!m.details && !m.strengths && !m.weaknesses) return null;
+              return (
+                <div key={i} className="border rounded-lg p-4 space-y-3">
+                  <p className="text-sm font-semibold">{i + 1}. {outcome}</p>
+                  {m.details && <ViewField label="Details" value={m.details} />}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {m.strengths && <ViewField label="Strengths" value={m.strengths} />}
+                    {m.weaknesses && <ViewField label="Weaknesses" value={m.weaknesses} />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {anyEdu && (
+        <div className="bg-white border rounded-xl p-6 space-y-4">
+          <SectionHeader title="Educator Review" />
+          {ad.educatorReview.documentedLearning && <ViewField label="Documented Learning" value={ad.educatorReview.documentedLearning} />}
+          {ad.educatorReview.programIssues && <ViewField label="Program Issues" value={ad.educatorReview.programIssues} />}
+          {ad.educatorReview.educatorSupport && <ViewField label="Educator Support" value={ad.educatorReview.educatorSupport} />}
+          {ad.educatorReview.childChoices && <ViewField label="Child Choices & Further Enquiry" value={ad.educatorReview.childChoices} />}
+        </div>
+      )}
+
+      {anyAtc && (
+        <div className="bg-white border rounded-xl p-6 space-y-4">
+          <SectionHeader title="Ask the Children" />
+          {ad.askTheChildren.favouriteActivity && <ViewField label="Favourite Activity" value={ad.askTheChildren.favouriteActivity} />}
+          {ad.askTheChildren.enjoyment && <ViewField label="Enjoyment" value={ad.askTheChildren.enjoyment} />}
+          {ad.askTheChildren.learning && <ViewField label="Learning" value={ad.askTheChildren.learning} />}
+          {ad.askTheChildren.improvements && <ViewField label="Ideas & Improvements" value={ad.askTheChildren.improvements} />}
+        </div>
+      )}
+    </>
   );
 }

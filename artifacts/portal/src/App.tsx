@@ -11,6 +11,7 @@ import ChildProfile from "@/pages/child-profile";
 import EnrollChild from "@/pages/enroll-child";
 import StaffList from "@/pages/staff-list";
 import AddStaff from "@/pages/add-staff";
+import StaffProfile from "@/pages/staff-profile";
 import ObservationsList from "@/pages/observations-list";
 import NewObservation from "@/pages/new-observation";
 import ViewObservation from "@/pages/view-observation";
@@ -18,6 +19,21 @@ import ProgramsList from "@/pages/programs-list";
 import NewProgram from "@/pages/new-program";
 import NqsCompliance from "@/pages/nqs-compliance";
 import Outcomes from "@/pages/outcomes";
+
+import Calendar from "@/pages/calendar";
+import Planning from "@/pages/planning";
+import Posts from "@/pages/posts";
+import Jottings from "@/pages/jottings";
+import Incidents from "@/pages/incidents";
+import ConditionReports from "@/pages/condition-reports";
+import Evacuations from "@/pages/evacuations";
+import Qip from "@/pages/qip";
+import Wellbeing from "@/pages/wellbeing";
+import Policies from "@/pages/policies";
+import Checklists from "@/pages/checklists";
+import ReportsLearning from "@/pages/reports-learning";
+import ReportsService from "@/pages/reports-service";
+import ReportsStaff from "@/pages/reports-staff";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,6 +56,7 @@ function Router() {
         
         <Route path="/staff" component={StaffList} />
         <Route path="/staff/new" component={AddStaff} />
+        <Route path="/staff/:id" component={StaffProfile} />
         
         <Route path="/observations" component={ObservationsList} />
         <Route path="/observations/new" component={NewObservation} />
@@ -50,6 +67,24 @@ function Router() {
         
         <Route path="/nqs" component={NqsCompliance} />
         <Route path="/outcomes" component={Outcomes} />
+        
+        <Route path="/calendar" component={Calendar} />
+        <Route path="/planning" component={Planning} />
+        
+        <Route path="/posts" component={Posts} />
+        <Route path="/jottings" component={Jottings} />
+        
+        <Route path="/incidents" component={Incidents} />
+        <Route path="/condition-reports" component={ConditionReports} />
+        <Route path="/evacuations" component={Evacuations} />
+        <Route path="/qip" component={Qip} />
+        <Route path="/wellbeing" component={Wellbeing} />
+        <Route path="/policies" component={Policies} />
+        <Route path="/checklists" component={Checklists} />
+        
+        <Route path="/reports/learning" component={ReportsLearning} />
+        <Route path="/reports/service" component={ReportsService} />
+        <Route path="/reports/staff" component={ReportsStaff} />
         
         <Route component={NotFound} />
       </Switch>

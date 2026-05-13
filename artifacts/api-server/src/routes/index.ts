@@ -7,6 +7,19 @@ import observationsRouter from "./observations";
 import programsRouter from "./programs";
 import nqsRouter from "./nqs";
 import dashboardRouter from "./dashboard";
+import noticesRouter from "./notices";
+import jottingsRouter from "./jottings";
+import incidentsRouter from "./incidents";
+import conditionReportsRouter from "./condition-reports";
+import evacuationsRouter from "./evacuations";
+import qipRouter from "./qip";
+import wellbeingRouter from "./wellbeing";
+import policiesRouter from "./policies";
+import checklistsRouter from "./checklists";
+import postsRouter from "./posts";
+import professionalDevelopmentRouter from "./professional-development";
+import planningRouter from "./planning";
+import reportsRouter from "./reports";
 
 const router: IRouter = Router();
 
@@ -18,5 +31,18 @@ router.use(observationsRouter);
 router.use(programsRouter);
 router.use(nqsRouter);
 router.use(dashboardRouter);
+router.use(noticesRouter);
+router.use(jottingsRouter);
+router.use(incidentsRouter);
+router.use(conditionReportsRouter);
+router.use(evacuationsRouter);
+router.use(qipRouter);
+router.use(wellbeingRouter);
+router.use(policiesRouter);
+router.use(checklistsRouter);
+router.use(postsRouter);
+router.use(professionalDevelopmentRouter);
+router.use(planningRouter);
+router.use(reportsRouter);
 
 export default router;

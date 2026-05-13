@@ -1,28 +1,32 @@
 openapi: 3.1.0
 info:
   title: Api
-  version: 0.1.0
+  version: 0.2.0
   description: Education & Care Management Portal API
 servers:
   - url: /api
-    description: Base API path
 tags:
   - name: health
-    description: Health operations
   - name: children
-    description: Child profiles
   - name: staff
-    description: Staff management
   - name: observations
-    description: Learning observations and documentation
   - name: outcomes
-    description: MTOP framework outcomes
   - name: programs
-    description: Program planning
   - name: nqs
-    description: NQS compliance quality areas
   - name: dashboard
-    description: Dashboard summaries
+  - name: notices
+  - name: jottings
+  - name: incidents
+  - name: condition-reports
+  - name: evacuations
+  - name: qip
+  - name: wellbeing
+  - name: policies
+  - name: checklists
+  - name: posts
+  - name: professional-development
+  - name: planning
+  - name: reports
 paths:
   /healthz:
     get:
@@ -44,7 +48,7 @@ paths:
       summary: List all enrolled children
       responses:
         "200":
-          description: List of children
+          description: OK
           content:
             application/json:
               schema:
@@ -54,7 +58,6 @@ paths:
     post:
       operationId: createChild
       tags: [children]
-      summary: Enroll a new child
       requestBody:
         required: true
         content:
@@ -73,7 +76,6 @@ paths:
     get:
       operationId: getChild
       tags: [children]
-      summary: Get a child by ID
       parameters:
         - name: id
           in: path
@@ -82,7 +84,7 @@ paths:
             type: integer
       responses:
         "200":
-          description: Child details
+          description: OK
           content:
             application/json:
               schema:
@@ -92,7 +94,6 @@ paths:
     patch:
       operationId: updateChild
       tags: [children]
-      summary: Update a child's details
       parameters:
         - name: id
           in: path
@@ -107,7 +108,7 @@ paths:
               $ref: "#/components/schemas/ChildUpdate"
       responses:
         "200":
-          description: Updated
+          description: OK
           content:
             application/json:
               schema:
@@ -115,7 +116,6 @@ paths:
     delete:
       operationId: deleteChild
       tags: [children]
-      summary: Remove a child
       parameters:
         - name: id
           in: path
@@ -130,7 +130,6 @@ paths:
     get:
       operationId: getChildObservations
       tags: [children]
-      summary: Get all observations for a child
       parameters:
         - name: id
           in: path
@@ -139,7 +138,7 @@ paths:
             type: integer
       responses:
         "200":
-          description: Child observations
+          description: OK
           content:
             application/json:
               schema:
@@ -151,10 +150,9 @@ paths:
     get:
       operationId: listStaff
       tags: [staff]
-      summary: List all staff members
       responses:
         "200":
-          description: List of staff
+          description: OK
           content:
             application/json:
               schema:
@@ -164,7 +162,6 @@ paths:
     post:
       operationId: createStaff
       tags: [staff]
-      summary: Add a staff member
       requestBody:
         required: true
         content:
@@ -183,7 +180,6 @@ paths:
     get:
       operationId: getStaff
       tags: [staff]
-      summary: Get a staff member by ID
       parameters:
         - name: id
           in: path
@@ -192,7 +188,7 @@ paths:
             type: integer
       responses:
         "200":
-          description: Staff details
+          description: OK
           content:
             application/json:
               schema:
@@ -200,7 +196,6 @@ paths:
     patch:
       operationId: updateStaff
       tags: [staff]
-      summary: Update a staff member
       parameters:
         - name: id
           in: path
@@ -215,20 +210,39 @@ paths:
               $ref: "#/components/schemas/StaffUpdate"
       responses:
         "200":
-          description: Updated
+          description: OK
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Staff"
 
+  /staff/{id}/professional-development:
+    get:
+      operationId: getStaffProfessionalDevelopment
+      tags: [professional-development]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProfessionalDevelopment"
+
   /observations:
     get:
       operationId: listObservations
       tags: [observations]
-      summary: List all learning observations
       responses:
         "200":
-          description: List of observations
+          description: OK
           content:
             application/json:
               schema:
@@ -238,7 +252,6 @@ paths:
     post:
       operationId: createObservation
       tags: [observations]
-      summary: Create a new learning observation
       requestBody:
         required: true
         content:
@@ -257,7 +270,6 @@ paths:
     get:
       operationId: getObservation
       tags: [observations]
-      summary: Get an observation by ID
       parameters:
         - name: id
           in: path
@@ -266,7 +278,7 @@ paths:
             type: integer
       responses:
         "200":
-          description: Observation details
+          description: OK
           content:
             application/json:
               schema:
@@ -274,7 +286,6 @@ paths:
     patch:
       operationId: updateObservation
       tags: [observations]
-      summary: Update an observation
       parameters:
         - name: id
           in: path
@@ -289,7 +300,7 @@ paths:
               $ref: "#/components/schemas/ObservationUpdate"
       responses:
         "200":
-          description: Updated
+          description: OK
           content:
             application/json:
               schema:
@@ -297,7 +308,6 @@ paths:
     delete:
       operationId: deleteObservation
       tags: [observations]
-      summary: Delete an observation
       parameters:
         - name: id
           in: path
@@ -312,10 +322,9 @@ paths:
     get:
       operationId: listOutcomes
       tags: [outcomes]
-      summary: List all MTOP framework outcomes
       responses:
         "200":
-          description: MTOP outcomes
+          description: OK
           content:
             application/json:
               schema:
@@ -327,10 +336,9 @@ paths:
     get:
       operationId: listPrograms
       tags: [programs]
-      summary: List all programs/activities
       responses:
         "200":
-          description: List of programs
+          description: OK
           content:
             application/json:
               schema:
@@ -340,7 +348,6 @@ paths:
     post:
       operationId: createProgram
       tags: [programs]
-      summary: Create a new program
       requestBody:
         required: true
         content:
@@ -359,7 +366,6 @@ paths:
     get:
       operationId: getProgram
       tags: [programs]
-      summary: Get a program by ID
       parameters:
         - name: id
           in: path
@@ -368,7 +374,7 @@ paths:
             type: integer
       responses:
         "200":
-          description: Program details
+          description: OK
           content:
             application/json:
               schema:
@@ -376,7 +382,6 @@ paths:
     patch:
       operationId: updateProgram
       tags: [programs]
-      summary: Update a program
       parameters:
         - name: id
           in: path
@@ -391,7 +396,7 @@ paths:
               $ref: "#/components/schemas/ProgramUpdate"
       responses:
         "200":
-          description: Updated
+          description: OK
           content:
             application/json:
               schema:
@@ -401,10 +406,9 @@ paths:
     get:
       operationId: listNqsAreas
       tags: [nqs]
-      summary: List all NQS quality areas and their compliance status
       responses:
         "200":
-          description: NQS quality areas
+          description: OK
           content:
             application/json:
               schema:
@@ -416,7 +420,6 @@ paths:
     patch:
       operationId: updateNqsArea
       tags: [nqs]
-      summary: Update NQS quality area compliance status
       parameters:
         - name: id
           in: path
@@ -431,7 +434,7 @@ paths:
               $ref: "#/components/schemas/NqsAreaUpdate"
       responses:
         "200":
-          description: Updated
+          description: OK
           content:
             application/json:
               schema:
@@ -441,10 +444,9 @@ paths:
     get:
       operationId: getDashboardSummary
       tags: [dashboard]
-      summary: Get dashboard overview summary
       responses:
         "200":
-          description: Dashboard summary data
+          description: OK
           content:
             application/json:
               schema:
@@ -454,10 +456,9 @@ paths:
     get:
       operationId: getRecentObservations
       tags: [dashboard]
-      summary: Get most recent observations for the dashboard
       responses:
         "200":
-          description: Recent observations
+          description: OK
           content:
             application/json:
               schema:
@@ -469,10 +470,9 @@ paths:
     get:
       operationId: getOutcomeCounts
       tags: [dashboard]
-      summary: Count observations per MTOP outcome
       responses:
         "200":
-          description: Outcome usage counts
+          description: OK
           content:
             application/json:
               schema:
@@ -480,14 +480,734 @@ paths:
                 items:
                   $ref: "#/components/schemas/OutcomeCount"
 
+  /notices:
+    get:
+      operationId: listNotices
+      tags: [notices]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notice"
+    post:
+      operationId: createNotice
+      tags: [notices]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoticeInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notice"
+
+  /notices/{id}:
+    delete:
+      operationId: deleteNotice
+      tags: [notices]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /jottings:
+    get:
+      operationId: listJottings
+      tags: [jottings]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Jotting"
+    post:
+      operationId: createJotting
+      tags: [jottings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JottingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Jotting"
+
+  /jottings/{id}:
+    delete:
+      operationId: deleteJotting
+      tags: [jottings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /incidents:
+    get:
+      operationId: listIncidents
+      tags: [incidents]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Incident"
+    post:
+      operationId: createIncident
+      tags: [incidents]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+
+  /incidents/{id}:
+    get:
+      operationId: getIncident
+      tags: [incidents]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+    patch:
+      operationId: updateIncident
+      tags: [incidents]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidentUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+
+  /condition-reports:
+    get:
+      operationId: listConditionReports
+      tags: [condition-reports]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConditionReport"
+    post:
+      operationId: createConditionReport
+      tags: [condition-reports]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConditionReportInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConditionReport"
+
+  /condition-reports/{id}:
+    patch:
+      operationId: updateConditionReport
+      tags: [condition-reports]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConditionReportUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConditionReport"
+
+  /evacuations:
+    get:
+      operationId: listEvacuations
+      tags: [evacuations]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Evacuation"
+    post:
+      operationId: createEvacuation
+      tags: [evacuations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvacuationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evacuation"
+
+  /qip:
+    get:
+      operationId: listQipItems
+      tags: [qip]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QipItem"
+    post:
+      operationId: createQipItem
+      tags: [qip]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QipItemInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QipItem"
+
+  /qip/{id}:
+    patch:
+      operationId: updateQipItem
+      tags: [qip]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QipItemUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QipItem"
+    delete:
+      operationId: deleteQipItem
+      tags: [qip]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /wellbeing:
+    get:
+      operationId: listWellbeingReports
+      tags: [wellbeing]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WellbeingReport"
+    post:
+      operationId: createWellbeingReport
+      tags: [wellbeing]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WellbeingReportInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WellbeingReport"
+
+  /wellbeing/{id}:
+    get:
+      operationId: getWellbeingReport
+      tags: [wellbeing]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WellbeingReport"
+
+  /policies:
+    get:
+      operationId: listPolicies
+      tags: [policies]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Policy"
+    post:
+      operationId: createPolicy
+      tags: [policies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+
+  /policies/{id}/acknowledge:
+    post:
+      operationId: acknowledgePolicy
+      tags: [policies]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyAcknowledgeInput"
+      responses:
+        "201":
+          description: Acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyAcknowledgment"
+
+  /policies/{id}/acknowledgments:
+    get:
+      operationId: getPolicyAcknowledgments
+      tags: [policies]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PolicyAcknowledgment"
+
+  /checklists:
+    get:
+      operationId: listChecklists
+      tags: [checklists]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Checklist"
+    post:
+      operationId: createChecklist
+      tags: [checklists]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChecklistInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Checklist"
+
+  /checklists/{id}/complete:
+    post:
+      operationId: completeChecklist
+      tags: [checklists]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChecklistCompletionInput"
+      responses:
+        "201":
+          description: Completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistCompletion"
+
+  /checklists/{id}/completions:
+    get:
+      operationId: getChecklistCompletions
+      tags: [checklists]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChecklistCompletion"
+
+  /posts:
+    get:
+      operationId: listPosts
+      tags: [posts]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+    post:
+      operationId: createPost
+      tags: [posts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+  /posts/{id}:
+    get:
+      operationId: getPost
+      tags: [posts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+    patch:
+      operationId: updatePost
+      tags: [posts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+    delete:
+      operationId: deletePost
+      tags: [posts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /professional-development:
+    post:
+      operationId: createProfessionalDevelopment
+      tags: [professional-development]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfessionalDevelopmentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfessionalDevelopment"
+
+  /professional-development/{id}:
+    delete:
+      operationId: deleteProfessionalDevelopment
+      tags: [professional-development]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /planning:
+    get:
+      operationId: listPlanningExperiences
+      tags: [planning]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlanningExperience"
+    post:
+      operationId: createPlanningExperience
+      tags: [planning]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanningExperienceInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanningExperience"
+
+  /planning/{id}:
+    patch:
+      operationId: updatePlanningExperience
+      tags: [planning]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanningExperienceUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanningExperience"
+    delete:
+      operationId: deletePlanningExperience
+      tags: [planning]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /reports/learning-stories:
+    get:
+      operationId: getLearningStoriesReport
+      tags: [reports]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningStoriesReport"
+
+  /reports/service-compliance:
+    get:
+      operationId: getServiceComplianceReport
+      tags: [reports]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceComplianceReport"
+
+  /reports/staff-compliance:
+    get:
+      operationId: getStaffComplianceReport
+      tags: [reports]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffComplianceReport"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required: [status]
 
     Child:
       type: object
@@ -892,3 +1612,797 @@ components:
           type: integer
         count:
           type: integer
+
+    Notice:
+      type: object
+      required: [id, title, content, priority, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    NoticeInput:
+      type: object
+      required: [title, content]
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+          default: normal
+        expiresAt:
+          type: string
+          format: date-time
+
+    Jotting:
+      type: object
+      required: [id, content, createdAt]
+      properties:
+        id:
+          type: integer
+        content:
+          type: string
+        childId:
+          type: ["integer", "null"]
+        childName:
+          type: ["string", "null"]
+        staffId:
+          type: ["integer", "null"]
+        staffName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    JottingInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+        childId:
+          type: integer
+        staffId:
+          type: integer
+
+    Incident:
+      type: object
+      required: [id, title, description, childId, incidentDate, status, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        childId:
+          type: integer
+        childName:
+          type: ["string", "null"]
+        incidentDate:
+          type: string
+          format: date
+        location:
+          type: ["string", "null"]
+        injuryDescription:
+          type: ["string", "null"]
+        actionTaken:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [open, parent_notified, director_notified, dept_notified, closed]
+        parentNotifiedAt:
+          type: ["string", "null"]
+          format: date-time
+        directorNotifiedAt:
+          type: ["string", "null"]
+          format: date-time
+        deptNotifiedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    IncidentInput:
+      type: object
+      required: [title, description, childId, incidentDate]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        childId:
+          type: integer
+        incidentDate:
+          type: string
+          format: date
+        location:
+          type: string
+        injuryDescription:
+          type: string
+        actionTaken:
+          type: string
+        status:
+          type: string
+          enum: [open, parent_notified, director_notified, dept_notified, closed]
+          default: open
+
+    IncidentUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [open, parent_notified, director_notified, dept_notified, closed]
+        actionTaken:
+          type: string
+        parentNotifiedAt:
+          type: string
+          format: date-time
+        directorNotifiedAt:
+          type: string
+          format: date-time
+        deptNotifiedAt:
+          type: string
+          format: date-time
+
+    ConditionReport:
+      type: object
+      required: [id, title, description, location, severity, status, reportedAt, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        status:
+          type: string
+          enum: [open, in_progress, resolved]
+        reportedAt:
+          type: string
+          format: date-time
+        actionRequired:
+          type: ["string", "null"]
+        resolvedAt:
+          type: ["string", "null"]
+          format: date-time
+        resolutionNotes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    ConditionReportInput:
+      type: object
+      required: [title, description, location, severity]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+          default: low
+        actionRequired:
+          type: string
+
+    ConditionReportUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [open, in_progress, resolved]
+        actionRequired:
+          type: string
+        resolutionNotes:
+          type: string
+        resolvedAt:
+          type: string
+          format: date-time
+
+    Evacuation:
+      type: object
+      required: [id, drillType, conductedAt, createdAt]
+      properties:
+        id:
+          type: integer
+        drillType:
+          type: string
+          enum: [evacuation, lockdown, shelter_in_place, other]
+        conductedAt:
+          type: string
+          format: date-time
+        nextDueAt:
+          type: ["string", "null"]
+          format: date-time
+        participantCount:
+          type: ["integer", "null"]
+        durationMinutes:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+        conductedBy:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    EvacuationInput:
+      type: object
+      required: [drillType, conductedAt]
+      properties:
+        drillType:
+          type: string
+          enum: [evacuation, lockdown, shelter_in_place, other]
+          default: evacuation
+        conductedAt:
+          type: string
+          format: date-time
+        nextDueAt:
+          type: string
+          format: date-time
+        participantCount:
+          type: integer
+        durationMinutes:
+          type: integer
+        notes:
+          type: string
+        conductedBy:
+          type: string
+
+    QipItem:
+      type: object
+      required: [id, qualityArea, goal, strategy, status, createdAt]
+      properties:
+        id:
+          type: integer
+        qualityArea:
+          type: string
+        goal:
+          type: string
+        strategy:
+          type: string
+        successMeasure:
+          type: ["string", "null"]
+        timeline:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [in_progress, completed, on_hold]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    QipItemInput:
+      type: object
+      required: [qualityArea, goal, strategy]
+      properties:
+        qualityArea:
+          type: string
+        goal:
+          type: string
+        strategy:
+          type: string
+        successMeasure:
+          type: string
+        timeline:
+          type: string
+        status:
+          type: string
+          enum: [in_progress, completed, on_hold]
+          default: in_progress
+        notes:
+          type: string
+
+    QipItemUpdate:
+      type: object
+      properties:
+        qualityArea:
+          type: string
+        goal:
+          type: string
+        strategy:
+          type: string
+        successMeasure:
+          type: string
+        timeline:
+          type: string
+        status:
+          type: string
+          enum: [in_progress, completed, on_hold]
+        notes:
+          type: string
+
+    WellbeingReport:
+      type: object
+      required: [id, childId, reportType, description, reportedAt, createdAt]
+      properties:
+        id:
+          type: integer
+        childId:
+          type: integer
+        childName:
+          type: ["string", "null"]
+        reportType:
+          type: string
+          enum: [family_violence, child_protection, other]
+        description:
+          type: string
+        actionTaken:
+          type: ["string", "null"]
+        reportedAt:
+          type: string
+          format: date
+        referredTo:
+          type: ["string", "null"]
+        referralDate:
+          type: ["string", "null"]
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+
+    WellbeingReportInput:
+      type: object
+      required: [childId, reportType, description, reportedAt]
+      properties:
+        childId:
+          type: integer
+        reportType:
+          type: string
+          enum: [family_violence, child_protection, other]
+        description:
+          type: string
+        actionTaken:
+          type: string
+        reportedAt:
+          type: string
+          format: date
+        referredTo:
+          type: string
+        referralDate:
+          type: string
+          format: date
+
+    Policy:
+      type: object
+      required: [id, title, category, requiresAcknowledgment, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        category:
+          type: string
+        description:
+          type: ["string", "null"]
+        fileUrl:
+          type: ["string", "null"]
+        version:
+          type: ["string", "null"]
+        lastReviewedAt:
+          type: ["string", "null"]
+          format: date
+        requiresAcknowledgment:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    PolicyInput:
+      type: object
+      required: [title, category]
+      properties:
+        title:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        fileUrl:
+          type: string
+        version:
+          type: string
+        lastReviewedAt:
+          type: string
+          format: date
+        requiresAcknowledgment:
+          type: string
+
+    PolicyAcknowledgment:
+      type: object
+      required: [id, policyId, staffId, acknowledgedAt]
+      properties:
+        id:
+          type: integer
+        policyId:
+          type: integer
+        staffId:
+          type: integer
+        staffName:
+          type: ["string", "null"]
+        acknowledgedAt:
+          type: string
+          format: date-time
+
+    PolicyAcknowledgeInput:
+      type: object
+      required: [staffId]
+      properties:
+        staffId:
+          type: integer
+
+    Checklist:
+      type: object
+      required: [id, title, type, items, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        type:
+          type: string
+          enum: [monthly_programming, quality_improvement, start_of_term, end_of_term, general]
+        items:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ChecklistInput:
+      type: object
+      required: [title, items]
+      properties:
+        title:
+          type: string
+        type:
+          type: string
+          enum: [monthly_programming, quality_improvement, start_of_term, end_of_term, general]
+          default: general
+        items:
+          type: array
+          items:
+            type: string
+
+    ChecklistCompletion:
+      type: object
+      required: [id, checklistId, completedAt]
+      properties:
+        id:
+          type: integer
+        checklistId:
+          type: integer
+        staffId:
+          type: ["integer", "null"]
+        staffName:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        completedAt:
+          type: string
+          format: date-time
+
+    ChecklistCompletionInput:
+      type: object
+      properties:
+        staffId:
+          type: integer
+        notes:
+          type: string
+
+    Post:
+      type: object
+      required: [id, title, content, postType, status, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        postType:
+          type: string
+          enum: [individual, group]
+        childId:
+          type: ["integer", "null"]
+        childName:
+          type: ["string", "null"]
+        staffId:
+          type: ["integer", "null"]
+        staffName:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [draft, published]
+        publishedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    PostInput:
+      type: object
+      required: [title, content, postType]
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        postType:
+          type: string
+          enum: [individual, group]
+          default: group
+        childId:
+          type: integer
+        staffId:
+          type: integer
+        status:
+          type: string
+          enum: [draft, published]
+          default: draft
+
+    PostUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        status:
+          type: string
+          enum: [draft, published]
+        publishedAt:
+          type: string
+          format: date-time
+
+    ProfessionalDevelopment:
+      type: object
+      required: [id, staffId, title, completedAt, createdAt]
+      properties:
+        id:
+          type: integer
+        staffId:
+          type: integer
+        title:
+          type: string
+        provider:
+          type: ["string", "null"]
+        completedAt:
+          type: string
+          format: date
+        hoursEarned:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    ProfessionalDevelopmentInput:
+      type: object
+      required: [staffId, title, completedAt]
+      properties:
+        staffId:
+          type: integer
+        title:
+          type: string
+        provider:
+          type: string
+        completedAt:
+          type: string
+          format: date
+        hoursEarned:
+          type: integer
+        notes:
+          type: string
+
+    PlanningExperience:
+      type: object
+      required: [id, title, stage, outcomeIds, childIds, ageGroups, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        stage:
+          type: string
+          enum: [brainstorm, planned, implemented, evaluated]
+        outcomeIds:
+          type: array
+          items:
+            type: integer
+        childIds:
+          type: array
+          items:
+            type: integer
+        ageGroups:
+          type: array
+          items:
+            type: string
+        startDate:
+          type: ["string", "null"]
+          format: date
+        programId:
+          type: ["integer", "null"]
+        evaluationNotes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    PlanningExperienceInput:
+      type: object
+      required: [title, stage]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        stage:
+          type: string
+          enum: [brainstorm, planned, implemented, evaluated]
+          default: brainstorm
+        outcomeIds:
+          type: array
+          items:
+            type: integer
+        childIds:
+          type: array
+          items:
+            type: integer
+        ageGroups:
+          type: array
+          items:
+            type: string
+        startDate:
+          type: string
+          format: date
+        programId:
+          type: integer
+        evaluationNotes:
+          type: string
+
+    PlanningExperienceUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        stage:
+          type: string
+          enum: [brainstorm, planned, implemented, evaluated]
+        outcomeIds:
+          type: array
+          items:
+            type: integer
+        childIds:
+          type: array
+          items:
+            type: integer
+        ageGroups:
+          type: array
+          items:
+            type: string
+        startDate:
+          type: string
+          format: date
+        programId:
+          type: integer
+        evaluationNotes:
+          type: string
+
+    LearningStoriesReport:
+      type: object
+      required: [byOutcome, byChild, underRepresentedOutcomes]
+      properties:
+        byOutcome:
+          type: array
+          items:
+            $ref: "#/components/schemas/OutcomeCount"
+        byChild:
+          type: array
+          items:
+            type: object
+            required: [childId, childName, observationCount]
+            properties:
+              childId:
+                type: integer
+              childName:
+                type: string
+              observationCount:
+                type: integer
+        underRepresentedOutcomes:
+          type: array
+          items:
+            type: object
+            required: [outcomeId, outcomeTitle, outcomeNumber, count]
+            properties:
+              outcomeId:
+                type: integer
+              outcomeTitle:
+                type: string
+              outcomeNumber:
+                type: integer
+              count:
+                type: integer
+
+    ServiceComplianceReport:
+      type: object
+      required: [evacuationStatus, openIncidents, openConditionReports, openQipItems, activeChecklists]
+      properties:
+        evacuationStatus:
+          type: object
+          required: [lastConducted, nextDue, isOverdue]
+          properties:
+            lastConducted:
+              type: ["string", "null"]
+              format: date-time
+            nextDue:
+              type: ["string", "null"]
+              format: date-time
+            isOverdue:
+              type: boolean
+        openIncidents:
+          type: integer
+        openConditionReports:
+          type: integer
+        openQipItems:
+          type: integer
+        activeChecklists:
+          type: integer
+
+    StaffComplianceReport:
+      type: object
+      required: [staff]
+      properties:
+        staff:
+          type: array
+          items:
+            type: object
+            required: [staffId, staffName, role, hasWwcc, pdHoursThisYear]
+            properties:
+              staffId:
+                type: integer
+              staffName:
+                type: string
+              role:
+                type: string
+              hasWwcc:
+                type: boolean
+              pdHoursThisYear:
+                type: integer

@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Education & Care Management Portal API
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import * as zod from "zod";
 
@@ -33,9 +33,6 @@ export const ListChildrenResponseItem = zod.object({
 });
 export const ListChildrenResponse = zod.array(ListChildrenResponseItem);
 
-/**
- * @summary Enroll a new child
- */
 export const createChildBodyStatusDefault = `active`;
 
 export const CreateChildBody = zod.object({
@@ -53,9 +50,6 @@ export const CreateChildBody = zod.object({
   medicalNotes: zod.string().optional(),
 });
 
-/**
- * @summary Get a child by ID
- */
 export const GetChildParams = zod.object({
   id: zod.coerce.number(),
 });
@@ -75,9 +69,6 @@ export const GetChildResponse = zod.object({
   createdAt: zod.coerce.date().optional(),
 });
 
-/**
- * @summary Update a child's details
- */
 export const UpdateChildParams = zod.object({
   id: zod.coerce.number(),
 });
@@ -112,16 +103,10 @@ export const UpdateChildResponse = zod.object({
   createdAt: zod.coerce.date().optional(),
 });
 
-/**
- * @summary Remove a child
- */
 export const DeleteChildParams = zod.object({
   id: zod.coerce.number(),
 });
 
-/**
- * @summary Get all observations for a child
- */
 export const GetChildObservationsParams = zod.object({
   id: zod.coerce.number(),
 });
@@ -145,9 +130,6 @@ export const GetChildObservationsResponse = zod.array(
   GetChildObservationsResponseItem,
 );
 
-/**
- * @summary List all staff members
- */
 export const ListStaffResponseItem = zod.object({
   id: zod.number(),
   firstName: zod.string(),
@@ -162,9 +144,6 @@ export const ListStaffResponseItem = zod.object({
 });
 export const ListStaffResponse = zod.array(ListStaffResponseItem);
 
-/**
- * @summary Add a staff member
- */
 export const createStaffBodyStatusDefault = `active`;
 
 export const CreateStaffBody = zod.object({
@@ -180,9 +159,6 @@ export const CreateStaffBody = zod.object({
   wwccNumber: zod.string().optional(),
 });
 
-/**
- * @summary Get a staff member by ID
- */
 export const GetStaffParams = zod.object({
   id: zod.coerce.number(),
 });
@@ -200,9 +176,6 @@ export const GetStaffResponse = zod.object({
   createdAt: zod.coerce.date().optional(),
 });
 
-/**
- * @summary Update a staff member
- */
 export const UpdateStaffParams = zod.object({
   id: zod.coerce.number(),
 });
@@ -231,9 +204,24 @@ export const UpdateStaffResponse = zod.object({
   createdAt: zod.coerce.date().optional(),
 });
 
-/**
- * @summary List all learning observations
- */
+export const GetStaffProfessionalDevelopmentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetStaffProfessionalDevelopmentResponseItem = zod.object({
+  id: zod.number(),
+  staffId: zod.number(),
+  title: zod.string(),
+  provider: zod.string().nullish(),
+  completedAt: zod.coerce.date(),
+  hoursEarned: zod.number().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const GetStaffProfessionalDevelopmentResponse = zod.array(
+  GetStaffProfessionalDevelopmentResponseItem,
+);
+
 export const ListObservationsResponseItem = zod.object({
   id: zod.number(),
   childId: zod.number(),
@@ -251,9 +239,6 @@ export const ListObservationsResponseItem = zod.object({
 });
 export const ListObservationsResponse = zod.array(ListObservationsResponseItem);
 
-/**
- * @summary Create a new learning observation
- */
 export const CreateObservationBody = zod.object({
   childId: zod.number(),
   staffId: zod.number(),
@@ -265,9 +250,6 @@ export const CreateObservationBody = zod.object({
   learningExtension: zod.string().optional(),
 });
 
-/**
- * @summary Get an observation by ID
- */
 export const GetObservationParams = zod.object({
   id: zod.coerce.number(),
 });
@@ -288,9 +270,6 @@ export const GetObservationResponse = zod.object({
   createdAt: zod.coerce.date(),
 });
 
-/**
- * @summary Update an observation
- */
 export const UpdateObservationParams = zod.object({
   id: zod.coerce.number(),
 });
@@ -320,16 +299,10 @@ export const UpdateObservationResponse = zod.object({
   createdAt: zod.coerce.date(),
 });
 
-/**
- * @summary Delete an observation
- */
 export const DeleteObservationParams = zod.object({
   id: zod.coerce.number(),
 });
 
-/**
- * @summary List all MTOP framework outcomes
- */
 export const ListOutcomesResponseItem = zod.object({
   id: zod.number(),
   number: zod.number(),
@@ -339,9 +312,6 @@ export const ListOutcomesResponseItem = zod.object({
 });
 export const ListOutcomesResponse = zod.array(ListOutcomesResponseItem);
 
-/**
- * @summary List all programs/activities
- */
 export const ListProgramsResponseItem = zod.object({
   id: zod.number(),
   title: zod.string(),
@@ -355,9 +325,6 @@ export const ListProgramsResponseItem = zod.object({
 });
 export const ListProgramsResponse = zod.array(ListProgramsResponseItem);
 
-/**
- * @summary Create a new program
- */
 export const createProgramBodyStatusDefault = `planned`;
 
 export const CreateProgramBody = zod.object({
@@ -372,9 +339,6 @@ export const CreateProgramBody = zod.object({
   ageGroups: zod.array(zod.string()).optional(),
 });
 
-/**
- * @summary Get a program by ID
- */
 export const GetProgramParams = zod.object({
   id: zod.coerce.number(),
 });
@@ -391,9 +355,6 @@ export const GetProgramResponse = zod.object({
   createdAt: zod.coerce.date().optional(),
 });
 
-/**
- * @summary Update a program
- */
 export const UpdateProgramParams = zod.object({
   id: zod.coerce.number(),
 });
@@ -420,9 +381,6 @@ export const UpdateProgramResponse = zod.object({
   createdAt: zod.coerce.date().optional(),
 });
 
-/**
- * @summary List all NQS quality areas and their compliance status
- */
 export const ListNqsAreasResponseItem = zod.object({
   id: zod.number(),
   number: zod.number(),
@@ -434,9 +392,6 @@ export const ListNqsAreasResponseItem = zod.object({
 });
 export const ListNqsAreasResponse = zod.array(ListNqsAreasResponseItem);
 
-/**
- * @summary Update NQS quality area compliance status
- */
 export const UpdateNqsAreaParams = zod.object({
   id: zod.coerce.number(),
 });
@@ -458,9 +413,6 @@ export const UpdateNqsAreaResponse = zod.object({
   lastReviewedAt: zod.string().nullish(),
 });
 
-/**
- * @summary Get dashboard overview summary
- */
 export const GetDashboardSummaryResponse = zod.object({
   totalChildren: zod.number(),
   activeChildren: zod.number(),
@@ -472,9 +424,6 @@ export const GetDashboardSummaryResponse = zod.object({
   nqsMeetingCount: zod.number(),
 });
 
-/**
- * @summary Get most recent observations for the dashboard
- */
 export const GetRecentObservationsResponseItem = zod.object({
   id: zod.number(),
   childId: zod.number(),
@@ -494,9 +443,6 @@ export const GetRecentObservationsResponse = zod.array(
   GetRecentObservationsResponseItem,
 );
 
-/**
- * @summary Count observations per MTOP outcome
- */
 export const GetOutcomeCountsResponseItem = zod.object({
   outcomeId: zod.number(),
   outcomeTitle: zod.string(),
@@ -504,3 +450,657 @@ export const GetOutcomeCountsResponseItem = zod.object({
   count: zod.number(),
 });
 export const GetOutcomeCountsResponse = zod.array(GetOutcomeCountsResponseItem);
+
+export const ListNoticesResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  content: zod.string(),
+  priority: zod.enum(["low", "normal", "high", "urgent"]),
+  expiresAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListNoticesResponse = zod.array(ListNoticesResponseItem);
+
+export const createNoticeBodyPriorityDefault = `normal`;
+
+export const CreateNoticeBody = zod.object({
+  title: zod.string(),
+  content: zod.string(),
+  priority: zod
+    .enum(["low", "normal", "high", "urgent"])
+    .default(createNoticeBodyPriorityDefault),
+  expiresAt: zod.coerce.date().optional(),
+});
+
+export const DeleteNoticeParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListJottingsResponseItem = zod.object({
+  id: zod.number(),
+  content: zod.string(),
+  childId: zod.number().nullish(),
+  childName: zod.string().nullish(),
+  staffId: zod.number().nullish(),
+  staffName: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListJottingsResponse = zod.array(ListJottingsResponseItem);
+
+export const CreateJottingBody = zod.object({
+  content: zod.string(),
+  childId: zod.number().optional(),
+  staffId: zod.number().optional(),
+});
+
+export const DeleteJottingParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListIncidentsResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string(),
+  childId: zod.number(),
+  childName: zod.string().nullish(),
+  incidentDate: zod.coerce.date(),
+  location: zod.string().nullish(),
+  injuryDescription: zod.string().nullish(),
+  actionTaken: zod.string().nullish(),
+  status: zod.enum([
+    "open",
+    "parent_notified",
+    "director_notified",
+    "dept_notified",
+    "closed",
+  ]),
+  parentNotifiedAt: zod.coerce.date().nullish(),
+  directorNotifiedAt: zod.coerce.date().nullish(),
+  deptNotifiedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListIncidentsResponse = zod.array(ListIncidentsResponseItem);
+
+export const createIncidentBodyStatusDefault = `open`;
+
+export const CreateIncidentBody = zod.object({
+  title: zod.string(),
+  description: zod.string(),
+  childId: zod.number(),
+  incidentDate: zod.coerce.date(),
+  location: zod.string().optional(),
+  injuryDescription: zod.string().optional(),
+  actionTaken: zod.string().optional(),
+  status: zod
+    .enum([
+      "open",
+      "parent_notified",
+      "director_notified",
+      "dept_notified",
+      "closed",
+    ])
+    .default(createIncidentBodyStatusDefault),
+});
+
+export const GetIncidentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetIncidentResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string(),
+  childId: zod.number(),
+  childName: zod.string().nullish(),
+  incidentDate: zod.coerce.date(),
+  location: zod.string().nullish(),
+  injuryDescription: zod.string().nullish(),
+  actionTaken: zod.string().nullish(),
+  status: zod.enum([
+    "open",
+    "parent_notified",
+    "director_notified",
+    "dept_notified",
+    "closed",
+  ]),
+  parentNotifiedAt: zod.coerce.date().nullish(),
+  directorNotifiedAt: zod.coerce.date().nullish(),
+  deptNotifiedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+export const UpdateIncidentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateIncidentBody = zod.object({
+  status: zod
+    .enum([
+      "open",
+      "parent_notified",
+      "director_notified",
+      "dept_notified",
+      "closed",
+    ])
+    .optional(),
+  actionTaken: zod.string().optional(),
+  parentNotifiedAt: zod.coerce.date().optional(),
+  directorNotifiedAt: zod.coerce.date().optional(),
+  deptNotifiedAt: zod.coerce.date().optional(),
+});
+
+export const UpdateIncidentResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string(),
+  childId: zod.number(),
+  childName: zod.string().nullish(),
+  incidentDate: zod.coerce.date(),
+  location: zod.string().nullish(),
+  injuryDescription: zod.string().nullish(),
+  actionTaken: zod.string().nullish(),
+  status: zod.enum([
+    "open",
+    "parent_notified",
+    "director_notified",
+    "dept_notified",
+    "closed",
+  ]),
+  parentNotifiedAt: zod.coerce.date().nullish(),
+  directorNotifiedAt: zod.coerce.date().nullish(),
+  deptNotifiedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+export const ListConditionReportsResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string(),
+  location: zod.string(),
+  severity: zod.enum(["low", "medium", "high", "critical"]),
+  status: zod.enum(["open", "in_progress", "resolved"]),
+  reportedAt: zod.coerce.date(),
+  actionRequired: zod.string().nullish(),
+  resolvedAt: zod.coerce.date().nullish(),
+  resolutionNotes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListConditionReportsResponse = zod.array(
+  ListConditionReportsResponseItem,
+);
+
+export const createConditionReportBodySeverityDefault = `low`;
+
+export const CreateConditionReportBody = zod.object({
+  title: zod.string(),
+  description: zod.string(),
+  location: zod.string(),
+  severity: zod
+    .enum(["low", "medium", "high", "critical"])
+    .default(createConditionReportBodySeverityDefault),
+  actionRequired: zod.string().optional(),
+});
+
+export const UpdateConditionReportParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateConditionReportBody = zod.object({
+  status: zod.enum(["open", "in_progress", "resolved"]).optional(),
+  actionRequired: zod.string().optional(),
+  resolutionNotes: zod.string().optional(),
+  resolvedAt: zod.coerce.date().optional(),
+});
+
+export const UpdateConditionReportResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string(),
+  location: zod.string(),
+  severity: zod.enum(["low", "medium", "high", "critical"]),
+  status: zod.enum(["open", "in_progress", "resolved"]),
+  reportedAt: zod.coerce.date(),
+  actionRequired: zod.string().nullish(),
+  resolvedAt: zod.coerce.date().nullish(),
+  resolutionNotes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+export const ListEvacuationsResponseItem = zod.object({
+  id: zod.number(),
+  drillType: zod.enum(["evacuation", "lockdown", "shelter_in_place", "other"]),
+  conductedAt: zod.coerce.date(),
+  nextDueAt: zod.coerce.date().nullish(),
+  participantCount: zod.number().nullish(),
+  durationMinutes: zod.number().nullish(),
+  notes: zod.string().nullish(),
+  conductedBy: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListEvacuationsResponse = zod.array(ListEvacuationsResponseItem);
+
+export const createEvacuationBodyDrillTypeDefault = `evacuation`;
+
+export const CreateEvacuationBody = zod.object({
+  drillType: zod
+    .enum(["evacuation", "lockdown", "shelter_in_place", "other"])
+    .default(createEvacuationBodyDrillTypeDefault),
+  conductedAt: zod.coerce.date(),
+  nextDueAt: zod.coerce.date().optional(),
+  participantCount: zod.number().optional(),
+  durationMinutes: zod.number().optional(),
+  notes: zod.string().optional(),
+  conductedBy: zod.string().optional(),
+});
+
+export const ListQipItemsResponseItem = zod.object({
+  id: zod.number(),
+  qualityArea: zod.string(),
+  goal: zod.string(),
+  strategy: zod.string(),
+  successMeasure: zod.string().nullish(),
+  timeline: zod.string().nullish(),
+  status: zod.enum(["in_progress", "completed", "on_hold"]),
+  notes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date().optional(),
+});
+export const ListQipItemsResponse = zod.array(ListQipItemsResponseItem);
+
+export const createQipItemBodyStatusDefault = `in_progress`;
+
+export const CreateQipItemBody = zod.object({
+  qualityArea: zod.string(),
+  goal: zod.string(),
+  strategy: zod.string(),
+  successMeasure: zod.string().optional(),
+  timeline: zod.string().optional(),
+  status: zod
+    .enum(["in_progress", "completed", "on_hold"])
+    .default(createQipItemBodyStatusDefault),
+  notes: zod.string().optional(),
+});
+
+export const UpdateQipItemParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateQipItemBody = zod.object({
+  qualityArea: zod.string().optional(),
+  goal: zod.string().optional(),
+  strategy: zod.string().optional(),
+  successMeasure: zod.string().optional(),
+  timeline: zod.string().optional(),
+  status: zod.enum(["in_progress", "completed", "on_hold"]).optional(),
+  notes: zod.string().optional(),
+});
+
+export const UpdateQipItemResponse = zod.object({
+  id: zod.number(),
+  qualityArea: zod.string(),
+  goal: zod.string(),
+  strategy: zod.string(),
+  successMeasure: zod.string().nullish(),
+  timeline: zod.string().nullish(),
+  status: zod.enum(["in_progress", "completed", "on_hold"]),
+  notes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date().optional(),
+});
+
+export const DeleteQipItemParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListWellbeingReportsResponseItem = zod.object({
+  id: zod.number(),
+  childId: zod.number(),
+  childName: zod.string().nullish(),
+  reportType: zod.enum(["family_violence", "child_protection", "other"]),
+  description: zod.string(),
+  actionTaken: zod.string().nullish(),
+  reportedAt: zod.coerce.date(),
+  referredTo: zod.string().nullish(),
+  referralDate: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListWellbeingReportsResponse = zod.array(
+  ListWellbeingReportsResponseItem,
+);
+
+export const CreateWellbeingReportBody = zod.object({
+  childId: zod.number(),
+  reportType: zod.enum(["family_violence", "child_protection", "other"]),
+  description: zod.string(),
+  actionTaken: zod.string().optional(),
+  reportedAt: zod.coerce.date(),
+  referredTo: zod.string().optional(),
+  referralDate: zod.coerce.date().optional(),
+});
+
+export const GetWellbeingReportParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetWellbeingReportResponse = zod.object({
+  id: zod.number(),
+  childId: zod.number(),
+  childName: zod.string().nullish(),
+  reportType: zod.enum(["family_violence", "child_protection", "other"]),
+  description: zod.string(),
+  actionTaken: zod.string().nullish(),
+  reportedAt: zod.coerce.date(),
+  referredTo: zod.string().nullish(),
+  referralDate: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+export const ListPoliciesResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  category: zod.string(),
+  description: zod.string().nullish(),
+  fileUrl: zod.string().nullish(),
+  version: zod.string().nullish(),
+  lastReviewedAt: zod.coerce.date().nullish(),
+  requiresAcknowledgment: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListPoliciesResponse = zod.array(ListPoliciesResponseItem);
+
+export const CreatePolicyBody = zod.object({
+  title: zod.string(),
+  category: zod.string(),
+  description: zod.string().optional(),
+  fileUrl: zod.string().optional(),
+  version: zod.string().optional(),
+  lastReviewedAt: zod.coerce.date().optional(),
+  requiresAcknowledgment: zod.string().optional(),
+});
+
+export const AcknowledgePolicyParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AcknowledgePolicyBody = zod.object({
+  staffId: zod.number(),
+});
+
+export const GetPolicyAcknowledgmentsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetPolicyAcknowledgmentsResponseItem = zod.object({
+  id: zod.number(),
+  policyId: zod.number(),
+  staffId: zod.number(),
+  staffName: zod.string().nullish(),
+  acknowledgedAt: zod.coerce.date(),
+});
+export const GetPolicyAcknowledgmentsResponse = zod.array(
+  GetPolicyAcknowledgmentsResponseItem,
+);
+
+export const ListChecklistsResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  type: zod.enum([
+    "monthly_programming",
+    "quality_improvement",
+    "start_of_term",
+    "end_of_term",
+    "general",
+  ]),
+  items: zod.array(zod.string()),
+  createdAt: zod.coerce.date(),
+});
+export const ListChecklistsResponse = zod.array(ListChecklistsResponseItem);
+
+export const createChecklistBodyTypeDefault = `general`;
+
+export const CreateChecklistBody = zod.object({
+  title: zod.string(),
+  type: zod
+    .enum([
+      "monthly_programming",
+      "quality_improvement",
+      "start_of_term",
+      "end_of_term",
+      "general",
+    ])
+    .default(createChecklistBodyTypeDefault),
+  items: zod.array(zod.string()),
+});
+
+export const CompleteChecklistParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CompleteChecklistBody = zod.object({
+  staffId: zod.number().optional(),
+  notes: zod.string().optional(),
+});
+
+export const GetChecklistCompletionsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetChecklistCompletionsResponseItem = zod.object({
+  id: zod.number(),
+  checklistId: zod.number(),
+  staffId: zod.number().nullish(),
+  staffName: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  completedAt: zod.coerce.date(),
+});
+export const GetChecklistCompletionsResponse = zod.array(
+  GetChecklistCompletionsResponseItem,
+);
+
+export const ListPostsResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  content: zod.string(),
+  postType: zod.enum(["individual", "group"]),
+  childId: zod.number().nullish(),
+  childName: zod.string().nullish(),
+  staffId: zod.number().nullish(),
+  staffName: zod.string().nullish(),
+  status: zod.enum(["draft", "published"]),
+  publishedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListPostsResponse = zod.array(ListPostsResponseItem);
+
+export const createPostBodyPostTypeDefault = `group`;
+export const createPostBodyStatusDefault = `draft`;
+
+export const CreatePostBody = zod.object({
+  title: zod.string(),
+  content: zod.string(),
+  postType: zod
+    .enum(["individual", "group"])
+    .default(createPostBodyPostTypeDefault),
+  childId: zod.number().optional(),
+  staffId: zod.number().optional(),
+  status: zod.enum(["draft", "published"]).default(createPostBodyStatusDefault),
+});
+
+export const GetPostParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetPostResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  content: zod.string(),
+  postType: zod.enum(["individual", "group"]),
+  childId: zod.number().nullish(),
+  childName: zod.string().nullish(),
+  staffId: zod.number().nullish(),
+  staffName: zod.string().nullish(),
+  status: zod.enum(["draft", "published"]),
+  publishedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+export const UpdatePostParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdatePostBody = zod.object({
+  title: zod.string().optional(),
+  content: zod.string().optional(),
+  status: zod.enum(["draft", "published"]).optional(),
+  publishedAt: zod.coerce.date().optional(),
+});
+
+export const UpdatePostResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  content: zod.string(),
+  postType: zod.enum(["individual", "group"]),
+  childId: zod.number().nullish(),
+  childName: zod.string().nullish(),
+  staffId: zod.number().nullish(),
+  staffName: zod.string().nullish(),
+  status: zod.enum(["draft", "published"]),
+  publishedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+export const DeletePostParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CreateProfessionalDevelopmentBody = zod.object({
+  staffId: zod.number(),
+  title: zod.string(),
+  provider: zod.string().optional(),
+  completedAt: zod.coerce.date(),
+  hoursEarned: zod.number().optional(),
+  notes: zod.string().optional(),
+});
+
+export const DeleteProfessionalDevelopmentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListPlanningExperiencesResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  stage: zod.enum(["brainstorm", "planned", "implemented", "evaluated"]),
+  outcomeIds: zod.array(zod.number()),
+  childIds: zod.array(zod.number()),
+  ageGroups: zod.array(zod.string()),
+  startDate: zod.coerce.date().nullish(),
+  programId: zod.number().nullish(),
+  evaluationNotes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListPlanningExperiencesResponse = zod.array(
+  ListPlanningExperiencesResponseItem,
+);
+
+export const createPlanningExperienceBodyStageDefault = `brainstorm`;
+
+export const CreatePlanningExperienceBody = zod.object({
+  title: zod.string(),
+  description: zod.string().optional(),
+  stage: zod
+    .enum(["brainstorm", "planned", "implemented", "evaluated"])
+    .default(createPlanningExperienceBodyStageDefault),
+  outcomeIds: zod.array(zod.number()).optional(),
+  childIds: zod.array(zod.number()).optional(),
+  ageGroups: zod.array(zod.string()).optional(),
+  startDate: zod.coerce.date().optional(),
+  programId: zod.number().optional(),
+  evaluationNotes: zod.string().optional(),
+});
+
+export const UpdatePlanningExperienceParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdatePlanningExperienceBody = zod.object({
+  title: zod.string().optional(),
+  description: zod.string().optional(),
+  stage: zod
+    .enum(["brainstorm", "planned", "implemented", "evaluated"])
+    .optional(),
+  outcomeIds: zod.array(zod.number()).optional(),
+  childIds: zod.array(zod.number()).optional(),
+  ageGroups: zod.array(zod.string()).optional(),
+  startDate: zod.coerce.date().optional(),
+  programId: zod.number().optional(),
+  evaluationNotes: zod.string().optional(),
+});
+
+export const UpdatePlanningExperienceResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  stage: zod.enum(["brainstorm", "planned", "implemented", "evaluated"]),
+  outcomeIds: zod.array(zod.number()),
+  childIds: zod.array(zod.number()),
+  ageGroups: zod.array(zod.string()),
+  startDate: zod.coerce.date().nullish(),
+  programId: zod.number().nullish(),
+  evaluationNotes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+export const DeletePlanningExperienceParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetLearningStoriesReportResponse = zod.object({
+  byOutcome: zod.array(
+    zod.object({
+      outcomeId: zod.number(),
+      outcomeTitle: zod.string(),
+      outcomeNumber: zod.number(),
+      count: zod.number(),
+    }),
+  ),
+  byChild: zod.array(
+    zod.object({
+      childId: zod.number(),
+      childName: zod.string(),
+      observationCount: zod.number(),
+    }),
+  ),
+  underRepresentedOutcomes: zod.array(
+    zod.object({
+      outcomeId: zod.number(),
+      outcomeTitle: zod.string(),
+      outcomeNumber: zod.number(),
+      count: zod.number(),
+    }),
+  ),
+});
+
+export const GetServiceComplianceReportResponse = zod.object({
+  evacuationStatus: zod.object({
+    lastConducted: zod.coerce.date().nullable(),
+    nextDue: zod.coerce.date().nullable(),
+    isOverdue: zod.boolean(),
+  }),
+  openIncidents: zod.number(),
+  openConditionReports: zod.number(),
+  openQipItems: zod.number(),
+  activeChecklists: zod.number(),
+});
+
+export const GetStaffComplianceReportResponse = zod.object({
+  staff: zod.array(
+    zod.object({
+      staffId: zod.number(),
+      staffName: zod.string(),
+      role: zod.string(),
+      hasWwcc: zod.boolean(),
+      pdHoursThisYear: zod.number(),
+    }),
+  ),
+});

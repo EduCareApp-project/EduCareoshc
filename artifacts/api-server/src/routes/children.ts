@@ -90,23 +90,6 @@ router.get("/children/:id/observations", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const rows = await db
-    .select({
-      id: observationsTable.id,
-      childId: observationsTable.childId,
-      childName: db.$with("c").as(db.select().from(childrenTable)),
-      staffId: observationsTable.staffId,
-      title: observationsTable.title,
-      description: observationsTable.description,
-      observationDate: observationsTable.observationDate,
-      outcomeIds: observationsTable.outcomeIds,
-      programId: observationsTable.programId,
-      learningExtension: observationsTable.learningExtension,
-      createdAt: observationsTable.createdAt,
-    })
-    .from(observationsTable)
-    .where(eq(observationsTable.childId, params.data.id));
-
   const staffList = await db.select().from(staffTable);
   const childList = await db.select().from(childrenTable);
   const programList = await db.select().from(programsTable);

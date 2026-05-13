@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Education & Care Management Portal API
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import type { ChildInputAgeGroup } from "./childInputAgeGroup";
 import type { ChildInputStatus } from "./childInputStatus";

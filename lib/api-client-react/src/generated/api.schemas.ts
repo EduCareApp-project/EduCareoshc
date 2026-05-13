@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Education & Care Management Portal API
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 export interface HealthStatus {
   status: string;
@@ -355,4 +355,667 @@ export interface OutcomeCount {
   outcomeTitle: string;
   outcomeNumber: number;
   count: number;
+}
+
+export type NoticePriority =
+  (typeof NoticePriority)[keyof typeof NoticePriority];
+
+export const NoticePriority = {
+  low: "low",
+  normal: "normal",
+  high: "high",
+  urgent: "urgent",
+} as const;
+
+export interface Notice {
+  id: number;
+  title: string;
+  content: string;
+  priority: NoticePriority;
+  /** @nullable */
+  expiresAt?: string | null;
+  createdAt: string;
+}
+
+export type NoticeInputPriority =
+  (typeof NoticeInputPriority)[keyof typeof NoticeInputPriority];
+
+export const NoticeInputPriority = {
+  low: "low",
+  normal: "normal",
+  high: "high",
+  urgent: "urgent",
+} as const;
+
+export interface NoticeInput {
+  title: string;
+  content: string;
+  priority?: NoticeInputPriority;
+  expiresAt?: string;
+}
+
+export interface Jotting {
+  id: number;
+  content: string;
+  /** @nullable */
+  childId?: number | null;
+  /** @nullable */
+  childName?: string | null;
+  /** @nullable */
+  staffId?: number | null;
+  /** @nullable */
+  staffName?: string | null;
+  createdAt: string;
+}
+
+export interface JottingInput {
+  content: string;
+  childId?: number;
+  staffId?: number;
+}
+
+export type IncidentStatus =
+  (typeof IncidentStatus)[keyof typeof IncidentStatus];
+
+export const IncidentStatus = {
+  open: "open",
+  parent_notified: "parent_notified",
+  director_notified: "director_notified",
+  dept_notified: "dept_notified",
+  closed: "closed",
+} as const;
+
+export interface Incident {
+  id: number;
+  title: string;
+  description: string;
+  childId: number;
+  /** @nullable */
+  childName?: string | null;
+  incidentDate: string;
+  /** @nullable */
+  location?: string | null;
+  /** @nullable */
+  injuryDescription?: string | null;
+  /** @nullable */
+  actionTaken?: string | null;
+  status: IncidentStatus;
+  /** @nullable */
+  parentNotifiedAt?: string | null;
+  /** @nullable */
+  directorNotifiedAt?: string | null;
+  /** @nullable */
+  deptNotifiedAt?: string | null;
+  createdAt: string;
+}
+
+export type IncidentInputStatus =
+  (typeof IncidentInputStatus)[keyof typeof IncidentInputStatus];
+
+export const IncidentInputStatus = {
+  open: "open",
+  parent_notified: "parent_notified",
+  director_notified: "director_notified",
+  dept_notified: "dept_notified",
+  closed: "closed",
+} as const;
+
+export interface IncidentInput {
+  title: string;
+  description: string;
+  childId: number;
+  incidentDate: string;
+  location?: string;
+  injuryDescription?: string;
+  actionTaken?: string;
+  status?: IncidentInputStatus;
+}
+
+export type IncidentUpdateStatus =
+  (typeof IncidentUpdateStatus)[keyof typeof IncidentUpdateStatus];
+
+export const IncidentUpdateStatus = {
+  open: "open",
+  parent_notified: "parent_notified",
+  director_notified: "director_notified",
+  dept_notified: "dept_notified",
+  closed: "closed",
+} as const;
+
+export interface IncidentUpdate {
+  status?: IncidentUpdateStatus;
+  actionTaken?: string;
+  parentNotifiedAt?: string;
+  directorNotifiedAt?: string;
+  deptNotifiedAt?: string;
+}
+
+export type ConditionReportSeverity =
+  (typeof ConditionReportSeverity)[keyof typeof ConditionReportSeverity];
+
+export const ConditionReportSeverity = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+  critical: "critical",
+} as const;
+
+export type ConditionReportStatus =
+  (typeof ConditionReportStatus)[keyof typeof ConditionReportStatus];
+
+export const ConditionReportStatus = {
+  open: "open",
+  in_progress: "in_progress",
+  resolved: "resolved",
+} as const;
+
+export interface ConditionReport {
+  id: number;
+  title: string;
+  description: string;
+  location: string;
+  severity: ConditionReportSeverity;
+  status: ConditionReportStatus;
+  reportedAt: string;
+  /** @nullable */
+  actionRequired?: string | null;
+  /** @nullable */
+  resolvedAt?: string | null;
+  /** @nullable */
+  resolutionNotes?: string | null;
+  createdAt: string;
+}
+
+export type ConditionReportInputSeverity =
+  (typeof ConditionReportInputSeverity)[keyof typeof ConditionReportInputSeverity];
+
+export const ConditionReportInputSeverity = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+  critical: "critical",
+} as const;
+
+export interface ConditionReportInput {
+  title: string;
+  description: string;
+  location: string;
+  severity: ConditionReportInputSeverity;
+  actionRequired?: string;
+}
+
+export type ConditionReportUpdateStatus =
+  (typeof ConditionReportUpdateStatus)[keyof typeof ConditionReportUpdateStatus];
+
+export const ConditionReportUpdateStatus = {
+  open: "open",
+  in_progress: "in_progress",
+  resolved: "resolved",
+} as const;
+
+export interface ConditionReportUpdate {
+  status?: ConditionReportUpdateStatus;
+  actionRequired?: string;
+  resolutionNotes?: string;
+  resolvedAt?: string;
+}
+
+export type EvacuationDrillType =
+  (typeof EvacuationDrillType)[keyof typeof EvacuationDrillType];
+
+export const EvacuationDrillType = {
+  evacuation: "evacuation",
+  lockdown: "lockdown",
+  shelter_in_place: "shelter_in_place",
+  other: "other",
+} as const;
+
+export interface Evacuation {
+  id: number;
+  drillType: EvacuationDrillType;
+  conductedAt: string;
+  /** @nullable */
+  nextDueAt?: string | null;
+  /** @nullable */
+  participantCount?: number | null;
+  /** @nullable */
+  durationMinutes?: number | null;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  conductedBy?: string | null;
+  createdAt: string;
+}
+
+export type EvacuationInputDrillType =
+  (typeof EvacuationInputDrillType)[keyof typeof EvacuationInputDrillType];
+
+export const EvacuationInputDrillType = {
+  evacuation: "evacuation",
+  lockdown: "lockdown",
+  shelter_in_place: "shelter_in_place",
+  other: "other",
+} as const;
+
+export interface EvacuationInput {
+  drillType: EvacuationInputDrillType;
+  conductedAt: string;
+  nextDueAt?: string;
+  participantCount?: number;
+  durationMinutes?: number;
+  notes?: string;
+  conductedBy?: string;
+}
+
+export type QipItemStatus = (typeof QipItemStatus)[keyof typeof QipItemStatus];
+
+export const QipItemStatus = {
+  in_progress: "in_progress",
+  completed: "completed",
+  on_hold: "on_hold",
+} as const;
+
+export interface QipItem {
+  id: number;
+  qualityArea: string;
+  goal: string;
+  strategy: string;
+  /** @nullable */
+  successMeasure?: string | null;
+  /** @nullable */
+  timeline?: string | null;
+  status: QipItemStatus;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export type QipItemInputStatus =
+  (typeof QipItemInputStatus)[keyof typeof QipItemInputStatus];
+
+export const QipItemInputStatus = {
+  in_progress: "in_progress",
+  completed: "completed",
+  on_hold: "on_hold",
+} as const;
+
+export interface QipItemInput {
+  qualityArea: string;
+  goal: string;
+  strategy: string;
+  successMeasure?: string;
+  timeline?: string;
+  status?: QipItemInputStatus;
+  notes?: string;
+}
+
+export type QipItemUpdateStatus =
+  (typeof QipItemUpdateStatus)[keyof typeof QipItemUpdateStatus];
+
+export const QipItemUpdateStatus = {
+  in_progress: "in_progress",
+  completed: "completed",
+  on_hold: "on_hold",
+} as const;
+
+export interface QipItemUpdate {
+  qualityArea?: string;
+  goal?: string;
+  strategy?: string;
+  successMeasure?: string;
+  timeline?: string;
+  status?: QipItemUpdateStatus;
+  notes?: string;
+}
+
+export type WellbeingReportReportType =
+  (typeof WellbeingReportReportType)[keyof typeof WellbeingReportReportType];
+
+export const WellbeingReportReportType = {
+  family_violence: "family_violence",
+  child_protection: "child_protection",
+  other: "other",
+} as const;
+
+export interface WellbeingReport {
+  id: number;
+  childId: number;
+  /** @nullable */
+  childName?: string | null;
+  reportType: WellbeingReportReportType;
+  description: string;
+  /** @nullable */
+  actionTaken?: string | null;
+  reportedAt: string;
+  /** @nullable */
+  referredTo?: string | null;
+  /** @nullable */
+  referralDate?: string | null;
+  createdAt: string;
+}
+
+export type WellbeingReportInputReportType =
+  (typeof WellbeingReportInputReportType)[keyof typeof WellbeingReportInputReportType];
+
+export const WellbeingReportInputReportType = {
+  family_violence: "family_violence",
+  child_protection: "child_protection",
+  other: "other",
+} as const;
+
+export interface WellbeingReportInput {
+  childId: number;
+  reportType: WellbeingReportInputReportType;
+  description: string;
+  actionTaken?: string;
+  reportedAt: string;
+  referredTo?: string;
+  referralDate?: string;
+}
+
+export interface Policy {
+  id: number;
+  title: string;
+  category: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  fileUrl?: string | null;
+  /** @nullable */
+  version?: string | null;
+  /** @nullable */
+  lastReviewedAt?: string | null;
+  requiresAcknowledgment: string;
+  createdAt: string;
+}
+
+export interface PolicyInput {
+  title: string;
+  category: string;
+  description?: string;
+  fileUrl?: string;
+  version?: string;
+  lastReviewedAt?: string;
+  requiresAcknowledgment?: string;
+}
+
+export interface PolicyAcknowledgment {
+  id: number;
+  policyId: number;
+  staffId: number;
+  /** @nullable */
+  staffName?: string | null;
+  acknowledgedAt: string;
+}
+
+export interface PolicyAcknowledgeInput {
+  staffId: number;
+}
+
+export type ChecklistType = (typeof ChecklistType)[keyof typeof ChecklistType];
+
+export const ChecklistType = {
+  monthly_programming: "monthly_programming",
+  quality_improvement: "quality_improvement",
+  start_of_term: "start_of_term",
+  end_of_term: "end_of_term",
+  general: "general",
+} as const;
+
+export interface Checklist {
+  id: number;
+  title: string;
+  type: ChecklistType;
+  items: string[];
+  createdAt: string;
+}
+
+export type ChecklistInputType =
+  (typeof ChecklistInputType)[keyof typeof ChecklistInputType];
+
+export const ChecklistInputType = {
+  monthly_programming: "monthly_programming",
+  quality_improvement: "quality_improvement",
+  start_of_term: "start_of_term",
+  end_of_term: "end_of_term",
+  general: "general",
+} as const;
+
+export interface ChecklistInput {
+  title: string;
+  type?: ChecklistInputType;
+  items: string[];
+}
+
+export interface ChecklistCompletion {
+  id: number;
+  checklistId: number;
+  /** @nullable */
+  staffId?: number | null;
+  /** @nullable */
+  staffName?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  completedAt: string;
+}
+
+export interface ChecklistCompletionInput {
+  staffId?: number;
+  notes?: string;
+}
+
+export type PostPostType = (typeof PostPostType)[keyof typeof PostPostType];
+
+export const PostPostType = {
+  individual: "individual",
+  group: "group",
+} as const;
+
+export type PostStatus = (typeof PostStatus)[keyof typeof PostStatus];
+
+export const PostStatus = {
+  draft: "draft",
+  published: "published",
+} as const;
+
+export interface Post {
+  id: number;
+  title: string;
+  content: string;
+  postType: PostPostType;
+  /** @nullable */
+  childId?: number | null;
+  /** @nullable */
+  childName?: string | null;
+  /** @nullable */
+  staffId?: number | null;
+  /** @nullable */
+  staffName?: string | null;
+  status: PostStatus;
+  /** @nullable */
+  publishedAt?: string | null;
+  createdAt: string;
+}
+
+export type PostInputPostType =
+  (typeof PostInputPostType)[keyof typeof PostInputPostType];
+
+export const PostInputPostType = {
+  individual: "individual",
+  group: "group",
+} as const;
+
+export type PostInputStatus =
+  (typeof PostInputStatus)[keyof typeof PostInputStatus];
+
+export const PostInputStatus = {
+  draft: "draft",
+  published: "published",
+} as const;
+
+export interface PostInput {
+  title: string;
+  content: string;
+  postType: PostInputPostType;
+  childId?: number;
+  staffId?: number;
+  status?: PostInputStatus;
+}
+
+export type PostUpdateStatus =
+  (typeof PostUpdateStatus)[keyof typeof PostUpdateStatus];
+
+export const PostUpdateStatus = {
+  draft: "draft",
+  published: "published",
+} as const;
+
+export interface PostUpdate {
+  title?: string;
+  content?: string;
+  status?: PostUpdateStatus;
+  publishedAt?: string;
+}
+
+export interface ProfessionalDevelopment {
+  id: number;
+  staffId: number;
+  title: string;
+  /** @nullable */
+  provider?: string | null;
+  completedAt: string;
+  /** @nullable */
+  hoursEarned?: number | null;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface ProfessionalDevelopmentInput {
+  staffId: number;
+  title: string;
+  provider?: string;
+  completedAt: string;
+  hoursEarned?: number;
+  notes?: string;
+}
+
+export type PlanningExperienceStage =
+  (typeof PlanningExperienceStage)[keyof typeof PlanningExperienceStage];
+
+export const PlanningExperienceStage = {
+  brainstorm: "brainstorm",
+  planned: "planned",
+  implemented: "implemented",
+  evaluated: "evaluated",
+} as const;
+
+export interface PlanningExperience {
+  id: number;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  stage: PlanningExperienceStage;
+  outcomeIds: number[];
+  childIds: number[];
+  ageGroups: string[];
+  /** @nullable */
+  startDate?: string | null;
+  /** @nullable */
+  programId?: number | null;
+  /** @nullable */
+  evaluationNotes?: string | null;
+  createdAt: string;
+}
+
+export type PlanningExperienceInputStage =
+  (typeof PlanningExperienceInputStage)[keyof typeof PlanningExperienceInputStage];
+
+export const PlanningExperienceInputStage = {
+  brainstorm: "brainstorm",
+  planned: "planned",
+  implemented: "implemented",
+  evaluated: "evaluated",
+} as const;
+
+export interface PlanningExperienceInput {
+  title: string;
+  description?: string;
+  stage: PlanningExperienceInputStage;
+  outcomeIds?: number[];
+  childIds?: number[];
+  ageGroups?: string[];
+  startDate?: string;
+  programId?: number;
+  evaluationNotes?: string;
+}
+
+export type PlanningExperienceUpdateStage =
+  (typeof PlanningExperienceUpdateStage)[keyof typeof PlanningExperienceUpdateStage];
+
+export const PlanningExperienceUpdateStage = {
+  brainstorm: "brainstorm",
+  planned: "planned",
+  implemented: "implemented",
+  evaluated: "evaluated",
+} as const;
+
+export interface PlanningExperienceUpdate {
+  title?: string;
+  description?: string;
+  stage?: PlanningExperienceUpdateStage;
+  outcomeIds?: number[];
+  childIds?: number[];
+  ageGroups?: string[];
+  startDate?: string;
+  programId?: number;
+  evaluationNotes?: string;
+}
+
+export type LearningStoriesReportByChildItem = {
+  childId: number;
+  childName: string;
+  observationCount: number;
+};
+
+export type LearningStoriesReportUnderRepresentedOutcomesItem = {
+  outcomeId: number;
+  outcomeTitle: string;
+  outcomeNumber: number;
+  count: number;
+};
+
+export interface LearningStoriesReport {
+  byOutcome: OutcomeCount[];
+  byChild: LearningStoriesReportByChildItem[];
+  underRepresentedOutcomes: LearningStoriesReportUnderRepresentedOutcomesItem[];
+}
+
+export type ServiceComplianceReportEvacuationStatus = {
+  /** @nullable */
+  lastConducted: string | null;
+  /** @nullable */
+  nextDue: string | null;
+  isOverdue: boolean;
+};
+
+export interface ServiceComplianceReport {
+  evacuationStatus: ServiceComplianceReportEvacuationStatus;
+  openIncidents: number;
+  openConditionReports: number;
+  openQipItems: number;
+  activeChecklists: number;
+}
+
+export type StaffComplianceReportStaffItem = {
+  staffId: number;
+  staffName: string;
+  role: string;
+  hasWwcc: boolean;
+  pdHoursThisYear: number;
+};
+
+export interface StaffComplianceReport {
+  staff: StaffComplianceReportStaffItem[];
 }

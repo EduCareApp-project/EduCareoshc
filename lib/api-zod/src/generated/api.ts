@@ -779,6 +779,50 @@ export const DeleteQipItemParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const GetChildWelfareNotesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetChildWelfareNotesResponseItem = zod.object({
+  id: zod.number(),
+  childId: zod.number(),
+  staffId: zod.number().nullish(),
+  staffName: zod.string().nullish(),
+  occurredAt: zod.coerce.date(),
+  concerns: zod.string(),
+  riskFactors: zod.string(),
+  evidence: zod.string().nullish(),
+  mandatoryReportRequired: zod.boolean(),
+  mandatoryReportNotes: zod.string().nullish(),
+  cissThresholdMet: zod.boolean(),
+  cissNotes: zod.string().nullish(),
+  fvissThresholdMet: zod.boolean(),
+  fvissNotes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const GetChildWelfareNotesResponse = zod.array(
+  GetChildWelfareNotesResponseItem,
+);
+
+export const CreateWelfareNoteBody = zod.object({
+  childId: zod.number(),
+  staffId: zod.number().optional(),
+  occurredAt: zod.coerce.date(),
+  concerns: zod.string(),
+  riskFactors: zod.string(),
+  evidence: zod.string().optional(),
+  mandatoryReportRequired: zod.boolean(),
+  mandatoryReportNotes: zod.string().optional(),
+  cissThresholdMet: zod.boolean(),
+  cissNotes: zod.string().optional(),
+  fvissThresholdMet: zod.boolean(),
+  fvissNotes: zod.string().optional(),
+});
+
+export const DeleteWelfareNoteParams = zod.object({
+  id: zod.coerce.number(),
+});
+
 export const ListWellbeingReportsResponseItem = zod.object({
   id: zod.number(),
   childId: zod.number(),

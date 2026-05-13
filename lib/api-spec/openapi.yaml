@@ -789,6 +789,58 @@ paths:
         "204":
           description: Deleted
 
+  /children/{id}/welfare-notes:
+    get:
+      operationId: getChildWelfareNotes
+      tags: [children]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WelfareNote"
+
+  /welfare-notes:
+    post:
+      operationId: createWelfareNote
+      tags: [welfare-notes]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WelfareNoteInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WelfareNote"
+
+  /welfare-notes/{id}:
+    delete:
+      operationId: deleteWelfareNote
+      tags: [welfare-notes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /wellbeing:
     get:
       operationId: listWellbeingReports
@@ -2069,6 +2121,73 @@ components:
           type: string
           enum: [in_progress, completed, on_hold]
         notes:
+          type: string
+
+    WelfareNote:
+      type: object
+      required: [id, childId, occurredAt, concerns, riskFactors, mandatoryReportRequired, cissThresholdMet, fvissThresholdMet, createdAt]
+      properties:
+        id:
+          type: integer
+        childId:
+          type: integer
+        staffId:
+          type: ["integer", "null"]
+        staffName:
+          type: ["string", "null"]
+        occurredAt:
+          type: string
+          format: date-time
+        concerns:
+          type: string
+        riskFactors:
+          type: string
+        evidence:
+          type: ["string", "null"]
+        mandatoryReportRequired:
+          type: boolean
+        mandatoryReportNotes:
+          type: ["string", "null"]
+        cissThresholdMet:
+          type: boolean
+        cissNotes:
+          type: ["string", "null"]
+        fvissThresholdMet:
+          type: boolean
+        fvissNotes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    WelfareNoteInput:
+      type: object
+      required: [childId, occurredAt, concerns, riskFactors, mandatoryReportRequired, cissThresholdMet, fvissThresholdMet]
+      properties:
+        childId:
+          type: integer
+        staffId:
+          type: integer
+        occurredAt:
+          type: string
+          format: date-time
+        concerns:
+          type: string
+        riskFactors:
+          type: string
+        evidence:
+          type: string
+        mandatoryReportRequired:
+          type: boolean
+        mandatoryReportNotes:
+          type: string
+        cissThresholdMet:
+          type: boolean
+        cissNotes:
+          type: string
+        fvissThresholdMet:
+          type: boolean
+        fvissNotes:
           type: string
 
     WellbeingReport:

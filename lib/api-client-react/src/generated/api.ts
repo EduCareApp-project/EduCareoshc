@@ -72,6 +72,8 @@ import type {
   StaffComplianceReport,
   StaffInput,
   StaffUpdate,
+  WelfareNote,
+  WelfareNoteInput,
   WellbeingReport,
   WellbeingReportInput,
 } from "./api.schemas";
@@ -3574,6 +3576,245 @@ export const useDeleteQipItem = <
   TContext
 > => {
   return useMutation(getDeleteQipItemMutationOptions(options));
+};
+
+export const getGetChildWelfareNotesUrl = (id: number) => {
+  return `/api/children/${id}/welfare-notes`;
+};
+
+export const getChildWelfareNotes = async (
+  id: number,
+  options?: RequestInit,
+): Promise<WelfareNote[]> => {
+  return customFetch<WelfareNote[]>(getGetChildWelfareNotesUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetChildWelfareNotesQueryKey = (id: number) => {
+  return [`/api/children/${id}/welfare-notes`] as const;
+};
+
+export const getGetChildWelfareNotesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getChildWelfareNotes>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChildWelfareNotes>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetChildWelfareNotesQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getChildWelfareNotes>>
+  > = ({ signal }) => getChildWelfareNotes(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getChildWelfareNotes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetChildWelfareNotesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getChildWelfareNotes>>
+>;
+export type GetChildWelfareNotesQueryError = ErrorType<unknown>;
+
+export function useGetChildWelfareNotes<
+  TData = Awaited<ReturnType<typeof getChildWelfareNotes>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChildWelfareNotes>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetChildWelfareNotesQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateWelfareNoteUrl = () => {
+  return `/api/welfare-notes`;
+};
+
+export const createWelfareNote = async (
+  welfareNoteInput: WelfareNoteInput,
+  options?: RequestInit,
+): Promise<WelfareNote> => {
+  return customFetch<WelfareNote>(getCreateWelfareNoteUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(welfareNoteInput),
+  });
+};
+
+export const getCreateWelfareNoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWelfareNote>>,
+    TError,
+    { data: BodyType<WelfareNoteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createWelfareNote>>,
+  TError,
+  { data: BodyType<WelfareNoteInput> },
+  TContext
+> => {
+  const mutationKey = ["createWelfareNote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createWelfareNote>>,
+    { data: BodyType<WelfareNoteInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createWelfareNote(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateWelfareNoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createWelfareNote>>
+>;
+export type CreateWelfareNoteMutationBody = BodyType<WelfareNoteInput>;
+export type CreateWelfareNoteMutationError = ErrorType<unknown>;
+
+export const useCreateWelfareNote = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWelfareNote>>,
+    TError,
+    { data: BodyType<WelfareNoteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createWelfareNote>>,
+  TError,
+  { data: BodyType<WelfareNoteInput> },
+  TContext
+> => {
+  return useMutation(getCreateWelfareNoteMutationOptions(options));
+};
+
+export const getDeleteWelfareNoteUrl = (id: number) => {
+  return `/api/welfare-notes/${id}`;
+};
+
+export const deleteWelfareNote = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteWelfareNoteUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteWelfareNoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteWelfareNote>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteWelfareNote>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteWelfareNote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteWelfareNote>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteWelfareNote(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteWelfareNoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteWelfareNote>>
+>;
+
+export type DeleteWelfareNoteMutationError = ErrorType<unknown>;
+
+export const useDeleteWelfareNote = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteWelfareNote>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteWelfareNote>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteWelfareNoteMutationOptions(options));
 };
 
 export const getListWellbeingReportsUrl = () => {

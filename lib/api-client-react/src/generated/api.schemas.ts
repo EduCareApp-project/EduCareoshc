@@ -708,6 +708,45 @@ export interface QipItemUpdate {
   notes?: string;
 }
 
+export interface WelfareNote {
+  id: number;
+  childId: number;
+  /** @nullable */
+  staffId?: number | null;
+  /** @nullable */
+  staffName?: string | null;
+  occurredAt: string;
+  concerns: string;
+  riskFactors: string;
+  /** @nullable */
+  evidence?: string | null;
+  mandatoryReportRequired: boolean;
+  /** @nullable */
+  mandatoryReportNotes?: string | null;
+  cissThresholdMet: boolean;
+  /** @nullable */
+  cissNotes?: string | null;
+  fvissThresholdMet: boolean;
+  /** @nullable */
+  fvissNotes?: string | null;
+  createdAt: string;
+}
+
+export interface WelfareNoteInput {
+  childId: number;
+  staffId?: number;
+  occurredAt: string;
+  concerns: string;
+  riskFactors: string;
+  evidence?: string;
+  mandatoryReportRequired: boolean;
+  mandatoryReportNotes?: string;
+  cissThresholdMet: boolean;
+  cissNotes?: string;
+  fvissThresholdMet: boolean;
+  fvissNotes?: string;
+}
+
 export type WellbeingReportReportType =
   (typeof WellbeingReportReportType)[keyof typeof WellbeingReportReportType];
 

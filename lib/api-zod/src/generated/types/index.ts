@@ -106,6 +106,8 @@ export * from "./staffStatus";
 export * from "./staffUpdate";
 export * from "./staffUpdateRole";
 export * from "./staffUpdateStatus";
+export * from "./welfareNote";
+export * from "./welfareNoteInput";
 export * from "./wellbeingReport";
 export * from "./wellbeingReportInput";
 export * from "./wellbeingReportInputReportType";

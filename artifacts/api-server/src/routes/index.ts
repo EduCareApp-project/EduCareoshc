@@ -21,6 +21,7 @@ import professionalDevelopmentRouter from "./professional-development";
 import planningRouter from "./planning";
 import reportsRouter from "./reports";
 import sitesRouter from "./sites";
+import welfareNotesRouter from "./welfare-notes";
 
 const router: IRouter = Router();
 
@@ -46,5 +47,6 @@ router.use(professionalDevelopmentRouter);
 router.use(planningRouter);
 router.use(reportsRouter);
 router.use(sitesRouter);
+router.use(welfareNotesRouter);
 
 export default router;

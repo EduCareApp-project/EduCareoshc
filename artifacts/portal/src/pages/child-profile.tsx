@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { useGetChild, useUpdateChild, useDeleteChild, useGetChildObservations, useListSites } from "@workspace/api-client-react";
+import {
+  useGetChild, useUpdateChild, useDeleteChild,
+  useGetChildObservations, useListSites,
+  useGetChildWelfareNotes, useCreateWelfareNote, useDeleteWelfareNote,
+  useListStaff,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,8 +19,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
-import { ArrowLeft, Edit, Plus, Trash2, User, Phone, Mail, FileText, Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2 } from "lucide-react";
+import {
+  ArrowLeft, Edit, Plus, Trash2, User, Phone, Mail, FileText,
+  Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2,
+  ShieldAlert, AlertTriangle,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const AGE_GROUP_LABELS: Record<string, string> = { infant: "Infant", toddler: "Toddler", preschool: "Preschool", school_age: "School Age" };
@@ -30,6 +40,20 @@ function safeDate(value: string, fmt: string) {
   }
 }
 
+const EMPTY_WELFARE_FORM = {
+  occurredAt: new Date().toISOString().slice(0, 16),
+  staffId: "",
+  concerns: "",
+  riskFactors: "",
+  evidence: "",
+  mandatoryReportRequired: false,
+  mandatoryReportNotes: "",
+  cissThresholdMet: false,
+  cissNotes: "",
+  fvissThresholdMet: false,
+  fvissNotes: "",
+};
+
 export default function ChildProfile() {
   const params = useParams();
   const id = parseInt(params.id || "0");
@@ -41,10 +65,17 @@ export default function ChildProfile() {
   const { data: child, isLoading } = useGetChild(id, { query: { enabled: !!id } });
   const { data: observations, isLoading: obsLoading } = useGetChildObservations(id, { query: { enabled: !!id } });
   const { data: sites } = useListSites();
+  const { data: staff } = useListStaff();
+  const { data: welfareNotes, isLoading: welfareLoading } = useGetChildWelfareNotes(id, { query: { enabled: !!id } });
   const updateMutation = useUpdateChild();
   const deleteMutation = useDeleteChild();
+  const createWelfareMutation = useCreateWelfareNote();
+  const deleteWelfareMutation = useDeleteWelfareNote();
 
   const [editOpen, setEditOpen] = useState(false);
+  const [welfareOpen, setWelfareOpen] = useState(false);
+  const [welfareForm, setWelfareForm] = useState(EMPTY_WELFARE_FORM);
+
   const [form, setForm] = useState({
     firstName: "", lastName: "", dateOfBirth: "", enrollmentDate: "",
     ageGroup: "", status: "", guardianName: "", guardianEmail: "", guardianPhone: "",
@@ -101,6 +132,44 @@ export default function ChildProfile() {
         toast({ title: "Profile updated" });
       },
       onError: () => toast({ title: "Failed to save changes", variant: "destructive" }),
+    });
+  }
+
+  function handleCreateWelfareNote(e: React.FormEvent) {
+    e.preventDefault();
+    const body: Record<string, unknown> = {
+      childId: id,
+      occurredAt: new Date(welfareForm.occurredAt).toISOString(),
+      concerns: welfareForm.concerns,
+      riskFactors: welfareForm.riskFactors,
+      mandatoryReportRequired: welfareForm.mandatoryReportRequired,
+      cissThresholdMet: welfareForm.cissThresholdMet,
+      fvissThresholdMet: welfareForm.fvissThresholdMet,
+    };
+    if (welfareForm.staffId) body.staffId = parseInt(welfareForm.staffId);
+    if (welfareForm.evidence) body.evidence = welfareForm.evidence;
+    if (welfareForm.mandatoryReportNotes) body.mandatoryReportNotes = welfareForm.mandatoryReportNotes;
+    if (welfareForm.cissNotes) body.cissNotes = welfareForm.cissNotes;
+    if (welfareForm.fvissNotes) body.fvissNotes = welfareForm.fvissNotes;
+
+    createWelfareMutation.mutate({ data: body as any }, {
+      onSuccess: () => {
+        setWelfareOpen(false);
+        setWelfareForm(EMPTY_WELFARE_FORM);
+        queryClient.invalidateQueries({ queryKey: [`/api/children/${id}/welfare-notes`] });
+        toast({ title: "Welfare note recorded" });
+      },
+      onError: () => toast({ title: "Failed to save welfare note", variant: "destructive" }),
+    });
+  }
+
+  function handleDeleteWelfareNote(noteId: number) {
+    deleteWelfareMutation.mutate({ id: noteId }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: [`/api/children/${id}/welfare-notes`] });
+        toast({ title: "Welfare note deleted" });
+      },
+      onError: () => toast({ title: "Failed to delete welfare note", variant: "destructive" }),
     });
   }
 
@@ -296,6 +365,121 @@ export default function ChildProfile() {
         </Card>
       </div>
 
+      {/* Welfare Notification Log */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5 text-amber-600" />
+            Welfare Notification Log
+          </CardTitle>
+          <Button size="sm" variant="outline" onClick={() => { setWelfareForm(EMPTY_WELFARE_FORM); setWelfareOpen(true); }}>
+            <Plus className="h-4 w-4 mr-1" />New Welfare Note
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {welfareLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          ) : !welfareNotes || welfareNotes.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
+              <ShieldAlert className="h-8 w-8 mx-auto mb-2 opacity-20" />
+              <p className="text-sm">No welfare notifications recorded</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {[...welfareNotes].reverse().map((note) => (
+                <div key={note.id} className="rounded-lg border bg-card p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-sm font-medium">
+                          {safeDate(note.occurredAt, "d MMM yyyy, h:mm a")}
+                        </span>
+                        {note.staffName && (
+                          <span className="text-xs text-muted-foreground">Recorded by {note.staffName}</span>
+                        )}
+                      </div>
+                      <div className="flex gap-2 flex-wrap mt-1">
+                        {note.mandatoryReportRequired && (
+                          <Badge variant="destructive" className="text-xs">Mandatory Report</Badge>
+                        )}
+                        {note.cissThresholdMet && (
+                          <Badge className="text-xs bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">CISS Threshold</Badge>
+                        )}
+                        {note.fvissThresholdMet && (
+                          <Badge className="text-xs bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100">FVISS Threshold</Badge>
+                        )}
+                      </div>
+                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete welfare note?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently remove this welfare notification record. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={() => handleDeleteWelfareNote(note.id)}
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-3 text-sm">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Concerns</p>
+                      <p className="leading-relaxed">{note.concerns}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Risk Factors</p>
+                      <p className="leading-relaxed">{note.riskFactors}</p>
+                    </div>
+                    {note.evidence && (
+                      <div className="space-y-1 md:col-span-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Evidence / Observations</p>
+                        <p className="leading-relaxed">{note.evidence}</p>
+                      </div>
+                    )}
+                    {note.mandatoryReportRequired && note.mandatoryReportNotes && (
+                      <div className="space-y-1 md:col-span-2 bg-destructive/5 border border-destructive/20 rounded p-2">
+                        <p className="text-xs font-medium text-destructive uppercase tracking-wide">Mandatory Report Notes</p>
+                        <p className="leading-relaxed">{note.mandatoryReportNotes}</p>
+                      </div>
+                    )}
+                    {note.cissThresholdMet && note.cissNotes && (
+                      <div className="space-y-1 bg-amber-50 border border-amber-200 rounded p-2">
+                        <p className="text-xs font-medium text-amber-700 uppercase tracking-wide">CISS Notes</p>
+                        <p className="leading-relaxed">{note.cissNotes}</p>
+                      </div>
+                    )}
+                    {note.fvissThresholdMet && note.fvissNotes && (
+                      <div className="space-y-1 bg-orange-50 border border-orange-200 rounded p-2">
+                        <p className="text-xs font-medium text-orange-700 uppercase tracking-wide">FVISS Notes</p>
+                        <p className="leading-relaxed">{note.fvissNotes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Edit Profile Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Edit Child Profile</DialogTitle></DialogHeader>
@@ -365,6 +549,162 @@ export default function ChildProfile() {
             <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
               <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={updateMutation.isPending}>Save Changes</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Welfare Note Dialog */}
+      <Dialog open={welfareOpen} onOpenChange={setWelfareOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              Record Welfare Notification
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateWelfareNote} className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>Date &amp; Time of Concern</Label>
+                <Input
+                  type="datetime-local"
+                  value={welfareForm.occurredAt}
+                  onChange={(e) => setWelfareForm({ ...welfareForm, occurredAt: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Recorded By (Staff)</Label>
+                <Select value={welfareForm.staffId || "none"} onValueChange={(v) => setWelfareForm({ ...welfareForm, staffId: v === "none" ? "" : v })}>
+                  <SelectTrigger><SelectValue placeholder="Select staff member" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Not specified</SelectItem>
+                    {staff?.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Concerns <span className="text-destructive">*</span></Label>
+              <Textarea
+                value={welfareForm.concerns}
+                onChange={(e) => setWelfareForm({ ...welfareForm, concerns: e.target.value })}
+                rows={3}
+                placeholder="Describe the specific welfare concerns observed..."
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label>Risk Factors <span className="text-destructive">*</span></Label>
+              <Textarea
+                value={welfareForm.riskFactors}
+                onChange={(e) => setWelfareForm({ ...welfareForm, riskFactors: e.target.value })}
+                rows={3}
+                placeholder="List the risk factors identified..."
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label>Evidence / Observations <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Textarea
+                value={welfareForm.evidence}
+                onChange={(e) => setWelfareForm({ ...welfareForm, evidence: e.target.value })}
+                rows={2}
+                placeholder="Physical signs, behaviours, or statements observed..."
+              />
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Threshold Assessments</p>
+
+              <div className="space-y-3 rounded-lg border p-4">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="mandatory-report"
+                    checked={welfareForm.mandatoryReportRequired}
+                    onCheckedChange={(v) => setWelfareForm({ ...welfareForm, mandatoryReportRequired: !!v })}
+                  />
+                  <Label htmlFor="mandatory-report" className="font-medium cursor-pointer">
+                    Mandatory Report Required
+                  </Label>
+                </div>
+                {welfareForm.mandatoryReportRequired && (
+                  <div className="ml-7 space-y-1">
+                    <Label className="text-xs text-muted-foreground">Mandatory Report Notes</Label>
+                    <Textarea
+                      value={welfareForm.mandatoryReportNotes}
+                      onChange={(e) => setWelfareForm({ ...welfareForm, mandatoryReportNotes: e.target.value })}
+                      rows={2}
+                      placeholder="Details of mandatory reporting action taken..."
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3 rounded-lg border p-4">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="ciss"
+                    checked={welfareForm.cissThresholdMet}
+                    onCheckedChange={(v) => setWelfareForm({ ...welfareForm, cissThresholdMet: !!v })}
+                  />
+                  <Label htmlFor="ciss" className="font-medium cursor-pointer">
+                    CISS Threshold Met
+                    <span className="ml-2 text-xs text-muted-foreground font-normal">(Child Information Sharing Scheme)</span>
+                  </Label>
+                </div>
+                {welfareForm.cissThresholdMet && (
+                  <div className="ml-7 space-y-1">
+                    <Label className="text-xs text-muted-foreground">CISS Notes</Label>
+                    <Textarea
+                      value={welfareForm.cissNotes}
+                      onChange={(e) => setWelfareForm({ ...welfareForm, cissNotes: e.target.value })}
+                      rows={2}
+                      placeholder="Information sharing actions and rationale..."
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3 rounded-lg border p-4">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="fviss"
+                    checked={welfareForm.fvissThresholdMet}
+                    onCheckedChange={(v) => setWelfareForm({ ...welfareForm, fvissThresholdMet: !!v })}
+                  />
+                  <Label htmlFor="fviss" className="font-medium cursor-pointer">
+                    FVISS Threshold Met
+                    <span className="ml-2 text-xs text-muted-foreground font-normal">(Family Violence Information Sharing Scheme)</span>
+                  </Label>
+                </div>
+                {welfareForm.fvissThresholdMet && (
+                  <div className="ml-7 space-y-1">
+                    <Label className="text-xs text-muted-foreground">FVISS Notes</Label>
+                    <Textarea
+                      value={welfareForm.fvissNotes}
+                      onChange={(e) => setWelfareForm({ ...welfareForm, fvissNotes: e.target.value })}
+                      rows={2}
+                      placeholder="Family violence information sharing actions and rationale..."
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <Button type="button" variant="outline" onClick={() => setWelfareOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={createWelfareMutation.isPending}>
+                {createWelfareMutation.isPending ? "Saving…" : "Save Welfare Note"}
+              </Button>
             </div>
           </form>
         </DialogContent>

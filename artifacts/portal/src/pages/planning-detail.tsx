@@ -240,7 +240,7 @@ export default function PlanningDetail() {
       }));
       const loaded: FormState = {
         title: experience.title ?? "",
-        startDate: experience.startDate ?? "",
+        startDate: experience.startDate ? String(experience.startDate).slice(0, 10) : "",
         siteId: experience.isTemplate ? "__template__" : (experience.siteId ? String(experience.siteId) : "none"),
         childIds: experience.childIds ?? [],
         stage: experience.stage ?? "brainstorm",

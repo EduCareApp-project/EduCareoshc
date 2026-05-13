@@ -727,13 +727,16 @@ export default function ChildProfile() {
                     ) : !observations || observations.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg text-sm">No observations recorded yet</div>
                     ) : (
-                      <div className="grid sm:grid-cols-2 gap-3">
+                      <div className="flex flex-col divide-y">
                         {observations.map((obs) => (
                           <Link key={obs.id} href={`/observations/${obs.id}`}>
-                            <div className="p-3 rounded-lg border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer space-y-1 h-full">
-                              <p className="text-sm line-clamp-2 leading-relaxed">{obs.description}</p>
-                              <p className="text-xs text-muted-foreground">{safeDate(obs.observationDate, "d MMM yyyy")}{obs.staffName ? ` · ${obs.staffName}` : ""}</p>
-                              <p className="text-xs text-muted-foreground">Last edited {safeDate(obs.updatedAt, "d MMM yyyy, h:mm a")}</p>
+                            <div className="py-2.5 px-1 grid grid-cols-[1fr_auto_auto] gap-x-4 items-center hover:bg-muted/40 rounded transition-colors cursor-pointer">
+                              <p className="text-sm line-clamp-1 leading-relaxed">{obs.description}</p>
+                              <p className="text-xs text-muted-foreground whitespace-nowrap">{obs.staffName ?? "—"}</p>
+                              <div className="text-right">
+                                <p className="text-xs text-muted-foreground whitespace-nowrap">{safeDate(obs.observationDate, "d MMM yyyy")}</p>
+                                <p className="text-xs text-muted-foreground whitespace-nowrap">Edited {safeDate(obs.updatedAt, "d MMM yyyy")}</p>
+                              </div>
                             </div>
                           </Link>
                         ))}

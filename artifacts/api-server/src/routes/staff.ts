@@ -65,4 +65,21 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
   res.json(UpdateStaffResponse.parse(member));
 });
 
+router.delete("/staff/:id", async (req, res): Promise<void> => {
+  const params = GetStaffParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const [deleted] = await db
+    .delete(staffTable)
+    .where(eq(staffTable.id, params.data.id))
+    .returning();
+  if (!deleted) {
+    res.status(404).json({ error: "Staff member not found" });
+    return;
+  }
+  res.status(204).end();
+});
+
 export default router;

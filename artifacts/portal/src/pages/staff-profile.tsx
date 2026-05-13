@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import {
   useGetStaff,
   useUpdateStaff,
+  useDeleteStaff,
   useGetStaffProfessionalDevelopment,
   useCreateProfessionalDevelopment,
   useDeleteProfessionalDevelopment,
@@ -88,7 +89,9 @@ export default function StaffProfile() {
   const { data: pdList, isLoading: loadingPd } = useGetStaffProfessionalDevelopment(staffId, { query: { enabled: !!staffId } });
   const { data: qualifications, isLoading: loadingQuals } = useGetStaffQualifications(staffId, { query: { enabled: !!staffId } });
 
+  const [, navigate] = useLocation();
   const updateStaffMutation = useUpdateStaff();
+  const deleteStaffMutation = useDeleteStaff();
   const createPdMutation = useCreateProfessionalDevelopment();
   const deletePdMutation = useDeleteProfessionalDevelopment();
   const createQualMutation = useCreateStaffQualification();
@@ -322,12 +325,48 @@ export default function StaffProfile() {
     return <div className="text-center py-12 text-muted-foreground">Staff member not found.</div>;
   }
 
+  function handleDeleteStaff() {
+    deleteStaffMutation.mutate({ id: staffId }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["listStaff"] });
+        toast({ title: "Staff member deleted" });
+        navigate("/staff");
+      },
+      onError: () => toast({ title: "Failed to delete staff member", variant: "destructive" }),
+    });
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between">
         <Link href="/staff">
           <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 mr-1" />Back to Staff</Button>
         </Link>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/10">
+              <Trash2 className="h-4 w-4 mr-1" />Delete Staff Record
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete {staff.firstName} {staff.lastName}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently remove this staff member and all their qualifications and professional development records. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-white hover:bg-destructive/90"
+                onClick={handleDeleteStaff}
+                disabled={deleteStaffMutation.isPending}
+              >
+                {deleteStaffMutation.isPending ? "Deleting…" : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <div className="flex items-center gap-4">

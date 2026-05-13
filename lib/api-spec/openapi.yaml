@@ -218,6 +218,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Staff"
+    delete:
+      operationId: deleteStaff
+      tags: [staff]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: No Content
 
   /staff/{id}/qualifications:
     get:

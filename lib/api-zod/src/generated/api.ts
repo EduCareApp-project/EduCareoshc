@@ -240,6 +240,10 @@ export const UpdateStaffResponse = zod.object({
   createdAt: zod.coerce.date().optional(),
 });
 
+export const DeleteStaffParams = zod.object({
+  id: zod.coerce.number(),
+});
+
 export const GetStaffQualificationsParams = zod.object({
   id: zod.coerce.number(),
 });

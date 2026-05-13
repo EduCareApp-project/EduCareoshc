@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useListPlanningExperiences, useListChildren, useListSites } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, CalendarDays, MapPin, Users, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
@@ -20,6 +22,7 @@ const STAGE_COLORS: Record<string, string> = {
 
 export default function Planning() {
   const [, navigate] = useLocation();
+  const [siteFilter, setSiteFilter] = useState("all");
   const { data: experiences, isLoading } = useListPlanningExperiences();
   const { data: children } = useListChildren();
   const { data: sites } = useListSites();
@@ -34,6 +37,12 @@ export default function Planning() {
     return s?.name ?? null;
   };
 
+  const filtered = (experiences ?? []).filter((exp) => {
+    if (siteFilter === "all") return true;
+    if (siteFilter === "none") return !exp.siteId;
+    return exp.siteId === parseInt(siteFilter, 10);
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -44,6 +53,30 @@ export default function Planning() {
         <Button onClick={() => navigate("/planning/new")}>
           <Plus className="h-4 w-4 mr-2" />New Planning Cycle
         </Button>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Select value={siteFilter} onValueChange={setSiteFilter}>
+          <SelectTrigger className="w-52">
+            <MapPin className="h-4 w-4 mr-2 text-muted-foreground shrink-0" />
+            <SelectValue placeholder="Filter by site" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All sites</SelectItem>
+            <SelectItem value="none">No location</SelectItem>
+            {(sites ?? []).map((s) => (
+              <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {siteFilter !== "all" && (
+          <button
+            onClick={() => setSiteFilter("all")}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       {isLoading ? (
@@ -61,9 +94,16 @@ export default function Planning() {
             <Plus className="h-4 w-4 mr-2" />New Planning Cycle
           </Button>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <p className="text-muted-foreground">No planning cycles match the selected site.</p>
+          <button onClick={() => setSiteFilter("all")} className="mt-2 text-sm text-primary hover:underline">
+            Clear filter
+          </button>
+        </div>
       ) : (
         <div className="space-y-3">
-          {(experiences ?? []).map((exp) => {
+          {filtered.map((exp) => {
             const site = siteName(exp.siteId);
             const focusNames = (exp.childIds ?? []).slice(0, 3).map(childName);
             const extraChildren = (exp.childIds ?? []).length - 3;

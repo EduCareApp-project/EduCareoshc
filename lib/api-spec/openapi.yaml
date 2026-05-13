@@ -219,6 +219,84 @@ paths:
               schema:
                 $ref: "#/components/schemas/Staff"
 
+  /staff/{id}/qualifications:
+    get:
+      operationId: getStaffQualifications
+      tags: [qualifications]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffQualification"
+    post:
+      operationId: createStaffQualification
+      tags: [qualifications]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffQualificationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffQualification"
+
+  /qualifications/{id}:
+    patch:
+      operationId: updateStaffQualification
+      tags: [qualifications]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffQualificationInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffQualification"
+    delete:
+      operationId: deleteStaffQualification
+      tags: [qualifications]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /staff/{id}/professional-development:
     get:
       operationId: getStaffProfessionalDevelopment
@@ -2661,6 +2739,47 @@ components:
         publishedAt:
           type: string
           format: date-time
+
+    StaffQualification:
+      type: object
+      required: [id, staffId, name, status, createdAt]
+      properties:
+        id:
+          type: integer
+        staffId:
+          type: integer
+        name:
+          type: string
+        status:
+          type: string
+        referenceNumber:
+          type: ["string", "null"]
+        expiryDate:
+          type: ["string", "null"]
+          format: date
+        documentPath:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    StaffQualificationInput:
+      type: object
+      required: [staffId, name, status]
+      properties:
+        staffId:
+          type: integer
+        name:
+          type: string
+        status:
+          type: string
+        referenceNumber:
+          type: string
+        expiryDate:
+          type: string
+          format: date
+        documentPath:
+          type: string
 
     ProfessionalDevelopment:
       type: object

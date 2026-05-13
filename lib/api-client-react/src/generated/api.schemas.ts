@@ -988,6 +988,29 @@ export interface PostUpdate {
   publishedAt?: string;
 }
 
+export interface StaffQualification {
+  id: number;
+  staffId: number;
+  name: string;
+  status: string;
+  /** @nullable */
+  referenceNumber?: string | null;
+  /** @nullable */
+  expiryDate?: string | null;
+  /** @nullable */
+  documentPath?: string | null;
+  createdAt: string;
+}
+
+export interface StaffQualificationInput {
+  staffId: number;
+  name: string;
+  status: string;
+  referenceNumber?: string;
+  expiryDate?: string;
+  documentPath?: string;
+}
+
 export interface ProfessionalDevelopment {
   id: number;
   staffId: number;

@@ -104,6 +104,8 @@ export * from "./staffComplianceReportStaffItem";
 export * from "./staffInput";
 export * from "./staffInputRole";
 export * from "./staffInputStatus";
+export * from "./staffQualification";
+export * from "./staffQualificationInput";
 export * from "./staffRole";
 export * from "./staffStatus";
 export * from "./staffUpdate";

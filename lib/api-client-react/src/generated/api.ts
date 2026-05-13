@@ -74,6 +74,8 @@ import type {
   Staff,
   StaffComplianceReport,
   StaffInput,
+  StaffQualification,
+  StaffQualificationInput,
   StaffUpdate,
   UploadUrlRequest,
   UploadUrlResponse,
@@ -933,6 +935,329 @@ export const useUpdateStaff = <
   TContext
 > => {
   return useMutation(getUpdateStaffMutationOptions(options));
+};
+
+export const getGetStaffQualificationsUrl = (id: number) => {
+  return `/api/staff/${id}/qualifications`;
+};
+
+export const getStaffQualifications = async (
+  id: number,
+  options?: RequestInit,
+): Promise<StaffQualification[]> => {
+  return customFetch<StaffQualification[]>(getGetStaffQualificationsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetStaffQualificationsQueryKey = (id: number) => {
+  return [`/api/staff/${id}/qualifications`] as const;
+};
+
+export const getGetStaffQualificationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStaffQualifications>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getStaffQualifications>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetStaffQualificationsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getStaffQualifications>>
+  > = ({ signal }) => getStaffQualifications(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStaffQualifications>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStaffQualificationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStaffQualifications>>
+>;
+export type GetStaffQualificationsQueryError = ErrorType<unknown>;
+
+export function useGetStaffQualifications<
+  TData = Awaited<ReturnType<typeof getStaffQualifications>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getStaffQualifications>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStaffQualificationsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateStaffQualificationUrl = (id: number) => {
+  return `/api/staff/${id}/qualifications`;
+};
+
+export const createStaffQualification = async (
+  id: number,
+  staffQualificationInput: StaffQualificationInput,
+  options?: RequestInit,
+): Promise<StaffQualification> => {
+  return customFetch<StaffQualification>(getCreateStaffQualificationUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(staffQualificationInput),
+  });
+};
+
+export const getCreateStaffQualificationMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createStaffQualification>>,
+    TError,
+    { id: number; data: BodyType<StaffQualificationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createStaffQualification>>,
+  TError,
+  { id: number; data: BodyType<StaffQualificationInput> },
+  TContext
+> => {
+  const mutationKey = ["createStaffQualification"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createStaffQualification>>,
+    { id: number; data: BodyType<StaffQualificationInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return createStaffQualification(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateStaffQualificationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createStaffQualification>>
+>;
+export type CreateStaffQualificationMutationBody =
+  BodyType<StaffQualificationInput>;
+export type CreateStaffQualificationMutationError = ErrorType<unknown>;
+
+export const useCreateStaffQualification = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createStaffQualification>>,
+    TError,
+    { id: number; data: BodyType<StaffQualificationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createStaffQualification>>,
+  TError,
+  { id: number; data: BodyType<StaffQualificationInput> },
+  TContext
+> => {
+  return useMutation(getCreateStaffQualificationMutationOptions(options));
+};
+
+export const getUpdateStaffQualificationUrl = (id: number) => {
+  return `/api/qualifications/${id}`;
+};
+
+export const updateStaffQualification = async (
+  id: number,
+  staffQualificationInput: StaffQualificationInput,
+  options?: RequestInit,
+): Promise<StaffQualification> => {
+  return customFetch<StaffQualification>(getUpdateStaffQualificationUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(staffQualificationInput),
+  });
+};
+
+export const getUpdateStaffQualificationMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateStaffQualification>>,
+    TError,
+    { id: number; data: BodyType<StaffQualificationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateStaffQualification>>,
+  TError,
+  { id: number; data: BodyType<StaffQualificationInput> },
+  TContext
+> => {
+  const mutationKey = ["updateStaffQualification"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateStaffQualification>>,
+    { id: number; data: BodyType<StaffQualificationInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateStaffQualification(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateStaffQualificationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateStaffQualification>>
+>;
+export type UpdateStaffQualificationMutationBody =
+  BodyType<StaffQualificationInput>;
+export type UpdateStaffQualificationMutationError = ErrorType<unknown>;
+
+export const useUpdateStaffQualification = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateStaffQualification>>,
+    TError,
+    { id: number; data: BodyType<StaffQualificationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateStaffQualification>>,
+  TError,
+  { id: number; data: BodyType<StaffQualificationInput> },
+  TContext
+> => {
+  return useMutation(getUpdateStaffQualificationMutationOptions(options));
+};
+
+export const getDeleteStaffQualificationUrl = (id: number) => {
+  return `/api/qualifications/${id}`;
+};
+
+export const deleteStaffQualification = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteStaffQualificationUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteStaffQualificationMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteStaffQualification>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteStaffQualification>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteStaffQualification"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteStaffQualification>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteStaffQualification(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteStaffQualificationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteStaffQualification>>
+>;
+
+export type DeleteStaffQualificationMutationError = ErrorType<unknown>;
+
+export const useDeleteStaffQualification = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteStaffQualification>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteStaffQualification>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteStaffQualificationMutationOptions(options));
 };
 
 export const getGetStaffProfessionalDevelopmentUrl = (id: number) => {

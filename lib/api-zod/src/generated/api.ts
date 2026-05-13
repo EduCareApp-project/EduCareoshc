@@ -228,6 +228,65 @@ export const UpdateStaffResponse = zod.object({
   createdAt: zod.coerce.date().optional(),
 });
 
+export const GetStaffQualificationsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetStaffQualificationsResponseItem = zod.object({
+  id: zod.number(),
+  staffId: zod.number(),
+  name: zod.string(),
+  status: zod.string(),
+  referenceNumber: zod.string().nullish(),
+  expiryDate: zod.coerce.date().nullish(),
+  documentPath: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const GetStaffQualificationsResponse = zod.array(
+  GetStaffQualificationsResponseItem,
+);
+
+export const CreateStaffQualificationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CreateStaffQualificationBody = zod.object({
+  staffId: zod.number(),
+  name: zod.string(),
+  status: zod.string(),
+  referenceNumber: zod.string().optional(),
+  expiryDate: zod.coerce.date().optional(),
+  documentPath: zod.string().optional(),
+});
+
+export const UpdateStaffQualificationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateStaffQualificationBody = zod.object({
+  staffId: zod.number(),
+  name: zod.string(),
+  status: zod.string(),
+  referenceNumber: zod.string().optional(),
+  expiryDate: zod.coerce.date().optional(),
+  documentPath: zod.string().optional(),
+});
+
+export const UpdateStaffQualificationResponse = zod.object({
+  id: zod.number(),
+  staffId: zod.number(),
+  name: zod.string(),
+  status: zod.string(),
+  referenceNumber: zod.string().nullish(),
+  expiryDate: zod.coerce.date().nullish(),
+  documentPath: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+export const DeleteStaffQualificationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
 export const GetStaffProfessionalDevelopmentParams = zod.object({
   id: zod.coerce.number(),
 });

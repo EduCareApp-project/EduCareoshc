@@ -45,6 +45,24 @@ const STATUS_STYLES: Record<string, string> = {
   pending: "bg-amber-100 text-amber-800 border-amber-200",
 };
 
+const QUALIFICATION_NAMES = [
+  "Child Safety - Foundation Child Safety Training (GECCKO)",
+  "Child Safety - Mandatory Reporting and Other Obligations",
+  "Child Wellbeing",
+  "CPR Renewal",
+  "Education Qualifications",
+  "First Aid",
+  "Food Safety",
+  "History & Compliance",
+  "Managing Challenging Behaviour (DET)",
+  "National Police Check",
+  "Responsible Person Declaration",
+  "Resume",
+  "Risk Management (DET)",
+  "Staff Details (DET)",
+  "WWCC",
+];
+
 const EMPTY_QUAL_FORM = { name: "", status: "current", referenceNumber: "", expiryDate: "" };
 
 export default function StaffProfile() {
@@ -394,12 +412,20 @@ export default function StaffProfile() {
           <form onSubmit={handleQualSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Label>Name <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="e.g. First Aid Certificate, Blue Card"
+              <Select
                 value={qualForm.name}
-                onChange={(e) => setQualForm((f) => ({ ...f, name: e.target.value }))}
+                onValueChange={(v) => setQualForm((f) => ({ ...f, name: v }))}
                 required
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select qualification type..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {QUALIFICATION_NAMES.map((n) => (
+                    <SelectItem key={n} value={n}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

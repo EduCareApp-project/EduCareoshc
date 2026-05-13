@@ -23,7 +23,7 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import {
-  ArrowLeft, Edit, Plus, Trash2, User, Phone, Mail, FileText,
+  ArrowLeft, Edit, Plus, Trash2, User, Users, Phone, Mail, FileText,
   Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2,
   ShieldAlert, AlertTriangle, Paperclip, X, Lock, Pencil,
 } from "lucide-react";
@@ -355,6 +355,16 @@ export default function ChildProfile() {
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4" />Date of Birth</div>
                 <p className="font-medium">{safeDate(child.dateOfBirth, "MMMM d, yyyy")}</p>
+              </div>
+              <Separator />
+              <div className="space-y-1">
+                <div className="text-sm text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4" />Enrollment Date</div>
+                <p className="font-medium">{safeDate(child.enrollmentDate, "MMMM d, yyyy")}</p>
+              </div>
+              <Separator />
+              <div className="space-y-1">
+                <div className="text-sm text-muted-foreground flex items-center gap-2"><Users className="h-4 w-4" />Age Group</div>
+                <p className="font-medium capitalize">{child.ageGroup}</p>
               </div>
               <Separator />
               <div className="space-y-1">
@@ -739,6 +749,7 @@ export default function ChildProfile() {
                 <TabsTrigger value="details">Details</TabsTrigger>
                 <TabsTrigger value="guardian">Guardian</TabsTrigger>
                 <TabsTrigger value="profile">Profile Info</TabsTrigger>
+                <TabsTrigger value="childdata">Child's Data</TabsTrigger>
               </TabsList>
 
               <TabsContent value="details" className="space-y-4">
@@ -792,6 +803,27 @@ export default function ChildProfile() {
                 <div className="space-y-1">
                   <Label className="flex items-center gap-2"><ThumbsDown className="h-4 w-4 text-slate-400" />Dislikes</Label>
                   <Textarea value={form.dislikes} onChange={(e) => setForm({ ...form, dislikes: e.target.value })} rows={3} placeholder="e.g. Loud noises, sand textures, transitions between activities..." />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="childdata" className="space-y-4">
+                <p className="text-sm text-muted-foreground">Enrollment and placement details for this child.</p>
+                <div className="space-y-1">
+                  <Label>Enrollment Date</Label>
+                  <Input type="date" value={form.enrollmentDate} onChange={(e) => setForm({ ...form, enrollmentDate: e.target.value })} required />
+                </div>
+                <div className="space-y-1">
+                  <Label>Age Group / Room</Label>
+                  <Select value={form.ageGroup} onValueChange={(v) => setForm({ ...form, ageGroup: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select age group" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="infant">Infant (0–12 months)</SelectItem>
+                      <SelectItem value="toddler">Toddler (1–2 years)</SelectItem>
+                      <SelectItem value="twos">Twos (2–3 years)</SelectItem>
+                      <SelectItem value="preschool">Preschool (3–5 years)</SelectItem>
+                      <SelectItem value="schoolage">School Age (5+ years)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </TabsContent>
             </Tabs>

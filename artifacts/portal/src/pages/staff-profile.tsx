@@ -283,7 +283,16 @@ export default function StaffProfile() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {(qualifications ?? []).map((q) => {
+              {[...(qualifications ?? [])].sort((a, b) => {
+                const now = new Date();
+                const isExpired = (q: typeof a) => {
+                  const d = q.expiryDate instanceof Date ? q.expiryDate : q.expiryDate ? new Date(String(q.expiryDate)) : null;
+                  return (d && !isNaN(d.getTime()) && d < now) || q.status === "expired";
+                };
+                if (isExpired(a) && !isExpired(b)) return -1;
+                if (!isExpired(a) && isExpired(b)) return 1;
+                return QUALIFICATION_NAMES.indexOf(a.name) - QUALIFICATION_NAMES.indexOf(b.name);
+              }).map((q) => {
                 const expiry = q.expiryDate instanceof Date ? q.expiryDate : q.expiryDate ? new Date(String(q.expiryDate)) : null;
                 const expiryValid = expiry && !isNaN(expiry.getTime());
                 const isDateExpired = expiryValid && expiry! < new Date();

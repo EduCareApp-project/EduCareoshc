@@ -282,10 +282,10 @@ export default function ChildProfile() {
                   </Select>
                 </div>
                 <div className="space-y-1"><Label>Site</Label>
-                  <Select value={form.siteId} onValueChange={(v) => setForm({ ...form, siteId: v })}>
+                  <Select value={form.siteId || "none"} onValueChange={(v) => setForm({ ...form, siteId: v === "none" ? "" : v })}>
                     <SelectTrigger><SelectValue placeholder="No site assigned" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No site</SelectItem>
+                      <SelectItem value="none">No site</SelectItem>
                       {sites?.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
                     </SelectContent>
                   </Select>

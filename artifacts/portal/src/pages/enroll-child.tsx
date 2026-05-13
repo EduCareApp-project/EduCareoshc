@@ -190,14 +190,14 @@ export default function EnrollChild() {
                     <FormItem className="sm:col-span-2">
                       <FormLabel>Site</FormLabel>
                       <Select
-                        onValueChange={(v) => field.onChange(v ? parseInt(v) : undefined)}
-                        value={field.value != null ? String(field.value) : ""}
+                        onValueChange={(v) => field.onChange(v && v !== "none" ? parseInt(v) : undefined)}
+                        value={field.value != null ? String(field.value) : "none"}
                       >
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Select site (optional)" /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No site</SelectItem>
+                          <SelectItem value="none">No site</SelectItem>
                           {sites.map((s) => (
                             <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
                           ))}

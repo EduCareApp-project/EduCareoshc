@@ -161,6 +161,7 @@ export const ListGuardiansResponseItem = zod.object({
   guardianPhone: zod.string(),
   childIds: zod.array(zod.number()),
   childNames: zod.array(zod.string()),
+  siteIds: zod.array(zod.number()),
   username: zod.string().nullish(),
   hasPassword: zod.boolean(),
 });
@@ -179,6 +180,7 @@ export const GetGuardianResponse = zod.object({
   guardianPhone: zod.string(),
   childIds: zod.array(zod.number()),
   childNames: zod.array(zod.string()),
+  siteIds: zod.array(zod.number()),
   username: zod.string().nullish(),
   hasPassword: zod.boolean(),
 });
@@ -200,6 +202,7 @@ export const UpdateGuardianResponse = zod.object({
   guardianPhone: zod.string(),
   childIds: zod.array(zod.number()),
   childNames: zod.array(zod.string()),
+  siteIds: zod.array(zod.number()),
   username: zod.string().nullish(),
   hasPassword: zod.boolean(),
 });

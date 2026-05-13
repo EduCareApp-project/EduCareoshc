@@ -12,6 +12,7 @@ export interface Guardian {
   guardianPhone: string;
   childIds: number[];
   childNames: string[];
+  siteIds: number[];
   /** @nullable */
   username?: string | null;
   hasPassword: boolean;

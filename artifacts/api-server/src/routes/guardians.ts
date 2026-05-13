@@ -36,6 +36,7 @@ async function buildGuardianList() {
     guardianPhone: string;
     childIds: number[];
     childNames: string[];
+    siteIds: number[];
   }>();
 
   for (const c of children) {
@@ -47,11 +48,13 @@ async function buildGuardianList() {
         guardianPhone: c.guardianPhone,
         childIds: [],
         childNames: [],
+        siteIds: [],
       });
     }
     const g = grouped.get(key)!;
     g.childIds.push(c.id);
     g.childNames.push(`${c.firstName} ${c.lastName}`);
+    if (c.siteId != null && !g.siteIds.includes(c.siteId)) g.siteIds.push(c.siteId);
   }
 
   return Array.from(grouped.values()).map((g) => {

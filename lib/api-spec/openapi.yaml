@@ -1693,7 +1693,7 @@ components:
   schemas:
     Guardian:
       type: object
-      required: [guardianEmail, guardianName, guardianPhone, childIds, childNames, hasPassword]
+      required: [guardianEmail, guardianName, guardianPhone, childIds, childNames, siteIds, hasPassword]
       properties:
         guardianEmail:
           type: string
@@ -1709,6 +1709,10 @@ components:
           type: array
           items:
             type: string
+        siteIds:
+          type: array
+          items:
+            type: integer
         username:
           type: ["string", "null"]
         hasPassword:

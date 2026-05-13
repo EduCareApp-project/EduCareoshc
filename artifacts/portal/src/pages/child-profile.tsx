@@ -758,13 +758,10 @@ export default function ChildProfile() {
                       <div className="grid sm:grid-cols-2 gap-3">
                         {childPlanningExps.map((p) => (
                           <Link key={p.id} href={`/planning/${p.id}`}>
-                            <div className="p-3 rounded-lg border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer space-y-1 h-full">
-                              <p className="text-sm font-medium line-clamp-1">{p.title}</p>
-                              <p className="text-xs text-muted-foreground line-clamp-2">{p.description}</p>
-                              <div className="flex items-center gap-2 pt-1">
-                                <Badge variant="outline" className="text-xs capitalize">{p.stage}</Badge>
-                                {p.startDate && <span className="text-xs text-muted-foreground">{safeDate(p.startDate, "d MMM yyyy")}</span>}
-                              </div>
+                            <div className="px-3 py-2.5 rounded-lg border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer flex items-center gap-2 min-w-0">
+                              <span className="text-sm font-medium truncate flex-1">{p.title}</span>
+                              <Badge variant="outline" className="text-xs capitalize shrink-0">{p.stage}</Badge>
+                              {p.startDate && <span className="text-xs text-muted-foreground shrink-0">{safeDate(p.startDate, "d MMM yyyy")}</span>}
                             </div>
                           </Link>
                         ))}

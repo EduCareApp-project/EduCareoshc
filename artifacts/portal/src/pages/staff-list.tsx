@@ -42,44 +42,46 @@ export default function StaffList() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {staff?.map((member) => (
-            <Card key={member.id} className="hover:border-primary/30 transition-all">
-              <CardHeader className="pb-3 flex flex-row items-start justify-between space-y-0">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-accent text-accent-foreground flex items-center justify-center font-bold">
-                    {member.firstName[0]}{member.lastName[0]}
+            <Link key={member.id} href={`/staff/${member.id}`}>
+              <Card className="hover:border-primary/50 hover:shadow-md transition-all cursor-pointer h-full">
+                <CardHeader className="pb-3 flex flex-row items-start justify-between space-y-0">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-accent text-accent-foreground flex items-center justify-center font-bold">
+                      {member.firstName[0]}{member.lastName[0]}
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{member.firstName} {member.lastName}</CardTitle>
+                      <div className="text-sm text-primary font-medium">{ROLE_LABELS[member.role] ?? member.role}</div>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">{member.firstName} {member.lastName}</CardTitle>
-                    <div className="text-sm text-primary font-medium">{ROLE_LABELS[member.role] ?? member.role}</div>
-                  </div>
-                </div>
-                <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className="capitalize">
-                  {member.status}
-                </Badge>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Award className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{member.qualifications}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Mail className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{member.email}</span>
-                </div>
-                {member.phone && (
+                  <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className="capitalize">
+                    {member.status}
+                  </Badge>
+                </CardHeader>
+                <CardContent className="space-y-3">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Phone className="h-4 w-4 shrink-0" />
-                    <span>{member.phone}</span>
+                    <Award className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{member.qualifications}</span>
                   </div>
-                )}
-                {member.wwccNumber && (
-                  <div className="mt-2 pt-2 border-t text-xs text-muted-foreground flex justify-between">
-                    <span>WWCC:</span>
-                    <span className="font-mono">{member.wwccNumber}</span>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{member.email}</span>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  {member.phone && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Phone className="h-4 w-4 shrink-0" />
+                      <span>{member.phone}</span>
+                    </div>
+                  )}
+                  {member.wwccNumber && (
+                    <div className="mt-2 pt-2 border-t text-xs text-muted-foreground flex justify-between">
+                      <span>WWCC:</span>
+                      <span className="font-mono">{member.wwccNumber}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

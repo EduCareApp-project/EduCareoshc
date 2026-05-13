@@ -24,8 +24,9 @@ import { format } from "date-fns";
 import {
   ArrowLeft, Edit, Plus, Trash2, User, Phone, Mail, FileText,
   Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2,
-  ShieldAlert, AlertTriangle,
+  ShieldAlert, AlertTriangle, Paperclip, X,
 } from "lucide-react";
+import { useUpload } from "@workspace/object-storage-web";
 import { useToast } from "@/hooks/use-toast";
 
 const AGE_GROUP_LABELS: Record<string, string> = { infant: "Infant", toddler: "Toddler", preschool: "Preschool", school_age: "School Age" };
@@ -45,7 +46,6 @@ const EMPTY_WELFARE_FORM = {
   staffId: "",
   concerns: "",
   riskFactors: "",
-  evidence: "",
   mandatoryReportRequired: false,
   mandatoryReportNotes: "",
   cissThresholdMet: false,
@@ -75,6 +75,12 @@ export default function ChildProfile() {
   const [editOpen, setEditOpen] = useState(false);
   const [welfareOpen, setWelfareOpen] = useState(false);
   const [welfareForm, setWelfareForm] = useState(EMPTY_WELFARE_FORM);
+  const [evidenceObjectPath, setEvidenceObjectPath] = useState<string | null>(null);
+  const [evidenceFileName, setEvidenceFileName] = useState<string | null>(null);
+
+  const { uploadFile, isUploading: isUploadingEvidence } = useUpload({
+    onError: () => toast({ title: "File upload failed", variant: "destructive" }),
+  });
 
   const [form, setForm] = useState({
     firstName: "", lastName: "", dateOfBirth: "", enrollmentDate: "",
@@ -147,7 +153,7 @@ export default function ChildProfile() {
       fvissThresholdMet: welfareForm.fvissThresholdMet,
     };
     if (welfareForm.staffId) body.staffId = parseInt(welfareForm.staffId);
-    if (welfareForm.evidence) body.evidence = welfareForm.evidence;
+    if (evidenceObjectPath) body.evidence = evidenceObjectPath;
     if (welfareForm.mandatoryReportNotes) body.mandatoryReportNotes = welfareForm.mandatoryReportNotes;
     if (welfareForm.cissNotes) body.cissNotes = welfareForm.cissNotes;
     if (welfareForm.fvissNotes) body.fvissNotes = welfareForm.fvissNotes;
@@ -156,6 +162,8 @@ export default function ChildProfile() {
       onSuccess: () => {
         setWelfareOpen(false);
         setWelfareForm(EMPTY_WELFARE_FORM);
+        setEvidenceObjectPath(null);
+        setEvidenceFileName(null);
         queryClient.invalidateQueries({ queryKey: [`/api/children/${id}/welfare-notes`] });
         toast({ title: "Welfare note recorded" });
       },
@@ -372,7 +380,7 @@ export default function ChildProfile() {
             <ShieldAlert className="h-5 w-5 text-amber-600" />
             Welfare Notification Log
           </CardTitle>
-          <Button size="sm" variant="outline" onClick={() => { setWelfareForm(EMPTY_WELFARE_FORM); setWelfareOpen(true); }}>
+          <Button size="sm" onClick={() => { setWelfareForm(EMPTY_WELFARE_FORM); setEvidenceObjectPath(null); setEvidenceFileName(null); setWelfareOpen(true); }}>
             <Plus className="h-4 w-4 mr-1" />New Welfare Note
           </Button>
         </CardHeader>
@@ -611,13 +619,40 @@ export default function ChildProfile() {
             </div>
 
             <div className="space-y-1">
-              <Label>Evidence / Observations <span className="text-muted-foreground text-xs">(optional)</span></Label>
-              <Textarea
-                value={welfareForm.evidence}
-                onChange={(e) => setWelfareForm({ ...welfareForm, evidence: e.target.value })}
-                rows={2}
-                placeholder="Physical signs, behaviours, or statements observed..."
-              />
+              <Label>Evidence File <span className="text-muted-foreground text-xs">(optional — photo, document, etc.)</span></Label>
+              {evidenceFileName ? (
+                <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                  <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="flex-1 truncate">{evidenceFileName}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setEvidenceObjectPath(null); setEvidenceFileName(null); }}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className={`flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-3 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary ${isUploadingEvidence ? "opacity-50 pointer-events-none" : ""}`}>
+                  <Paperclip className="h-4 w-4 shrink-0" />
+                  <span>{isUploadingEvidence ? "Uploading…" : "Click to attach a file"}</span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    disabled={isUploadingEvidence}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const result = await uploadFile(file);
+                      if (result) {
+                        setEvidenceObjectPath(result.objectPath);
+                        setEvidenceFileName(file.name);
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              )}
             </div>
 
             <Separator />

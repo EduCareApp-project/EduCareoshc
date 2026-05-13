@@ -42,7 +42,6 @@ const NAV_GROUPS = [
     items: [
       { href: "/calendar", label: "Calendar", icon: CalendarDays },
       { href: "/planning", label: "Planning Cycle", icon: Layers },
-      { href: "/programs", label: "Programs", icon: ClipboardList },
       { href: "/nqs", label: "NQS Compliance", icon: ShieldCheck },
       { href: "/outcomes", label: "MTOP Outcomes", icon: Award },
     ]

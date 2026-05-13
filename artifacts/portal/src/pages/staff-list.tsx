@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useListStaff, useGetStaffQualifications } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,8 +26,16 @@ function QualLevelBadge({ staffId }: { staffId: number }) {
   );
 }
 
+type StatusFilter = "active" | "inactive";
+
 export default function StaffList() {
   const { data: staff, isLoading } = useListStaff();
+  const [filter, setFilter] = useState<StatusFilter>("active");
+
+  const filtered = staff?.filter((m) => m.status === filter) ?? [];
+
+  const activeCount = staff?.filter((m) => m.status === "active").length ?? 0;
+  const inactiveCount = staff?.filter((m) => m.status === "inactive").length ?? 0;
 
   return (
     <div className="space-y-6">
@@ -42,6 +51,39 @@ export default function StaffList() {
         </Link>
       </div>
 
+      <div className="flex items-center gap-1 p-1 bg-muted rounded-lg w-fit">
+        <button
+          onClick={() => setFilter("active")}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            filter === "active"
+              ? "bg-background shadow-sm text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Active
+          {!isLoading && (
+            <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${filter === "active" ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20"}`}>
+              {activeCount}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setFilter("inactive")}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            filter === "inactive"
+              ? "bg-background shadow-sm text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Inactive
+          {!isLoading && (
+            <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${filter === "inactive" ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20"}`}>
+              {inactiveCount}
+            </span>
+          )}
+        </button>
+      </div>
+
       {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1,2,3,4].map(i => (
@@ -50,15 +92,17 @@ export default function StaffList() {
             </Card>
           ))}
         </div>
-      ) : staff?.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="text-center p-12 bg-card rounded-lg border border-dashed">
           <UserCog className="mx-auto h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-          <h3 className="text-lg font-medium text-foreground mb-1">No staff found</h3>
-          <p className="text-muted-foreground">Add your first staff member.</p>
+          <h3 className="text-lg font-medium text-foreground mb-1">No {filter} staff</h3>
+          <p className="text-muted-foreground">
+            {filter === "active" ? "Add your first staff member to get started." : "No inactive staff members on record."}
+          </p>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {staff?.map((member) => (
+          {filtered.map((member) => (
             <Link key={member.id} href={`/staff/${member.id}`}>
               <Card className="hover:border-primary/50 hover:shadow-md transition-all cursor-pointer h-full">
                 <CardHeader className="pb-3 flex flex-row items-start justify-between space-y-0">

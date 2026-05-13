@@ -342,8 +342,6 @@ export default function ChildProfile() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="childdata">Child's Data</TabsTrigger>
-          <TabsTrigger value="learning">Learning</TabsTrigger>
-          <TabsTrigger value="welfare">Welfare</TabsTrigger>
         </TabsList>
 
         {/* ── Overview ── */}
@@ -442,28 +440,6 @@ export default function ChildProfile() {
           </Card>
         )}
       </div>
-        </TabsContent>
-
-        {/* ── Child's Data ── */}
-        <TabsContent value="childdata">
-          <Card>
-            <CardHeader><CardTitle className="text-base">Child's Data</CardTitle></CardHeader>
-            <CardContent className="space-y-6 max-w-sm">
-              <div className="space-y-1">
-                <div className="text-sm text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4" />Enrollment Date</div>
-                <p className="font-medium">{safeDate(child.enrollmentDate, "MMMM d, yyyy")}</p>
-              </div>
-              <Separator />
-              <div className="space-y-1">
-                <div className="text-sm text-muted-foreground flex items-center gap-2"><Users className="h-4 w-4" />Age Group / Room</div>
-                <p className="font-medium capitalize">{child.ageGroup}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ── Learning ── */}
-        <TabsContent value="learning">
       {/* Learning Observations */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -501,10 +477,7 @@ export default function ChildProfile() {
           )}
         </CardContent>
       </Card>
-        </TabsContent>
 
-        {/* ── Welfare ── */}
-        <TabsContent value="welfare" className="space-y-6">
       {/* Welfare Notification Log */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -726,6 +699,24 @@ export default function ChildProfile() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        {/* ── Child's Data ── */}
+        <TabsContent value="childdata">
+          <Card>
+            <CardHeader><CardTitle className="text-base">Child's Data</CardTitle></CardHeader>
+            <CardContent className="space-y-6 max-w-sm">
+              <div className="space-y-1">
+                <div className="text-sm text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4" />Enrollment Date</div>
+                <p className="font-medium">{safeDate(child.enrollmentDate, "MMMM d, yyyy")}</p>
+              </div>
+              <Separator />
+              <div className="space-y-1">
+                <div className="text-sm text-muted-foreground flex items-center gap-2"><Users className="h-4 w-4" />Age Group / Room</div>
+                <p className="font-medium capitalize">{child.ageGroup}</p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
       </Tabs>

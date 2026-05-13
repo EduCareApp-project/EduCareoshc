@@ -733,6 +733,7 @@ export default function ChildProfile() {
                             <div className="p-3 rounded-lg border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer space-y-1 h-full">
                               <p className="text-sm line-clamp-2 leading-relaxed">{obs.description}</p>
                               <p className="text-xs text-muted-foreground">{safeDate(obs.observationDate, "d MMM yyyy")}{obs.staffName ? ` · ${obs.staffName}` : ""}</p>
+                              <p className="text-xs text-muted-foreground">Last edited {safeDate(obs.updatedAt, "d MMM yyyy, h:mm a")}</p>
                             </div>
                           </Link>
                         ))}

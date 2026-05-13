@@ -117,8 +117,8 @@ export default function PlanningDetail() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: experience, isLoading: loadingExp } = useGetPlanningExperience(
-    { id: id! },
-    { query: { enabled: !isNew } }
+    id ?? 0,
+    { query: { enabled: !isNew && id !== null } }
   );
   const { data: allChildren } = useListChildren();
   const { data: sites } = useListSites();

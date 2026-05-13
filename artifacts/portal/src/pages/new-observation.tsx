@@ -1,189 +1,194 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useCreateObservation, useListChildren, useListStaff, useListOutcomes, useListPrograms, getListObservationsQueryKey } from "@workspace/api-client-react";
+import { useState } from "react";
+import { useCreateObservation, useListChildren, useListStaff, getListObservationsQueryKey } from "@workspace/api-client-react";
 import { useLocation, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft } from "lucide-react";
-import { Link } from "wouter";
+import { ArrowLeft, FileText } from "lucide-react";
 import { useMemo } from "react";
 
-const formSchema = z.object({
-  childId: z.coerce.number().min(1, "Select a child"),
-  staffId: z.coerce.number().min(1, "Select an educator"),
-  title: z.string().min(1, "Title is required"),
-  description: z.string().min(10, "Please provide more details in the observation"),
-  observationDate: z.string().min(1, "Date is required"),
-  outcomeIds: z.array(z.number()).min(1, "Select at least one MTOP outcome"),
-  programId: z.coerce.number().optional().or(z.literal(0).transform(() => undefined)),
-  learningExtension: z.string().optional(),
-});
+const EMPTY_FORM = {
+  childId: "",
+  staffId: "",
+  observationDate: new Date().toISOString().split("T")[0],
+  description: "",
+  commentPlan: "",
+  actionNotes: "",
+};
 
 export default function NewObservation() {
   const [, setLocation] = useLocation();
   const searchString = useSearch();
   const searchParams = new URLSearchParams(searchString);
   const prefilledChildId = searchParams.get("childId");
-  
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   const createObservation = useCreateObservation();
   const { data: children } = useListChildren();
   const { data: staff } = useListStaff();
-  const { data: outcomes } = useListOutcomes();
-  const { data: programs } = useListPrograms();
 
-  const activeChildren = useMemo(() => children?.filter(c => c.status === 'active') || [], [children]);
-  const activePrograms = useMemo(() => programs?.filter(p => p.status === 'active') || [], [programs]);
+  const activeChildren = useMemo(() => children?.filter((c) => c.status === "active") || [], [children]);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      childId: prefilledChildId ? parseInt(prefilledChildId) : 0,
-      staffId: 0,
-      title: "",
-      description: "",
-      observationDate: new Date().toISOString().split('T')[0],
-      outcomeIds: [],
-      programId: 0,
-      learningExtension: "",
-    },
+  const [form, setForm] = useState({
+    ...EMPTY_FORM,
+    childId: prefilledChildId || "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
+  function validate() {
+    const e: Record<string, string> = {};
+    if (!form.childId) e.childId = "Select a child";
+    if (!form.staffId) e.staffId = "Select an educator";
+    if (!form.observationDate) e.observationDate = "Date is required";
+    if (!form.description.trim()) e.description = "Observation is required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!validate()) return;
+
+    const body: Record<string, unknown> = {
+      childId: parseInt(form.childId),
+      staffId: parseInt(form.staffId),
+      observationDate: form.observationDate,
+      description: form.description.trim(),
+    };
+    if (form.commentPlan.trim()) body.commentPlan = form.commentPlan.trim();
+    if (form.actionNotes.trim()) body.actionNotes = form.actionNotes.trim();
+
     createObservation.mutate(
-      { data: data as any },
+      { data: body as any },
       {
         onSuccess: (obs) => {
           queryClient.invalidateQueries({ queryKey: getListObservationsQueryKey() });
-          toast({ title: "Success", description: "Observation recorded successfully" });
+          toast({ title: "Observation recorded" });
           setLocation(`/observations/${obs.id}`);
         },
-        onError: () => {
-          toast({ title: "Error", description: "Failed to save observation.", variant: "destructive" });
-        },
+        onError: () => toast({ title: "Failed to save observation", variant: "destructive" }),
       }
     );
-  };
+  }
+
+  const f = (field: keyof typeof form, value: string) =>
+    setForm((prev) => ({ ...prev, [field]: value }));
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+    <div className="max-w-3xl mx-auto space-y-6 pb-12">
       <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => history.back()}><ArrowLeft className="h-4 w-4" /></Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Record Observation</h1>
+        <Button variant="outline" size="icon" onClick={() => history.back()}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div className="flex items-center gap-2">
+          <FileText className="h-5 w-5 text-primary" />
+          <h1 className="text-2xl font-bold tracking-tight">New Observation</h1>
         </div>
       </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="md:col-span-2 space-y-6">
-              <Card>
-                <CardHeader><CardTitle>Documentation</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField control={form.control} name="title" render={({ field }) => (
-                    <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="E.g. Building a block tower independently" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <FormField control={form.control} name="observationDate" render={({ field }) => (
-                      <FormItem><FormLabel>Date of Observation</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="programId" render={({ field }) => (
-                      <FormItem><FormLabel>Link to Program (Optional)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value ? field.value.toString() : "0"}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select a program" /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            <SelectItem value="0">None</SelectItem>
-                            {activePrograms.map(p => <SelectItem key={p.id} value={p.id.toString()}>{p.title}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      <FormMessage /></FormItem>
-                    )} />
-                  </div>
-                  <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem><FormLabel>Observation Notes</FormLabel><FormControl><Textarea rows={6} placeholder="Describe what the child did, said, and how they interacted..." {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="learningExtension" render={({ field }) => (
-                    <FormItem><FormLabel>Learning Extension (Next Steps)</FormLabel><FormControl><Textarea rows={3} placeholder="How will you extend this learning?" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader><CardTitle>MTOP Outcomes</CardTitle></CardHeader>
-                <CardContent>
-                  <FormField control={form.control} name="outcomeIds" render={() => (
-                    <FormItem className="space-y-2">
-                      {outcomes?.map((outcome) => (
-                        <FormField key={outcome.id} control={form.control} name="outcomeIds" render={({ field }) => (
-                          <FormItem key={outcome.id} className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 shadow-sm bg-card">
-                            <FormControl>
-                              <Checkbox 
-                                checked={field.value?.includes(outcome.id)} 
-                                onCheckedChange={(checked) => checked ? field.onChange([...field.value, outcome.id]) : field.onChange(field.value?.filter((val) => val !== outcome.id))}
-                              />
-                            </FormControl>
-                            <FormLabel className="font-normal cursor-pointer leading-tight">
-                              <span className="font-semibold block mb-0.5">Outcome {outcome.number}: {outcome.title}</span>
-                              <span className="text-muted-foreground text-xs">{outcome.description}</span>
-                            </FormLabel>
-                          </FormItem>
-                        )} />
-                      ))}
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </CardContent>
-              </Card>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card>
+          <CardHeader><CardTitle>Context</CardTitle></CardHeader>
+          <CardContent className="grid sm:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label>Child</Label>
+              <Select value={form.childId} onValueChange={(v) => f("childId", v)}>
+                <SelectTrigger className={errors.childId ? "border-destructive" : ""}>
+                  <SelectValue placeholder="Select child" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeChildren.map((c) => (
+                    <SelectItem key={c.id} value={c.id.toString()}>{c.firstName} {c.lastName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.childId && <p className="text-xs text-destructive">{errors.childId}</p>}
             </div>
 
-            <div className="space-y-6">
-              <Card>
-                <CardHeader><CardTitle>Context</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField control={form.control} name="childId" render={({ field }) => (
-                    <FormItem><FormLabel>Child</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value ? field.value.toString() : ""}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select child" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {activeChildren.map(c => <SelectItem key={c.id} value={c.id.toString()}>{c.firstName} {c.lastName}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    <FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="staffId" render={({ field }) => (
-                    <FormItem><FormLabel>Educator</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value ? field.value.toString() : ""}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select educator" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {staff?.map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.firstName} {s.lastName}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    <FormMessage /></FormItem>
-                  )} />
-                </CardContent>
-              </Card>
-
-              <div className="flex flex-col gap-3 pt-4">
-                <Button type="submit" size="lg" disabled={createObservation.isPending}>
-                  {createObservation.isPending ? "Saving..." : "Save Observation"}
-                </Button>
-                <Button variant="outline" size="lg" type="button" onClick={() => history.back()}>Cancel</Button>
-              </div>
+            <div className="space-y-1.5">
+              <Label>Educator</Label>
+              <Select value={form.staffId} onValueChange={(v) => f("staffId", v)}>
+                <SelectTrigger className={errors.staffId ? "border-destructive" : ""}>
+                  <SelectValue placeholder="Select educator" />
+                </SelectTrigger>
+                <SelectContent>
+                  {staff?.map((s) => (
+                    <SelectItem key={s.id} value={s.id.toString()}>{s.firstName} {s.lastName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.staffId && <p className="text-xs text-destructive">{errors.staffId}</p>}
             </div>
-          </div>
-        </form>
-      </Form>
+
+            <div className="space-y-1.5">
+              <Label>Date</Label>
+              <Input
+                type="date"
+                value={form.observationDate}
+                onChange={(e) => f("observationDate", e.target.value)}
+                className={errors.observationDate ? "border-destructive" : ""}
+              />
+              {errors.observationDate && <p className="text-xs text-destructive">{errors.observationDate}</p>}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Documentation</CardTitle></CardHeader>
+          <CardContent className="space-y-5">
+            <div className="space-y-1.5">
+              <Label>Observation</Label>
+              <Textarea
+                rows={6}
+                placeholder="Describe what the child did, said, and how they engaged..."
+                value={form.description}
+                onChange={(e) => f("description", e.target.value)}
+                className={errors.description ? "border-destructive" : ""}
+              />
+              {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
+            </div>
+
+            <Separator />
+
+            <div className="space-y-1.5">
+              <Label>Comment / Plan</Label>
+              <Textarea
+                rows={4}
+                placeholder="Educator's analysis, interpretation, and planned next steps..."
+                value={form.commentPlan}
+                onChange={(e) => f("commentPlan", e.target.value)}
+              />
+            </div>
+
+            <Separator />
+
+            <div className="space-y-1.5">
+              <Label>Action Notes <span className="text-muted-foreground font-normal text-xs">(optional — can be added later)</span></Label>
+              <Textarea
+                rows={3}
+                placeholder="Actions taken or follow-up steps completed..."
+                value={form.actionNotes}
+                onChange={(e) => f("actionNotes", e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="outline" onClick={() => history.back()}>Cancel</Button>
+          <Button type="submit" disabled={createObservation.isPending}>
+            {createObservation.isPending ? "Saving..." : "Save Observation"}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

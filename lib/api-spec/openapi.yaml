@@ -1739,7 +1739,7 @@ components:
 
     Observation:
       type: object
-      required: [id, childId, staffId, title, description, observationDate, outcomeIds, createdAt]
+      required: [id, childId, staffId, description, observationDate, createdAt]
       properties:
         id:
           type: integer
@@ -1751,22 +1751,14 @@ components:
           type: integer
         staffName:
           type: ["string", "null"]
-        title:
-          type: string
         description:
           type: string
         observationDate:
           type: string
           format: date
-        outcomeIds:
-          type: array
-          items:
-            type: integer
-        programId:
-          type: ["integer", "null"]
-        programName:
+        commentPlan:
           type: ["string", "null"]
-        learningExtension:
+        actionNotes:
           type: ["string", "null"]
         createdAt:
           type: string
@@ -1774,45 +1766,35 @@ components:
 
     ObservationInput:
       type: object
-      required: [childId, staffId, title, description, observationDate, outcomeIds]
+      required: [childId, staffId, description, observationDate]
       properties:
         childId:
           type: integer
         staffId:
           type: integer
-        title:
-          type: string
         description:
           type: string
         observationDate:
           type: string
           format: date
-        outcomeIds:
-          type: array
-          items:
-            type: integer
-        programId:
-          type: integer
-        learningExtension:
+        commentPlan:
+          type: string
+        actionNotes:
           type: string
 
     ObservationUpdate:
       type: object
       properties:
-        title:
-          type: string
+        staffId:
+          type: integer
         description:
           type: string
         observationDate:
           type: string
           format: date
-        outcomeIds:
-          type: array
-          items:
-            type: integer
-        programId:
-          type: integer
-        learningExtension:
+        commentPlan:
+          type: string
+        actionNotes:
           type: string
 
     Outcome:

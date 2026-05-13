@@ -242,37 +242,30 @@ export interface Observation {
   staffId: number;
   /** @nullable */
   staffName?: string | null;
-  title: string;
   description: string;
   observationDate: string;
-  outcomeIds: number[];
   /** @nullable */
-  programId?: number | null;
+  commentPlan?: string | null;
   /** @nullable */
-  programName?: string | null;
-  /** @nullable */
-  learningExtension?: string | null;
+  actionNotes?: string | null;
   createdAt: string;
 }
 
 export interface ObservationInput {
   childId: number;
   staffId: number;
-  title: string;
   description: string;
   observationDate: string;
-  outcomeIds: number[];
-  programId?: number;
-  learningExtension?: string;
+  commentPlan?: string;
+  actionNotes?: string;
 }
 
 export interface ObservationUpdate {
-  title?: string;
+  staffId?: number;
   description?: string;
   observationDate?: string;
-  outcomeIds?: number[];
-  programId?: number;
-  learningExtension?: string;
+  commentPlan?: string;
+  actionNotes?: string;
 }
 
 export interface Outcome {

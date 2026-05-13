@@ -142,13 +142,10 @@ export const GetChildObservationsResponseItem = zod.object({
   childName: zod.string().nullish(),
   staffId: zod.number(),
   staffName: zod.string().nullish(),
-  title: zod.string(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
-  outcomeIds: zod.array(zod.number()),
-  programId: zod.number().nullish(),
-  programName: zod.string().nullish(),
-  learningExtension: zod.string().nullish(),
+  commentPlan: zod.string().nullish(),
+  actionNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const GetChildObservationsResponse = zod.array(
@@ -255,13 +252,10 @@ export const ListObservationsResponseItem = zod.object({
   childName: zod.string().nullish(),
   staffId: zod.number(),
   staffName: zod.string().nullish(),
-  title: zod.string(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
-  outcomeIds: zod.array(zod.number()),
-  programId: zod.number().nullish(),
-  programName: zod.string().nullish(),
-  learningExtension: zod.string().nullish(),
+  commentPlan: zod.string().nullish(),
+  actionNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const ListObservationsResponse = zod.array(ListObservationsResponseItem);
@@ -269,12 +263,10 @@ export const ListObservationsResponse = zod.array(ListObservationsResponseItem);
 export const CreateObservationBody = zod.object({
   childId: zod.number(),
   staffId: zod.number(),
-  title: zod.string(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
-  outcomeIds: zod.array(zod.number()),
-  programId: zod.number().optional(),
-  learningExtension: zod.string().optional(),
+  commentPlan: zod.string().optional(),
+  actionNotes: zod.string().optional(),
 });
 
 export const GetObservationParams = zod.object({
@@ -287,13 +279,10 @@ export const GetObservationResponse = zod.object({
   childName: zod.string().nullish(),
   staffId: zod.number(),
   staffName: zod.string().nullish(),
-  title: zod.string(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
-  outcomeIds: zod.array(zod.number()),
-  programId: zod.number().nullish(),
-  programName: zod.string().nullish(),
-  learningExtension: zod.string().nullish(),
+  commentPlan: zod.string().nullish(),
+  actionNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 
@@ -302,12 +291,11 @@ export const UpdateObservationParams = zod.object({
 });
 
 export const UpdateObservationBody = zod.object({
-  title: zod.string().optional(),
+  staffId: zod.number().optional(),
   description: zod.string().optional(),
   observationDate: zod.coerce.date().optional(),
-  outcomeIds: zod.array(zod.number()).optional(),
-  programId: zod.number().optional(),
-  learningExtension: zod.string().optional(),
+  commentPlan: zod.string().optional(),
+  actionNotes: zod.string().optional(),
 });
 
 export const UpdateObservationResponse = zod.object({
@@ -316,13 +304,10 @@ export const UpdateObservationResponse = zod.object({
   childName: zod.string().nullish(),
   staffId: zod.number(),
   staffName: zod.string().nullish(),
-  title: zod.string(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
-  outcomeIds: zod.array(zod.number()),
-  programId: zod.number().nullish(),
-  programName: zod.string().nullish(),
-  learningExtension: zod.string().nullish(),
+  commentPlan: zod.string().nullish(),
+  actionNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 
@@ -457,13 +442,10 @@ export const GetRecentObservationsResponseItem = zod.object({
   childName: zod.string().nullish(),
   staffId: zod.number(),
   staffName: zod.string().nullish(),
-  title: zod.string(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
-  outcomeIds: zod.array(zod.number()),
-  programId: zod.number().nullish(),
-  programName: zod.string().nullish(),
-  learningExtension: zod.string().nullish(),
+  commentPlan: zod.string().nullish(),
+  actionNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const GetRecentObservationsResponse = zod.array(

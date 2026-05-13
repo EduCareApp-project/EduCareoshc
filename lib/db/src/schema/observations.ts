@@ -6,12 +6,14 @@ export const observationsTable = pgTable("observations", {
   id: serial("id").primaryKey(),
   childId: integer("child_id").notNull(),
   staffId: integer("staff_id").notNull(),
-  title: text("title").notNull(),
+  title: text("title"),
   description: text("description").notNull(),
   observationDate: date("observation_date").notNull(),
   outcomeIds: integer("outcome_ids").array().notNull().default([]),
   programId: integer("program_id"),
   learningExtension: text("learning_extension"),
+  commentPlan: text("comment_plan"),
+  actionNotes: text("action_notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

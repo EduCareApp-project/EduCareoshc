@@ -14,15 +14,11 @@ export interface Observation {
   staffId: number;
   /** @nullable */
   staffName?: string | null;
-  title: string;
   description: string;
   observationDate: Date;
-  outcomeIds: number[];
   /** @nullable */
-  programId?: number | null;
+  commentPlan?: string | null;
   /** @nullable */
-  programName?: string | null;
-  /** @nullable */
-  learningExtension?: string | null;
+  actionNotes?: string | null;
   createdAt: Date;
 }

@@ -9,10 +9,8 @@
 export interface ObservationInput {
   childId: number;
   staffId: number;
-  title: string;
   description: string;
   observationDate: Date;
-  outcomeIds: number[];
-  programId?: number;
-  learningExtension?: string;
+  commentPlan?: string;
+  actionNotes?: string;
 }

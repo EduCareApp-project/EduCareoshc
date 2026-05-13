@@ -446,18 +446,12 @@ export default function ChildProfile() {
               <div className="space-y-4 mt-4">
                 {observations.map((obs) => (
                   <Link key={obs.id} href={`/observations/${obs.id}`}>
-                    <div className="p-4 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/30 transition-colors cursor-pointer group">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium group-hover:text-primary transition-colors">{obs.title}</h4>
-                        <span className="text-xs text-muted-foreground">{safeDate(obs.observationDate, "MMM d, yyyy")}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{obs.description}</p>
-                      <div className="mt-3 flex gap-2 flex-wrap">
-                        {obs.outcomeIds.map(oid => (
-                          <Badge key={oid} variant="outline" className="bg-primary/5 text-xs text-primary border-primary/20">
-                            Outcome {oid}
-                          </Badge>
-                        ))}
+                    <div className="p-3 rounded-lg border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer space-y-1">
+                      <p className="text-sm text-foreground line-clamp-2 leading-relaxed">{obs.description}</p>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span>{safeDate(obs.observationDate, "d MMM yyyy")}</span>
+                        {obs.staffName && <span>· {obs.staffName}</span>}
+                        {obs.actionNotes && <span className="text-primary font-medium">· Action noted</span>}
                       </div>
                     </div>
                   </Link>

@@ -9,6 +9,8 @@ import Dashboard from "@/pages/dashboard";
 import ChildrenList from "@/pages/children-list";
 import ChildProfile from "@/pages/child-profile";
 import EnrollChild from "@/pages/enroll-child";
+import GuardiansList from "@/pages/guardians-list";
+import GuardianDetail from "@/pages/guardian-detail";
 import StaffList from "@/pages/staff-list";
 import AddStaff from "@/pages/add-staff";
 import StaffProfile from "@/pages/staff-profile";
@@ -55,6 +57,9 @@ function Router() {
         <Route path="/children" component={ChildrenList} />
         <Route path="/children/new" component={EnrollChild} />
         <Route path="/children/:id" component={ChildProfile} />
+
+        <Route path="/guardians" component={GuardiansList} />
+        <Route path="/guardians/:email" component={GuardianDetail} />
         
         <Route path="/staff" component={StaffList} />
         <Route path="/staff/new" component={AddStaff} />

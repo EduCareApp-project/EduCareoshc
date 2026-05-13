@@ -152,6 +152,69 @@ export const GetChildObservationsResponse = zod.array(
   GetChildObservationsResponseItem,
 );
 
+/**
+ * @summary List all guardians aggregated from children records
+ */
+export const ListGuardiansResponseItem = zod.object({
+  guardianEmail: zod.string(),
+  guardianName: zod.string(),
+  guardianPhone: zod.string(),
+  childIds: zod.array(zod.number()),
+  childNames: zod.array(zod.string()),
+  username: zod.string().nullish(),
+  hasPassword: zod.boolean(),
+});
+export const ListGuardiansResponse = zod.array(ListGuardiansResponseItem);
+
+/**
+ * @summary Get a single guardian by email
+ */
+export const GetGuardianParams = zod.object({
+  email: zod.coerce.string(),
+});
+
+export const GetGuardianResponse = zod.object({
+  guardianEmail: zod.string(),
+  guardianName: zod.string(),
+  guardianPhone: zod.string(),
+  childIds: zod.array(zod.number()),
+  childNames: zod.array(zod.string()),
+  username: zod.string().nullish(),
+  hasPassword: zod.boolean(),
+});
+
+/**
+ * @summary Update guardian username
+ */
+export const UpdateGuardianParams = zod.object({
+  email: zod.coerce.string(),
+});
+
+export const UpdateGuardianBody = zod.object({
+  username: zod.string(),
+});
+
+export const UpdateGuardianResponse = zod.object({
+  guardianEmail: zod.string(),
+  guardianName: zod.string(),
+  guardianPhone: zod.string(),
+  childIds: zod.array(zod.number()),
+  childNames: zod.array(zod.string()),
+  username: zod.string().nullish(),
+  hasPassword: zod.boolean(),
+});
+
+/**
+ * @summary Reset guardian password and return new password
+ */
+export const ResetGuardianPasswordParams = zod.object({
+  email: zod.coerce.string(),
+});
+
+export const ResetGuardianPasswordResponse = zod.object({
+  newPassword: zod.string(),
+});
+
 export const ListStaffResponseItem = zod.object({
   id: zod.number(),
   firstName: zod.string(),

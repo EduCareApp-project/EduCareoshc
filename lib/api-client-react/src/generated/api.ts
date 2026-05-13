@@ -33,6 +33,8 @@ import type {
   ErrorEnvelope,
   Evacuation,
   EvacuationInput,
+  Guardian,
+  GuardianUpdate,
   HealthStatus,
   Incident,
   IncidentInput,
@@ -40,6 +42,7 @@ import type {
   Jotting,
   JottingInput,
   LearningStoriesReport,
+  NewPasswordResult,
   Notice,
   NoticeInput,
   NqsArea,
@@ -639,6 +642,339 @@ export function useGetChildObservations<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List all guardians aggregated from children records
+ */
+export const getListGuardiansUrl = () => {
+  return `/api/guardians`;
+};
+
+export const listGuardians = async (
+  options?: RequestInit,
+): Promise<Guardian[]> => {
+  return customFetch<Guardian[]>(getListGuardiansUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListGuardiansQueryKey = () => {
+  return [`/api/guardians`] as const;
+};
+
+export const getListGuardiansQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGuardians>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGuardians>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListGuardiansQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listGuardians>>> = ({
+    signal,
+  }) => listGuardians({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listGuardians>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListGuardiansQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listGuardians>>
+>;
+export type ListGuardiansQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all guardians aggregated from children records
+ */
+
+export function useListGuardians<
+  TData = Awaited<ReturnType<typeof listGuardians>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGuardians>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListGuardiansQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get a single guardian by email
+ */
+export const getGetGuardianUrl = (email: string) => {
+  return `/api/guardians/${email}`;
+};
+
+export const getGuardian = async (
+  email: string,
+  options?: RequestInit,
+): Promise<Guardian> => {
+  return customFetch<Guardian>(getGetGuardianUrl(email), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetGuardianQueryKey = (email: string) => {
+  return [`/api/guardians/${email}`] as const;
+};
+
+export const getGetGuardianQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGuardian>>,
+  TError = ErrorType<void>,
+>(
+  email: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getGuardian>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetGuardianQueryKey(email);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGuardian>>> = ({
+    signal,
+  }) => getGuardian(email, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!email,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getGuardian>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetGuardianQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGuardian>>
+>;
+export type GetGuardianQueryError = ErrorType<void>;
+
+/**
+ * @summary Get a single guardian by email
+ */
+
+export function useGetGuardian<
+  TData = Awaited<ReturnType<typeof getGuardian>>,
+  TError = ErrorType<void>,
+>(
+  email: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getGuardian>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGuardianQueryOptions(email, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update guardian username
+ */
+export const getUpdateGuardianUrl = (email: string) => {
+  return `/api/guardians/${email}`;
+};
+
+export const updateGuardian = async (
+  email: string,
+  guardianUpdate: GuardianUpdate,
+  options?: RequestInit,
+): Promise<Guardian> => {
+  return customFetch<Guardian>(getUpdateGuardianUrl(email), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(guardianUpdate),
+  });
+};
+
+export const getUpdateGuardianMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateGuardian>>,
+    TError,
+    { email: string; data: BodyType<GuardianUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateGuardian>>,
+  TError,
+  { email: string; data: BodyType<GuardianUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateGuardian"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateGuardian>>,
+    { email: string; data: BodyType<GuardianUpdate> }
+  > = (props) => {
+    const { email, data } = props ?? {};
+
+    return updateGuardian(email, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateGuardianMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateGuardian>>
+>;
+export type UpdateGuardianMutationBody = BodyType<GuardianUpdate>;
+export type UpdateGuardianMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update guardian username
+ */
+export const useUpdateGuardian = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateGuardian>>,
+    TError,
+    { email: string; data: BodyType<GuardianUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateGuardian>>,
+  TError,
+  { email: string; data: BodyType<GuardianUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateGuardianMutationOptions(options));
+};
+
+/**
+ * @summary Reset guardian password and return new password
+ */
+export const getResetGuardianPasswordUrl = (email: string) => {
+  return `/api/guardians/${email}/reset-password`;
+};
+
+export const resetGuardianPassword = async (
+  email: string,
+  options?: RequestInit,
+): Promise<NewPasswordResult> => {
+  return customFetch<NewPasswordResult>(getResetGuardianPasswordUrl(email), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getResetGuardianPasswordMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resetGuardianPassword>>,
+    TError,
+    { email: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof resetGuardianPassword>>,
+  TError,
+  { email: string },
+  TContext
+> => {
+  const mutationKey = ["resetGuardianPassword"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof resetGuardianPassword>>,
+    { email: string }
+  > = (props) => {
+    const { email } = props ?? {};
+
+    return resetGuardianPassword(email, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ResetGuardianPasswordMutationResult = NonNullable<
+  Awaited<ReturnType<typeof resetGuardianPassword>>
+>;
+
+export type ResetGuardianPasswordMutationError = ErrorType<void>;
+
+/**
+ * @summary Reset guardian password and return new password
+ */
+export const useResetGuardianPassword = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resetGuardianPassword>>,
+    TError,
+    { email: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof resetGuardianPassword>>,
+  TError,
+  { email: string },
+  TContext
+> => {
+  return useMutation(getResetGuardianPasswordMutationOptions(options));
+};
 
 export const getListStaffUrl = () => {
   return `/api/staff`;

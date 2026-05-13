@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import childrenRouter from "./children";
+import guardiansRouter from "./guardians";
 import staffRouter from "./staff";
 import outcomesRouter from "./outcomes";
 import observationsRouter from "./observations";
@@ -30,6 +31,7 @@ const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(childrenRouter);
+router.use(guardiansRouter);
 router.use(staffRouter);
 router.use(outcomesRouter);
 router.use(observationsRouter);

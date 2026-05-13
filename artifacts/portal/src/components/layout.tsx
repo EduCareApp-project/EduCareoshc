@@ -22,7 +22,8 @@ import {
   FolderOpen,
   CheckSquare,
   UserCheck,
-  Building2
+  Building2,
+  UserCog,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
@@ -34,6 +35,7 @@ const NAV_GROUPS = [
     items: [
       { href: "/", label: "Dashboard", icon: LayoutDashboard },
       { href: "/children", label: "Children", icon: Baby },
+      { href: "/guardians", label: "Guardians", icon: UserCog },
       { href: "/staff", label: "Staff", icon: Users },
     ]
   },

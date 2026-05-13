@@ -149,6 +149,86 @@ paths:
                 items:
                   $ref: "#/components/schemas/Observation"
 
+  /guardians:
+    get:
+      operationId: listGuardians
+      tags: [guardians]
+      summary: List all guardians aggregated from children records
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Guardian"
+
+  /guardians/{email}:
+    get:
+      operationId: getGuardian
+      tags: [guardians]
+      summary: Get a single guardian by email
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Guardian"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateGuardian
+      tags: [guardians]
+      summary: Update guardian username
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GuardianUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Guardian"
+
+  /guardians/{email}/reset-password:
+    post:
+      operationId: resetGuardianPassword
+      tags: [guardians]
+      summary: Reset guardian password and return new password
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewPasswordResult"
+        "404":
+          description: Not found
+
   /staff:
     get:
       operationId: listStaff
@@ -1611,6 +1691,43 @@ paths:
 
 components:
   schemas:
+    Guardian:
+      type: object
+      required: [guardianEmail, guardianName, guardianPhone, childIds, childNames, hasPassword]
+      properties:
+        guardianEmail:
+          type: string
+        guardianName:
+          type: string
+        guardianPhone:
+          type: string
+        childIds:
+          type: array
+          items:
+            type: integer
+        childNames:
+          type: array
+          items:
+            type: string
+        username:
+          type: ["string", "null"]
+        hasPassword:
+          type: boolean
+
+    GuardianUpdate:
+      type: object
+      required: [username]
+      properties:
+        username:
+          type: string
+
+    NewPasswordResult:
+      type: object
+      required: [newPassword]
+      properties:
+        newPassword:
+          type: string
+
     HealthStatus:
       type: object
       required: [status]

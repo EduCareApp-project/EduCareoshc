@@ -1,5 +1,6 @@
 export * from "./sites";
 export * from "./children";
+export * from "./parent_accounts";
 export * from "./staff";
 export * from "./outcomes";
 export * from "./observations";

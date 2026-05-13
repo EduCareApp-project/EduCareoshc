@@ -5,6 +5,25 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+export interface Guardian {
+  guardianEmail: string;
+  guardianName: string;
+  guardianPhone: string;
+  childIds: number[];
+  childNames: string[];
+  /** @nullable */
+  username?: string | null;
+  hasPassword: boolean;
+}
+
+export interface GuardianUpdate {
+  username: string;
+}
+
+export interface NewPasswordResult {
+  newPassword: string;
+}
+
 export interface HealthStatus {
   status: string;
 }

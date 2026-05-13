@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, UserCog, Mail, Phone, Award } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const ROLE_LABELS: Record<string, string> = { admin: "Admin", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
+
 export default function StaffList() {
   const { data: staff, isLoading } = useListStaff();
 
@@ -48,7 +50,7 @@ export default function StaffList() {
                   </div>
                   <div>
                     <CardTitle className="text-lg">{member.firstName} {member.lastName}</CardTitle>
-                    <div className="text-sm text-primary capitalize font-medium">{member.role}</div>
+                    <div className="text-sm text-primary font-medium">{ROLE_LABELS[member.role] ?? member.role}</div>
                   </div>
                 </div>
                 <Badge variant={member.status === 'active' ? 'default' : 'secondary'} className="capitalize">

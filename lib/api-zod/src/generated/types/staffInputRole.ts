@@ -10,8 +10,8 @@ export type StaffInputRole =
   (typeof StaffInputRole)[keyof typeof StaffInputRole];
 
 export const StaffInputRole = {
-  director: "director",
+  admin: "admin",
+  educational_leader: "educational_leader",
+  coordinator: "coordinator",
   educator: "educator",
-  assistant: "assistant",
-  trainee: "trainee",
 } as const;

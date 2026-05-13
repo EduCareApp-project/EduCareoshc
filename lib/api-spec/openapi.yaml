@@ -1444,7 +1444,7 @@ components:
           type: string
         role:
           type: string
-          enum: [director, educator, assistant, trainee]
+          enum: [admin, educational_leader, coordinator, educator]
         qualifications:
           type: string
         status:
@@ -1470,7 +1470,7 @@ components:
           type: string
         role:
           type: string
-          enum: [director, educator, assistant, trainee]
+          enum: [admin, educational_leader, coordinator, educator]
         qualifications:
           type: string
         status:
@@ -1493,7 +1493,7 @@ components:
           type: string
         role:
           type: string
-          enum: [director, educator, assistant, trainee]
+          enum: [admin, educational_leader, coordinator, educator]
         qualifications:
           type: string
         status:

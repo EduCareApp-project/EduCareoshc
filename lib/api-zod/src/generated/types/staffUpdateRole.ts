@@ -10,8 +10,8 @@ export type StaffUpdateRole =
   (typeof StaffUpdateRole)[keyof typeof StaffUpdateRole];
 
 export const StaffUpdateRole = {
-  director: "director",
+  admin: "admin",
+  educational_leader: "educational_leader",
+  coordinator: "coordinator",
   educator: "educator",
-  assistant: "assistant",
-  trainee: "trainee",
 } as const;

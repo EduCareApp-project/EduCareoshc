@@ -160,7 +160,7 @@ export const ListStaffResponseItem = zod.object({
   firstName: zod.string(),
   lastName: zod.string(),
   email: zod.string(),
-  role: zod.enum(["director", "educator", "assistant", "trainee"]),
+  role: zod.enum(["admin", "educational_leader", "coordinator", "educator"]),
   qualifications: zod.string(),
   status: zod.enum(["active", "inactive"]),
   phone: zod.string().nullish(),
@@ -175,7 +175,7 @@ export const CreateStaffBody = zod.object({
   firstName: zod.string(),
   lastName: zod.string(),
   email: zod.string(),
-  role: zod.enum(["director", "educator", "assistant", "trainee"]),
+  role: zod.enum(["admin", "educational_leader", "coordinator", "educator"]),
   qualifications: zod.string(),
   status: zod
     .enum(["active", "inactive"])
@@ -193,7 +193,7 @@ export const GetStaffResponse = zod.object({
   firstName: zod.string(),
   lastName: zod.string(),
   email: zod.string(),
-  role: zod.enum(["director", "educator", "assistant", "trainee"]),
+  role: zod.enum(["admin", "educational_leader", "coordinator", "educator"]),
   qualifications: zod.string(),
   status: zod.enum(["active", "inactive"]),
   phone: zod.string().nullish(),
@@ -209,7 +209,9 @@ export const UpdateStaffBody = zod.object({
   firstName: zod.string().optional(),
   lastName: zod.string().optional(),
   email: zod.string().optional(),
-  role: zod.enum(["director", "educator", "assistant", "trainee"]).optional(),
+  role: zod
+    .enum(["admin", "educational_leader", "coordinator", "educator"])
+    .optional(),
   qualifications: zod.string().optional(),
   status: zod.enum(["active", "inactive"]).optional(),
   phone: zod.string().optional(),
@@ -221,7 +223,7 @@ export const UpdateStaffResponse = zod.object({
   firstName: zod.string(),
   lastName: zod.string(),
   email: zod.string(),
-  role: zod.enum(["director", "educator", "assistant", "trainee"]),
+  role: zod.enum(["admin", "educational_leader", "coordinator", "educator"]),
   qualifications: zod.string(),
   status: zod.enum(["active", "inactive"]),
   phone: zod.string().nullish(),

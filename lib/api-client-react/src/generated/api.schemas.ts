@@ -148,10 +148,10 @@ export interface ChildUpdate {
 export type StaffRole = (typeof StaffRole)[keyof typeof StaffRole];
 
 export const StaffRole = {
-  director: "director",
+  admin: "admin",
+  educational_leader: "educational_leader",
+  coordinator: "coordinator",
   educator: "educator",
-  assistant: "assistant",
-  trainee: "trainee",
 } as const;
 
 export type StaffStatus = (typeof StaffStatus)[keyof typeof StaffStatus];
@@ -180,10 +180,10 @@ export type StaffInputRole =
   (typeof StaffInputRole)[keyof typeof StaffInputRole];
 
 export const StaffInputRole = {
-  director: "director",
+  admin: "admin",
+  educational_leader: "educational_leader",
+  coordinator: "coordinator",
   educator: "educator",
-  assistant: "assistant",
-  trainee: "trainee",
 } as const;
 
 export type StaffInputStatus =
@@ -209,10 +209,10 @@ export type StaffUpdateRole =
   (typeof StaffUpdateRole)[keyof typeof StaffUpdateRole];
 
 export const StaffUpdateRole = {
-  director: "director",
+  admin: "admin",
+  educational_leader: "educational_leader",
+  coordinator: "coordinator",
   educator: "educator",
-  assistant: "assistant",
-  trainee: "trainee",
 } as const;
 
 export type StaffUpdateStatus =

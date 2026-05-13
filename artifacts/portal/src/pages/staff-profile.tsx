@@ -15,7 +15,7 @@ import { ArrowLeft, Plus, Trash2, GraduationCap, User } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
-const ROLE_LABELS: Record<string, string> = { director: "Director", educator: "Educator", assistant: "Assistant", trainee: "Trainee" };
+const ROLE_LABELS: Record<string, string> = { admin: "Admin", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
 
 export default function StaffProfile() {
   const { id } = useParams<{ id: string }>();

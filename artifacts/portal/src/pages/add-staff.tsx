@@ -17,7 +17,7 @@ const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
-  role: z.enum(["director", "educator", "assistant", "trainee"]),
+  role: z.enum(["admin", "educational_leader", "coordinator", "educator"]),
   qualifications: z.string().min(1, "Qualifications are required"),
   status: z.enum(["active", "inactive"]).default("active"),
   phone: z.string().optional(),
@@ -36,7 +36,7 @@ export default function AddStaff() {
       firstName: "",
       lastName: "",
       email: "",
-      role: "educator",
+      role: "educator" as const,
       qualifications: "Diploma of Early Childhood Education",
       status: "active",
       phone: "",
@@ -91,10 +91,10 @@ export default function AddStaff() {
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
-                      <SelectItem value="director">Director</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="educational_leader">Educational Leader</SelectItem>
+                      <SelectItem value="coordinator">Coordinator</SelectItem>
                       <SelectItem value="educator">Educator</SelectItem>
-                      <SelectItem value="assistant">Assistant</SelectItem>
-                      <SelectItem value="trainee">Trainee</SelectItem>
                     </SelectContent>
                   </Select>
                 <FormMessage /></FormItem>

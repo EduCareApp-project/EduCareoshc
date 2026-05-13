@@ -672,28 +672,30 @@ function PlanningEditContent({ form, set, sites, allChildren, visibleChildren, i
         <Textarea value={form.qualityAreas} onChange={(e) => set("qualityAreas", e.target.value)} rows={5} placeholder="Type here..." className="resize-y" />
       </div>
 
-      <div className="bg-white border rounded-xl p-6 space-y-4">
-        <SectionHeader title="Additional Resources" />
-        <p className="text-xs text-muted-foreground leading-relaxed">Can you list any additional resources needed for this experience?</p>
-        <Textarea value={form.additionalResources} onChange={(e) => set("additionalResources", e.target.value)} rows={4} placeholder="Type here..." className="resize-y" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white border rounded-xl p-6 space-y-4">
+          <SectionHeader title="Additional Resources" />
+          <p className="text-xs text-muted-foreground leading-relaxed">Can you list any additional resources needed for this experience?</p>
+          <Textarea value={form.additionalResources} onChange={(e) => set("additionalResources", e.target.value)} rows={4} placeholder="Type here..." className="resize-y" />
+        </div>
+        <div className="bg-white border rounded-xl p-6 space-y-4">
+          <SectionHeader title="Assess and Review" />
+          <p className="text-xs text-muted-foreground leading-relaxed">How will this experience be assessed and reviewed? Who will take part in the review?</p>
+          <Textarea value={form.assessAndReview} onChange={(e) => set("assessAndReview", e.target.value)} rows={4} placeholder="Type here..." className="resize-y" />
+        </div>
       </div>
 
-      <div className="bg-white border rounded-xl p-6 space-y-4">
-        <SectionHeader title="Assess and Review" />
-        <p className="text-xs text-muted-foreground leading-relaxed">How will this experience be assessed and reviewed? Who will take part in the review?</p>
-        <Textarea value={form.assessAndReview} onChange={(e) => set("assessAndReview", e.target.value)} rows={5} placeholder="Type here..." className="resize-y" />
-      </div>
-
-      <div className="bg-white border rounded-xl p-6 space-y-4">
-        <SectionHeader title="Learning" />
-        <p className="text-xs text-muted-foreground leading-relaxed">How will the content be delivered in the learning environment? Will there need to be different strategies for different children or experiences?</p>
-        <Textarea value={form.learning} onChange={(e) => set("learning", e.target.value)} rows={6} placeholder="Type here..." className="resize-y" />
-      </div>
-
-      <div className="bg-white border rounded-xl p-6 space-y-4">
-        <SectionHeader title="Background Information" />
-        <p className="text-xs text-muted-foreground leading-relaxed">What background information is needed for educators or children?</p>
-        <Textarea value={form.backgroundInformation} onChange={(e) => set("backgroundInformation", e.target.value)} rows={5} placeholder="Type here..." className="resize-y" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white border rounded-xl p-6 space-y-4">
+          <SectionHeader title="Learning" />
+          <p className="text-xs text-muted-foreground leading-relaxed">How will the content be delivered in the learning environment? Will there need to be different strategies for different children or experiences?</p>
+          <Textarea value={form.learning} onChange={(e) => set("learning", e.target.value)} rows={5} placeholder="Type here..." className="resize-y" />
+        </div>
+        <div className="bg-white border rounded-xl p-6 space-y-4">
+          <SectionHeader title="Background Information" />
+          <p className="text-xs text-muted-foreground leading-relaxed">What background information is needed for educators or children?</p>
+          <Textarea value={form.backgroundInformation} onChange={(e) => set("backgroundInformation", e.target.value)} rows={5} placeholder="Type here..." className="resize-y" />
+        </div>
       </div>
 
       <div className="bg-white border rounded-xl p-6 space-y-4">
@@ -822,10 +824,18 @@ function PlanningViewContent({ form, siteName, focusChildrenNames }: { form: For
       {form.researchIdeas && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Research Ideas" /><ViewField label="" value={form.researchIdeas} /></div>}
       {form.frameworkLinks && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Framework Links" /><ViewField label="" value={form.frameworkLinks} /></div>}
       {form.qualityAreas && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Quality Areas" /><ViewField label="" value={form.qualityAreas} /></div>}
-      {form.additionalResources && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Additional Resources" /><ViewField label="" value={form.additionalResources} /></div>}
-      {form.assessAndReview && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Assess and Review" /><ViewField label="" value={form.assessAndReview} /></div>}
-      {form.learning && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Learning" /><ViewField label="" value={form.learning} /></div>}
-      {form.backgroundInformation && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Background Information" /><ViewField label="" value={form.backgroundInformation} /></div>}
+      {(form.additionalResources || form.assessAndReview) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {form.additionalResources && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Additional Resources" /><ViewField label="" value={form.additionalResources} /></div>}
+          {form.assessAndReview && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Assess and Review" /><ViewField label="" value={form.assessAndReview} /></div>}
+        </div>
+      )}
+      {(form.learning || form.backgroundInformation) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {form.learning && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Learning" /><ViewField label="" value={form.learning} /></div>}
+          {form.backgroundInformation && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Background Information" /><ViewField label="" value={form.backgroundInformation} /></div>}
+        </div>
+      )}
 
       {form.documents.length > 0 && (
         <div className="bg-white border rounded-xl p-6 space-y-3">

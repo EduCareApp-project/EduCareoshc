@@ -362,11 +362,7 @@ export default function PlanningDetail() {
               </AlertDialogContent>
             </AlertDialog>
           )}
-          <Button
-            onClick={handleSave}
-            disabled={isSaving || isTemplateMode}
-            title={isTemplateMode ? "Templates cannot be saved directly — duplicate to create a real planning cycle" : undefined}
-          >
+          <Button onClick={handleSave} disabled={isSaving}>
             <Save className="h-4 w-4 mr-1.5" />{isSaving ? "Saving…" : "Save"}
           </Button>
         </div>

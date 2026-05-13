@@ -278,18 +278,22 @@ export default function StaffProfile() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {(qualifications ?? []).map((q) => (
+              {(qualifications ?? []).map((q) => {
+                const expiryDate = q.expiryDate ? new Date(q.expiryDate) : null;
+                const isDateExpired = expiryDate && !isNaN(expiryDate.getTime()) && expiryDate < new Date();
+                const effectiveStatus = isDateExpired ? "expired" : q.status;
+                return (
                 <Card key={q.id}>
                   <CardContent className="py-4 flex items-start justify-between gap-4">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-3 flex-wrap">
                         <p className="font-medium">{q.name}</p>
-                        <Badge className={`text-xs border ${STATUS_STYLES[q.status] ?? ""}`} variant="outline">
-                          {STATUS_OPTIONS.find((s) => s.value === q.status)?.label ?? q.status}
+                        <Badge className={`text-xs border ${STATUS_STYLES[effectiveStatus] ?? ""}`} variant="outline">
+                          {STATUS_OPTIONS.find((s) => s.value === effectiveStatus)?.label ?? effectiveStatus}
                         </Badge>
-                        {q.status === "expired" && (
+                        {effectiveStatus === "expired" && (
                           <span className="flex items-center gap-1 text-xs text-red-600">
-                            <AlertTriangle className="h-3 w-3" />Expired
+                            <AlertTriangle className="h-3 w-3" />{isDateExpired ? "Date passed" : "Expired"}
                           </span>
                         )}
                       </div>
@@ -351,7 +355,7 @@ export default function StaffProfile() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              ); })}
             </div>
           )}
         </TabsContent>

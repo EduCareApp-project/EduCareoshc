@@ -1,10 +1,11 @@
-# [Project name]
+# EduCare Portal
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A compliance and documentation management portal for Education and Care businesses in Australia, built around the National Law and My Time Our Place (MTOP) framework.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/portal run dev` — run the portal frontend
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -14,6 +15,7 @@ _Replace the heading above with the project's name, and this line with one sente
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
+- Frontend: React + Vite + Tailwind CSS + Wouter routing
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
@@ -22,15 +24,36 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — OpenAPI spec (source of truth for all API contracts)
+- `lib/db/src/schema/` — Drizzle DB schema (children, staff, observations, programs, nqs_areas, outcomes)
+- `artifacts/api-server/src/routes/` — Express route handlers (children, staff, observations, programs, nqs, outcomes, dashboard)
+- `artifacts/portal/src/` — React frontend
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- MTOP outcome IDs stored as integer arrays directly on observation/program rows (no junction table) — simple and sufficient for reporting
+- Drizzle `date` columns accept strings; Zod OpenAPI schemas generate string date types, so routes cast with `as any` when inserting/updating date fields
+- NQS areas and MTOP outcomes are seeded as static reference data — they don't change, only status/notes are updated
+- Dashboard endpoints compute counts from existing tables at query time — no separate aggregation tables needed at this scale
+- All API routes validate both input and output with `@workspace/api-zod` schemas from codegen
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- **Dashboard** — centre metrics, recent observations, MTOP outcome usage chart, NQS compliance status
+- **Children** — enrol children, view profiles with linked observations, track by age group and status
+- **Staff** — manage educators with roles, qualifications, and WWCC numbers
+- **Observations** — document children's learning linked to MTOP outcomes and programs
+- **Programs** — plan educational experiences linked to MTOP outcomes and age groups
+- **NQS Compliance** — track all 7 National Quality Standard areas with status and review notes
+- **MTOP Outcomes** — reference page for all 5 My Time Our Place framework outcomes
+
+## MTOP Framework (My Time Our Place)
+
+1. Children have a strong sense of identity
+2. Children are connected with and contribute to their world
+3. Children have a strong sense of wellbeing
+4. Children are confident and involved learners
+5. Children are effective communicators
 
 ## User preferences
 
@@ -38,7 +61,9 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- After changing `lib/api-spec/openapi.yaml`, always run `pnpm --filter @workspace/api-spec run codegen` before using updated types
+- After adding new schema files to `lib/db/src/schema/`, run `pnpm run typecheck:libs` to rebuild the DB lib before typechecking artifacts
+- Drizzle `date` columns expect string values — Orval-generated Zod schemas treat date-format fields as strings at the API layer, but drizzle-zod infers them as Date objects in the insert schema. Use `as any` cast when passing parsed API request data to Drizzle insert/update.
 
 ## Pointers
 

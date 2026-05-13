@@ -1,22 +1,34 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Education & Care Management Portal API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: children
+    description: Child profiles
+  - name: staff
+    description: Staff management
+  - name: observations
+    description: Learning observations and documentation
+  - name: outcomes
+    description: MTOP framework outcomes
+  - name: programs
+    description: Program planning
+  - name: nqs
+    description: NQS compliance quality areas
+  - name: dashboard
+    description: Dashboard summaries
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +36,450 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /children:
+    get:
+      operationId: listChildren
+      tags: [children]
+      summary: List all enrolled children
+      responses:
+        "200":
+          description: List of children
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Child"
+    post:
+      operationId: createChild
+      tags: [children]
+      summary: Enroll a new child
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChildInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Child"
+
+  /children/{id}:
+    get:
+      operationId: getChild
+      tags: [children]
+      summary: Get a child by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Child details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Child"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateChild
+      tags: [children]
+      summary: Update a child's details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChildUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Child"
+    delete:
+      operationId: deleteChild
+      tags: [children]
+      summary: Remove a child
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /children/{id}/observations:
+    get:
+      operationId: getChildObservations
+      tags: [children]
+      summary: Get all observations for a child
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Child observations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Observation"
+
+  /staff:
+    get:
+      operationId: listStaff
+      tags: [staff]
+      summary: List all staff members
+      responses:
+        "200":
+          description: List of staff
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Staff"
+    post:
+      operationId: createStaff
+      tags: [staff]
+      summary: Add a staff member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Staff"
+
+  /staff/{id}:
+    get:
+      operationId: getStaff
+      tags: [staff]
+      summary: Get a staff member by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Staff details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Staff"
+    patch:
+      operationId: updateStaff
+      tags: [staff]
+      summary: Update a staff member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Staff"
+
+  /observations:
+    get:
+      operationId: listObservations
+      tags: [observations]
+      summary: List all learning observations
+      responses:
+        "200":
+          description: List of observations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Observation"
+    post:
+      operationId: createObservation
+      tags: [observations]
+      summary: Create a new learning observation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObservationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Observation"
+
+  /observations/{id}:
+    get:
+      operationId: getObservation
+      tags: [observations]
+      summary: Get an observation by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Observation details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Observation"
+    patch:
+      operationId: updateObservation
+      tags: [observations]
+      summary: Update an observation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObservationUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Observation"
+    delete:
+      operationId: deleteObservation
+      tags: [observations]
+      summary: Delete an observation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /outcomes:
+    get:
+      operationId: listOutcomes
+      tags: [outcomes]
+      summary: List all MTOP framework outcomes
+      responses:
+        "200":
+          description: MTOP outcomes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Outcome"
+
+  /programs:
+    get:
+      operationId: listPrograms
+      tags: [programs]
+      summary: List all programs/activities
+      responses:
+        "200":
+          description: List of programs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Program"
+    post:
+      operationId: createProgram
+      tags: [programs]
+      summary: Create a new program
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProgramInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Program"
+
+  /programs/{id}:
+    get:
+      operationId: getProgram
+      tags: [programs]
+      summary: Get a program by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Program details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Program"
+    patch:
+      operationId: updateProgram
+      tags: [programs]
+      summary: Update a program
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProgramUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Program"
+
+  /nqs:
+    get:
+      operationId: listNqsAreas
+      tags: [nqs]
+      summary: List all NQS quality areas and their compliance status
+      responses:
+        "200":
+          description: NQS quality areas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NqsArea"
+
+  /nqs/{id}:
+    patch:
+      operationId: updateNqsArea
+      tags: [nqs]
+      summary: Update NQS quality area compliance status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NqsAreaUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NqsArea"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard overview summary
+      responses:
+        "200":
+          description: Dashboard summary data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/recent-observations:
+    get:
+      operationId: getRecentObservations
+      tags: [dashboard]
+      summary: Get most recent observations for the dashboard
+      responses:
+        "200":
+          description: Recent observations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Observation"
+
+  /dashboard/outcome-counts:
+    get:
+      operationId: getOutcomeCounts
+      tags: [dashboard]
+      summary: Count observations per MTOP outcome
+      responses:
+        "200":
+          description: Outcome usage counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OutcomeCount"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +487,408 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    Child:
+      type: object
+      required: [id, firstName, lastName, dateOfBirth, enrollmentDate, ageGroup, status, guardianName, guardianEmail, guardianPhone]
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        enrollmentDate:
+          type: string
+          format: date
+        ageGroup:
+          type: string
+          enum: [infant, toddler, preschool, school_age]
+        status:
+          type: string
+          enum: [active, inactive, waitlist]
+        guardianName:
+          type: string
+        guardianEmail:
+          type: string
+        guardianPhone:
+          type: string
+        medicalNotes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    ChildInput:
+      type: object
+      required: [firstName, lastName, dateOfBirth, enrollmentDate, ageGroup, guardianName, guardianEmail, guardianPhone]
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        enrollmentDate:
+          type: string
+          format: date
+        ageGroup:
+          type: string
+          enum: [infant, toddler, preschool, school_age]
+        status:
+          type: string
+          enum: [active, inactive, waitlist]
+          default: active
+        guardianName:
+          type: string
+        guardianEmail:
+          type: string
+        guardianPhone:
+          type: string
+        medicalNotes:
+          type: string
+
+    ChildUpdate:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        enrollmentDate:
+          type: string
+          format: date
+        ageGroup:
+          type: string
+          enum: [infant, toddler, preschool, school_age]
+        status:
+          type: string
+          enum: [active, inactive, waitlist]
+        guardianName:
+          type: string
+        guardianEmail:
+          type: string
+        guardianPhone:
+          type: string
+        medicalNotes:
+          type: string
+
+    Staff:
+      type: object
+      required: [id, firstName, lastName, email, role, qualifications, status]
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [director, educator, assistant, trainee]
+        qualifications:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        phone:
+          type: ["string", "null"]
+        wwccNumber:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    StaffInput:
+      type: object
+      required: [firstName, lastName, email, role, qualifications]
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [director, educator, assistant, trainee]
+        qualifications:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+          default: active
+        phone:
+          type: string
+        wwccNumber:
+          type: string
+
+    StaffUpdate:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [director, educator, assistant, trainee]
+        qualifications:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        phone:
+          type: string
+        wwccNumber:
+          type: string
+
+    Observation:
+      type: object
+      required: [id, childId, staffId, title, description, observationDate, outcomeIds, createdAt]
+      properties:
+        id:
+          type: integer
+        childId:
+          type: integer
+        childName:
+          type: ["string", "null"]
+        staffId:
+          type: integer
+        staffName:
+          type: ["string", "null"]
+        title:
+          type: string
+        description:
+          type: string
+        observationDate:
+          type: string
+          format: date
+        outcomeIds:
+          type: array
+          items:
+            type: integer
+        programId:
+          type: ["integer", "null"]
+        programName:
+          type: ["string", "null"]
+        learningExtension:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    ObservationInput:
+      type: object
+      required: [childId, staffId, title, description, observationDate, outcomeIds]
+      properties:
+        childId:
+          type: integer
+        staffId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        observationDate:
+          type: string
+          format: date
+        outcomeIds:
+          type: array
+          items:
+            type: integer
+        programId:
+          type: integer
+        learningExtension:
+          type: string
+
+    ObservationUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        observationDate:
+          type: string
+          format: date
+        outcomeIds:
+          type: array
+          items:
+            type: integer
+        programId:
+          type: integer
+        learningExtension:
+          type: string
+
+    Outcome:
+      type: object
+      required: [id, number, title, description, subOutcomes]
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        subOutcomes:
+          type: array
+          items:
+            type: string
+
+    Program:
+      type: object
+      required: [id, title, description, startDate, status, outcomeIds]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [planned, active, completed]
+        outcomeIds:
+          type: array
+          items:
+            type: integer
+        ageGroups:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ProgramInput:
+      type: object
+      required: [title, description, startDate, outcomeIds]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+        status:
+          type: string
+          enum: [planned, active, completed]
+          default: planned
+        outcomeIds:
+          type: array
+          items:
+            type: integer
+        ageGroups:
+          type: array
+          items:
+            type: string
+
+    ProgramUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+        status:
+          type: string
+          enum: [planned, active, completed]
+        outcomeIds:
+          type: array
+          items:
+            type: integer
+        ageGroups:
+          type: array
+          items:
+            type: string
+
+    NqsArea:
+      type: object
+      required: [id, number, title, description, status, notes]
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [exceeding, meeting, working_towards, not_started]
+        notes:
+          type: ["string", "null"]
+        lastReviewedAt:
+          type: ["string", "null"]
+
+    NqsAreaUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [exceeding, meeting, working_towards, not_started]
+        notes:
+          type: string
+
+    DashboardSummary:
+      type: object
+      required: [totalChildren, activeChildren, totalStaff, totalObservations, observationsThisMonth, totalPrograms, activePrograms, nqsMeetingCount]
+      properties:
+        totalChildren:
+          type: integer
+        activeChildren:
+          type: integer
+        totalStaff:
+          type: integer
+        totalObservations:
+          type: integer
+        observationsThisMonth:
+          type: integer
+        totalPrograms:
+          type: integer
+        activePrograms:
+          type: integer
+        nqsMeetingCount:
+          type: integer
+
+    OutcomeCount:
+      type: object
+      required: [outcomeId, outcomeTitle, outcomeNumber, count]
+      properties:
+        outcomeId:
+          type: integer
+        outcomeTitle:
+          type: string
+        outcomeNumber:
+          type: integer
+        count:
+          type: integer

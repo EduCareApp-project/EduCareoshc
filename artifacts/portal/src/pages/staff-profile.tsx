@@ -111,11 +111,16 @@ export default function StaffProfile() {
   }
 
   function openEditQual(q: NonNullable<typeof qualifications>[number]) {
+    let expiryStr = "";
+    if (q.expiryDate) {
+      const d = q.expiryDate instanceof Date ? q.expiryDate : new Date(String(q.expiryDate));
+      if (!isNaN(d.getTime())) expiryStr = format(d, "yyyy-MM-dd");
+    }
     setQualForm({
       name: q.name,
       status: q.status,
       referenceNumber: q.referenceNumber ?? "",
-      expiryDate: q.expiryDate ?? "",
+      expiryDate: expiryStr,
     });
     setQualDocPath(q.documentPath ?? null);
     setQualDocName(q.documentPath ? q.documentPath.split("/").pop() ?? null : null);
@@ -279,11 +284,12 @@ export default function StaffProfile() {
           ) : (
             <div className="space-y-3">
               {(qualifications ?? []).map((q) => {
-                const expiryDate = q.expiryDate ? new Date(q.expiryDate) : null;
-                const isDateExpired = expiryDate && !isNaN(expiryDate.getTime()) && expiryDate < new Date();
+                const expiry = q.expiryDate instanceof Date ? q.expiryDate : q.expiryDate ? new Date(String(q.expiryDate)) : null;
+                const expiryValid = expiry && !isNaN(expiry.getTime());
+                const isDateExpired = expiryValid && expiry! < new Date();
                 const effectiveStatus = isDateExpired ? "expired" : q.status;
-                return (
-                <Card key={q.id}>
+
+                return <Card key={q.id}>
                   <CardContent className="py-4 flex items-start justify-between gap-4">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-3 flex-wrap">
@@ -301,16 +307,11 @@ export default function StaffProfile() {
                         {q.referenceNumber && (
                           <span>Ref: <span className="font-mono text-foreground">{q.referenceNumber}</span></span>
                         )}
-                        {q.expiryDate && (() => {
-                          const d = new Date(q.expiryDate);
-                          if (isNaN(d.getTime())) return null;
-                          const isExpired = d < new Date();
-                          return (
-                            <span>Expires: <span className={`font-medium ${isExpired ? "text-red-600" : "text-foreground"}`}>
-                              {format(d, "d MMM yyyy")}
-                            </span></span>
-                          );
-                        })()}
+                        {expiryValid && (
+                          <span>Expires: <span className={`font-medium ${isDateExpired ? "text-red-600" : "text-foreground"}`}>
+                            {format(expiry!, "d MMM yyyy")}
+                          </span></span>
+                        )}
                         {q.documentPath && (
                           <a
                             href={`/api/storage/object/${encodeURIComponent(q.documentPath)}`}
@@ -354,8 +355,8 @@ export default function StaffProfile() {
                       </AlertDialog>
                     </div>
                   </CardContent>
-                </Card>
-              ); })}
+                </Card>;
+              })}
             </div>
           )}
         </TabsContent>

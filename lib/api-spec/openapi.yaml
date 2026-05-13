@@ -701,6 +701,12 @@ paths:
     get:
       operationId: listJottings
       tags: [jottings]
+      parameters:
+        - name: includeArchived
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         "200":
           description: OK

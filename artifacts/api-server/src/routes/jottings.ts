@@ -5,8 +5,11 @@ import { ArchiveJottingParams, CreateJottingBody, DeleteJottingParams, ListJotti
 
 const router: IRouter = Router();
 
-router.get("/jottings", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(jottingsTable).where(isNull(jottingsTable.archivedAt)).orderBy(jottingsTable.createdAt);
+router.get("/jottings", async (req, res): Promise<void> => {
+  const includeArchived = req.query.includeArchived === "true";
+  const rows = await db.select().from(jottingsTable)
+    .where(includeArchived ? undefined : isNull(jottingsTable.archivedAt))
+    .orderBy(jottingsTable.createdAt);
   const childList = await db.select().from(childrenTable);
   const staffList = await db.select().from(staffTable);
   const enriched = rows.map((j) => {

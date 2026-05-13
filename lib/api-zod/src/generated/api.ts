@@ -631,6 +631,10 @@ export const DeleteNoticeParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const ListJottingsQueryParams = zod.object({
+  includeArchived: zod.coerce.boolean().optional(),
+});
+
 export const ListJottingsResponseItem = zod.object({
   id: zod.number(),
   content: zod.string(),

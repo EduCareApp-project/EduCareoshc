@@ -42,6 +42,7 @@ import type {
   Jotting,
   JottingInput,
   LearningStoriesReport,
+  ListJottingsParams,
   NewPasswordResult,
   Notice,
   NoticeInput,
@@ -3103,41 +3104,57 @@ export const useDeleteNotice = <
   return useMutation(getDeleteNoticeMutationOptions(options));
 };
 
-export const getListJottingsUrl = () => {
-  return `/api/jottings`;
+export const getListJottingsUrl = (params?: ListJottingsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/jottings?${stringifiedParams}`
+    : `/api/jottings`;
 };
 
 export const listJottings = async (
+  params?: ListJottingsParams,
   options?: RequestInit,
 ): Promise<Jotting[]> => {
-  return customFetch<Jotting[]>(getListJottingsUrl(), {
+  return customFetch<Jotting[]>(getListJottingsUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getListJottingsQueryKey = () => {
-  return [`/api/jottings`] as const;
+export const getListJottingsQueryKey = (params?: ListJottingsParams) => {
+  return [`/api/jottings`, ...(params ? [params] : [])] as const;
 };
 
 export const getListJottingsQueryOptions = <
   TData = Awaited<ReturnType<typeof listJottings>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listJottings>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: ListJottingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listJottings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getListJottingsQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getListJottingsQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listJottings>>> = ({
     signal,
-  }) => listJottings({ signal, ...requestOptions });
+  }) => listJottings(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listJottings>>,
@@ -3154,15 +3171,18 @@ export type ListJottingsQueryError = ErrorType<unknown>;
 export function useListJottings<
   TData = Awaited<ReturnType<typeof listJottings>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listJottings>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListJottingsQueryOptions(options);
+>(
+  params?: ListJottingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listJottings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListJottingsQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

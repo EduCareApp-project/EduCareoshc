@@ -70,7 +70,7 @@ export default function ChildProfile() {
   const { data: staff } = useListStaff();
   const { data: welfareNotes, isLoading: welfareLoading } = useGetChildWelfareNotes(id, { query: { enabled: !!id } });
   const { data: confidentialNotes, isLoading: confidentialLoading } = useGetChildConfidentialNotes(id, { query: { enabled: !!id } });
-  const { data: allJottings } = useListJottings();
+  const { data: allJottings } = useListJottings({ includeArchived: true });
   const { data: allPrograms } = useListPrograms();
   const { data: allPosts } = useListPosts();
   const updateMutation = useUpdateChild();
@@ -724,7 +724,9 @@ export default function ChildProfile() {
                     <CardTitle className="text-base flex items-center gap-2">
                       <StickyNote className="h-5 w-5" />Jottings
                     </CardTitle>
-                    <span className="text-sm text-muted-foreground">{childJottings.length} recorded</span>
+                    <span className="text-sm text-muted-foreground">
+                      {childJottings.filter((j) => !j.archivedAt).length} unactioned · {childJottings.filter((j) => j.archivedAt).length} actioned
+                    </span>
                   </CardHeader>
                   <CardContent>
                     {childJottings.length === 0 ? (
@@ -732,9 +734,12 @@ export default function ChildProfile() {
                     ) : (
                       <div className="space-y-2">
                         {[...childJottings].reverse().map((j) => (
-                          <div key={j.id} className="flex items-start gap-3 p-3 rounded-lg border bg-card text-sm">
+                          <div key={j.id} className={`flex items-start gap-3 p-3 rounded-lg border text-sm ${j.archivedAt ? "bg-muted/40 opacity-70" : "bg-card"}`}>
                             <div className="flex-1 min-w-0">
-                              <p className="leading-relaxed line-clamp-2">{j.content}</p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="leading-relaxed line-clamp-2 flex-1">{j.content}</p>
+                                {j.archivedAt && <Badge variant="secondary" className="text-xs shrink-0">Actioned</Badge>}
+                              </div>
                               <p className="text-xs text-muted-foreground mt-1">{safeDate(j.createdAt, "d MMM yyyy")}{j.staffName ? ` · ${j.staffName}` : ""}</p>
                             </div>
                           </div>

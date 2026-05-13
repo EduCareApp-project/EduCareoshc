@@ -54,6 +54,7 @@ export * from "./jottingInput";
 export * from "./learningStoriesReport";
 export * from "./learningStoriesReportByChildItem";
 export * from "./learningStoriesReportUnderRepresentedOutcomesItem";
+export * from "./listJottingsParams";
 export * from "./newPasswordResult";
 export * from "./notice";
 export * from "./noticeInput";

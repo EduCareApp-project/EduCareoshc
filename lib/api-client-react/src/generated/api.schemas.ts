@@ -1281,3 +1281,7 @@ export type StaffComplianceReportStaffItem = {
 export interface StaffComplianceReport {
   staff: StaffComplianceReportStaffItem[];
 }
+
+export type ListJottingsParams = {
+  includeArchived?: boolean;
+};

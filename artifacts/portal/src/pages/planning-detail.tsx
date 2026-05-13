@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Save, Trash2, Users, Upload, FileText, X, Loader2, Copy, Pencil } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Users, Upload, FileText, X, Loader2, Copy, Pencil, Link, ExternalLink, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -104,7 +104,13 @@ function mergeAssessment(raw: unknown): AssessmentData {
   return base;
 }
 
-type DocEntry = { path: string; name: string };
+type DocEntry = { type: "file" | "link"; path: string; name: string };
+
+function getDocHref(doc: DocEntry): string {
+  if (doc.type === "link") return doc.path;
+  const stripped = doc.path.replace(/^\/objects\//, "");
+  return `/api/storage/objects/${stripped}`;
+}
 
 type FormState = {
   title: string;
@@ -213,6 +219,9 @@ export default function PlanningDetail() {
   const [initialized, setInitialized] = useState(false);
   const [isEditing, setIsEditing] = useState(isNew);
   const [activeTab, setActiveTab] = useState("planning");
+  const [showLinkForm, setShowLinkForm] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkName, setLinkName] = useState("");
 
   const showAssessmentTab = form.stage === "assessment" || form.stage === "closed";
 
@@ -224,7 +233,11 @@ export default function PlanningDetail() {
     if (!isNew && experience && !initialized) {
       const paths = experience.documentPaths ?? [];
       const names = experience.documentNames ?? [];
-      const docs: DocEntry[] = paths.map((p, i) => ({ path: p, name: names[i] ?? p }));
+      const docs: DocEntry[] = paths.map((p, i) => ({
+        type: p.startsWith("http://") || p.startsWith("https://") ? "link" : "file",
+        path: p,
+        name: names[i] ?? p,
+      }));
       const loaded: FormState = {
         title: experience.title ?? "",
         startDate: experience.startDate ?? "",
@@ -314,10 +327,21 @@ export default function PlanningDetail() {
     for (const file of files) {
       const response = await uploadFile(file);
       if (response) {
-        setForm((f) => ({ ...f, documents: [...f.documents, { path: response.objectPath, name: file.name }] }));
+        setForm((f) => ({ ...f, documents: [...f.documents, { type: "file" as const, path: response.objectPath, name: file.name }] }));
       }
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function handleAddLink() {
+    const trimmedUrl = linkUrl.trim();
+    if (!trimmedUrl) return;
+    const url = trimmedUrl.startsWith("http://") || trimmedUrl.startsWith("https://") ? trimmedUrl : `https://${trimmedUrl}`;
+    const name = linkName.trim() || url;
+    setForm((f) => ({ ...f, documents: [...f.documents, { type: "link" as const, path: url, name }] }));
+    setLinkUrl("");
+    setLinkName("");
+    setShowLinkForm(false);
   }
 
   function removeDocument(index: number) {
@@ -496,7 +520,7 @@ export default function PlanningDetail() {
           </TabsList>
 
           <TabsContent value="planning" className="space-y-6 mt-0">
-            {isEditing ? <PlanningEditContent {...{ form, set, sites, allChildren, visibleChildren, isTemplateMode, handleSiteChange, toggleChild, fileInputRef, handleFileSelect, removeDocument, isUploading, activeStaff }} />
+            {isEditing ? <PlanningEditContent {...{ form, set, sites, allChildren, visibleChildren, isTemplateMode, handleSiteChange, toggleChild, fileInputRef, handleFileSelect, removeDocument, isUploading, activeStaff, showLinkForm, setShowLinkForm, linkUrl, setLinkUrl, linkName, setLinkName, handleAddLink }} />
               : <PlanningViewContent {...{ form, siteName, focusChildrenNames }} />}
             {isEditing && (
               <div className="flex justify-end gap-3">
@@ -526,7 +550,7 @@ export default function PlanningDetail() {
         </Tabs>
       ) : (
         <div className="space-y-6">
-          {isEditing ? <PlanningEditContent {...{ form, set, sites, allChildren, visibleChildren, isTemplateMode, handleSiteChange, toggleChild, fileInputRef, handleFileSelect, removeDocument, isUploading, activeStaff }} />
+          {isEditing ? <PlanningEditContent {...{ form, set, sites, allChildren, visibleChildren, isTemplateMode, handleSiteChange, toggleChild, fileInputRef, handleFileSelect, removeDocument, isUploading, activeStaff, showLinkForm, setShowLinkForm, linkUrl, setLinkUrl, linkName, setLinkName, handleAddLink }} />
             : <PlanningViewContent {...{ form, siteName, focusChildrenNames }} />}
           {isEditing && (
             <div className="flex justify-end gap-3">
@@ -544,7 +568,7 @@ export default function PlanningDetail() {
 
 // ─── Planning tab: edit ────────────────────────────────────────────────────────
 
-function PlanningEditContent({ form, set, sites, allChildren, visibleChildren, isTemplateMode, handleSiteChange, toggleChild, fileInputRef, handleFileSelect, removeDocument, isUploading, activeStaff }: {
+function PlanningEditContent({ form, set, sites, allChildren, visibleChildren, isTemplateMode, handleSiteChange, toggleChild, fileInputRef, handleFileSelect, removeDocument, isUploading, activeStaff, showLinkForm, setShowLinkForm, linkUrl, setLinkUrl, linkName, setLinkName, handleAddLink }: {
   form: FormState;
   set: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
   sites: any[] | undefined;
@@ -558,6 +582,13 @@ function PlanningEditContent({ form, set, sites, allChildren, visibleChildren, i
   removeDocument: (i: number) => void;
   isUploading: boolean;
   activeStaff: any[];
+  showLinkForm: boolean;
+  setShowLinkForm: (v: boolean) => void;
+  linkUrl: string;
+  setLinkUrl: (v: string) => void;
+  linkName: string;
+  setLinkName: (v: string) => void;
+  handleAddLink: () => void;
 }) {
   return (
     <>
@@ -666,22 +697,57 @@ function PlanningEditContent({ form, set, sites, allChildren, visibleChildren, i
       </div>
 
       <div className="bg-white border rounded-xl p-6 space-y-4">
-        <SectionHeader title="Documents" />
+        <SectionHeader title="Documents & Links" />
         {form.documents.length > 0 && (
           <ul className="space-y-2">
             {form.documents.map((doc, i) => (
               <li key={i} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
-                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                <a href={`/api/storage/objects/${doc.path.replace(/^\/objects\//, "")}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-sm font-medium hover:underline truncate">{doc.name}</a>
-                <button type="button" onClick={() => removeDocument(i)} className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded" aria-label="Remove document"><X className="h-4 w-4" /></button>
+                {doc.type === "link"
+                  ? <Link className="h-4 w-4 text-muted-foreground shrink-0" />
+                  : <FileText className="h-4 w-4 text-muted-foreground shrink-0" />}
+                <a href={getDocHref(doc)} target="_blank" rel="noopener noreferrer" className="flex-1 text-sm font-medium hover:underline truncate">{doc.name}</a>
+                <button type="button" onClick={() => removeDocument(i)} className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded" aria-label="Remove"><X className="h-4 w-4" /></button>
               </li>
             ))}
           </ul>
         )}
-        <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} />
-        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-          {isUploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading…</> : <><Upload className="h-4 w-4 mr-2" />Upload Documents</>}
-        </Button>
+        {showLinkForm && (
+          <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+            <p className="text-sm font-medium">Add web link</p>
+            <div className="space-y-2">
+              <Input
+                placeholder="URL (e.g. https://example.com)"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddLink(); } }}
+                autoFocus
+              />
+              <Input
+                placeholder="Display name (optional — defaults to URL)"
+                value={linkName}
+                onChange={(e) => setLinkName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddLink(); } }}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" size="sm" onClick={handleAddLink} disabled={!linkUrl.trim()}>
+                <Plus className="h-4 w-4 mr-1.5" />Add Link
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => { setShowLinkForm(false); setLinkUrl(""); setLinkName(""); }}>Cancel</Button>
+            </div>
+          </div>
+        )}
+        <div className="flex gap-2 flex-wrap">
+          <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} />
+          <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+            {isUploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading…</> : <><Upload className="h-4 w-4 mr-2" />Upload File</>}
+          </Button>
+          {!showLinkForm && (
+            <Button type="button" variant="outline" onClick={() => setShowLinkForm(true)}>
+              <Link className="h-4 w-4 mr-2" />Add Link
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white border rounded-xl p-6 space-y-4">
@@ -763,12 +829,14 @@ function PlanningViewContent({ form, siteName, focusChildrenNames }: { form: For
 
       {form.documents.length > 0 && (
         <div className="bg-white border rounded-xl p-6 space-y-3">
-          <SectionHeader title="Documents" />
+          <SectionHeader title="Documents & Links" />
           <ul className="space-y-2">
             {form.documents.map((doc, i) => (
               <li key={i} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
-                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                <a href={`/api/storage/objects/${doc.path.replace(/^\/objects\//, "")}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-sm font-medium hover:underline truncate">{doc.name}</a>
+                {doc.type === "link"
+                  ? <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                  : <FileText className="h-4 w-4 text-muted-foreground shrink-0" />}
+                <a href={getDocHref(doc)} target="_blank" rel="noopener noreferrer" className="flex-1 text-sm font-medium hover:underline truncate">{doc.name}</a>
               </li>
             ))}
           </ul>

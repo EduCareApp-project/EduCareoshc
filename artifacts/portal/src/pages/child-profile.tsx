@@ -379,8 +379,8 @@ export default function ChildProfile() {
               </div>
               <Separator />
               <div className="space-y-1">
-                <div className="text-sm text-muted-foreground flex items-center gap-2"><Users className="h-4 w-4" />Age Group</div>
-                <p className="font-medium capitalize">{child.ageGroup}</p>
+                <div className="text-sm text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4" />Date of Birth</div>
+                <p className="font-medium">{safeDate(child.dateOfBirth, "MMMM d, yyyy")}</p>
               </div>
               <Separator />
               <div className="space-y-1">

@@ -21,15 +21,26 @@ export default function Jottings() {
 
   const [content, setContent] = useState("");
   const [childId, setChildId] = useState<string>("none");
-  const [siteFilter, setSiteFilter] = useState<string>("all");
+  const [captureSite, setCaptureSite] = useState<string>("all");
+  const [listSiteFilter, setListSiteFilter] = useState<string>("all");
 
   // Map childId → siteId for client-side filtering
   const childSiteMap = new Map((children ?? []).map((c) => [c.id, c.siteId ?? null]));
 
+  // Children shown in the capture form, narrowed by the capture site selector
+  const captureChildren = (children ?? []).filter((c) =>
+    captureSite === "all" ? true : String(c.siteId ?? "") === captureSite,
+  );
+
+  function handleCaptureSiteChange(val: string) {
+    setCaptureSite(val);
+    setChildId("none"); // reset child when site changes
+  }
+
   const sorted = [...(jottings ?? [])].reverse().filter((j) => {
-    if (siteFilter === "all") return true;
-    if (!j.childId) return siteFilter === "none";
-    return siteFilter === "none" ? false : childSiteMap.get(j.childId) === parseInt(siteFilter);
+    if (listSiteFilter === "all") return true;
+    if (!j.childId) return listSiteFilter === "none";
+    return listSiteFilter === "none" ? false : childSiteMap.get(j.childId) === parseInt(listSiteFilter);
   });
 
   function handleSubmit(e: React.FormEvent) {
@@ -66,13 +77,27 @@ export default function Jottings() {
         <CardHeader><CardTitle className="text-base">Quick Capture</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-3">
+            {sites && sites.length > 0 && (
+              <Select value={captureSite} onValueChange={handleCaptureSiteChange}>
+                <SelectTrigger className="w-full sm:w-64">
+                  <SelectValue placeholder="All sites" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All sites</SelectItem>
+                  {sites.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
             <Select value={childId} onValueChange={setChildId}>
               <SelectTrigger className="w-full sm:w-64">
                 <SelectValue placeholder="Link to a child (optional)" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No child linked</SelectItem>
-                {(children ?? []).map((c) => (
+                {captureChildren.map((c) => (
                   <SelectItem key={c.id} value={String(c.id)}>{c.firstName} {c.lastName}</SelectItem>
                 ))}
               </SelectContent>
@@ -97,7 +122,7 @@ export default function Jottings() {
       {showSiteFilter && (
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground shrink-0">Filter by site:</span>
-          <Select value={siteFilter} onValueChange={setSiteFilter}>
+          <Select value={listSiteFilter} onValueChange={setListSiteFilter}>
             <SelectTrigger className="w-52 bg-card">
               <SelectValue placeholder="All sites" />
             </SelectTrigger>
@@ -118,7 +143,7 @@ export default function Jottings() {
         ) : sorted.length === 0 ? (
           <Card><CardContent className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
             <StickyNote className="h-8 w-8 mb-2" />
-            <p>{siteFilter !== "all" ? "No jottings match this site filter." : "No jottings yet. Write your first one above."}</p>
+            <p>{listSiteFilter !== "all" ? "No jottings match this site filter." : "No jottings yet. Write your first one above."}</p>
           </CardContent></Card>
         ) : sorted.map((j) => (
           <Card key={j.id}>

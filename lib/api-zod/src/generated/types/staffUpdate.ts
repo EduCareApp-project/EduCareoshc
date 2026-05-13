@@ -17,4 +17,6 @@ export interface StaffUpdate {
   status?: StaffUpdateStatus;
   phone?: string;
   wwccNumber?: string;
+  bio?: string;
+  profilePicturePath?: string;
 }

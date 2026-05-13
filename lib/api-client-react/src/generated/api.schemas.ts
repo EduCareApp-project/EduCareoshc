@@ -173,6 +173,10 @@ export interface Staff {
   phone?: string | null;
   /** @nullable */
   wwccNumber?: string | null;
+  /** @nullable */
+  bio?: string | null;
+  /** @nullable */
+  profilePicturePath?: string | null;
   createdAt?: string;
 }
 
@@ -232,6 +236,8 @@ export interface StaffUpdate {
   status?: StaffUpdateStatus;
   phone?: string;
   wwccNumber?: string;
+  bio?: string;
+  profilePicturePath?: string;
 }
 
 export interface Observation {

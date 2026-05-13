@@ -162,6 +162,8 @@ export const ListStaffResponseItem = zod.object({
   status: zod.enum(["active", "inactive"]),
   phone: zod.string().nullish(),
   wwccNumber: zod.string().nullish(),
+  bio: zod.string().nullish(),
+  profilePicturePath: zod.string().nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 export const ListStaffResponse = zod.array(ListStaffResponseItem);
@@ -195,6 +197,8 @@ export const GetStaffResponse = zod.object({
   status: zod.enum(["active", "inactive"]),
   phone: zod.string().nullish(),
   wwccNumber: zod.string().nullish(),
+  bio: zod.string().nullish(),
+  profilePicturePath: zod.string().nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 
@@ -213,6 +217,8 @@ export const UpdateStaffBody = zod.object({
   status: zod.enum(["active", "inactive"]).optional(),
   phone: zod.string().optional(),
   wwccNumber: zod.string().optional(),
+  bio: zod.string().optional(),
+  profilePicturePath: zod.string().optional(),
 });
 
 export const UpdateStaffResponse = zod.object({
@@ -225,6 +231,8 @@ export const UpdateStaffResponse = zod.object({
   status: zod.enum(["active", "inactive"]),
   phone: zod.string().nullish(),
   wwccNumber: zod.string().nullish(),
+  bio: zod.string().nullish(),
+  profilePicturePath: zod.string().nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 

@@ -20,5 +20,9 @@ export interface Staff {
   phone?: string | null;
   /** @nullable */
   wwccNumber?: string | null;
+  /** @nullable */
+  bio?: string | null;
+  /** @nullable */
+  profilePicturePath?: string | null;
   createdAt?: Date;
 }

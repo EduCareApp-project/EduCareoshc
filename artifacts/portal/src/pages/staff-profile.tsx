@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "wouter";
 import {
   useGetStaff,
+  useUpdateStaff,
   useGetStaffProfessionalDevelopment,
   useCreateProfessionalDevelopment,
   useDeleteProfessionalDevelopment,
@@ -27,7 +28,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Plus, Trash2, GraduationCap, User, Award, Paperclip, X, Pencil, FileText, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, GraduationCap, User, Award, Paperclip, X, Pencil, FileText, AlertTriangle, Camera, Check } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -75,6 +76,7 @@ export default function StaffProfile() {
   const { data: pdList, isLoading: loadingPd } = useGetStaffProfessionalDevelopment(staffId, { query: { enabled: !!staffId } });
   const { data: qualifications, isLoading: loadingQuals } = useGetStaffQualifications(staffId, { query: { enabled: !!staffId } });
 
+  const updateStaffMutation = useUpdateStaff();
   const createPdMutation = useCreateProfessionalDevelopment();
   const deletePdMutation = useDeleteProfessionalDevelopment();
   const createQualMutation = useCreateStaffQualification();
@@ -90,8 +92,15 @@ export default function StaffProfile() {
   const [qualDocPath, setQualDocPath] = useState<string | null>(null);
   const [qualDocName, setQualDocName] = useState<string | null>(null);
 
+  const [bioText, setBioText] = useState<string>("");
+  const [bioEditing, setBioEditing] = useState(false);
+  const [bioSaving, setBioSaving] = useState(false);
+
   const { uploadFile, isUploading } = useUpload({
     onError: () => toast({ title: "File upload failed", variant: "destructive" }),
+  });
+  const { uploadFile: uploadProfilePic, isUploading: isUploadingPic } = useUpload({
+    onError: () => toast({ title: "Photo upload failed", variant: "destructive" }),
   });
 
   async function handleDocUpload(file: File) {
@@ -99,6 +108,31 @@ export default function StaffProfile() {
     if (response) {
       setQualDocPath(response.objectPath);
       setQualDocName(file.name);
+    }
+  }
+
+  async function handleProfilePicUpload(file: File) {
+    const response = await uploadProfilePic(file);
+    if (!response) return;
+    await updateStaffMutation.mutateAsync({ id: staffId, data: { profilePicturePath: response.objectPath } });
+    await queryClient.invalidateQueries({ queryKey: ["getStaff", staffId] });
+    toast({ title: "Profile photo updated" });
+  }
+
+  function startEditBio() {
+    setBioText(staff?.bio ?? "");
+    setBioEditing(true);
+  }
+
+  async function saveBio() {
+    setBioSaving(true);
+    try {
+      await updateStaffMutation.mutateAsync({ id: staffId, data: { bio: bioText } });
+      await queryClient.invalidateQueries({ queryKey: ["getStaff", staffId] });
+      setBioEditing(false);
+      toast({ title: "Profile saved" });
+    } finally {
+      setBioSaving(false);
     }
   }
 
@@ -221,8 +255,16 @@ export default function StaffProfile() {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center font-bold text-xl text-primary">
-          {staff.firstName[0]}{staff.lastName[0]}
+        <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center font-bold text-xl text-primary overflow-hidden">
+          {staff.profilePicturePath ? (
+            <img
+              src={`/api/object-storage/file?path=${encodeURIComponent(staff.profilePicturePath)}`}
+              alt="Profile"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <>{staff.firstName[0]}{staff.lastName[0]}</>
+          )}
         </div>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{staff.firstName} {staff.lastName}</h1>
@@ -241,7 +283,80 @@ export default function StaffProfile() {
         </TabsList>
 
         {/* Profile Tab */}
-        <TabsContent value="profile" className="mt-4">
+        <TabsContent value="profile" className="mt-4 space-y-4">
+          {/* Picture + Bio row */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex gap-6 items-start">
+                {/* Profile picture tile */}
+                <div className="flex-shrink-0">
+                  <div className="relative group w-28 h-28 rounded-xl overflow-hidden bg-primary/10 flex items-center justify-center">
+                    {staff.profilePicturePath ? (
+                      <img
+                        src={`/api/object-storage/file?path=${encodeURIComponent(staff.profilePicturePath)}`}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-3xl font-bold text-primary">{staff.firstName[0]}{staff.lastName[0]}</span>
+                    )}
+                    <label className={`absolute inset-0 flex flex-col items-center justify-center bg-black/50 text-white cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity ${isUploadingPic ? "opacity-100" : ""}`}>
+                      {isUploadingPic ? (
+                        <span className="text-xs">Uploading…</span>
+                      ) : (
+                        <>
+                          <Camera className="h-5 w-5 mb-1" />
+                          <span className="text-xs">Change photo</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        disabled={isUploadingPic}
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleProfilePicUpload(f); e.target.value = ""; }}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Bio */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium">About</Label>
+                    {!bioEditing && (
+                      <Button variant="ghost" size="sm" onClick={startEditBio}>
+                        <Pencil className="h-3.5 w-3.5 mr-1" />Edit
+                      </Button>
+                    )}
+                  </div>
+                  {bioEditing ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={bioText}
+                        onChange={(e) => setBioText(e.target.value)}
+                        placeholder="Add a short bio or notes about this staff member…"
+                        rows={4}
+                        className="resize-none"
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={saveBio} disabled={bioSaving}>
+                          <Check className="h-3.5 w-3.5 mr-1" />{bioSaving ? "Saving…" : "Save"}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setBioEditing(false)} disabled={bioSaving}>Cancel</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                      {staff.bio || <span className="italic">No bio added yet.</span>}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Details */}
           <Card>
             <CardContent className="pt-6">
               <div className="grid gap-4 sm:grid-cols-2">

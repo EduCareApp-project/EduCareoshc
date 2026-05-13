@@ -369,44 +369,6 @@ export default function StaffProfile() {
             </CardContent>
           </Card>
 
-          {/* Employment Notes */}
-          <Card>
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-base">Employment Notes</CardTitle>
-                <p className="text-xs text-muted-foreground mt-0.5">Internal notes — access will be restricted by role in a future update.</p>
-              </div>
-              {!notesEditing && (
-                <Button variant="outline" size="sm" onClick={startEditNotes}>
-                  <Pencil className="h-3.5 w-3.5 mr-1" />Edit
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              {notesEditing ? (
-                <div className="space-y-2">
-                  <Textarea
-                    value={notesText}
-                    onChange={(e) => setNotesText(e.target.value)}
-                    placeholder="e.g. Probation period ends 01/09/2025. Flexible hours arrangement in place. Supervisor: Jane Lee."
-                    rows={5}
-                    className="resize-none"
-                  />
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={saveNotes} disabled={notesSaving}>
-                      <Check className="h-3.5 w-3.5 mr-1" />{notesSaving ? "Saving…" : "Save"}
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setNotesEditing(false)} disabled={notesSaving}>Cancel</Button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                  {staff.employmentNotes || <span className="italic">No employment notes recorded.</span>}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Picture + Bio row */}
           <Card>
             <CardContent className="pt-6">
@@ -476,6 +438,44 @@ export default function StaffProfile() {
                   )}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Employment Notes */}
+          <Card>
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Employment Notes</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">Internal notes — access will be restricted by role in a future update.</p>
+              </div>
+              {!notesEditing && (
+                <Button variant="outline" size="sm" onClick={startEditNotes}>
+                  <Pencil className="h-3.5 w-3.5 mr-1" />Edit
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              {notesEditing ? (
+                <div className="space-y-2">
+                  <Textarea
+                    value={notesText}
+                    onChange={(e) => setNotesText(e.target.value)}
+                    placeholder="e.g. Probation period ends 01/09/2025. Flexible hours arrangement in place. Supervisor: Jane Lee."
+                    rows={5}
+                    className="resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={saveNotes} disabled={notesSaving}>
+                      <Check className="h-3.5 w-3.5 mr-1" />{notesSaving ? "Saving…" : "Save"}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setNotesEditing(false)} disabled={notesSaving}>Cancel</Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                  {staff.employmentNotes || <span className="italic">No employment notes recorded.</span>}
+                </p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

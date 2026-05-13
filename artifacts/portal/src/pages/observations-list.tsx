@@ -76,7 +76,7 @@ export default function ObservationsList() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(obs.observationDate + "T00:00:00"), "d MMM yyyy")}
+                        {format(new Date(obs.observationDate.length === 10 ? obs.observationDate + "T00:00:00" : obs.observationDate), "d MMM yyyy")}
                       </span>
                     </span>
                   </div>

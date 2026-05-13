@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   useGetChild, useUpdateChild, useDeleteChild,
   useGetChildObservations, useListSites,
-  useGetChildWelfareNotes, useCreateWelfareNote, useDeleteWelfareNote,
+  useGetChildWelfareNotes, useCreateWelfareNote, useUpdateWelfareNote, useDeleteWelfareNote,
   useGetChildConfidentialNotes, useCreateConfidentialNote, useUpdateConfidentialNote, useDeleteConfidentialNote,
   useListStaff,
 } from "@workspace/api-client-react";
@@ -73,6 +73,7 @@ export default function ChildProfile() {
   const updateMutation = useUpdateChild();
   const deleteMutation = useDeleteChild();
   const createWelfareMutation = useCreateWelfareNote();
+  const updateWelfareMutation = useUpdateWelfareNote();
   const deleteWelfareMutation = useDeleteWelfareNote();
   const createConfidentialMutation = useCreateConfidentialNote();
   const updateConfidentialMutation = useUpdateConfidentialNote();
@@ -81,6 +82,7 @@ export default function ChildProfile() {
   const [editOpen, setEditOpen] = useState(false);
   const [welfareOpen, setWelfareOpen] = useState(false);
   const [welfareForm, setWelfareForm] = useState(EMPTY_WELFARE_FORM);
+  const [editingWelfareNoteId, setEditingWelfareNoteId] = useState<number | null>(null);
 
   const [confNoteText, setConfNoteText] = useState("");
   const [confNoteStaffId, setConfNoteStaffId] = useState("");
@@ -152,8 +154,7 @@ export default function ChildProfile() {
     });
   }
 
-  function handleCreateWelfareNote(e: React.FormEvent) {
-    e.preventDefault();
+  function buildWelfareBody() {
     const body: Record<string, unknown> = {
       childId: id,
       occurredAt: new Date(welfareForm.occurredAt).toISOString(),
@@ -169,18 +170,60 @@ export default function ChildProfile() {
     if (welfareForm.cissNotes) body.cissNotes = welfareForm.cissNotes;
     if (welfareForm.fvissNotes) body.fvissNotes = welfareForm.fvissNotes;
     if (welfareForm.confidentialNotes) body.confidentialNotes = welfareForm.confidentialNotes;
+    return body;
+  }
 
-    createWelfareMutation.mutate({ data: body as any }, {
-      onSuccess: () => {
-        setWelfareOpen(false);
-        setWelfareForm(EMPTY_WELFARE_FORM);
-        setEvidenceObjectPath(null);
-        setEvidenceFileName(null);
-        queryClient.invalidateQueries({ queryKey: [`/api/children/${id}/welfare-notes`] });
-        toast({ title: "Welfare note recorded" });
-      },
-      onError: () => toast({ title: "Failed to save welfare note", variant: "destructive" }),
+  function closeWelfareDialog() {
+    setWelfareOpen(false);
+    setWelfareForm(EMPTY_WELFARE_FORM);
+    setEvidenceObjectPath(null);
+    setEvidenceFileName(null);
+    setEditingWelfareNoteId(null);
+  }
+
+  function handleWelfareNoteSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const body = buildWelfareBody();
+
+    if (editingWelfareNoteId !== null) {
+      updateWelfareMutation.mutate({ id: editingWelfareNoteId, data: body as any }, {
+        onSuccess: () => {
+          closeWelfareDialog();
+          queryClient.invalidateQueries({ queryKey: [`/api/children/${id}/welfare-notes`] });
+          toast({ title: "Welfare note updated" });
+        },
+        onError: () => toast({ title: "Failed to update welfare note", variant: "destructive" }),
+      });
+    } else {
+      createWelfareMutation.mutate({ data: body as any }, {
+        onSuccess: () => {
+          closeWelfareDialog();
+          queryClient.invalidateQueries({ queryKey: [`/api/children/${id}/welfare-notes`] });
+          toast({ title: "Welfare note recorded" });
+        },
+        onError: () => toast({ title: "Failed to save welfare note", variant: "destructive" }),
+      });
+    }
+  }
+
+  function openEditWelfareNote(note: NonNullable<typeof welfareNotes>[number]) {
+    setWelfareForm({
+      occurredAt: note.occurredAt.slice(0, 16),
+      staffId: note.staffId != null ? String(note.staffId) : "",
+      concerns: note.concerns,
+      riskFactors: note.riskFactors,
+      mandatoryReportRequired: note.mandatoryReportRequired,
+      mandatoryReportNotes: note.mandatoryReportNotes ?? "",
+      cissThresholdMet: note.cissThresholdMet,
+      cissNotes: note.cissNotes ?? "",
+      fvissThresholdMet: note.fvissThresholdMet,
+      fvissNotes: note.fvissNotes ?? "",
+      confidentialNotes: note.confidentialNotes ?? "",
     });
+    setEvidenceObjectPath(note.evidence ?? null);
+    setEvidenceFileName(note.evidence ? note.evidence.split("/").pop() ?? null : null);
+    setEditingWelfareNoteId(note.id);
+    setWelfareOpen(true);
   }
 
   function handleDeleteWelfareNote(noteId: number) {
@@ -432,7 +475,7 @@ export default function ChildProfile() {
             <ShieldAlert className="h-5 w-5 text-amber-600" />
             Welfare Notification Log
           </CardTitle>
-          <Button size="sm" onClick={() => { setWelfareForm(EMPTY_WELFARE_FORM); setEvidenceObjectPath(null); setEvidenceFileName(null); setWelfareOpen(true); }}>
+          <Button size="sm" onClick={() => { setWelfareForm(EMPTY_WELFARE_FORM); setEvidenceObjectPath(null); setEvidenceFileName(null); setEditingWelfareNoteId(null); setWelfareOpen(true); }}>
             <Plus className="h-4 w-4 mr-1" />New Welfare Note
           </Button>
         </CardHeader>
@@ -473,9 +516,13 @@ export default function ChildProfile() {
                         )}
                       </div>
                     </div>
+                    <div className="flex gap-1 shrink-0">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openEditWelfareNote(note)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </AlertDialogTrigger>
@@ -497,6 +544,7 @@ export default function ChildProfile() {
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
+                    </div>
                   </div>
                   <div className="grid md:grid-cols-2 gap-3 text-sm">
                     <div className="space-y-1">
@@ -764,15 +812,15 @@ export default function ChildProfile() {
       </Dialog>
 
       {/* New Welfare Note Dialog */}
-      <Dialog open={welfareOpen} onOpenChange={setWelfareOpen}>
+      <Dialog open={welfareOpen} onOpenChange={(open) => { if (!open) closeWelfareDialog(); }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-600" />
-              Record Welfare Notification
+              {editingWelfareNoteId !== null ? "Edit Welfare Note" : "Record Welfare Notification"}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCreateWelfareNote} className="space-y-5">
+          <form onSubmit={handleWelfareNoteSubmit} className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label>Date &amp; Time of Concern</Label>
@@ -955,9 +1003,11 @@ export default function ChildProfile() {
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t">
-              <Button type="button" variant="outline" onClick={() => setWelfareOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={createWelfareMutation.isPending}>
-                {createWelfareMutation.isPending ? "Saving…" : "Save Welfare Note"}
+              <Button type="button" variant="outline" onClick={closeWelfareDialog}>Cancel</Button>
+              <Button type="submit" disabled={createWelfareMutation.isPending || updateWelfareMutation.isPending}>
+                {createWelfareMutation.isPending || updateWelfareMutation.isPending
+                  ? "Saving…"
+                  : editingWelfareNoteId !== null ? "Save Changes" : "Save Welfare Note"}
               </Button>
             </div>
           </form>

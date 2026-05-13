@@ -904,6 +904,30 @@ paths:
                 $ref: "#/components/schemas/WelfareNote"
 
   /welfare-notes/{id}:
+    patch:
+      operationId: updateWelfareNote
+      tags: [welfare-notes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WelfareNoteInput'
+      responses:
+        "200":
+          description: Updated welfare note
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WelfareNote'
+        "404":
+          description: Not found
     delete:
       operationId: deleteWelfareNote
       tags: [welfare-notes]

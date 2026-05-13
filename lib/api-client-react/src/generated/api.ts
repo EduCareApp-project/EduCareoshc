@@ -4067,6 +4067,87 @@ export const useCreateWelfareNote = <
   return useMutation(getCreateWelfareNoteMutationOptions(options));
 };
 
+export const getUpdateWelfareNoteUrl = (id: number) => {
+  return `/api/welfare-notes/${id}`;
+};
+
+export const updateWelfareNote = async (
+  id: number,
+  welfareNoteInput: WelfareNoteInput,
+  options?: RequestInit,
+): Promise<WelfareNote> => {
+  return customFetch<WelfareNote>(getUpdateWelfareNoteUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(welfareNoteInput),
+  });
+};
+
+export const getUpdateWelfareNoteMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateWelfareNote>>,
+    TError,
+    { id: number; data: BodyType<WelfareNoteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateWelfareNote>>,
+  TError,
+  { id: number; data: BodyType<WelfareNoteInput> },
+  TContext
+> => {
+  const mutationKey = ["updateWelfareNote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateWelfareNote>>,
+    { id: number; data: BodyType<WelfareNoteInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateWelfareNote(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateWelfareNoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateWelfareNote>>
+>;
+export type UpdateWelfareNoteMutationBody = BodyType<WelfareNoteInput>;
+export type UpdateWelfareNoteMutationError = ErrorType<void>;
+
+export const useUpdateWelfareNote = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateWelfareNote>>,
+    TError,
+    { id: number; data: BodyType<WelfareNoteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateWelfareNote>>,
+  TError,
+  { id: number; data: BodyType<WelfareNoteInput> },
+  TContext
+> => {
+  return useMutation(getUpdateWelfareNoteMutationOptions(options));
+};
+
 export const getDeleteWelfareNoteUrl = (id: number) => {
   return `/api/welfare-notes/${id}`;
 };

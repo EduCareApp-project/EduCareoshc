@@ -7,6 +7,8 @@ import {
   GetChildWelfareNotesResponseItem,
   CreateWelfareNoteBody,
   DeleteWelfareNoteParams,
+  UpdateWelfareNoteParams,
+  UpdateWelfareNoteBody,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -48,6 +50,33 @@ router.post("/welfare-notes", async (req, res): Promise<void> => {
   const staffList = await db.select().from(staffTable);
   const staff = staffList.find((s) => s.id === note.staffId);
   res.status(201).json(
+    GetChildWelfareNotesResponseItem.parse({ ...note, staffName: staff ? `${staff.firstName} ${staff.lastName}` : null })
+  );
+});
+
+router.patch("/welfare-notes/:id", async (req, res): Promise<void> => {
+  const params = UpdateWelfareNoteParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const parsed = UpdateWelfareNoteBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const [note] = await db
+    .update(welfareNotesTable)
+    .set(parsed.data as any)
+    .where(eq(welfareNotesTable.id, params.data.id))
+    .returning();
+  if (!note) {
+    res.status(404).json({ error: "Welfare note not found" });
+    return;
+  }
+  const staffList = await db.select().from(staffTable);
+  const staff = staffList.find((s) => s.id === note.staffId);
+  res.json(
     GetChildWelfareNotesResponseItem.parse({ ...note, staffName: staff ? `${staff.firstName} ${staff.lastName}` : null })
   );
 });

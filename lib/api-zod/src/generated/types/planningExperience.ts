@@ -22,5 +22,29 @@ export interface PlanningExperience {
   programId?: number | null;
   /** @nullable */
   evaluationNotes?: string | null;
+  /** @nullable */
+  siteId?: number | null;
+  /** @nullable */
+  collaborateExplore?: string | null;
+  /** @nullable */
+  identifySkills?: string | null;
+  /** @nullable */
+  researchIdeas?: string | null;
+  /** @nullable */
+  frameworkLinks?: string | null;
+  /** @nullable */
+  qualityAreas?: string | null;
+  /** @nullable */
+  additionalResources?: string | null;
+  /** @nullable */
+  assessAndReview?: string | null;
+  /** @nullable */
+  learning?: string | null;
+  /** @nullable */
+  backgroundInformation?: string | null;
+  /** @nullable */
+  preparedBy?: string | null;
+  /** @nullable */
+  editedBy?: string | null;
   createdAt: Date;
 }

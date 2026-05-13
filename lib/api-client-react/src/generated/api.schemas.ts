@@ -1073,6 +1073,30 @@ export interface PlanningExperience {
   programId?: number | null;
   /** @nullable */
   evaluationNotes?: string | null;
+  /** @nullable */
+  siteId?: number | null;
+  /** @nullable */
+  collaborateExplore?: string | null;
+  /** @nullable */
+  identifySkills?: string | null;
+  /** @nullable */
+  researchIdeas?: string | null;
+  /** @nullable */
+  frameworkLinks?: string | null;
+  /** @nullable */
+  qualityAreas?: string | null;
+  /** @nullable */
+  additionalResources?: string | null;
+  /** @nullable */
+  assessAndReview?: string | null;
+  /** @nullable */
+  learning?: string | null;
+  /** @nullable */
+  backgroundInformation?: string | null;
+  /** @nullable */
+  preparedBy?: string | null;
+  /** @nullable */
+  editedBy?: string | null;
   createdAt: string;
 }
 
@@ -1089,13 +1113,25 @@ export const PlanningExperienceInputStage = {
 export interface PlanningExperienceInput {
   title: string;
   description?: string;
-  stage: PlanningExperienceInputStage;
+  stage?: PlanningExperienceInputStage;
   outcomeIds?: number[];
   childIds?: number[];
   ageGroups?: string[];
   startDate?: string;
   programId?: number;
   evaluationNotes?: string;
+  siteId?: number;
+  collaborateExplore?: string;
+  identifySkills?: string;
+  researchIdeas?: string;
+  frameworkLinks?: string;
+  qualityAreas?: string;
+  additionalResources?: string;
+  assessAndReview?: string;
+  learning?: string;
+  backgroundInformation?: string;
+  preparedBy?: string;
+  editedBy?: string;
 }
 
 export type PlanningExperienceUpdateStage =
@@ -1118,6 +1154,19 @@ export interface PlanningExperienceUpdate {
   startDate?: string;
   programId?: number;
   evaluationNotes?: string;
+  /** @nullable */
+  siteId?: number | null;
+  collaborateExplore?: string;
+  identifySkills?: string;
+  researchIdeas?: string;
+  frameworkLinks?: string;
+  qualityAreas?: string;
+  additionalResources?: string;
+  assessAndReview?: string;
+  learning?: string;
+  backgroundInformation?: string;
+  preparedBy?: string;
+  editedBy?: string;
 }
 
 export type LearningStoriesReportByChildItem = {

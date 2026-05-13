@@ -4,7 +4,7 @@ import { db, planningExperiencesTable } from "@workspace/db";
 import {
   CreatePlanningExperienceBody, UpdatePlanningExperienceParams, UpdatePlanningExperienceBody,
   UpdatePlanningExperienceResponse, DeletePlanningExperienceParams,
-  ListPlanningExperiencesResponse,
+  ListPlanningExperiencesResponse, GetPlanningExperienceParams, GetPlanningExperienceResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -19,6 +19,14 @@ router.post("/planning", async (req, res): Promise<void> => {
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
   const [exp] = await db.insert(planningExperiencesTable).values(parsed.data as any).returning();
   res.status(201).json(UpdatePlanningExperienceResponse.parse(exp));
+});
+
+router.get("/planning/:id", async (req, res): Promise<void> => {
+  const params = GetPlanningExperienceParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const [exp] = await db.select().from(planningExperiencesTable).where(eq(planningExperiencesTable.id, params.data.id));
+  if (!exp) { res.status(404).json({ error: "Planning experience not found" }); return; }
+  res.json(GetPlanningExperienceResponse.parse(exp));
 });
 
 router.patch("/planning/:id", async (req, res): Promise<void> => {

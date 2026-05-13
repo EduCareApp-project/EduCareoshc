@@ -6424,6 +6424,87 @@ export const useCreatePlanningExperience = <
   return useMutation(getCreatePlanningExperienceMutationOptions(options));
 };
 
+export const getGetPlanningExperienceUrl = (id: number) => {
+  return `/api/planning/${id}`;
+};
+
+export const getPlanningExperience = async (
+  id: number,
+  options?: RequestInit,
+): Promise<PlanningExperience> => {
+  return customFetch<PlanningExperience>(getGetPlanningExperienceUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPlanningExperienceQueryKey = (id: number) => {
+  return [`/api/planning/${id}`] as const;
+};
+
+export const getGetPlanningExperienceQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlanningExperience>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlanningExperience>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetPlanningExperienceQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getPlanningExperience>>
+  > = ({ signal }) => getPlanningExperience(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPlanningExperience>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPlanningExperienceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPlanningExperience>>
+>;
+export type GetPlanningExperienceQueryError = ErrorType<void>;
+
+export function useGetPlanningExperience<
+  TData = Awaited<ReturnType<typeof getPlanningExperience>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPlanningExperience>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPlanningExperienceQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
 export const getUpdatePlanningExperienceUrl = (id: number) => {
   return `/api/planning/${id}`;
 };

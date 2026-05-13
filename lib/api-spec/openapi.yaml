@@ -1453,6 +1453,24 @@ paths:
                 $ref: "#/components/schemas/PlanningExperience"
 
   /planning/{id}:
+    get:
+      operationId: getPlanningExperience
+      tags: [planning]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanningExperience"
+        "404":
+          description: Not found
     patch:
       operationId: updatePlanningExperience
       tags: [planning]
@@ -2884,13 +2902,37 @@ components:
           type: ["integer", "null"]
         evaluationNotes:
           type: ["string", "null"]
+        siteId:
+          type: ["integer", "null"]
+        collaborateExplore:
+          type: ["string", "null"]
+        identifySkills:
+          type: ["string", "null"]
+        researchIdeas:
+          type: ["string", "null"]
+        frameworkLinks:
+          type: ["string", "null"]
+        qualityAreas:
+          type: ["string", "null"]
+        additionalResources:
+          type: ["string", "null"]
+        assessAndReview:
+          type: ["string", "null"]
+        learning:
+          type: ["string", "null"]
+        backgroundInformation:
+          type: ["string", "null"]
+        preparedBy:
+          type: ["string", "null"]
+        editedBy:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
 
     PlanningExperienceInput:
       type: object
-      required: [title, stage]
+      required: [title]
       properties:
         title:
           type: string
@@ -2918,6 +2960,30 @@ components:
         programId:
           type: integer
         evaluationNotes:
+          type: string
+        siteId:
+          type: integer
+        collaborateExplore:
+          type: string
+        identifySkills:
+          type: string
+        researchIdeas:
+          type: string
+        frameworkLinks:
+          type: string
+        qualityAreas:
+          type: string
+        additionalResources:
+          type: string
+        assessAndReview:
+          type: string
+        learning:
+          type: string
+        backgroundInformation:
+          type: string
+        preparedBy:
+          type: string
+        editedBy:
           type: string
 
     PlanningExperienceUpdate:
@@ -2948,6 +3014,30 @@ components:
         programId:
           type: integer
         evaluationNotes:
+          type: string
+        siteId:
+          type: ["integer", "null"]
+        collaborateExplore:
+          type: string
+        identifySkills:
+          type: string
+        researchIdeas:
+          type: string
+        frameworkLinks:
+          type: string
+        qualityAreas:
+          type: string
+        additionalResources:
+          type: string
+        assessAndReview:
+          type: string
+        learning:
+          type: string
+        backgroundInformation:
+          type: string
+        preparedBy:
+          type: string
+        editedBy:
           type: string
 
     LearningStoriesReport:

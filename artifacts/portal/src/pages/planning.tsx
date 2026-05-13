@@ -1,83 +1,37 @@
-import { useState } from "react";
-import { useListPlanningExperiences, useCreatePlanningExperience, useUpdatePlanningExperience, useDeletePlanningExperience, useListOutcomes } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLocation } from "wouter";
+import { useListPlanningExperiences, useListChildren, useListSites } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Layers, Plus, Trash2, ArrowRight } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Plus, CalendarDays, MapPin, Users, ChevronRight } from "lucide-react";
+import { format } from "date-fns";
 
-const STAGES = ["brainstorm", "planned", "implemented", "evaluated"] as const;
-const STAGE_LABELS: Record<string, string> = { brainstorm: "Brainstorm", planned: "Planned", implemented: "Implemented", evaluated: "Evaluated" };
-const STAGE_COLORS: Record<string, string> = { brainstorm: "bg-slate-100 border-slate-200", planned: "bg-blue-50 border-blue-200", implemented: "bg-amber-50 border-amber-200", evaluated: "bg-green-50 border-green-200" };
-const AGE_GROUPS = ["infant", "toddler", "preschool", "school_age"];
-const AGE_LABELS: Record<string, string> = { infant: "Infant", toddler: "Toddler", preschool: "Preschool", school_age: "School Age" };
+const STAGE_LABELS: Record<string, string> = {
+  brainstorm: "Brainstorm",
+  planned: "Planned",
+  implemented: "Implemented",
+  evaluated: "Evaluated",
+};
+const STAGE_COLORS: Record<string, string> = {
+  brainstorm: "bg-slate-100 text-slate-700 border-slate-300",
+  planned: "bg-blue-100 text-blue-700 border-blue-300",
+  implemented: "bg-amber-100 text-amber-700 border-amber-300",
+  evaluated: "bg-green-100 text-green-700 border-green-300",
+};
 
 export default function Planning() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+  const [, navigate] = useLocation();
   const { data: experiences, isLoading } = useListPlanningExperiences();
-  const { data: outcomes } = useListOutcomes();
-  const createMutation = useCreatePlanningExperience();
-  const updateMutation = useUpdatePlanningExperience();
-  const deleteMutation = useDeletePlanningExperience();
+  const { data: children } = useListChildren();
+  const { data: sites } = useListSites();
 
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", stage: "brainstorm", ageGroups: [] as string[], outcomeIds: [] as number[], startDate: "" });
-
-  function toggleAgeGroup(ag: string) {
-    setForm((f) => ({ ...f, ageGroups: f.ageGroups.includes(ag) ? f.ageGroups.filter((a) => a !== ag) : [...f.ageGroups, ag] }));
-  }
-
-  function toggleOutcome(id: number) {
-    setForm((f) => ({ ...f, outcomeIds: f.outcomeIds.includes(id) ? f.outcomeIds.filter((o) => o !== id) : [...f.outcomeIds, id] }));
-  }
-
-  function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    const data: Record<string, unknown> = { title: form.title, stage: form.stage, outcomeIds: form.outcomeIds, ageGroups: form.ageGroups, childIds: [] };
-    if (form.description) data.description = form.description;
-    if (form.startDate) data.startDate = form.startDate;
-    createMutation.mutate({ data: data as any }, {
-      onSuccess: () => {
-        setOpen(false);
-        setForm({ title: "", description: "", stage: "brainstorm", ageGroups: [], outcomeIds: [], startDate: "" });
-        queryClient.invalidateQueries({ queryKey: ["/api/planning"] });
-        toast({ title: "Experience added" });
-      },
-      onError: () => toast({ title: "Failed to add experience", variant: "destructive" }),
-    });
-  }
-
-  function advanceStage(exp: { id: number; stage: string }) {
-    const idx = STAGES.indexOf(exp.stage as any);
-    const next = STAGES[idx + 1];
-    if (!next) return;
-    updateMutation.mutate({ id: exp.id, data: { stage: next } as any }, {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/planning"] }),
-    });
-  }
-
-  function handleDelete(id: number) {
-    deleteMutation.mutate({ id }, {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/planning"] }),
-    });
-  }
-
-  const byStage = STAGES.reduce<Record<string, typeof experiences>>((acc, s) => {
-    acc[s] = (experiences ?? []).filter((e) => e.stage === s);
-    return acc;
-  }, {} as any);
-
-  const outcomeLabel = (id: number) => {
-    const o = (outcomes ?? []).find((o) => o.id === id);
-    return o ? `Outcome ${o.number}` : `#${id}`;
+  const childName = (id: number) => {
+    const c = (children ?? []).find((ch) => ch.id === id);
+    return c ? `${c.firstName} ${c.lastName}` : `#${id}`;
+  };
+  const siteName = (id: number | null | undefined) => {
+    if (!id) return null;
+    const s = (sites ?? []).find((s) => s.id === id);
+    return s?.name ?? null;
   };
 
   return (
@@ -85,90 +39,71 @@ export default function Planning() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Planning Cycle</h1>
-          <p className="text-muted-foreground mt-1">Track planned experiences through the observation-planning-implementation-evaluation cycle.</p>
+          <p className="text-muted-foreground mt-1">Document and track educational experiences through the planning cycle.</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />New Experience</Button></DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>New Learning Experience</DialogTitle></DialogHeader>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div className="space-y-1"><Label>Title</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required /></div>
-              <div className="space-y-1"><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} /></div>
-              <div className="space-y-1"><Label>Initial Stage</Label>
-                <Select value={form.stage} onValueChange={(v) => setForm({ ...form, stage: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{STAGES.map((s) => <SelectItem key={s} value={s}>{STAGE_LABELS[s]}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1"><Label>Start Date (optional)</Label><Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} /></div>
-              <div className="space-y-2"><Label>MTOP Outcomes</Label>
-                <div className="flex flex-wrap gap-2">
-                  {(outcomes ?? []).map((o) => (
-                    <button key={o.id} type="button" onClick={() => toggleOutcome(o.id)} className={`px-2 py-1 rounded-md text-xs border transition-colors ${form.outcomeIds.includes(o.id) ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}>
-                      Outcome {o.number}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-2"><Label>Age Groups</Label>
-                <div className="flex flex-wrap gap-2">
-                  {AGE_GROUPS.map((ag) => (
-                    <button key={ag} type="button" onClick={() => toggleAgeGroup(ag)} className={`px-2 py-1 rounded-md text-xs border transition-colors ${form.ageGroups.includes(ag) ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}>
-                      {AGE_LABELS[ag]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={createMutation.isPending}>Add Experience</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => navigate("/planning/new")}>
+          <Plus className="h-4 w-4 mr-2" />New Planning Cycle
+        </Button>
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}</div>
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 w-full" />)}
+        </div>
+      ) : (experiences ?? []).length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="rounded-full bg-muted p-4 mb-4">
+            <CalendarDays className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="font-semibold text-lg mb-1">No planning cycles yet</h3>
+          <p className="text-muted-foreground text-sm mb-4">Start by creating your first planning experience document.</p>
+          <Button onClick={() => navigate("/planning/new")}>
+            <Plus className="h-4 w-4 mr-2" />New Planning Cycle
+          </Button>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {STAGES.map((stage) => {
-            const stageExps = byStage[stage] ?? [];
+        <div className="space-y-3">
+          {(experiences ?? []).map((exp) => {
+            const site = siteName(exp.siteId);
+            const focusNames = (exp.childIds ?? []).slice(0, 3).map(childName);
+            const extraChildren = (exp.childIds ?? []).length - 3;
             return (
-              <div key={stage} className={`rounded-lg border p-3 ${STAGE_COLORS[stage]}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-sm">{STAGE_LABELS[stage]}</h3>
-                  <Badge variant="secondary" className="text-xs">{stageExps.length}</Badge>
-                </div>
-                {stageExps.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">No experiences</p>
-                ) : (
-                  <div className="space-y-2">
-                    {stageExps.map((exp) => (
-                      <Card key={exp.id} className="shadow-none">
-                        <CardContent className="p-3 space-y-2">
-                          <p className="font-medium text-sm leading-tight">{exp.title}</p>
-                          {exp.description && <p className="text-xs text-muted-foreground line-clamp-2">{exp.description}</p>}
-                          <div className="flex flex-wrap gap-1">
-                            {exp.outcomeIds.map((id) => <Badge key={id} variant="outline" className="text-xs">{outcomeLabel(id)}</Badge>)}
-                            {exp.ageGroups.map((ag) => <Badge key={ag} variant="secondary" className="text-xs">{AGE_LABELS[ag] || ag}</Badge>)}
-                          </div>
-                          <div className="flex items-center justify-between pt-1">
-                            {stage !== "evaluated" ? (
-                              <Button size="sm" variant="ghost" className="h-7 text-xs px-2" onClick={() => advanceStage(exp)} disabled={updateMutation.isPending}>
-                                <ArrowRight className="h-3 w-3 mr-1" />{STAGE_LABELS[STAGES[STAGES.indexOf(stage) + 1]]}
-                              </Button>
-                            ) : <div />}
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(exp.id)}>
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+              <button
+                key={exp.id}
+                onClick={() => navigate(`/planning/${exp.id}`)}
+                className="w-full text-left bg-white border rounded-xl p-5 hover:border-primary/40 hover:shadow-sm transition-all group"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${STAGE_COLORS[exp.stage] ?? STAGE_COLORS.brainstorm}`}>
+                        {STAGE_LABELS[exp.stage] ?? exp.stage}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-base leading-snug truncate">{exp.title}</h3>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-muted-foreground">
+                      {site && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5" />{site}
+                        </span>
+                      )}
+                      {exp.startDate && (
+                        <span className="flex items-center gap-1">
+                          <CalendarDays className="h-3.5 w-3.5" />
+                          {format(new Date(exp.startDate), "d MMM yyyy")}
+                        </span>
+                      )}
+                      {(exp.childIds ?? []).length > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3.5 w-3.5" />
+                          {focusNames.join(", ")}{extraChildren > 0 ? ` +${extraChildren} more` : ""}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground shrink-0 mt-1 transition-colors" />
+                </div>
+              </button>
             );
           })}
         </div>

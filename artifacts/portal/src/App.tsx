@@ -22,6 +22,7 @@ import Outcomes from "@/pages/outcomes";
 
 import Calendar from "@/pages/calendar";
 import Planning from "@/pages/planning";
+import PlanningDetail from "@/pages/planning-detail";
 import Posts from "@/pages/posts";
 import Jottings from "@/pages/jottings";
 import Incidents from "@/pages/incidents";
@@ -71,6 +72,8 @@ function Router() {
         
         <Route path="/calendar" component={Calendar} />
         <Route path="/planning" component={Planning} />
+        <Route path="/planning/new" component={PlanningDetail} />
+        <Route path="/planning/:id" component={PlanningDetail} />
         
         <Route path="/posts" component={Posts} />
         <Route path="/jottings" component={Jottings} />

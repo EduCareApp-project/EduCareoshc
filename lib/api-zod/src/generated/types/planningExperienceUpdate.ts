@@ -17,4 +17,17 @@ export interface PlanningExperienceUpdate {
   startDate?: Date;
   programId?: number;
   evaluationNotes?: string;
+  /** @nullable */
+  siteId?: number | null;
+  collaborateExplore?: string;
+  identifySkills?: string;
+  researchIdeas?: string;
+  frameworkLinks?: string;
+  qualityAreas?: string;
+  additionalResources?: string;
+  assessAndReview?: string;
+  learning?: string;
+  backgroundInformation?: string;
+  preparedBy?: string;
+  editedBy?: string;
 }

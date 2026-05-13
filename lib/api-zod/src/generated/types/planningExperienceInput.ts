@@ -10,11 +10,23 @@ import type { PlanningExperienceInputStage } from "./planningExperienceInputStag
 export interface PlanningExperienceInput {
   title: string;
   description?: string;
-  stage: PlanningExperienceInputStage;
+  stage?: PlanningExperienceInputStage;
   outcomeIds?: number[];
   childIds?: number[];
   ageGroups?: string[];
   startDate?: Date;
   programId?: number;
   evaluationNotes?: string;
+  siteId?: number;
+  collaborateExplore?: string;
+  identifySkills?: string;
+  researchIdeas?: string;
+  frameworkLinks?: string;
+  qualityAreas?: string;
+  additionalResources?: string;
+  assessAndReview?: string;
+  learning?: string;
+  backgroundInformation?: string;
+  preparedBy?: string;
+  editedBy?: string;
 }

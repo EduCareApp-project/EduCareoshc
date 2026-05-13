@@ -4,7 +4,7 @@ import {
   useGetChildObservations, useListSites,
   useGetChildWelfareNotes, useCreateWelfareNote, useUpdateWelfareNote, useDeleteWelfareNote,
   useGetChildConfidentialNotes, useCreateConfidentialNote, useUpdateConfidentialNote, useDeleteConfidentialNote,
-  useListStaff, useListJottings, useListPrograms, useListPosts,
+  useListStaff, useListJottings, useListPlanningExperiences, useListPosts,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
@@ -71,7 +71,7 @@ export default function ChildProfile() {
   const { data: welfareNotes, isLoading: welfareLoading } = useGetChildWelfareNotes(id, { query: { enabled: !!id } });
   const { data: confidentialNotes, isLoading: confidentialLoading } = useGetChildConfidentialNotes(id, { query: { enabled: !!id } });
   const { data: allJottings } = useListJottings({ includeArchived: true });
-  const { data: allPrograms } = useListPrograms();
+  const { data: allPlanningExperiences } = useListPlanningExperiences();
   const { data: allPosts } = useListPosts();
   const updateMutation = useUpdateChild();
   const deleteMutation = useDeleteChild();
@@ -675,7 +675,7 @@ export default function ChildProfile() {
         <TabsContent value="childdata" className="space-y-6">
           {(() => {
             const childJottings = (allJottings ?? []).filter((j) => j.childId === child.id);
-            const childPrograms = (allPrograms ?? []).filter((p) => child.ageGroup && (p.ageGroups ?? []).includes(child.ageGroup));
+            const childPlanningExps = (allPlanningExperiences ?? []).filter((p) => (p.childIds ?? []).includes(child.id));
             const childPosts = (allPosts ?? []).filter((p) => p.childId === child.id);
 
             return (
@@ -747,23 +747,23 @@ export default function ChildProfile() {
                     <CardTitle className="text-base flex items-center gap-2">
                       <BookOpen className="h-5 w-5" />Programmed Experiences
                     </CardTitle>
-                    <Link href="/programs"><Button size="sm" variant="outline">View all</Button></Link>
+                    <Link href="/planning"><Button size="sm" variant="outline">View all</Button></Link>
                   </CardHeader>
                   <CardContent>
-                    {childPrograms.length === 0 ? (
+                    {childPlanningExps.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg text-sm">
-                        No programs match this child's age group
+                        No planning cycles linked to this child
                       </div>
                     ) : (
                       <div className="grid sm:grid-cols-2 gap-3">
-                        {childPrograms.map((p) => (
-                          <Link key={p.id} href={`/programs/${p.id}`}>
+                        {childPlanningExps.map((p) => (
+                          <Link key={p.id} href={`/planning/${p.id}`}>
                             <div className="p-3 rounded-lg border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer space-y-1 h-full">
                               <p className="text-sm font-medium line-clamp-1">{p.title}</p>
                               <p className="text-xs text-muted-foreground line-clamp-2">{p.description}</p>
                               <div className="flex items-center gap-2 pt-1">
-                                <Badge variant="outline" className="text-xs capitalize">{p.status}</Badge>
-                                <span className="text-xs text-muted-foreground">{safeDate(p.startDate, "d MMM yyyy")}</span>
+                                <Badge variant="outline" className="text-xs capitalize">{p.stage}</Badge>
+                                {p.startDate && <span className="text-xs text-muted-foreground">{safeDate(p.startDate, "d MMM yyyy")}</span>}
                               </div>
                             </div>
                           </Link>

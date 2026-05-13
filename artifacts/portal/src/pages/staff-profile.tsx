@@ -154,7 +154,7 @@ export default function StaffProfile() {
           siteId: profileEditForm.siteId ? parseInt(profileEditForm.siteId) : null,
         },
       });
-      await queryClient.invalidateQueries({ queryKey: ["getStaff", staffId] });
+      await queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}`] });
       setProfileEditOpen(false);
       toast({ title: "Profile updated" });
     } finally {
@@ -194,7 +194,7 @@ export default function StaffProfile() {
     setNotesSaving(true);
     try {
       await updateStaffMutation.mutateAsync({ id: staffId, data: { employmentNotes: notesText } });
-      await queryClient.invalidateQueries({ queryKey: ["getStaff", staffId] });
+      await queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}`] });
       setNotesEditing(false);
       toast({ title: "Employment notes saved" });
     } finally {
@@ -211,7 +211,7 @@ export default function StaffProfile() {
     setBioSaving(true);
     try {
       await updateStaffMutation.mutateAsync({ id: staffId, data: { bio: bioText } });
-      await queryClient.invalidateQueries({ queryKey: ["getStaff", staffId] });
+      await queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}`] });
       setBioEditing(false);
       toast({ title: "Profile saved" });
     } finally {

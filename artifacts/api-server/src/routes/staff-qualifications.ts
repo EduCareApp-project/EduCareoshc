@@ -53,7 +53,8 @@ router.patch("/qualifications/:id", async (req, res): Promise<void> => {
   }
   const parsed = UpdateStaffQualificationBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    req.log.warn({ body: req.body, issues: parsed.error.issues }, "PATCH qualification validation failed");
+    res.status(400).json({ error: parsed.error.message, issues: parsed.error.issues });
     return;
   }
   const [row] = await db

@@ -67,47 +67,47 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  /* A calm, professional workspace. Earthy greens and blues */
-  --background: 40 33% 98%; /* Warm off-white */
-  --foreground: 220 20% 20%;
-  --card: 0 0% 100%;
-  --card-foreground: 220 20% 20%;
-  --card-border: 40 20% 90%;
-  
-  --sidebar: 40 20% 95%;
-  --sidebar-foreground: 220 20% 20%;
-  --sidebar-border: 40 20% 90%;
-  --sidebar-primary: 156 40% 30%;
+  /* Fresh green theme */
+  --background: 138 40% 94%; /* Light green */
+  --foreground: 156 30% 12%;
+  --card: 138 25% 99%;
+  --card-foreground: 156 30% 12%;
+  --card-border: 138 25% 87%;
+
+  --sidebar: 156 48% 18%; /* Dark forest green */
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-border: 156 45% 14%;
+  --sidebar-primary: 156 45% 26%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 40 30% 90%;
-  --sidebar-accent-foreground: 156 40% 30%;
-  --sidebar-ring: 156 40% 30%;
+  --sidebar-accent: 156 42% 24%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-ring: 138 50% 60%;
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 220 20% 20%;
-  --popover-border: 40 20% 90%;
+  --popover: 138 25% 99%;
+  --popover-foreground: 156 30% 12%;
+  --popover-border: 138 25% 87%;
 
-  --primary: 156 40% 30%; /* Deep forest green */
+  --primary: 156 48% 28%; /* Deep forest green */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 198 30% 45%; /* Earthy blue */
+  --secondary: 156 35% 42%; /* Mid green */
   --secondary-foreground: 0 0% 100%;
 
-  --muted: 40 20% 92%;
-  --muted-foreground: 220 15% 45%;
+  --muted: 138 25% 89%;
+  --muted-foreground: 156 20% 40%;
 
-  --accent: 38 40% 85%; /* Soft sandy */
-  --accent-foreground: 220 20% 20%;
+  --accent: 138 30% 86%;
+  --accent-foreground: 156 30% 15%;
 
   --destructive: 0 60% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 40 20% 88%;
-  --input: 40 20% 88%;
-  --ring: 156 40% 30%;
-  
-  --chart-1: 156 40% 40%;
-  --chart-2: 198 30% 55%;
+  --border: 138 25% 86%;
+  --input: 138 25% 86%;
+  --ring: 156 48% 28%;
+
+  --chart-1: 156 48% 35%;
+  --chart-2: 138 40% 50%;
   --chart-3: 38 60% 65%;
   --chart-4: 10 50% 60%;
   --chart-5: 280 30% 55%;

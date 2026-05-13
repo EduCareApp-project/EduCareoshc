@@ -63,9 +63,14 @@ export default function ConditionReports() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [siteFilter, setSiteFilter] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [leadershipNotes, setLeadershipNotes] = useState("");
   const [editingLeadership, setEditingLeadership] = useState(false);
+
+  const filteredReports = (reports ?? []).filter((r) =>
+    siteFilter === "all" || String(r.siteId) === siteFilter
+  );
 
   const selectedReport = (reports ?? []).find((r) => r.id === selectedId);
 
@@ -302,14 +307,42 @@ export default function ConditionReports() {
         <Button onClick={() => setShowForm(true)}><Plus className="h-4 w-4 mr-2" />New Report</Button>
       </div>
 
+      <div className="flex items-center gap-3">
+        <Select value={siteFilter} onValueChange={setSiteFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="All sites" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All sites</SelectItem>
+            {(sites ?? []).map((s) => (
+              <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {siteFilter !== "all" && (
+          <Button variant="ghost" size="sm" onClick={() => setSiteFilter("all")}>
+            <X className="h-3.5 w-3.5 mr-1" />Clear
+          </Button>
+        )}
+      </div>
+
       {isLoading ? (
         <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
-      ) : (reports ?? []).length === 0 ? (
+      ) : filteredReports.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center text-muted-foreground flex flex-col items-center gap-2">
             <ClipboardX className="h-10 w-10 mb-2 text-muted-foreground/50" />
-            <p className="font-medium">No condition reports yet</p>
-            <p className="text-sm">Use the button above to report a hazard or unsafe condition.</p>
+            {siteFilter !== "all" ? (
+              <>
+                <p className="font-medium">No reports for this site</p>
+                <p className="text-sm">Try selecting a different site or clear the filter.</p>
+              </>
+            ) : (
+              <>
+                <p className="font-medium">No condition reports yet</p>
+                <p className="text-sm">Use the button above to report a hazard or unsafe condition.</p>
+              </>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -321,7 +354,7 @@ export default function ConditionReports() {
               <span>Site</span>
               <span className="text-right">Date</span>
             </div>
-            {(reports ?? []).map((r) => (
+            {filteredReports.map((r) => (
               <div
                 key={r.id}
                 className="px-4 py-3 grid grid-cols-[1fr_160px_120px_100px] gap-4 items-center hover:bg-muted/30 cursor-pointer transition-colors"

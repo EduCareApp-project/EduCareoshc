@@ -40,8 +40,8 @@ export default function GuardiansList() {
 
       const matchesSite =
         siteFilter === "all" ? true
-        : siteFilter === "none" ? g.siteIds.length === 0
-        : g.siteIds.includes(parseInt(siteFilter));
+        : siteFilter === "none" ? (g.siteIds ?? []).length === 0
+        : (g.siteIds ?? []).includes(parseInt(siteFilter));
 
       return matchesSearch && matchesSite;
     });
@@ -135,7 +135,7 @@ export default function GuardiansList() {
         /* ── TILE VIEW ── */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((g) => {
-            const guardianSites = (sites ?? []).filter((s) => g.siteIds.includes(s.id));
+            const guardianSites = (sites ?? []).filter((s) => (g.siteIds ?? []).includes(s.id));
             return (
               <Link key={g.guardianEmail} href={`/guardians/${encodeURIComponent(g.guardianEmail)}`}>
                 <div className="bg-card border rounded-xl p-5 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer h-full flex flex-col gap-4">
@@ -197,7 +197,7 @@ export default function GuardiansList() {
 
               <div className="border rounded-xl overflow-hidden divide-y divide-border">
                 {grouped[letter].map((g) => {
-                  const guardianSites = (sites ?? []).filter((s) => g.siteIds.includes(s.id));
+                  const guardianSites = (sites ?? []).filter((s) => (g.siteIds ?? []).includes(s.id));
                   return (
                     <Link key={g.guardianEmail} href={`/guardians/${encodeURIComponent(g.guardianEmail)}`}>
                       <div className="flex items-center gap-4 px-5 py-4 bg-card hover:bg-muted/50 transition-colors cursor-pointer w-full">

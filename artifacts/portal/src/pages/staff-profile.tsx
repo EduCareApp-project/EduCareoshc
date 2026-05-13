@@ -185,18 +185,23 @@ export default function StaffProfile() {
     toast({ title: "Profile photo updated" });
   }
 
-  function startEditNotes() {
-    setNotesText(staff?.employmentNotes ?? "");
+  function startAddNote() {
+    setNotesText("");
     setNotesEditing(true);
   }
 
   async function saveNotes() {
+    if (!notesText.trim()) return;
     setNotesSaving(true);
     try {
-      await updateStaffMutation.mutateAsync({ id: staffId, data: { employmentNotes: notesText } });
+      const timestamp = new Date().toLocaleString("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+      const newEntry = `[${timestamp}]\n${notesText.trim()}`;
+      const existing = staff?.employmentNotes?.trim();
+      const combined = existing ? `${newEntry}\n\n---\n\n${existing}` : newEntry;
+      await updateStaffMutation.mutateAsync({ id: staffId, data: { employmentNotes: combined } });
       await queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}`] });
       setNotesEditing(false);
-      toast({ title: "Employment notes saved" });
+      toast({ title: "Note added" });
     } finally {
       setNotesSaving(false);
     }
@@ -541,33 +546,52 @@ export default function StaffProfile() {
                 <p className="text-xs text-muted-foreground mt-0.5">Internal notes — access will be restricted by role in a future update.</p>
               </div>
               {!notesEditing && (
-                <Button variant="outline" size="sm" onClick={startEditNotes}>
-                  <Pencil className="h-3.5 w-3.5 mr-1" />Edit
+                <Button variant="outline" size="sm" onClick={startAddNote}>
+                  <Plus className="h-3.5 w-3.5 mr-1" />Add Note
                 </Button>
               )}
             </CardHeader>
-            <CardContent>
-              {notesEditing ? (
-                <div className="space-y-2">
+            <CardContent className="space-y-3">
+              {notesEditing && (
+                <div className="space-y-2 pb-3 border-b">
                   <Textarea
                     value={notesText}
                     onChange={(e) => setNotesText(e.target.value)}
-                    placeholder="e.g. Probation period ends 01/09/2025. Flexible hours arrangement in place. Supervisor: Jane Lee."
-                    rows={5}
+                    placeholder="Add a new note…"
+                    rows={4}
                     className="resize-none"
+                    autoFocus
                   />
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={saveNotes} disabled={notesSaving}>
-                      <Check className="h-3.5 w-3.5 mr-1" />{notesSaving ? "Saving…" : "Save"}
+                    <Button size="sm" onClick={saveNotes} disabled={notesSaving || !notesText.trim()}>
+                      <Check className="h-3.5 w-3.5 mr-1" />{notesSaving ? "Saving…" : "Save Note"}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => setNotesEditing(false)} disabled={notesSaving}>Cancel</Button>
                   </div>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                  {staff.employmentNotes || <span className="italic">No employment notes recorded.</span>}
-                </p>
               )}
+              {(() => {
+                const entries = staff.employmentNotes
+                  ? staff.employmentNotes.split("\n\n---\n\n").map((entry) => {
+                      const match = entry.match(/^\[(.+?)\]\n([\s\S]*)$/);
+                      return match
+                        ? { timestamp: match[1], body: match[2].trim() }
+                        : { timestamp: null, body: entry.trim() };
+                    })
+                  : [];
+                if (entries.length === 0) {
+                  return <p className="text-sm italic text-muted-foreground">No employment notes recorded.</p>;
+                }
+                return entries.map((entry, i) => (
+                  <div key={i} className="space-y-1">
+                    {entry.timestamp && (
+                      <p className="text-xs font-medium text-muted-foreground">{entry.timestamp}</p>
+                    )}
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{entry.body}</p>
+                    {i < entries.length - 1 && <hr className="mt-3" />}
+                  </div>
+                ));
+              })()}
             </CardContent>
           </Card>
         </TabsContent>

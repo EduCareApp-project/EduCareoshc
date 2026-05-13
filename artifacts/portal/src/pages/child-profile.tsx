@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useGetChild, useUpdateChild, useGetChildObservations, useListSites } from "@workspace/api-client-react";
+import { useGetChild, useUpdateChild, useDeleteChild, useGetChildObservations, useListSites } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "wouter";
+import { Link, useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
-import { ArrowLeft, Edit, Plus, User, Phone, Mail, FileText, Calendar, Clock, Heart, ThumbsDown, Smile, BookOpen, Building2 } from "lucide-react";
+import { ArrowLeft, Edit, Plus, Trash2, User, Phone, Mail, FileText, Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const AGE_GROUP_LABELS: Record<string, string> = { infant: "Infant", toddler: "Toddler", preschool: "Preschool", school_age: "School Age" };
@@ -35,10 +36,13 @@ export default function ChildProfile() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const [, navigate] = useLocation();
+
   const { data: child, isLoading } = useGetChild(id, { query: { enabled: !!id } });
   const { data: observations, isLoading: obsLoading } = useGetChildObservations(id, { query: { enabled: !!id } });
   const { data: sites } = useListSites();
   const updateMutation = useUpdateChild();
+  const deleteMutation = useDeleteChild();
 
   const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState({
@@ -68,6 +72,17 @@ export default function ChildProfile() {
       siteId: child.siteId != null ? String(child.siteId) : "",
     });
     setEditOpen(true);
+  }
+
+  function handleDelete() {
+    deleteMutation.mutate({ id }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+        toast({ title: "Profile deleted" });
+        navigate("/children");
+      },
+      onError: () => toast({ title: "Failed to delete profile", variant: "destructive" }),
+    });
   }
 
   function handleSave(e: React.FormEvent) {
@@ -118,9 +133,36 @@ export default function ChildProfile() {
               </div>
             </div>
           </div>
-          <Button variant="outline" onClick={openEdit}>
-            <Edit className="h-4 w-4 mr-2" />Edit Profile
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={openEdit}>
+              <Edit className="h-4 w-4 mr-2" />Edit Profile
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-destructive hover:bg-destructive/10 border-destructive/30">
+                  <Trash2 className="h-4 w-4 mr-2" />Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete {child.firstName} {child.lastName}'s profile?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete the child's profile and all associated data including observations. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={handleDelete}
+                    disabled={deleteMutation.isPending}
+                  >
+                    {deleteMutation.isPending ? "Deleting…" : "Delete Profile"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </div>
 

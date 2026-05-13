@@ -171,35 +171,27 @@ export default function ViewObservation() {
             <p className="whitespace-pre-wrap leading-relaxed">{obs.description}</p>
           </div>
 
-          {obs.commentPlan && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Comment / Plan</p>
-                <p className="whitespace-pre-wrap leading-relaxed">{obs.commentPlan}</p>
-              </div>
-            </>
-          )}
+          <Separator />
 
-          {obs.actionNotes ? (
-            <>
-              <Separator />
-              <div className="space-y-2 rounded-lg bg-primary/5 border border-primary/20 p-4">
-                <p className="text-xs font-medium text-primary uppercase tracking-wide">Action Notes</p>
-                <p className="whitespace-pre-wrap leading-relaxed">{obs.actionNotes}</p>
-              </div>
-            </>
-          ) : (
-            <>
-              <Separator />
-              <div className="rounded-lg border border-dashed p-4 text-center">
-                <p className="text-sm text-muted-foreground">No action notes recorded yet.</p>
-                <Button variant="ghost" size="sm" className="mt-2" onClick={openEdit}>
-                  <Pencil className="h-3.5 w-3.5 mr-1.5" />Add Action Notes
-                </Button>
-              </div>
-            </>
-          )}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Comment / Plan</p>
+            {obs.commentPlan ? (
+              <p className="whitespace-pre-wrap leading-relaxed">{obs.commentPlan}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">No comment or plan recorded.</p>
+            )}
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Action Notes</p>
+            {obs.actionNotes ? (
+              <p className="whitespace-pre-wrap leading-relaxed">{obs.actionNotes}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">No action notes recorded.</p>
+            )}
+          </div>
         </CardContent>
       </Card>
 

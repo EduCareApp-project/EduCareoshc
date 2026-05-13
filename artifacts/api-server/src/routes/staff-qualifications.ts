@@ -35,7 +35,8 @@ router.post("/staff/:id/qualifications", async (req, res): Promise<void> => {
   }
   const parsed = CreateStaffQualificationBody.safeParse({ ...req.body, staffId: params.data.id });
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    req.log.warn({ body: req.body, issues: parsed.error.issues }, "POST qualification validation failed");
+    res.status(400).json({ error: parsed.error.message, issues: parsed.error.issues });
     return;
   }
   const [row] = await db

@@ -95,9 +95,9 @@ export default function StaffProfile() {
   });
 
   async function handleDocUpload(file: File) {
-    const path = await uploadFile(file);
-    if (path) {
-      setQualDocPath(path);
+    const response = await uploadFile(file);
+    if (response) {
+      setQualDocPath(response.objectPath);
       setQualDocName(file.name);
     }
   }

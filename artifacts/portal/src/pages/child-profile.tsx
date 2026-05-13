@@ -3,6 +3,7 @@ import {
   useGetChild, useUpdateChild, useDeleteChild,
   useGetChildObservations, useListSites,
   useGetChildWelfareNotes, useCreateWelfareNote, useDeleteWelfareNote,
+  useGetChildConfidentialNotes, useCreateConfidentialNote, useUpdateConfidentialNote, useDeleteConfidentialNote,
   useListStaff,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -24,7 +25,7 @@ import { format } from "date-fns";
 import {
   ArrowLeft, Edit, Plus, Trash2, User, Phone, Mail, FileText,
   Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2,
-  ShieldAlert, AlertTriangle, Paperclip, X,
+  ShieldAlert, AlertTriangle, Paperclip, X, Lock, Pencil,
 } from "lucide-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { useToast } from "@/hooks/use-toast";
@@ -67,14 +68,23 @@ export default function ChildProfile() {
   const { data: sites } = useListSites();
   const { data: staff } = useListStaff();
   const { data: welfareNotes, isLoading: welfareLoading } = useGetChildWelfareNotes(id, { query: { enabled: !!id } });
+  const { data: confidentialNotes, isLoading: confidentialLoading } = useGetChildConfidentialNotes(id, { query: { enabled: !!id } });
   const updateMutation = useUpdateChild();
   const deleteMutation = useDeleteChild();
   const createWelfareMutation = useCreateWelfareNote();
   const deleteWelfareMutation = useDeleteWelfareNote();
+  const createConfidentialMutation = useCreateConfidentialNote();
+  const updateConfidentialMutation = useUpdateConfidentialNote();
+  const deleteConfidentialMutation = useDeleteConfidentialNote();
 
   const [editOpen, setEditOpen] = useState(false);
   const [welfareOpen, setWelfareOpen] = useState(false);
   const [welfareForm, setWelfareForm] = useState(EMPTY_WELFARE_FORM);
+
+  const [confNoteText, setConfNoteText] = useState("");
+  const [confNoteStaffId, setConfNoteStaffId] = useState("");
+  const [confAddOpen, setConfAddOpen] = useState(false);
+  const [editingConfNote, setEditingConfNote] = useState<{ id: number; content: string } | null>(null);
   const [evidenceObjectPath, setEvidenceObjectPath] = useState<string | null>(null);
   const [evidenceFileName, setEvidenceFileName] = useState<string | null>(null);
 
@@ -178,6 +188,46 @@ export default function ChildProfile() {
         toast({ title: "Welfare note deleted" });
       },
       onError: () => toast({ title: "Failed to delete welfare note", variant: "destructive" }),
+    });
+  }
+
+  function handleCreateConfidentialNote(e: React.FormEvent) {
+    e.preventDefault();
+    if (!confNoteText.trim()) return;
+    const body: Record<string, unknown> = { childId: id, content: confNoteText.trim() };
+    if (confNoteStaffId) body.staffId = parseInt(confNoteStaffId);
+    createConfidentialMutation.mutate({ data: body as any }, {
+      onSuccess: () => {
+        setConfAddOpen(false);
+        setConfNoteText("");
+        setConfNoteStaffId("");
+        queryClient.invalidateQueries({ queryKey: [`/api/children/${id}/confidential-notes`] });
+        toast({ title: "Confidential note added" });
+      },
+      onError: () => toast({ title: "Failed to add note", variant: "destructive" }),
+    });
+  }
+
+  function handleUpdateConfidentialNote(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingConfNote || !editingConfNote.content.trim()) return;
+    updateConfidentialMutation.mutate({ id: editingConfNote.id, data: { childId: id, content: editingConfNote.content.trim() } as any }, {
+      onSuccess: () => {
+        setEditingConfNote(null);
+        queryClient.invalidateQueries({ queryKey: [`/api/children/${id}/confidential-notes`] });
+        toast({ title: "Note updated" });
+      },
+      onError: () => toast({ title: "Failed to update note", variant: "destructive" }),
+    });
+  }
+
+  function handleDeleteConfidentialNote(noteId: number) {
+    deleteConfidentialMutation.mutate({ id: noteId }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: [`/api/children/${id}/confidential-notes`] });
+        toast({ title: "Note deleted" });
+      },
+      onError: () => toast({ title: "Failed to delete note", variant: "destructive" }),
     });
   }
 
@@ -486,6 +536,147 @@ export default function ChildProfile() {
           )}
         </CardContent>
       </Card>
+
+      {/* Confidential Notes */}
+      <Card className="border-slate-300 dark:border-slate-600">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="space-y-1">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Lock className="h-4 w-4 text-slate-600" />
+              Confidential Notes
+            </CardTitle>
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-slate-700 dark:text-slate-300 font-medium">
+                Admin &amp; Educational Leader only
+              </span>
+              <span>— role restriction will be enforced once authentication is added</span>
+            </p>
+          </div>
+          <Button size="sm" onClick={() => { setConfNoteText(""); setConfNoteStaffId(""); setConfAddOpen(true); }}>
+            <Plus className="h-4 w-4 mr-1" />Add Note
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {confidentialLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : !confidentialNotes || confidentialNotes.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+              <Lock className="h-7 w-7 mx-auto mb-2 opacity-20" />
+              <p className="text-sm">No confidential notes recorded</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {[...confidentialNotes].reverse().map((note) => (
+                <div key={note.id} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4">
+                  {editingConfNote?.id === note.id ? (
+                    <form onSubmit={handleUpdateConfidentialNote} className="space-y-3">
+                      <Textarea
+                        value={editingConfNote.content}
+                        onChange={(e) => setEditingConfNote({ ...editingConfNote, content: e.target.value })}
+                        rows={3}
+                        autoFocus
+                        required
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <Button type="button" variant="outline" size="sm" onClick={() => setEditingConfNote(null)}>Cancel</Button>
+                        <Button type="submit" size="sm" disabled={updateConfidentialMutation.isPending}>Save</Button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{note.content}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                          <span>{safeDate(note.createdAt, "d MMM yyyy, h:mm a")}</span>
+                          {note.staffName && <><span>·</span><span>{note.staffName}</span></>}
+                        </div>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                          onClick={() => setEditingConfNote({ id: note.id, content: note.content })}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete confidential note?</AlertDialogTitle>
+                              <AlertDialogDescription>This will permanently remove this note. This action cannot be undone.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => handleDeleteConfidentialNote(note.id)}
+                              >Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add Confidential Note Dialog */}
+      <Dialog open={confAddOpen} onOpenChange={setConfAddOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-slate-600" />
+              Add Confidential Note
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateConfidentialNote} className="space-y-4">
+            <div className="rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-2 text-xs text-slate-600 dark:text-slate-400">
+              This note is marked confidential and will be restricted to Admin and Educational Leader roles once authentication is configured.
+            </div>
+            <div className="space-y-1">
+              <Label>Staff Member <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Select value={confNoteStaffId || "none"} onValueChange={(v) => setConfNoteStaffId(v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Select staff member" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Not specified</SelectItem>
+                  {staff?.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Note <span className="text-destructive">*</span></Label>
+              <Textarea
+                value={confNoteText}
+                onChange={(e) => setConfNoteText(e.target.value)}
+                rows={5}
+                placeholder="Enter confidential note..."
+                required
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-1 border-t">
+              <Button type="button" variant="outline" onClick={() => setConfAddOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={createConfidentialMutation.isPending}>
+                {createConfidentialMutation.isPending ? "Saving…" : "Save Note"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Profile Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>

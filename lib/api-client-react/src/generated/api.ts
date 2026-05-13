@@ -27,6 +27,8 @@ import type {
   ConditionReport,
   ConditionReportInput,
   ConditionReportUpdate,
+  ConfidentialNote,
+  ConfidentialNoteInput,
   DashboardSummary,
   ErrorEnvelope,
   Evacuation,
@@ -3661,6 +3663,329 @@ export function useGetChildWelfareNotes<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+export const getGetChildConfidentialNotesUrl = (id: number) => {
+  return `/api/children/${id}/confidential-notes`;
+};
+
+export const getChildConfidentialNotes = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ConfidentialNote[]> => {
+  return customFetch<ConfidentialNote[]>(getGetChildConfidentialNotesUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetChildConfidentialNotesQueryKey = (id: number) => {
+  return [`/api/children/${id}/confidential-notes`] as const;
+};
+
+export const getGetChildConfidentialNotesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getChildConfidentialNotes>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChildConfidentialNotes>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetChildConfidentialNotesQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getChildConfidentialNotes>>
+  > = ({ signal }) =>
+    getChildConfidentialNotes(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getChildConfidentialNotes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetChildConfidentialNotesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getChildConfidentialNotes>>
+>;
+export type GetChildConfidentialNotesQueryError = ErrorType<unknown>;
+
+export function useGetChildConfidentialNotes<
+  TData = Awaited<ReturnType<typeof getChildConfidentialNotes>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChildConfidentialNotes>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetChildConfidentialNotesQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateConfidentialNoteUrl = () => {
+  return `/api/confidential-notes`;
+};
+
+export const createConfidentialNote = async (
+  confidentialNoteInput: ConfidentialNoteInput,
+  options?: RequestInit,
+): Promise<ConfidentialNote> => {
+  return customFetch<ConfidentialNote>(getCreateConfidentialNoteUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(confidentialNoteInput),
+  });
+};
+
+export const getCreateConfidentialNoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createConfidentialNote>>,
+    TError,
+    { data: BodyType<ConfidentialNoteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createConfidentialNote>>,
+  TError,
+  { data: BodyType<ConfidentialNoteInput> },
+  TContext
+> => {
+  const mutationKey = ["createConfidentialNote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createConfidentialNote>>,
+    { data: BodyType<ConfidentialNoteInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createConfidentialNote(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateConfidentialNoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createConfidentialNote>>
+>;
+export type CreateConfidentialNoteMutationBody =
+  BodyType<ConfidentialNoteInput>;
+export type CreateConfidentialNoteMutationError = ErrorType<unknown>;
+
+export const useCreateConfidentialNote = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createConfidentialNote>>,
+    TError,
+    { data: BodyType<ConfidentialNoteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createConfidentialNote>>,
+  TError,
+  { data: BodyType<ConfidentialNoteInput> },
+  TContext
+> => {
+  return useMutation(getCreateConfidentialNoteMutationOptions(options));
+};
+
+export const getUpdateConfidentialNoteUrl = (id: number) => {
+  return `/api/confidential-notes/${id}`;
+};
+
+export const updateConfidentialNote = async (
+  id: number,
+  confidentialNoteInput: ConfidentialNoteInput,
+  options?: RequestInit,
+): Promise<ConfidentialNote> => {
+  return customFetch<ConfidentialNote>(getUpdateConfidentialNoteUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(confidentialNoteInput),
+  });
+};
+
+export const getUpdateConfidentialNoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateConfidentialNote>>,
+    TError,
+    { id: number; data: BodyType<ConfidentialNoteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateConfidentialNote>>,
+  TError,
+  { id: number; data: BodyType<ConfidentialNoteInput> },
+  TContext
+> => {
+  const mutationKey = ["updateConfidentialNote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateConfidentialNote>>,
+    { id: number; data: BodyType<ConfidentialNoteInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateConfidentialNote(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateConfidentialNoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateConfidentialNote>>
+>;
+export type UpdateConfidentialNoteMutationBody =
+  BodyType<ConfidentialNoteInput>;
+export type UpdateConfidentialNoteMutationError = ErrorType<unknown>;
+
+export const useUpdateConfidentialNote = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateConfidentialNote>>,
+    TError,
+    { id: number; data: BodyType<ConfidentialNoteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateConfidentialNote>>,
+  TError,
+  { id: number; data: BodyType<ConfidentialNoteInput> },
+  TContext
+> => {
+  return useMutation(getUpdateConfidentialNoteMutationOptions(options));
+};
+
+export const getDeleteConfidentialNoteUrl = (id: number) => {
+  return `/api/confidential-notes/${id}`;
+};
+
+export const deleteConfidentialNote = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteConfidentialNoteUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteConfidentialNoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteConfidentialNote>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteConfidentialNote>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteConfidentialNote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteConfidentialNote>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteConfidentialNote(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteConfidentialNoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteConfidentialNote>>
+>;
+
+export type DeleteConfidentialNoteMutationError = ErrorType<unknown>;
+
+export const useDeleteConfidentialNote = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteConfidentialNote>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteConfidentialNote>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteConfidentialNoteMutationOptions(options));
+};
 
 export const getCreateWelfareNoteUrl = () => {
   return `/api/welfare-notes`;

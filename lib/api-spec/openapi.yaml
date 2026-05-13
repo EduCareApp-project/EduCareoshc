@@ -811,6 +811,80 @@ paths:
                 items:
                   $ref: "#/components/schemas/WelfareNote"
 
+  /children/{id}/confidential-notes:
+    get:
+      operationId: getChildConfidentialNotes
+      tags: [children]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConfidentialNote"
+
+  /confidential-notes:
+    post:
+      operationId: createConfidentialNote
+      tags: [confidential-notes]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfidentialNoteInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfidentialNote"
+
+  /confidential-notes/{id}:
+    patch:
+      operationId: updateConfidentialNote
+      tags: [confidential-notes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfidentialNoteInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfidentialNote"
+    delete:
+      operationId: deleteConfidentialNote
+      tags: [confidential-notes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /welfare-notes:
     post:
       operationId: createWelfareNote
@@ -2204,6 +2278,35 @@ components:
           type: string
           enum: [in_progress, completed, on_hold]
         notes:
+          type: string
+
+    ConfidentialNote:
+      type: object
+      required: [id, childId, content, createdAt]
+      properties:
+        id:
+          type: integer
+        childId:
+          type: integer
+        staffId:
+          type: ["integer", "null"]
+        staffName:
+          type: ["string", "null"]
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ConfidentialNoteInput:
+      type: object
+      required: [childId, content]
+      properties:
+        childId:
+          type: integer
+        staffId:
+          type: integer
+        content:
           type: string
 
     WelfareNote:

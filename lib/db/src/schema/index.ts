@@ -18,3 +18,4 @@ export * from "./posts";
 export * from "./professional_development";
 export * from "./planning_experiences";
 export * from "./welfare_notes";
+export * from "./confidential_notes";

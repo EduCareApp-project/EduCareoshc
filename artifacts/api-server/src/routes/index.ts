@@ -23,6 +23,7 @@ import reportsRouter from "./reports";
 import sitesRouter from "./sites";
 import welfareNotesRouter from "./welfare-notes";
 import storageRouter from "./storage";
+import confidentialNotesRouter from "./confidential-notes";
 
 const router: IRouter = Router();
 
@@ -50,5 +51,6 @@ router.use(reportsRouter);
 router.use(sitesRouter);
 router.use(welfareNotesRouter);
 router.use(storageRouter);
+router.use(confidentialNotesRouter);
 
 export default router;

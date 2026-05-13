@@ -804,6 +804,51 @@ export const GetChildWelfareNotesResponse = zod.array(
   GetChildWelfareNotesResponseItem,
 );
 
+export const GetChildConfidentialNotesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetChildConfidentialNotesResponseItem = zod.object({
+  id: zod.number(),
+  childId: zod.number(),
+  staffId: zod.number().nullish(),
+  staffName: zod.string().nullish(),
+  content: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const GetChildConfidentialNotesResponse = zod.array(
+  GetChildConfidentialNotesResponseItem,
+);
+
+export const CreateConfidentialNoteBody = zod.object({
+  childId: zod.number(),
+  staffId: zod.number().optional(),
+  content: zod.string(),
+});
+
+export const UpdateConfidentialNoteParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateConfidentialNoteBody = zod.object({
+  childId: zod.number(),
+  staffId: zod.number().optional(),
+  content: zod.string(),
+});
+
+export const UpdateConfidentialNoteResponse = zod.object({
+  id: zod.number(),
+  childId: zod.number(),
+  staffId: zod.number().nullish(),
+  staffName: zod.string().nullish(),
+  content: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+
+export const DeleteConfidentialNoteParams = zod.object({
+  id: zod.coerce.number(),
+});
+
 export const CreateWelfareNoteBody = zod.object({
   childId: zod.number(),
   staffId: zod.number().optional(),

@@ -708,6 +708,23 @@ export interface QipItemUpdate {
   notes?: string;
 }
 
+export interface ConfidentialNote {
+  id: number;
+  childId: number;
+  /** @nullable */
+  staffId?: number | null;
+  /** @nullable */
+  staffName?: string | null;
+  content: string;
+  createdAt: string;
+}
+
+export interface ConfidentialNoteInput {
+  childId: number;
+  staffId?: number;
+  content: string;
+}
+
 export interface WelfareNote {
   id: number;
   childId: number;

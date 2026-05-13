@@ -448,44 +448,6 @@ export default function ChildProfile() {
           </Card>
         )}
       </div>
-      {/* Learning Observations */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base flex items-center gap-2"><FileText className="h-5 w-5" />Learning Observations</CardTitle>
-          <Link href={`/observations/new?childId=${child.id}`}>
-            <Button size="sm"><Plus className="h-4 w-4 mr-1" />New Observation</Button>
-          </Link>
-        </CardHeader>
-        <CardContent>
-          {obsLoading ? (
-            <div className="space-y-3 mt-4">
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-            </div>
-          ) : !observations || observations.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg mt-4">
-              <FileText className="h-10 w-10 mx-auto mb-2 opacity-20" />
-              <p>No observations recorded yet</p>
-            </div>
-          ) : (
-            <div className="grid sm:grid-cols-2 gap-3 mt-4">
-              {observations.map((obs) => (
-                <Link key={obs.id} href={`/observations/${obs.id}`}>
-                  <div className="p-3 rounded-lg border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer space-y-1 h-full">
-                    <p className="text-sm text-foreground line-clamp-2 leading-relaxed">{obs.description}</p>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span>{safeDate(obs.observationDate, "d MMM yyyy")}</span>
-                      {obs.staffName && <span>· {obs.staffName}</span>}
-                      {obs.actionNotes && <span className="text-primary font-medium">· Action noted</span>}
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Welfare Notification Log */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">

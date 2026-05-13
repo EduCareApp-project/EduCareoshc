@@ -157,14 +157,14 @@ export default function Jottings() {
           </CardContent></Card>
         ) : sorted.map((j) => (
           <Card key={j.id}>
-            <CardContent className="py-3 flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{j.content}</p>
-                <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
-                  <span>{format(new Date(j.createdAt), "MMM d, yyyy 'at' h:mm a")}</span>
-                  {j.childName && <><span>•</span><span className="font-medium text-foreground/70">{j.childName}</span></>}
-                </div>
-              </div>
+            <CardContent className="py-2.5 flex items-center gap-4">
+              <span className="shrink-0 text-xs text-muted-foreground w-36">
+                {format(new Date(j.createdAt), "MMM d, yyyy h:mm a")}
+              </span>
+              <span className="shrink-0 text-xs font-medium text-foreground/70 w-32 truncate">
+                {j.childName ?? <span className="text-muted-foreground italic">No child</span>}
+              </span>
+              <p className="flex-1 text-sm truncate">{j.content}</p>
               <div className="flex items-center gap-1 shrink-0">
                 <Button
                   variant="outline"

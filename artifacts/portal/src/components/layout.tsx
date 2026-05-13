@@ -86,7 +86,7 @@ function NavLinks({ location }: { location: string }) {
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 py-4 flex items-center space-x-2 shrink-0 border-b">
-        <img src="/educare-logo.png" alt="EduCare" className="h-10 w-10 object-contain" />
+        <img src="/educare-logo.png" alt="EduCare" className="h-14 w-14 object-contain" />
         <span className="text-xl font-bold text-foreground">EduCare</span>
       </div>
       <ScrollArea className="flex-1">

@@ -4,7 +4,7 @@ import {
   useGetChildObservations, useListSites,
   useGetChildWelfareNotes, useCreateWelfareNote, useUpdateWelfareNote, useDeleteWelfareNote,
   useGetChildConfidentialNotes, useCreateConfidentialNote, useUpdateConfidentialNote, useDeleteConfidentialNote,
-  useListStaff,
+  useListStaff, useListJottings, useListPrograms, useListPosts,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
@@ -25,7 +25,7 @@ import { format } from "date-fns";
 import {
   ArrowLeft, Edit, Plus, Trash2, User, Users, Phone, Mail, FileText,
   Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2,
-  ShieldAlert, AlertTriangle, Paperclip, X, Lock, Pencil,
+  ShieldAlert, AlertTriangle, Paperclip, X, Lock, Pencil, StickyNote, Newspaper,
 } from "lucide-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { useToast } from "@/hooks/use-toast";
@@ -70,6 +70,9 @@ export default function ChildProfile() {
   const { data: staff } = useListStaff();
   const { data: welfareNotes, isLoading: welfareLoading } = useGetChildWelfareNotes(id, { query: { enabled: !!id } });
   const { data: confidentialNotes, isLoading: confidentialLoading } = useGetChildConfidentialNotes(id, { query: { enabled: !!id } });
+  const { data: allJottings } = useListJottings();
+  const { data: allPrograms } = useListPrograms();
+  const { data: allPosts } = useListPosts();
   const updateMutation = useUpdateChild();
   const deleteMutation = useDeleteChild();
   const createWelfareMutation = useCreateWelfareNote();
@@ -702,21 +705,132 @@ export default function ChildProfile() {
         </TabsContent>
 
         {/* ── Child's Data ── */}
-        <TabsContent value="childdata">
-          <Card>
-            <CardHeader><CardTitle className="text-base">Child's Data</CardTitle></CardHeader>
-            <CardContent className="space-y-6 max-w-sm">
-              <div className="space-y-1">
-                <div className="text-sm text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4" />Enrollment Date</div>
-                <p className="font-medium">{safeDate(child.enrollmentDate, "MMMM d, yyyy")}</p>
-              </div>
-              <Separator />
-              <div className="space-y-1">
-                <div className="text-sm text-muted-foreground flex items-center gap-2"><Users className="h-4 w-4" />Age Group / Room</div>
-                <p className="font-medium capitalize">{child.ageGroup}</p>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="childdata" className="space-y-6">
+          {(() => {
+            const childJottings = (allJottings ?? []).filter((j) => j.childId === child.id);
+            const childPrograms = (allPrograms ?? []).filter((p) => child.ageGroup && (p.ageGroups ?? []).includes(child.ageGroup));
+            const childPosts = (allPosts ?? []).filter((p) => p.childId === child.id);
+
+            return (
+              <>
+                {/* Jottings */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <StickyNote className="h-5 w-5" />Jottings
+                    </CardTitle>
+                    <span className="text-sm text-muted-foreground">{childJottings.length} recorded</span>
+                  </CardHeader>
+                  <CardContent>
+                    {childJottings.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg text-sm">No jottings recorded for this child</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {[...childJottings].reverse().map((j) => (
+                          <div key={j.id} className="flex items-start gap-3 p-3 rounded-lg border bg-card text-sm">
+                            <div className="flex-1 min-w-0">
+                              <p className="leading-relaxed line-clamp-2">{j.content}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{safeDate(j.createdAt, "d MMM yyyy")}{j.staffName ? ` · ${j.staffName}` : ""}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Observations */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <FileText className="h-5 w-5" />Observations
+                    </CardTitle>
+                    <Link href={`/observations/new?childId=${child.id}`}>
+                      <Button size="sm" variant="outline"><Plus className="h-3.5 w-3.5 mr-1" />New</Button>
+                    </Link>
+                  </CardHeader>
+                  <CardContent>
+                    {obsLoading ? (
+                      <div className="space-y-2"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></div>
+                    ) : !observations || observations.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg text-sm">No observations recorded yet</div>
+                    ) : (
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {observations.map((obs) => (
+                          <Link key={obs.id} href={`/observations/${obs.id}`}>
+                            <div className="p-3 rounded-lg border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer space-y-1 h-full">
+                              <p className="text-sm line-clamp-2 leading-relaxed">{obs.description}</p>
+                              <p className="text-xs text-muted-foreground">{safeDate(obs.observationDate, "d MMM yyyy")}{obs.staffName ? ` · ${obs.staffName}` : ""}</p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Programmed Experiences */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <BookOpen className="h-5 w-5" />Programmed Experiences
+                    </CardTitle>
+                    <Link href="/programs"><Button size="sm" variant="outline">View all</Button></Link>
+                  </CardHeader>
+                  <CardContent>
+                    {childPrograms.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg text-sm">
+                        No programs match this child's age group
+                      </div>
+                    ) : (
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {childPrograms.map((p) => (
+                          <Link key={p.id} href={`/programs/${p.id}`}>
+                            <div className="p-3 rounded-lg border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer space-y-1 h-full">
+                              <p className="text-sm font-medium line-clamp-1">{p.title}</p>
+                              <p className="text-xs text-muted-foreground line-clamp-2">{p.description}</p>
+                              <div className="flex items-center gap-2 pt-1">
+                                <Badge variant="outline" className="text-xs capitalize">{p.status}</Badge>
+                                <span className="text-xs text-muted-foreground">{safeDate(p.startDate, "d MMM yyyy")}</span>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Posts */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Newspaper className="h-5 w-5" />Posts
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {childPosts.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg text-sm">No posts for this child</div>
+                    ) : (
+                      <div className="divide-y">
+                        {[...childPosts].reverse().map((p) => (
+                          <Link key={p.id} href={`/posts/${p.id}`}>
+                            <div className="py-3 flex items-center justify-between gap-4 hover:bg-muted/40 px-1 rounded cursor-pointer">
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium line-clamp-1">{p.title}</p>
+                                <p className="text-xs text-muted-foreground">{safeDate(p.createdAt, "d MMM yyyy")}{p.staffName ? ` · ${p.staffName}` : ""}</p>
+                              </div>
+                              <Badge variant={p.status === "published" ? "default" : "secondary"} className="text-xs shrink-0 capitalize">{p.status}</Badge>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            );
+          })()}
         </TabsContent>
 
       </Tabs>

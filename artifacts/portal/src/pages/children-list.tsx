@@ -6,7 +6,18 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Plus, Search } from "lucide-react";
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, differenceInYears, differenceInMonths } from "date-fns";
+
+function calcAge(dob: string) {
+  const birth = new Date(dob.length === 10 ? dob + "T00:00:00" : dob);
+  const now = new Date();
+  const years = differenceInYears(now, birth);
+  if (years < 1) {
+    const months = differenceInMonths(now, birth);
+    return `${months} month${months !== 1 ? "s" : ""}`;
+  }
+  return `${years} year${years !== 1 ? "s" : ""}`;
+}
 
 export default function ChildrenList() {
   const { data: children, isLoading } = useListChildren();
@@ -69,12 +80,12 @@ export default function ChildrenList() {
                 <CardContent>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Age Group</span>
-                      <span className="font-medium capitalize">{child.ageGroup.replace('_', ' ')}</span>
+                      <span className="text-muted-foreground">Age</span>
+                      <span className="font-medium">{calcAge(child.dateOfBirth)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">DOB</span>
-                      <span className="font-medium">{format(new Date(child.dateOfBirth), "MMM d, yyyy")}</span>
+                      <span className="font-medium">{format(new Date(child.dateOfBirth.length === 10 ? child.dateOfBirth + "T00:00:00" : child.dateOfBirth), "MMM d, yyyy")}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Guardian</span>

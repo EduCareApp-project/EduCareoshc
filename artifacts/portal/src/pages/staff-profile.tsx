@@ -421,7 +421,12 @@ export default function StaffProfile() {
                   <SelectValue placeholder="Select qualification type..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {QUALIFICATION_NAMES.map((n) => (
+                  {QUALIFICATION_NAMES.filter((n) => {
+                    const usedNames = (qualifications ?? [])
+                      .filter((q) => q.id !== editingQualId)
+                      .map((q) => q.name);
+                    return !usedNames.includes(n);
+                  }).map((n) => (
                     <SelectItem key={n} value={n}>{n}</SelectItem>
                   ))}
                 </SelectContent>

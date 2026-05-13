@@ -109,7 +109,6 @@ export default function ChildProfile() {
             <div>
               <h1 className="text-2xl font-bold leading-none">{child.firstName} {child.lastName}</h1>
               <div className="text-muted-foreground text-sm flex items-center gap-2 mt-1">
-                <Badge variant="outline" className="capitalize">{AGE_GROUP_LABELS[child.ageGroup] || child.ageGroup}</Badge>
                 <Badge variant={child.status === "active" ? "default" : "secondary"} className="capitalize">{child.status}</Badge>
               </div>
             </div>
@@ -128,10 +127,6 @@ export default function ChildProfile() {
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4" />Date of Birth</div>
                 <p className="font-medium">{safeDate(child.dateOfBirth, "MMMM d, yyyy")}</p>
-              </div>
-              <div className="space-y-1">
-                <div className="text-sm text-muted-foreground flex items-center gap-2"><Clock className="h-4 w-4" />Enrolled Since</div>
-                <p className="font-medium">{safeDate(child.enrollmentDate, "MMMM d, yyyy")}</p>
               </div>
               <Separator />
               <div className="space-y-1">
@@ -261,32 +256,16 @@ export default function ChildProfile() {
                   <div className="space-y-1"><Label>First Name</Label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} required /></div>
                   <div className="space-y-1"><Label>Last Name</Label><Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} required /></div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1"><Label>Date of Birth</Label><Input type="date" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} required /></div>
-                  <div className="space-y-1"><Label>Enrollment Date</Label><Input type="date" value={form.enrollmentDate} onChange={(e) => setForm({ ...form, enrollmentDate: e.target.value })} required /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1"><Label>Age Group</Label>
-                    <Select value={form.ageGroup} onValueChange={(v) => setForm({ ...form, ageGroup: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="infant">Infant</SelectItem>
-                        <SelectItem value="toddler">Toddler</SelectItem>
-                        <SelectItem value="preschool">Preschool</SelectItem>
-                        <SelectItem value="school_age">School Age</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1"><Label>Status</Label>
-                    <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                        <SelectItem value="waitlist">Waitlist</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-1"><Label>Date of Birth</Label><Input type="date" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} required /></div>
+                <div className="space-y-1"><Label>Status</Label>
+                  <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="waitlist">Waitlist</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1"><Label>Medical Notes</Label><Textarea value={form.medicalNotes} onChange={(e) => setForm({ ...form, medicalNotes: e.target.value })} rows={3} placeholder="Allergies, conditions, medications..." /></div>
               </TabsContent>

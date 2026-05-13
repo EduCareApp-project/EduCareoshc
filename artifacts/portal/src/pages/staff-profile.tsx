@@ -96,6 +96,49 @@ export default function StaffProfile() {
   const [bioEditing, setBioEditing] = useState(false);
   const [bioSaving, setBioSaving] = useState(false);
 
+  const [profileEditOpen, setProfileEditOpen] = useState(false);
+  const [profileEditForm, setProfileEditForm] = useState({ firstName: "", lastName: "", email: "", phone: "", role: "", status: "", qualifications: "", wwccNumber: "" });
+  const [profileEditSaving, setProfileEditSaving] = useState(false);
+
+  function openProfileEdit() {
+    if (!staff) return;
+    setProfileEditForm({
+      firstName: staff.firstName,
+      lastName: staff.lastName,
+      email: staff.email,
+      phone: staff.phone ?? "",
+      role: staff.role,
+      status: staff.status,
+      qualifications: staff.qualifications,
+      wwccNumber: staff.wwccNumber ?? "",
+    });
+    setProfileEditOpen(true);
+  }
+
+  async function saveProfile() {
+    setProfileEditSaving(true);
+    try {
+      await updateStaffMutation.mutateAsync({
+        id: staffId,
+        data: {
+          firstName: profileEditForm.firstName,
+          lastName: profileEditForm.lastName,
+          email: profileEditForm.email,
+          phone: profileEditForm.phone || undefined,
+          role: profileEditForm.role as "admin" | "educational_leader" | "coordinator" | "educator",
+          status: profileEditForm.status as "active" | "inactive",
+          qualifications: profileEditForm.qualifications,
+          wwccNumber: profileEditForm.wwccNumber || undefined,
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: ["getStaff", staffId] });
+      setProfileEditOpen(false);
+      toast({ title: "Profile updated" });
+    } finally {
+      setProfileEditSaving(false);
+    }
+  }
+
   const { uploadFile, isUploading } = useUpload({
     onError: () => toast({ title: "File upload failed", variant: "destructive" }),
   });
@@ -284,6 +327,27 @@ export default function StaffProfile() {
 
         {/* Profile Tab */}
         <TabsContent value="profile" className="mt-4 space-y-4">
+          {/* Details */}
+          <Card>
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <CardTitle className="text-base">Details</CardTitle>
+              <Button variant="outline" size="sm" onClick={openProfileEdit}>
+                <Pencil className="h-3.5 w-3.5 mr-1" />Edit Profile
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div><p className="text-xs text-muted-foreground mb-1">Email</p><p className="font-medium">{staff.email}</p></div>
+                <div><p className="text-xs text-muted-foreground mb-1">Phone</p><p className="font-medium">{staff.phone || <span className="text-muted-foreground italic">Not set</span>}</p></div>
+                <div><p className="text-xs text-muted-foreground mb-1">Qualifications</p><p className="font-medium">{staff.qualifications}</p></div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">WWCC Number</p>
+                  <p className={`font-medium ${!staff.wwccNumber ? "text-amber-600" : ""}`}>{staff.wwccNumber || "Not on file"}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Picture + Bio row */}
           <Card>
             <CardContent className="pt-6">
@@ -351,21 +415,6 @@ export default function StaffProfile() {
                       {staff.bio || <span className="italic">No bio added yet.</span>}
                     </p>
                   )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Details */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div><p className="text-xs text-muted-foreground mb-1">Email</p><p className="font-medium">{staff.email}</p></div>
-                {staff.phone && <div><p className="text-xs text-muted-foreground mb-1">Phone</p><p className="font-medium">{staff.phone}</p></div>}
-                <div><p className="text-xs text-muted-foreground mb-1">Qualifications</p><p className="font-medium">{staff.qualifications}</p></div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">WWCC Number</p>
-                  <p className={`font-medium ${!staff.wwccNumber ? "text-amber-600" : ""}`}>{staff.wwccNumber || "Not on file"}</p>
                 </div>
               </div>
             </CardContent>
@@ -533,6 +582,75 @@ export default function StaffProfile() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Edit Profile Dialog */}
+      <Dialog open={profileEditOpen} onOpenChange={setProfileEditOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />Edit Profile
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>First Name</Label>
+                <Input value={profileEditForm.firstName} onChange={(e) => setProfileEditForm((f) => ({ ...f, firstName: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Last Name</Label>
+                <Input value={profileEditForm.lastName} onChange={(e) => setProfileEditForm((f) => ({ ...f, lastName: e.target.value }))} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input type="email" value={profileEditForm.email} onChange={(e) => setProfileEditForm((f) => ({ ...f, email: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Phone</Label>
+              <Input value={profileEditForm.phone} onChange={(e) => setProfileEditForm((f) => ({ ...f, phone: e.target.value }))} placeholder="e.g. 0412 345 678" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Role</Label>
+                <Select value={profileEditForm.role} onValueChange={(v) => setProfileEditForm((f) => ({ ...f, role: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="educational_leader">Educational Leader</SelectItem>
+                    <SelectItem value="coordinator">Coordinator</SelectItem>
+                    <SelectItem value="educator">Educator</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Status</Label>
+                <Select value={profileEditForm.status} onValueChange={(v) => setProfileEditForm((f) => ({ ...f, status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Education Qualifications</Label>
+              <Input value={profileEditForm.qualifications} onChange={(e) => setProfileEditForm((f) => ({ ...f, qualifications: e.target.value }))} placeholder="e.g. Bachelor of Education (Early Childhood)" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>WWCC Number</Label>
+              <Input value={profileEditForm.wwccNumber} onChange={(e) => setProfileEditForm((f) => ({ ...f, wwccNumber: e.target.value }))} placeholder="e.g. WWC1234567A" />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setProfileEditOpen(false)} disabled={profileEditSaving}>Cancel</Button>
+              <Button onClick={saveProfile} disabled={profileEditSaving || !profileEditForm.firstName || !profileEditForm.lastName || !profileEditForm.email}>
+                {profileEditSaving ? "Saving…" : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add/Edit Qualification Dialog */}
       <Dialog open={qualOpen} onOpenChange={(open) => { if (!open) closeQualDialog(); }}>

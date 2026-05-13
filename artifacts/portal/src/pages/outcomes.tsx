@@ -30,11 +30,16 @@ export default function Outcomes() {
                 <p className="text-muted-foreground">{outcome.description}</p>
                 <div className="bg-accent/30 p-4 rounded-lg">
                   <h4 className="font-semibold text-sm mb-2 text-foreground/80">Key Elements:</h4>
-                  <ul className="list-disc pl-5 space-y-1 text-sm">
+                  <div className="space-y-1.5 text-sm">
                     {outcome.subOutcomes.map((sub, idx) => (
-                      <li key={idx} className="text-foreground/90">{sub}</li>
+                      <div key={idx} className="flex items-start gap-3">
+                        <span className="shrink-0 font-semibold text-primary w-8 text-right leading-snug">
+                          {outcome.number}.{idx + 1}
+                        </span>
+                        <span className="text-foreground/90 leading-snug">{sub}</span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               </CardContent>
             </Card>

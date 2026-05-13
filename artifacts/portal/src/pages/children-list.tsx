@@ -25,6 +25,7 @@ export default function ChildrenList() {
   const { data: sites } = useListSites();
   const [search, setSearch] = useState("");
   const [siteFilter, setSiteFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("active");
 
   const filteredChildren = children?.filter(c => {
     const matchesSearch = c.firstName.toLowerCase().includes(search.toLowerCase()) ||
@@ -34,7 +35,8 @@ export default function ChildrenList() {
       : siteFilter === "none"
         ? c.siteId == null
         : c.siteId === parseInt(siteFilter);
-    return matchesSearch && matchesSite;
+    const matchesStatus = statusFilter === "all" ? true : c.status === statusFilter;
+    return matchesSearch && matchesSite && matchesStatus;
   });
 
   return (
@@ -51,7 +53,7 @@ export default function ChildrenList() {
         </Link>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 items-center">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -75,6 +77,21 @@ export default function ChildrenList() {
             </SelectContent>
           </Select>
         )}
+        <div className="flex rounded-md border border-input bg-card overflow-hidden text-sm">
+          {(["active", "inactive", "all"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-3 py-2 capitalize transition-colors ${
+                statusFilter === s
+                  ? "bg-primary text-primary-foreground font-medium"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (

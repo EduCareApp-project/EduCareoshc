@@ -5,22 +5,28 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
-import type { ConditionReportSeverity } from "./conditionReportSeverity";
 import type { ConditionReportStatus } from "./conditionReportStatus";
 
 export interface ConditionReport {
   id: number;
-  title: string;
+  reportedDate: Date;
+  staffId: number;
+  /** @nullable */
+  staffName?: string | null;
+  /** @nullable */
+  siteId?: number | null;
+  /** @nullable */
+  siteName?: string | null;
   description: string;
-  location: string;
-  severity: ConditionReportSeverity;
+  immediateActionRequired: boolean;
+  /** @nullable */
+  actionTaken?: string | null;
+  /** @nullable */
+  evidenceDocumentPath?: string | null;
+  /** @nullable */
+  evidenceDocumentName?: string | null;
+  /** @nullable */
+  leadershipNotes?: string | null;
   status: ConditionReportStatus;
-  reportedAt: Date;
-  /** @nullable */
-  actionRequired?: string | null;
-  /** @nullable */
-  resolvedAt?: Date | null;
-  /** @nullable */
-  resolutionNotes?: string | null;
   createdAt: Date;
 }

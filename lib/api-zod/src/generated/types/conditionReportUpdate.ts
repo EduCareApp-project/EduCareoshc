@@ -9,7 +9,5 @@ import type { ConditionReportUpdateStatus } from "./conditionReportUpdateStatus"
 
 export interface ConditionReportUpdate {
   status?: ConditionReportUpdateStatus;
-  actionRequired?: string;
-  resolutionNotes?: string;
-  resolvedAt?: Date;
+  leadershipNotes?: string;
 }

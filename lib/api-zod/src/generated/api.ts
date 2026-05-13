@@ -794,31 +794,33 @@ export const UpdateIncidentResponse = zod.object({
 
 export const ListConditionReportsResponseItem = zod.object({
   id: zod.number(),
-  title: zod.string(),
+  reportedDate: zod.coerce.date(),
+  staffId: zod.number(),
+  staffName: zod.string().nullish(),
+  siteId: zod.number().nullish(),
+  siteName: zod.string().nullish(),
   description: zod.string(),
-  location: zod.string(),
-  severity: zod.enum(["low", "medium", "high", "critical"]),
-  status: zod.enum(["open", "in_progress", "resolved"]),
-  reportedAt: zod.coerce.date(),
-  actionRequired: zod.string().nullish(),
-  resolvedAt: zod.coerce.date().nullish(),
-  resolutionNotes: zod.string().nullish(),
+  immediateActionRequired: zod.boolean(),
+  actionTaken: zod.string().nullish(),
+  evidenceDocumentPath: zod.string().nullish(),
+  evidenceDocumentName: zod.string().nullish(),
+  leadershipNotes: zod.string().nullish(),
+  status: zod.enum(["open", "resolved"]),
   createdAt: zod.coerce.date(),
 });
 export const ListConditionReportsResponse = zod.array(
   ListConditionReportsResponseItem,
 );
 
-export const createConditionReportBodySeverityDefault = `low`;
-
 export const CreateConditionReportBody = zod.object({
-  title: zod.string(),
+  reportedDate: zod.coerce.date(),
+  staffId: zod.number(),
+  siteId: zod.number().optional(),
   description: zod.string(),
-  location: zod.string(),
-  severity: zod
-    .enum(["low", "medium", "high", "critical"])
-    .default(createConditionReportBodySeverityDefault),
-  actionRequired: zod.string().optional(),
+  immediateActionRequired: zod.boolean(),
+  actionTaken: zod.string().optional(),
+  evidenceDocumentPath: zod.string().optional(),
+  evidenceDocumentName: zod.string().optional(),
 });
 
 export const UpdateConditionReportParams = zod.object({
@@ -826,23 +828,24 @@ export const UpdateConditionReportParams = zod.object({
 });
 
 export const UpdateConditionReportBody = zod.object({
-  status: zod.enum(["open", "in_progress", "resolved"]).optional(),
-  actionRequired: zod.string().optional(),
-  resolutionNotes: zod.string().optional(),
-  resolvedAt: zod.coerce.date().optional(),
+  status: zod.enum(["open", "resolved"]).optional(),
+  leadershipNotes: zod.string().optional(),
 });
 
 export const UpdateConditionReportResponse = zod.object({
   id: zod.number(),
-  title: zod.string(),
+  reportedDate: zod.coerce.date(),
+  staffId: zod.number(),
+  staffName: zod.string().nullish(),
+  siteId: zod.number().nullish(),
+  siteName: zod.string().nullish(),
   description: zod.string(),
-  location: zod.string(),
-  severity: zod.enum(["low", "medium", "high", "critical"]),
-  status: zod.enum(["open", "in_progress", "resolved"]),
-  reportedAt: zod.coerce.date(),
-  actionRequired: zod.string().nullish(),
-  resolvedAt: zod.coerce.date().nullish(),
-  resolutionNotes: zod.string().nullish(),
+  immediateActionRequired: zod.boolean(),
+  actionTaken: zod.string().nullish(),
+  evidenceDocumentPath: zod.string().nullish(),
+  evidenceDocumentName: zod.string().nullish(),
+  leadershipNotes: zod.string().nullish(),
+  status: zod.enum(["open", "resolved"]),
   createdAt: zod.coerce.date(),
 });
 

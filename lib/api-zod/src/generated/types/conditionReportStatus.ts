@@ -11,6 +11,5 @@ export type ConditionReportStatus =
 
 export const ConditionReportStatus = {
   open: "open",
-  in_progress: "in_progress",
   resolved: "resolved",
 } as const;

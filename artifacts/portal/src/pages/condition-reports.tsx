@@ -1,65 +1,295 @@
-import { useState } from "react";
-import { useListConditionReports, useCreateConditionReport, useUpdateConditionReport } from "@workspace/api-client-react";
+import { useRef, useState } from "react";
+import {
+  useListConditionReports,
+  useCreateConditionReport,
+  useUpdateConditionReport,
+  useListStaff,
+  useListSites,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { ClipboardX, Plus } from "lucide-react";
-import { format } from "date-fns";
+import { Separator } from "@/components/ui/separator";
+import { ClipboardX, Plus, Paperclip, X, Upload, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-
-function severityBadge(s: string) {
-  const map: Record<string, string> = { low: "bg-slate-100 text-slate-700", medium: "bg-yellow-100 text-yellow-800", high: "bg-orange-100 text-orange-800", critical: "bg-red-100 text-red-800" };
-  return <Badge className={map[s] || ""}>{s.charAt(0).toUpperCase() + s.slice(1)}</Badge>;
-}
+import { useUpload } from "@workspace/object-storage-web";
 
 function statusBadge(s: string) {
-  const map: Record<string, string> = { open: "bg-red-100 text-red-800", in_progress: "bg-blue-100 text-blue-800", resolved: "bg-green-100 text-green-800" };
-  const labels: Record<string, string> = { open: "Open", in_progress: "In Progress", resolved: "Resolved" };
-  return <Badge className={map[s] || ""}>{labels[s] || s}</Badge>;
+  if (s === "resolved") return <Badge className="bg-green-100 text-green-800 border-0">Resolved</Badge>;
+  return <Badge className="bg-amber-100 text-amber-800 border-0">Open</Badge>;
 }
+
+function safeDate(val: string | null | undefined, fmt: string) {
+  if (!val) return "—";
+  try {
+    const iso = val.length === 10 ? val + "T00:00:00" : val;
+    return format(parseISO(iso), fmt);
+  } catch {
+    return "—";
+  }
+}
+
+const EMPTY_FORM = {
+  reportedDate: new Date().toISOString().slice(0, 10),
+  staffId: "",
+  siteId: "",
+  description: "",
+  immediateActionRequired: false,
+  actionTaken: "",
+  evidenceDocumentPath: "",
+  evidenceDocumentName: "",
+};
 
 export default function ConditionReports() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { upload, uploading } = useUpload();
+
   const { data: reports, isLoading } = useListConditionReports();
+  const { data: staffList } = useListStaff();
+  const { data: sites } = useListSites();
   const createMutation = useCreateConditionReport();
   const updateMutation = useUpdateConditionReport();
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [resolutionNotes, setResolutionNotes] = useState("");
-  const selectedReport = (reports ?? []).find((r) => r.id === selected);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState({ title: "", description: "", location: "", severity: "low", actionRequired: "" });
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [leadershipNotes, setLeadershipNotes] = useState("");
+  const [editingLeadership, setEditingLeadership] = useState(false);
 
-  function handleCreate(e: React.FormEvent) {
+  const selectedReport = (reports ?? []).find((r) => r.id === selectedId);
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    setSelectedFile(file);
+  }
+
+  function removeFile() {
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setForm((f) => ({ ...f, evidenceDocumentPath: "", evidenceDocumentName: "" }));
+  }
+
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    createMutation.mutate({ data: form as any }, {
-      onSuccess: () => {
-        setCreateOpen(false);
-        setForm({ title: "", description: "", location: "", severity: "low", actionRequired: "" });
+    if (!form.staffId) { toast({ title: "Please select a staff member", variant: "destructive" }); return; }
+
+    let docPath = form.evidenceDocumentPath;
+    let docName = form.evidenceDocumentName;
+
+    if (selectedFile) {
+      try {
+        const path = await upload(selectedFile, { prefix: "condition-evidence/" });
+        docPath = path;
+        docName = selectedFile.name;
+      } catch {
+        toast({ title: "File upload failed", variant: "destructive" });
+        return;
+      }
+    }
+
+    const payload = {
+      reportedDate: form.reportedDate,
+      staffId: Number(form.staffId),
+      ...(form.siteId ? { siteId: Number(form.siteId) } : {}),
+      description: form.description,
+      immediateActionRequired: form.immediateActionRequired,
+      ...(form.actionTaken ? { actionTaken: form.actionTaken } : {}),
+      ...(docPath ? { evidenceDocumentPath: docPath, evidenceDocumentName: docName } : {}),
+    };
+
+    createMutation.mutate({ data: payload as any }, {
+      onSuccess: (data) => {
+        setShowForm(false);
+        setForm({ ...EMPTY_FORM });
+        setSelectedFile(null);
         queryClient.invalidateQueries({ queryKey: ["/api/condition-reports"] });
         toast({ title: "Condition report submitted" });
+        setSelectedId((data as any).id);
       },
       onError: () => toast({ title: "Failed to submit report", variant: "destructive" }),
     });
   }
 
-  function updateStatus(id: number, status: string, extraData: Record<string, unknown> = {}) {
-    updateMutation.mutate({ id, data: { status, ...extraData } as any }, {
+  function handleSaveLeadershipNotes() {
+    if (!selectedId) return;
+    updateMutation.mutate({ id: selectedId, data: { leadershipNotes } as any }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/condition-reports"] });
-        setResolutionNotes("");
+        setEditingLeadership(false);
+        toast({ title: "Leadership notes saved" });
+      },
+      onError: () => toast({ title: "Failed to save notes", variant: "destructive" }),
+    });
+  }
+
+  function handleResolve() {
+    if (!selectedId) return;
+    updateMutation.mutate({ id: selectedId, data: { status: "resolved" } as any }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/condition-reports"] });
+        toast({ title: "Report marked as resolved" });
       },
     });
+  }
+
+  function openDetail(id: number) {
+    const r = (reports ?? []).find((r) => r.id === id);
+    setSelectedId(id);
+    setLeadershipNotes(r?.leadershipNotes ?? "");
+    setEditingLeadership(false);
+  }
+
+  if (showForm) {
+    return (
+      <div className="max-w-2xl space-y-6">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>← Back</Button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">New Condition Report</h1>
+            <p className="text-muted-foreground text-sm">Document a hazard, unsafe condition, or equipment issue.</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleCreate} className="space-y-5">
+          <Card>
+            <CardHeader><CardTitle className="text-base">Report Details</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="reportedDate">Date <span className="text-destructive">*</span></Label>
+                  <input
+                    id="reportedDate"
+                    type="date"
+                    value={form.reportedDate}
+                    onChange={(e) => setForm({ ...form, reportedDate: e.target.value })}
+                    required
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Staff Member <span className="text-destructive">*</span></Label>
+                  <Select value={form.staffId} onValueChange={(v) => setForm({ ...form, staffId: v })} required>
+                    <SelectTrigger><SelectValue placeholder="Select staff…" /></SelectTrigger>
+                    <SelectContent>
+                      {(staffList ?? []).map((s) => (
+                        <SelectItem key={s.id} value={String(s.id)}>
+                          {s.firstName} {s.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Location (Site)</Label>
+                <Select value={form.siteId} onValueChange={(v) => setForm({ ...form, siteId: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select site…" /></SelectTrigger>
+                  <SelectContent>
+                    {(sites ?? []).map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="description">Description of Condition / Hazard <span className="text-destructive">*</span></Label>
+                <Textarea
+                  id="description"
+                  placeholder="Describe the hazard, unsafe condition, or equipment issue…"
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  rows={4}
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Immediate Action Required?</Label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, immediateActionRequired: true })}
+                    className={`flex-1 py-2 rounded-md border text-sm font-medium transition-colors ${form.immediateActionRequired ? "bg-red-50 border-red-400 text-red-700" : "bg-background border-input text-muted-foreground hover:bg-muted"}`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, immediateActionRequired: false })}
+                    className={`flex-1 py-2 rounded-md border text-sm font-medium transition-colors ${!form.immediateActionRequired ? "bg-green-50 border-green-400 text-green-700" : "bg-background border-input text-muted-foreground hover:bg-muted"}`}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="actionTaken">Action Taken to Reduce Risk</Label>
+                <Textarea
+                  id="actionTaken"
+                  placeholder="Describe any immediate steps taken to address the hazard…"
+                  value={form.actionTaken}
+                  onChange={(e) => setForm({ ...form, actionTaken: e.target.value })}
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Upload Evidence</Label>
+                <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelect} />
+                {selectedFile ? (
+                  <div className="flex items-center gap-2 p-3 rounded-md border bg-muted/40 text-sm">
+                    <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="flex-1 truncate">{selectedFile.name}</span>
+                    <button type="button" onClick={removeFile} className="text-muted-foreground hover:text-destructive">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 w-full p-3 rounded-md border border-dashed text-sm text-muted-foreground hover:bg-muted/40 hover:border-primary/40 transition-colors"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Click to attach a document or photo
+                  </button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="p-4 rounded-lg border border-dashed bg-muted/30 flex items-start gap-3">
+            <ShieldCheck className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Leadership Notes</p>
+              <p className="text-xs text-muted-foreground mt-0.5">This section is completed by Admin or Educational Leader after the report is submitted.</p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+            <Button type="submit" disabled={createMutation.isPending || uploading}>
+              {uploading ? "Uploading…" : createMutation.isPending ? "Submitting…" : "Submit Report"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    );
   }
 
   return (
@@ -69,94 +299,151 @@ export default function ConditionReports() {
           <h1 className="text-3xl font-bold tracking-tight">Condition Reports</h1>
           <p className="text-muted-foreground mt-1">Report and track hazards, damaged equipment, or unsafe conditions.</p>
         </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-2" />Report Hazard</Button></DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Report a Hazard</DialogTitle></DialogHeader>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div className="space-y-1"><Label>Title</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required /></div>
-              <div className="space-y-1"><Label>Location</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="e.g. Outdoor play area, Kitchen" required /></div>
-              <div className="space-y-1"><Label>Severity</Label>
-                <Select value={form.severity} onValueChange={(v) => setForm({ ...form, severity: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="critical">Critical</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1"><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} required /></div>
-              <div className="space-y-1"><Label>Action Required</Label><Textarea value={form.actionRequired} onChange={(e) => setForm({ ...form, actionRequired: e.target.value })} rows={2} /></div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={createMutation.isPending}>Submit Report</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setShowForm(true)}><Plus className="h-4 w-4 mr-2" />New Report</Button>
       </div>
 
       {isLoading ? (
-        <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+        <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
       ) : (reports ?? []).length === 0 ? (
-        <Card><CardContent className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
-          <ClipboardX className="h-8 w-8 mb-2" />
-          <p>No condition reports. Use the button above to report a hazard.</p>
-        </CardContent></Card>
+        <Card>
+          <CardContent className="py-16 text-center text-muted-foreground flex flex-col items-center gap-2">
+            <ClipboardX className="h-10 w-10 mb-2 text-muted-foreground/50" />
+            <p className="font-medium">No condition reports yet</p>
+            <p className="text-sm">Use the button above to report a hazard or unsafe condition.</p>
+          </CardContent>
+        </Card>
       ) : (
         <Card>
           <div className="divide-y">
+            <div className="px-4 py-2 grid grid-cols-[1fr_160px_120px_100px] gap-4 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <span>Description</span>
+              <span>Staff</span>
+              <span>Site</span>
+              <span className="text-right">Date</span>
+            </div>
             {(reports ?? []).map((r) => (
-              <div key={r.id} className="p-4 flex items-center justify-between gap-4 hover:bg-muted/30 cursor-pointer transition-colors" onClick={() => { setSelected(r.id); setResolutionNotes(""); }}>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-sm">{r.title}</span>
-                    {severityBadge(r.severity)}
-                    {statusBadge(r.status)}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">{r.location} • {format(new Date(r.reportedAt), "MMM d, yyyy")}</p>
+              <div
+                key={r.id}
+                className="px-4 py-3 grid grid-cols-[1fr_160px_120px_100px] gap-4 items-center hover:bg-muted/30 cursor-pointer transition-colors"
+                onClick={() => openDetail(r.id)}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm truncate">{r.description}</span>
+                  {r.immediateActionRequired && <Badge className="bg-red-100 text-red-700 border-0 shrink-0 text-[10px] px-1.5">Immediate</Badge>}
+                  {statusBadge(r.status)}
                 </div>
-                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setSelected(r.id); }}>View</Button>
+                <span className="text-sm text-muted-foreground truncate">{r.staffName ?? "—"}</span>
+                <span className="text-sm text-muted-foreground truncate">{r.siteName ?? "—"}</span>
+                <span className="text-sm text-muted-foreground text-right whitespace-nowrap">{safeDate(r.reportedDate, "d MMM yyyy")}</span>
               </div>
             ))}
           </div>
         </Card>
       )}
 
-      <Sheet open={selected !== null} onOpenChange={(o) => !o && setSelected(null)}>
+      <Sheet open={selectedId !== null} onOpenChange={(o) => { if (!o) { setSelectedId(null); setEditingLeadership(false); } }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           {selectedReport && (
-            <>
-              <SheetHeader className="mb-6">
-                <SheetTitle>{selectedReport.title}</SheetTitle>
-                <div className="flex gap-2">{severityBadge(selectedReport.severity)}{statusBadge(selectedReport.status)}</div>
-              </SheetHeader>
-              <div className="space-y-4 text-sm">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><p className="text-muted-foreground text-xs mb-1">Location</p><p>{selectedReport.location}</p></div>
-                  <div><p className="text-muted-foreground text-xs mb-1">Reported</p><p>{format(new Date(selectedReport.reportedAt), "MMM d, yyyy")}</p></div>
+            <div className="space-y-5">
+              <SheetHeader>
+                <SheetTitle className="text-lg leading-snug line-clamp-3 pr-6">{selectedReport.description}</SheetTitle>
+                <div className="flex items-center gap-2 pt-1">
+                  {statusBadge(selectedReport.status)}
+                  {selectedReport.immediateActionRequired && <Badge className="bg-red-100 text-red-700 border-0">Immediate Action Required</Badge>}
                 </div>
-                <div><p className="text-muted-foreground text-xs mb-1">Description</p><p>{selectedReport.description}</p></div>
-                {selectedReport.actionRequired && <div><p className="text-muted-foreground text-xs mb-1">Action Required</p><p>{selectedReport.actionRequired}</p></div>}
-                {selectedReport.resolutionNotes && <div><p className="text-muted-foreground text-xs mb-1">Resolution Notes</p><p>{selectedReport.resolutionNotes}</p></div>}
-                {selectedReport.resolvedAt && <div><p className="text-muted-foreground text-xs mb-1">Resolved</p><p>{format(new Date(selectedReport.resolvedAt), "MMM d, yyyy")}</p></div>}
+              </SheetHeader>
 
-                {selectedReport.status !== "resolved" && (
-                  <div className="border rounded-lg p-4 space-y-3">
-                    <p className="font-medium">Update Status</p>
-                    {selectedReport.status === "open" && (
-                      <Button className="w-full" variant="outline" onClick={() => updateStatus(selectedReport.id, "in_progress")} disabled={updateMutation.isPending}>Mark In Progress</Button>
-                    )}
-                    <div className="space-y-2">
-                      <Textarea placeholder="Resolution notes..." value={resolutionNotes} onChange={(e) => setResolutionNotes(e.target.value)} rows={2} />
-                      <Button className="w-full" onClick={() => updateStatus(selectedReport.id, "resolved", { resolutionNotes })} disabled={updateMutation.isPending}>Mark Resolved</Button>
-                    </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Date</p>
+                  <p>{safeDate(selectedReport.reportedDate, "d MMMM yyyy")}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Reported By</p>
+                  <p>{selectedReport.staffName ?? "—"}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-xs text-muted-foreground mb-1">Location</p>
+                  <p>{selectedReport.siteName ?? "—"}</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="text-sm space-y-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Action Taken to Reduce Risk</p>
+                  <p className={selectedReport.actionTaken ? "" : "italic text-muted-foreground"}>
+                    {selectedReport.actionTaken ?? "No action recorded"}
+                  </p>
+                </div>
+
+                {selectedReport.evidenceDocumentPath && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Evidence</p>
+                    <a
+                      href={`/api/objects/${selectedReport.evidenceDocumentPath}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-primary underline-offset-4 hover:underline"
+                    >
+                      <Paperclip className="h-3.5 w-3.5" />
+                      {selectedReport.evidenceDocumentName ?? "View attachment"}
+                    </a>
                   </div>
                 )}
               </div>
-            </>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-semibold">Leadership Notes</p>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">Admin / Ed. Leader</Badge>
+                </div>
+
+                {editingLeadership ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={leadershipNotes}
+                      onChange={(e) => setLeadershipNotes(e.target.value)}
+                      placeholder="Add leadership review notes, follow-up actions, or risk assessment…"
+                      rows={4}
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleSaveLeadershipNotes} disabled={updateMutation.isPending}>Save Notes</Button>
+                      <Button size="sm" variant="outline" onClick={() => { setEditingLeadership(false); setLeadershipNotes(selectedReport.leadershipNotes ?? ""); }}>Cancel</Button>
+                    </div>
+                  </div>
+                ) : selectedReport.leadershipNotes ? (
+                  <div className="space-y-2">
+                    <p className="text-sm whitespace-pre-wrap">{selectedReport.leadershipNotes}</p>
+                    <Button size="sm" variant="outline" onClick={() => setEditingLeadership(true)}>Edit Notes</Button>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-md border border-dashed text-sm text-muted-foreground space-y-2">
+                    <p className="italic">No leadership notes added yet.</p>
+                    <Button size="sm" variant="outline" onClick={() => setEditingLeadership(true)}>Add Notes</Button>
+                  </div>
+                )}
+              </div>
+
+              {selectedReport.status === "open" && (
+                <>
+                  <Separator />
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={handleResolve}
+                    disabled={updateMutation.isPending}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Mark as Resolved
+                  </Button>
+                </>
+              )}
+            </div>
           )}
         </SheetContent>
       </Sheet>

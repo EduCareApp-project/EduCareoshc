@@ -5,12 +5,14 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
-import type { ConditionReportInputSeverity } from "./conditionReportInputSeverity";
 
 export interface ConditionReportInput {
-  title: string;
+  reportedDate: Date;
+  staffId: number;
+  siteId?: number;
   description: string;
-  location: string;
-  severity: ConditionReportInputSeverity;
-  actionRequired?: string;
+  immediateActionRequired: boolean;
+  actionTaken?: string;
+  evidenceDocumentPath?: string;
+  evidenceDocumentName?: string;
 }

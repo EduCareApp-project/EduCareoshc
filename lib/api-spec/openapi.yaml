@@ -2384,51 +2384,60 @@ components:
 
     ConditionReport:
       type: object
-      required: [id, title, description, location, severity, status, reportedAt, createdAt]
+      required: [id, reportedDate, staffId, description, immediateActionRequired, status, createdAt]
       properties:
         id:
           type: integer
-        title:
+        reportedDate:
           type: string
+          format: date
+        staffId:
+          type: integer
+        staffName:
+          type: ["string", "null"]
+        siteId:
+          type: ["integer", "null"]
+        siteName:
+          type: ["string", "null"]
         description:
           type: string
-        location:
-          type: string
-        severity:
-          type: string
-          enum: [low, medium, high, critical]
+        immediateActionRequired:
+          type: boolean
+        actionTaken:
+          type: ["string", "null"]
+        evidenceDocumentPath:
+          type: ["string", "null"]
+        evidenceDocumentName:
+          type: ["string", "null"]
+        leadershipNotes:
+          type: ["string", "null"]
         status:
           type: string
-          enum: [open, in_progress, resolved]
-        reportedAt:
-          type: string
-          format: date-time
-        actionRequired:
-          type: ["string", "null"]
-        resolvedAt:
-          type: ["string", "null"]
-          format: date-time
-        resolutionNotes:
-          type: ["string", "null"]
+          enum: [open, resolved]
         createdAt:
           type: string
           format: date-time
 
     ConditionReportInput:
       type: object
-      required: [title, description, location, severity]
+      required: [reportedDate, staffId, description, immediateActionRequired]
       properties:
-        title:
+        reportedDate:
           type: string
+          format: date
+        staffId:
+          type: integer
+        siteId:
+          type: integer
         description:
           type: string
-        location:
+        immediateActionRequired:
+          type: boolean
+        actionTaken:
           type: string
-        severity:
+        evidenceDocumentPath:
           type: string
-          enum: [low, medium, high, critical]
-          default: low
-        actionRequired:
+        evidenceDocumentName:
           type: string
 
     ConditionReportUpdate:
@@ -2436,14 +2445,9 @@ components:
       properties:
         status:
           type: string
-          enum: [open, in_progress, resolved]
-        actionRequired:
+          enum: [open, resolved]
+        leadershipNotes:
           type: string
-        resolutionNotes:
-          type: string
-        resolvedAt:
-          type: string
-          format: date-time
 
     Evacuation:
       type: object

@@ -559,58 +559,47 @@ export interface IncidentUpdate {
   deptNotifiedAt?: string;
 }
 
-export type ConditionReportSeverity =
-  (typeof ConditionReportSeverity)[keyof typeof ConditionReportSeverity];
-
-export const ConditionReportSeverity = {
-  low: "low",
-  medium: "medium",
-  high: "high",
-  critical: "critical",
-} as const;
-
 export type ConditionReportStatus =
   (typeof ConditionReportStatus)[keyof typeof ConditionReportStatus];
 
 export const ConditionReportStatus = {
   open: "open",
-  in_progress: "in_progress",
   resolved: "resolved",
 } as const;
 
 export interface ConditionReport {
   id: number;
-  title: string;
+  reportedDate: string;
+  staffId: number;
+  /** @nullable */
+  staffName?: string | null;
+  /** @nullable */
+  siteId?: number | null;
+  /** @nullable */
+  siteName?: string | null;
   description: string;
-  location: string;
-  severity: ConditionReportSeverity;
+  immediateActionRequired: boolean;
+  /** @nullable */
+  actionTaken?: string | null;
+  /** @nullable */
+  evidenceDocumentPath?: string | null;
+  /** @nullable */
+  evidenceDocumentName?: string | null;
+  /** @nullable */
+  leadershipNotes?: string | null;
   status: ConditionReportStatus;
-  reportedAt: string;
-  /** @nullable */
-  actionRequired?: string | null;
-  /** @nullable */
-  resolvedAt?: string | null;
-  /** @nullable */
-  resolutionNotes?: string | null;
   createdAt: string;
 }
 
-export type ConditionReportInputSeverity =
-  (typeof ConditionReportInputSeverity)[keyof typeof ConditionReportInputSeverity];
-
-export const ConditionReportInputSeverity = {
-  low: "low",
-  medium: "medium",
-  high: "high",
-  critical: "critical",
-} as const;
-
 export interface ConditionReportInput {
-  title: string;
+  reportedDate: string;
+  staffId: number;
+  siteId?: number;
   description: string;
-  location: string;
-  severity: ConditionReportInputSeverity;
-  actionRequired?: string;
+  immediateActionRequired: boolean;
+  actionTaken?: string;
+  evidenceDocumentPath?: string;
+  evidenceDocumentName?: string;
 }
 
 export type ConditionReportUpdateStatus =
@@ -618,15 +607,12 @@ export type ConditionReportUpdateStatus =
 
 export const ConditionReportUpdateStatus = {
   open: "open",
-  in_progress: "in_progress",
   resolved: "resolved",
 } as const;
 
 export interface ConditionReportUpdate {
   status?: ConditionReportUpdateStatus;
-  actionRequired?: string;
-  resolutionNotes?: string;
-  resolvedAt?: string;
+  leadershipNotes?: string;
 }
 
 export type EvacuationDrillType =

@@ -27,8 +27,6 @@ export * from "./childUpdateAgeGroup";
 export * from "./childUpdateStatus";
 export * from "./conditionReport";
 export * from "./conditionReportInput";
-export * from "./conditionReportInputSeverity";
-export * from "./conditionReportSeverity";
 export * from "./conditionReportStatus";
 export * from "./conditionReportUpdate";
 export * from "./conditionReportUpdateStatus";

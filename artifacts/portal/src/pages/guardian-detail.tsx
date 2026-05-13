@@ -1,7 +1,6 @@
-import { useGetGuardian, useUpdateGuardian, useResetGuardianPassword } from "@workspace/api-client-react";
+import { useGetGuardian, useResetGuardianPassword } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,13 +36,10 @@ export default function GuardianDetail() {
   const email = decodeURIComponent(encodedEmail ?? "");
 
   const { data: guardian, isLoading } = useGetGuardian(encodedEmail ?? "");
-  const updateMutation = useUpdateGuardian();
   const resetMutation = useResetGuardianPassword();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const [editingUsername, setEditingUsername] = useState(false);
-  const [usernameInput, setUsernameInput] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [newPassword, setNewPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -67,27 +63,6 @@ export default function GuardianDetail() {
         </Link>
       </div>
     );
-  }
-
-  function startEditUsername() {
-    setUsernameInput(guardian?.username ?? "");
-    setEditingUsername(true);
-  }
-
-  function cancelEditUsername() {
-    setEditingUsername(false);
-    setUsernameInput("");
-  }
-
-  async function saveUsername() {
-    if (!usernameInput.trim()) return;
-    await updateMutation.mutateAsync({
-      email: encodedEmail ?? "",
-      data: { username: usernameInput.trim() },
-    });
-    await queryClient.invalidateQueries();
-    setEditingUsername(false);
-    toast({ title: "Username saved" });
   }
 
   async function handleResetPassword() {
@@ -182,35 +157,10 @@ export default function GuardianDetail() {
         {/* Username */}
         <div className="space-y-2">
           <Label>Username</Label>
-          {editingUsername ? (
-            <div className="flex gap-2">
-              <Input
-                value={usernameInput}
-                onChange={(e) => setUsernameInput(e.target.value)}
-                placeholder="Enter username"
-                onKeyDown={(e) => { if (e.key === "Enter") saveUsername(); if (e.key === "Escape") cancelEditUsername(); }}
-                autoFocus
-                className="max-w-xs"
-              />
-              <Button size="sm" onClick={saveUsername} disabled={!usernameInput.trim() || updateMutation.isPending}>
-                Save
-              </Button>
-              <Button size="sm" variant="outline" onClick={cancelEditUsername}>
-                Cancel
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              {guardian.username ? (
-                <p className="text-sm font-mono bg-muted px-3 py-1.5 rounded-md border">{guardian.username}</p>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">Not set</p>
-              )}
-              <Button size="sm" variant="outline" onClick={startEditUsername}>
-                {guardian.username ? "Change" : "Set username"}
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-mono bg-muted px-3 py-1.5 rounded-md border">{guardian.guardianEmail}</p>
+            <span className="text-xs text-muted-foreground">auto-set from email</span>
+          </div>
         </div>
 
         {/* Password */}

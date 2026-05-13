@@ -77,31 +77,33 @@ export default function Jottings() {
         <CardHeader><CardTitle className="text-base">Quick Capture</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-3">
-            {sites && sites.length > 0 && (
-              <Select value={captureSite} onValueChange={handleCaptureSiteChange}>
-                <SelectTrigger className="w-full sm:w-64">
-                  <SelectValue placeholder="All sites" />
+            <div className="flex flex-wrap gap-3">
+              {sites && sites.length > 0 && (
+                <Select value={captureSite} onValueChange={handleCaptureSiteChange}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="All sites" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All sites</SelectItem>
+                    {sites.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              <Select value={childId} onValueChange={setChildId}>
+                <SelectTrigger className="w-56">
+                  <SelectValue placeholder="Link to a child (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All sites</SelectItem>
-                  {sites.map((s) => (
-                    <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                  <SelectItem value="none">No child linked</SelectItem>
+                  {captureChildren.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>{c.firstName} {c.lastName}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            )}
-
-            <Select value={childId} onValueChange={setChildId}>
-              <SelectTrigger className="w-full sm:w-64">
-                <SelectValue placeholder="Link to a child (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No child linked</SelectItem>
-                {captureChildren.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>{c.firstName} {c.lastName}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            </div>
 
             <Textarea
               placeholder="Write a jotting..."

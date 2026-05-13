@@ -34,6 +34,11 @@ import { useToast } from "@/hooks/use-toast";
 
 const ROLE_LABELS: Record<string, string> = { admin: "Admin", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
 
+function storageUrl(objectPath: string): string {
+  const id = objectPath.replace(/^\/objects\//, "");
+  return `/api/storage/objects/${id}`;
+}
+
 const STATUS_OPTIONS = [
   { value: "current", label: "Current" },
   { value: "expired", label: "Expired" },
@@ -322,7 +327,7 @@ export default function StaffProfile() {
         <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center font-bold text-xl text-primary overflow-hidden">
           {staff.profilePicturePath ? (
             <img
-              src={`/api/object-storage/file?path=${encodeURIComponent(staff.profilePicturePath)}`}
+              src={storageUrl(staff.profilePicturePath)}
               alt="Profile"
               className="w-full h-full object-cover"
             />
@@ -378,7 +383,7 @@ export default function StaffProfile() {
                   <div className="relative group w-28 h-28 rounded-xl overflow-hidden bg-primary/10 flex items-center justify-center">
                     {staff.profilePicturePath ? (
                       <img
-                        src={`/api/object-storage/file?path=${encodeURIComponent(staff.profilePicturePath)}`}
+                        src={storageUrl(staff.profilePicturePath)}
                         alt="Profile"
                         className="w-full h-full object-cover"
                       />
@@ -546,7 +551,7 @@ export default function StaffProfile() {
                         )}
                         {q.documentPath && (
                           <a
-                            href={`/api/storage/object/${encodeURIComponent(q.documentPath)}`}
+                            href={storageUrl(q.documentPath)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-1 text-primary hover:underline"

@@ -141,7 +141,8 @@ export interface ChildUpdate {
   dislikes?: string;
   temperament?: string;
   background?: string;
-  siteId?: number;
+  /** @nullable */
+  siteId?: number | null;
 }
 
 export type StaffRole = (typeof StaffRole)[keyof typeof StaffRole];

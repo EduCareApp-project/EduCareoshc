@@ -105,7 +105,7 @@ export const UpdateChildBody = zod.object({
   dislikes: zod.string().optional(),
   temperament: zod.string().optional(),
   background: zod.string().optional(),
-  siteId: zod.number().optional(),
+  siteId: zod.number().nullish(),
 });
 
 export const UpdateChildResponse = zod.object({

@@ -1428,7 +1428,7 @@ components:
         background:
           type: string
         siteId:
-          type: integer
+          type: ["integer", "null"]
 
     Staff:
       type: object

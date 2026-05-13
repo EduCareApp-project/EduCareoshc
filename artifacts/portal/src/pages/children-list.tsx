@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
@@ -23,11 +24,18 @@ export default function ChildrenList() {
   const { data: children, isLoading } = useListChildren();
   const { data: sites } = useListSites();
   const [search, setSearch] = useState("");
+  const [siteFilter, setSiteFilter] = useState("all");
 
-  const filteredChildren = children?.filter(c => 
-    c.firstName.toLowerCase().includes(search.toLowerCase()) || 
-    c.lastName.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredChildren = children?.filter(c => {
+    const matchesSearch = c.firstName.toLowerCase().includes(search.toLowerCase()) ||
+      c.lastName.toLowerCase().includes(search.toLowerCase());
+    const matchesSite = siteFilter === "all"
+      ? true
+      : siteFilter === "none"
+        ? c.siteId == null
+        : c.siteId === parseInt(siteFilter);
+    return matchesSearch && matchesSite;
+  });
 
   return (
     <div className="space-y-6">
@@ -43,14 +51,30 @@ export default function ChildrenList() {
         </Link>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input 
-          placeholder="Search by name..." 
-          className="pl-9 max-w-md bg-card"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="flex flex-wrap gap-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name..."
+            className="pl-9 w-64 bg-card"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        {sites && sites.length > 0 && (
+          <Select value={siteFilter} onValueChange={setSiteFilter}>
+            <SelectTrigger className="w-48 bg-card">
+              <SelectValue placeholder="All sites" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All sites</SelectItem>
+              <SelectItem value="none">No site assigned</SelectItem>
+              {sites.map((s) => (
+                <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {isLoading ? (

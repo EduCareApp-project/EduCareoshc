@@ -297,11 +297,16 @@ export default function StaffProfile() {
                         {q.referenceNumber && (
                           <span>Ref: <span className="font-mono text-foreground">{q.referenceNumber}</span></span>
                         )}
-                        {q.expiryDate && (
-                          <span>Expires: <span className={`font-medium ${new Date(q.expiryDate + "T00:00:00") < new Date() ? "text-red-600" : "text-foreground"}`}>
-                            {format(new Date(q.expiryDate + "T00:00:00"), "d MMM yyyy")}
-                          </span></span>
-                        )}
+                        {q.expiryDate && (() => {
+                          const d = new Date(q.expiryDate);
+                          if (isNaN(d.getTime())) return null;
+                          const isExpired = d < new Date();
+                          return (
+                            <span>Expires: <span className={`font-medium ${isExpired ? "text-red-600" : "text-foreground"}`}>
+                              {format(d, "d MMM yyyy")}
+                            </span></span>
+                          );
+                        })()}
                         {q.documentPath && (
                           <a
                             href={`/api/storage/object/${encodeURIComponent(q.documentPath)}`}

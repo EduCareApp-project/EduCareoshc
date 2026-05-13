@@ -86,7 +86,7 @@ function NavLinks({ location }: { location: string }) {
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 py-4 flex items-center space-x-2 shrink-0 border-b">
-        <BookMarked className="h-6 w-6 text-primary" />
+        <img src="/educare-logo.png" alt="EduCare" className="h-7 w-7 object-contain" />
         <span className="text-xl font-bold text-foreground">EduCare</span>
       </div>
       <ScrollArea className="flex-1">
@@ -141,7 +141,10 @@ export function Layout({ children }: { children: ReactNode }) {
             </SheetContent>
           </Sheet>
           <div className="flex-1">
+            <div className="flex items-center space-x-2">
+            <img src="/educare-logo.png" alt="EduCare" className="h-6 w-6 object-contain" />
             <span className="font-bold text-lg">EduCare</span>
+          </div>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 lg:p-8">

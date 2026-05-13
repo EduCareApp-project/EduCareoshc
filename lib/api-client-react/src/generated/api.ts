@@ -3329,6 +3329,84 @@ export const useDeleteJotting = <
   return useMutation(getDeleteJottingMutationOptions(options));
 };
 
+export const getArchiveJottingUrl = (id: number) => {
+  return `/api/jottings/${id}/archive`;
+};
+
+export const archiveJotting = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Jotting> => {
+  return customFetch<Jotting>(getArchiveJottingUrl(id), {
+    ...options,
+    method: "PATCH",
+  });
+};
+
+export const getArchiveJottingMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof archiveJotting>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof archiveJotting>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["archiveJotting"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof archiveJotting>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return archiveJotting(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ArchiveJottingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof archiveJotting>>
+>;
+
+export type ArchiveJottingMutationError = ErrorType<unknown>;
+
+export const useArchiveJotting = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof archiveJotting>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof archiveJotting>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getArchiveJottingMutationOptions(options));
+};
+
 export const getListIncidentsUrl = () => {
   return `/api/incidents`;
 };

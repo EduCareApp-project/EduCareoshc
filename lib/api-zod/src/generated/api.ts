@@ -639,6 +639,7 @@ export const ListJottingsResponseItem = zod.object({
   staffId: zod.number().nullish(),
   staffName: zod.string().nullish(),
   createdAt: zod.coerce.date(),
+  archivedAt: zod.coerce.date().nullish(),
 });
 export const ListJottingsResponse = zod.array(ListJottingsResponseItem);
 
@@ -650,6 +651,21 @@ export const CreateJottingBody = zod.object({
 
 export const DeleteJottingParams = zod.object({
   id: zod.coerce.number(),
+});
+
+export const ArchiveJottingParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ArchiveJottingResponse = zod.object({
+  id: zod.number(),
+  content: zod.string(),
+  childId: zod.number().nullish(),
+  childName: zod.string().nullish(),
+  staffId: zod.number().nullish(),
+  staffName: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  archivedAt: zod.coerce.date().nullish(),
 });
 
 export const ListIncidentsResponseItem = zod.object({

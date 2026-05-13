@@ -8,6 +8,7 @@ export const jottingsTable = pgTable("jottings", {
   childId: integer("child_id"),
   staffId: integer("staff_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
 });
 
 export const insertJottingSchema = createInsertSchema(jottingsTable).omit({ id: true, createdAt: true });

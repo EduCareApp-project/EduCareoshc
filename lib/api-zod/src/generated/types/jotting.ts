@@ -18,4 +18,6 @@ export interface Jotting {
   /** @nullable */
   staffName?: string | null;
   createdAt: Date;
+  /** @nullable */
+  archivedAt?: Date | null;
 }

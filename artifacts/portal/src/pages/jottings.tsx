@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useListJottings, useCreateJotting, useDeleteJotting, useListChildren, useListSites } from "@workspace/api-client-react";
+import { useListJottings, useCreateJotting, useDeleteJotting, useArchiveJotting, useListChildren, useListSites } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, StickyNote } from "lucide-react";
+import { Trash2, StickyNote, CheckCheck } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,6 +18,7 @@ export default function Jottings() {
   const { data: sites } = useListSites();
   const createMutation = useCreateJotting();
   const deleteMutation = useDeleteJotting();
+  const archiveMutation = useArchiveJotting();
 
   const [content, setContent] = useState("");
   const [childId, setChildId] = useState<string>("none");
@@ -61,6 +62,13 @@ export default function Jottings() {
   function handleDelete(id: number) {
     deleteMutation.mutate({ id }, {
       onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/jottings"] }),
+    });
+  }
+
+  function handleArchive(id: number) {
+    archiveMutation.mutate({ id }, {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/jottings"] }),
+      onError: () => toast({ title: "Failed to archive jotting", variant: "destructive" }),
     });
   }
 
@@ -157,9 +165,21 @@ export default function Jottings() {
                   {j.childName && <><span>•</span><span className="font-medium text-foreground/70">{j.childName}</span></>}
                 </div>
               </div>
-              <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(j.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs gap-1.5 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800"
+                  onClick={() => handleArchive(j.id)}
+                  disabled={archiveMutation.isPending}
+                >
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  Actioned
+                </Button>
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(j.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}

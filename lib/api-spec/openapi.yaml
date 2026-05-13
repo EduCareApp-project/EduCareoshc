@@ -741,6 +741,24 @@ paths:
         "204":
           description: Deleted
 
+  /jottings/{id}/archive:
+    patch:
+      operationId: archiveJotting
+      tags: [jottings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Archived
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Jotting"
+
   /incidents:
     get:
       operationId: listIncidents
@@ -2258,6 +2276,9 @@ components:
           type: ["string", "null"]
         createdAt:
           type: string
+          format: date-time
+        archivedAt:
+          type: ["string", "null"]
           format: date-time
 
     JottingInput:

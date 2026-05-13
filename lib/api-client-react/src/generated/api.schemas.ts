@@ -472,6 +472,8 @@ export interface Jotting {
   /** @nullable */
   staffName?: string | null;
   createdAt: string;
+  /** @nullable */
+  archivedAt?: string | null;
 }
 
 export interface JottingInput {

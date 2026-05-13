@@ -795,12 +795,15 @@ export default function StaffProfile() {
             </div>
             <div className="space-y-1.5">
               <Label>Site / Location</Label>
-              <Select value={profileEditForm.siteId} onValueChange={(v) => setProfileEditForm((f) => ({ ...f, siteId: v }))}>
+              <Select
+                value={profileEditForm.siteId || "none"}
+                onValueChange={(v) => setProfileEditForm((f) => ({ ...f, siteId: v === "none" ? "" : v }))}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="No site assigned" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No site assigned</SelectItem>
+                  <SelectItem value="none">No site assigned</SelectItem>
                   {(sites ?? []).map((site) => (
                     <SelectItem key={site.id} value={String(site.id)}>{site.name}</SelectItem>
                   ))}

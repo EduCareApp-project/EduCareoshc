@@ -116,6 +116,7 @@ export default function StaffProfile() {
   const [notesText, setNotesText] = useState<string>("");
   const [notesEditing, setNotesEditing] = useState(false);
   const [notesSaving, setNotesSaving] = useState(false);
+  const [deletingNoteIndex, setDeletingNoteIndex] = useState<number | null>(null);
 
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [profileEditForm, setProfileEditForm] = useState({ firstName: "", lastName: "", email: "", phone: "", role: "", status: "", qualifications: "", wwccNumber: "", siteId: "" });
@@ -188,6 +189,21 @@ export default function StaffProfile() {
   function startAddNote() {
     setNotesText("");
     setNotesEditing(true);
+  }
+
+  async function deleteNote(index: number) {
+    const rawEntries = (staff?.employmentNotes ?? "").split("\n\n---\n\n");
+    rawEntries.splice(index, 1);
+    const combined = rawEntries.join("\n\n---\n\n") || null;
+    setDeletingNoteIndex(index);
+    try {
+      await updateStaffMutation.mutateAsync({ id: staffId, data: { employmentNotes: combined ?? "" } });
+      await queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}`] });
+      setDeletingNoteIndex(null);
+    } catch {
+      toast({ title: "Failed to delete note", variant: "destructive" });
+      setDeletingNoteIndex(null);
+    }
   }
 
   async function saveNotes() {
@@ -584,10 +600,44 @@ export default function StaffProfile() {
                 }
                 return entries.map((entry, i) => (
                   <div key={i} className="space-y-1">
-                    {entry.timestamp && (
-                      <p className="text-xs font-medium text-muted-foreground">{entry.timestamp}</p>
-                    )}
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{entry.body}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-1 flex-1">
+                        {entry.timestamp && (
+                          <p className="text-xs font-medium text-muted-foreground">{entry.timestamp}</p>
+                        )}
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{entry.body}</p>
+                      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                            disabled={deletingNoteIndex === i}
+                            title="Delete note (Admin only)"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete this note?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This note will be permanently removed and cannot be recovered.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive text-white hover:bg-destructive/90"
+                              onClick={() => deleteNote(i)}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                     {i < entries.length - 1 && <hr className="mt-3" />}
                   </div>
                 ));

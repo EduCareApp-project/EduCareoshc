@@ -696,53 +696,69 @@ export default function PlanningDetail() {
           </div>
 
           {/* Collaborate / Explore — view */}
-          <div className="bg-white border rounded-xl p-6 space-y-5">
-            <SectionHeader title="Collaborate / Explore Options" />
-            <ViewField label="Where did the theme come from?" value={form.collaborateExplore} />
-            <ViewField label="Identify Skills" value={form.identifySkills} />
-          </div>
+          {(form.collaborateExplore || form.identifySkills) && (
+            <div className="bg-white border rounded-xl p-6 space-y-5">
+              <SectionHeader title="Collaborate / Explore Options" />
+              {form.collaborateExplore && <ViewField label="Where did the theme come from?" value={form.collaborateExplore} />}
+              {form.identifySkills && <ViewField label="Identify Skills" value={form.identifySkills} />}
+            </div>
+          )}
 
           {/* Research Ideas — view */}
-          <div className="bg-white border rounded-xl p-6 space-y-3">
-            <SectionHeader title="Research Ideas" />
-            <ViewField label="" value={form.researchIdeas} />
-          </div>
+          {form.researchIdeas && (
+            <div className="bg-white border rounded-xl p-6 space-y-3">
+              <SectionHeader title="Research Ideas" />
+              <ViewField label="" value={form.researchIdeas} />
+            </div>
+          )}
 
           {/* Framework Links — view */}
-          <div className="bg-white border rounded-xl p-6 space-y-3">
-            <SectionHeader title="Framework Links" />
-            <ViewField label="" value={form.frameworkLinks} />
-          </div>
+          {form.frameworkLinks && (
+            <div className="bg-white border rounded-xl p-6 space-y-3">
+              <SectionHeader title="Framework Links" />
+              <ViewField label="" value={form.frameworkLinks} />
+            </div>
+          )}
 
           {/* Quality Areas — view */}
-          <div className="bg-white border rounded-xl p-6 space-y-3">
-            <SectionHeader title="Quality Areas" />
-            <ViewField label="" value={form.qualityAreas} />
-          </div>
+          {form.qualityAreas && (
+            <div className="bg-white border rounded-xl p-6 space-y-3">
+              <SectionHeader title="Quality Areas" />
+              <ViewField label="" value={form.qualityAreas} />
+            </div>
+          )}
 
           {/* Additional Resources — view */}
-          <div className="bg-white border rounded-xl p-6 space-y-3">
-            <SectionHeader title="Additional Resources" />
-            <ViewField label="" value={form.additionalResources} />
-          </div>
+          {form.additionalResources && (
+            <div className="bg-white border rounded-xl p-6 space-y-3">
+              <SectionHeader title="Additional Resources" />
+              <ViewField label="" value={form.additionalResources} />
+            </div>
+          )}
 
           {/* Assess and Review — view */}
-          <div className="bg-white border rounded-xl p-6 space-y-3">
-            <SectionHeader title="Assess and Review" />
-            <ViewField label="" value={form.assessAndReview} />
-          </div>
+          {form.assessAndReview && (
+            <div className="bg-white border rounded-xl p-6 space-y-3">
+              <SectionHeader title="Assess and Review" />
+              <ViewField label="" value={form.assessAndReview} />
+            </div>
+          )}
 
           {/* Learning — view */}
-          <div className="bg-white border rounded-xl p-6 space-y-3">
-            <SectionHeader title="Learning" />
-            <ViewField label="" value={form.learning} />
-          </div>
+          {form.learning && (
+            <div className="bg-white border rounded-xl p-6 space-y-3">
+              <SectionHeader title="Learning" />
+              <ViewField label="" value={form.learning} />
+            </div>
+          )}
 
           {/* Background Information — view */}
-          <div className="bg-white border rounded-xl p-6 space-y-3">
-            <SectionHeader title="Background Information" />
-            <ViewField label="" value={form.backgroundInformation} />
-          </div>
+          {form.backgroundInformation && (
+            <div className="bg-white border rounded-xl p-6 space-y-3">
+              <SectionHeader title="Background Information" />
+              <ViewField label="" value={form.backgroundInformation} />
+            </div>
+          )}
 
           {/* Documents — view */}
           {form.documents.length > 0 && (

@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Save, Trash2, Users, Upload, FileText, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Users, Upload, FileText, X, Loader2, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const STAGE_LABELS: Record<string, string> = {
@@ -283,6 +283,19 @@ export default function PlanningDetail() {
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
+  function handleDuplicate() {
+    const payload = buildPayload();
+    payload.title = `Copy of ${form.title}`;
+    createMutation.mutate({ data: payload as any }, {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries({ queryKey: ["/api/planning"] });
+        toast({ title: "Planning cycle duplicated" });
+        window.location.href = `/planning/${data.id}`;
+      },
+      onError: () => toast({ title: "Failed to duplicate", variant: "destructive" }),
+    });
+  }
+
   if (!isNew && loadingExp) {
     return (
       <div className="max-w-3xl mx-auto space-y-4">
@@ -306,6 +319,16 @@ export default function PlanningDetail() {
           <ArrowLeft className="h-4 w-4" />Back to Planning Cycle
         </button>
         <div className="flex items-center gap-2">
+          {!isNew && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDuplicate}
+              disabled={createMutation.isPending}
+            >
+              <Copy className="h-4 w-4 mr-1.5" />Duplicate
+            </Button>
+          )}
           {!isNew && (
             <AlertDialog>
               <AlertDialogTrigger asChild>

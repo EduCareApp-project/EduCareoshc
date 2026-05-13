@@ -1125,6 +1125,8 @@ export interface PlanningExperience {
   editedBy?: string | null;
   documentPaths?: string[];
   documentNames?: string[];
+  assessmentDocumentPaths?: string[];
+  assessmentDocumentNames?: string[];
   isTemplate: boolean;
   assessmentData?: AssessmentData | null;
   createdAt: string;
@@ -1164,6 +1166,8 @@ export interface PlanningExperienceInput {
   editedBy?: string;
   documentPaths?: string[];
   documentNames?: string[];
+  assessmentDocumentPaths?: string[];
+  assessmentDocumentNames?: string[];
   isTemplate?: boolean;
   assessmentData?: AssessmentData | null;
 }
@@ -1203,6 +1207,8 @@ export interface PlanningExperienceUpdate {
   editedBy?: string;
   documentPaths?: string[];
   documentNames?: string[];
+  assessmentDocumentPaths?: string[];
+  assessmentDocumentNames?: string[];
   isTemplate?: boolean;
   assessmentData?: AssessmentData | null;
 }

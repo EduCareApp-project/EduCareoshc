@@ -130,6 +130,7 @@ type FormState = {
   preparedBy: string;
   editedBy: string;
   documents: DocEntry[];
+  assessmentDocuments: DocEntry[];
   assessmentData: AssessmentData;
 };
 
@@ -151,6 +152,7 @@ const emptyForm = (): FormState => ({
   preparedBy: "none",
   editedBy: "none",
   documents: [],
+  assessmentDocuments: [],
   assessmentData: emptyAssessment(),
 });
 
@@ -197,6 +199,7 @@ export default function PlanningDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const assessmentFileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: experience, isLoading: loadingExp } = useGetPlanningExperience(
     id ?? 0,
@@ -222,6 +225,12 @@ export default function PlanningDetail() {
   const [showLinkForm, setShowLinkForm] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [linkName, setLinkName] = useState("");
+  const [showAssessmentLinkForm, setShowAssessmentLinkForm] = useState(false);
+  const [assessmentLinkUrl, setAssessmentLinkUrl] = useState("");
+  const [assessmentLinkName, setAssessmentLinkName] = useState("");
+  const { uploadFile: uploadAssessmentFile, isUploading: isAssessmentUploading } = useUpload({
+    onError: () => toast({ title: "File upload failed", variant: "destructive" }),
+  });
 
   const showAssessmentTab = form.stage === "assessment" || form.stage === "closed";
 
@@ -256,6 +265,11 @@ export default function PlanningDetail() {
         preparedBy: experience.preparedBy ?? "none",
         editedBy: experience.editedBy ?? "none",
         documents: docs,
+        assessmentDocuments: (experience.assessmentDocumentPaths ?? []).map((p, i) => ({
+          type: (p.startsWith("http://") || p.startsWith("https://") ? "link" : "file") as DocEntry["type"],
+          path: p,
+          name: (experience.assessmentDocumentNames ?? [])[i] ?? p,
+        })),
         assessmentData: mergeAssessment(experience.assessmentData),
       };
       setForm(loaded);
@@ -348,6 +362,30 @@ export default function PlanningDetail() {
     setForm((f) => ({ ...f, documents: f.documents.filter((_, i) => i !== index) }));
   }
 
+  async function handleAssessmentFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    for (const file of files) {
+      const response = await uploadAssessmentFile(file);
+      if (response) setForm((f) => ({ ...f, assessmentDocuments: [...f.assessmentDocuments, { type: "file" as const, path: response.objectPath, name: file.name }] }));
+    }
+    if (assessmentFileInputRef.current) assessmentFileInputRef.current.value = "";
+  }
+
+  function handleAddAssessmentLink() {
+    const trimmedUrl = assessmentLinkUrl.trim();
+    if (!trimmedUrl) return;
+    const url = trimmedUrl.startsWith("http") ? trimmedUrl : `https://${trimmedUrl}`;
+    const name = assessmentLinkName.trim() || url;
+    setForm((f) => ({ ...f, assessmentDocuments: [...f.assessmentDocuments, { type: "link" as const, path: url, name }] }));
+    setAssessmentLinkUrl("");
+    setAssessmentLinkName("");
+    setShowAssessmentLinkForm(false);
+  }
+
+  function removeAssessmentDocument(index: number) {
+    setForm((f) => ({ ...f, assessmentDocuments: f.assessmentDocuments.filter((_, i) => i !== index) }));
+  }
+
   function buildPayload() {
     const payload: Record<string, unknown> = {
       title: form.title,
@@ -357,6 +395,8 @@ export default function PlanningDetail() {
       ageGroups: experience?.ageGroups ?? [],
       documentPaths: form.documents.map((d) => d.path),
       documentNames: form.documents.map((d) => d.name),
+      assessmentDocumentPaths: form.assessmentDocuments.map((d) => d.path),
+      assessmentDocumentNames: form.assessmentDocuments.map((d) => d.name),
       isTemplate: isTemplateMode,
       assessmentData: form.assessmentData,
     };
@@ -456,7 +496,8 @@ export default function PlanningDetail() {
   const hasAssessmentContent =
     ad.mtop.some((m) => m.details || m.strengths || m.weaknesses) ||
     Object.values(ad.educatorReview).some(Boolean) ||
-    Object.values(ad.askTheChildren).some(Boolean);
+    Object.values(ad.askTheChildren).some(Boolean) ||
+    form.assessmentDocuments.length > 0;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-16">
@@ -548,9 +589,9 @@ export default function PlanningDetail() {
 
           <TabsContent value="assessment" className="space-y-6 mt-0 print:!block">
             {isEditing ? (
-              <AssessmentEditContent ad={ad} setMtop={setMtop} setEducatorReview={setEducatorReview} setAskChildren={setAskChildren} />
+              <AssessmentEditContent ad={ad} setMtop={setMtop} setEducatorReview={setEducatorReview} setAskChildren={setAskChildren} assessmentDocuments={form.assessmentDocuments} assessmentFileInputRef={assessmentFileInputRef} handleAssessmentFileSelect={handleAssessmentFileSelect} removeAssessmentDocument={removeAssessmentDocument} isAssessmentUploading={isAssessmentUploading} showAssessmentLinkForm={showAssessmentLinkForm} setShowAssessmentLinkForm={setShowAssessmentLinkForm} assessmentLinkUrl={assessmentLinkUrl} setAssessmentLinkUrl={setAssessmentLinkUrl} assessmentLinkName={assessmentLinkName} setAssessmentLinkName={setAssessmentLinkName} handleAddAssessmentLink={handleAddAssessmentLink} />
             ) : (
-              <AssessmentViewContent ad={ad} hasContent={hasAssessmentContent} />
+              <AssessmentViewContent ad={ad} hasContent={hasAssessmentContent} assessmentDocuments={form.assessmentDocuments} />
             )}
             {isEditing && (
               <div className="print:hidden flex justify-end gap-3">
@@ -882,11 +923,23 @@ function PlanningViewContent({ form, siteName, focusChildrenNames }: { form: For
 
 // ─── Assessment tab: edit ──────────────────────────────────────────────────────
 
-function AssessmentEditContent({ ad, setMtop, setEducatorReview, setAskChildren }: {
+function AssessmentEditContent({ ad, setMtop, setEducatorReview, setAskChildren, assessmentDocuments, assessmentFileInputRef, handleAssessmentFileSelect, removeAssessmentDocument, isAssessmentUploading, showAssessmentLinkForm, setShowAssessmentLinkForm, assessmentLinkUrl, setAssessmentLinkUrl, assessmentLinkName, setAssessmentLinkName, handleAddAssessmentLink }: {
   ad: AssessmentData;
   setMtop: (i: number, f: keyof MtopEntry, v: string) => void;
   setEducatorReview: (f: keyof AssessmentData["educatorReview"], v: string) => void;
   setAskChildren: (f: keyof AssessmentData["askTheChildren"], v: string) => void;
+  assessmentDocuments: DocEntry[];
+  assessmentFileInputRef: React.RefObject<HTMLInputElement | null>;
+  handleAssessmentFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  removeAssessmentDocument: (i: number) => void;
+  isAssessmentUploading: boolean;
+  showAssessmentLinkForm: boolean;
+  setShowAssessmentLinkForm: (v: boolean) => void;
+  assessmentLinkUrl: string;
+  setAssessmentLinkUrl: (v: string) => void;
+  assessmentLinkName: string;
+  setAssessmentLinkName: (v: string) => void;
+  handleAddAssessmentLink: () => void;
 }) {
   return (
     <>
@@ -983,13 +1036,68 @@ function AssessmentEditContent({ ad, setMtop, setEducatorReview, setAskChildren 
           rows={3}
         />
       </div>
+
+      {/* Documents & Links */}
+      <div className="bg-white border rounded-xl p-6 space-y-4">
+        <SectionHeader title="Documents & Links" />
+        {assessmentDocuments.length > 0 && (
+          <ul className="space-y-2">
+            {assessmentDocuments.map((doc, i) => (
+              <li key={i} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
+                {doc.type === "link"
+                  ? <Link className="h-4 w-4 text-muted-foreground shrink-0" />
+                  : <FileText className="h-4 w-4 text-muted-foreground shrink-0" />}
+                <a href={getDocHref(doc)} target="_blank" rel="noopener noreferrer" className="flex-1 text-sm font-medium hover:underline truncate">{doc.name}</a>
+                <button type="button" onClick={() => removeAssessmentDocument(i)} className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded" aria-label="Remove"><X className="h-4 w-4" /></button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {showAssessmentLinkForm && (
+          <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+            <p className="text-sm font-medium">Add web link</p>
+            <div className="space-y-2">
+              <Input
+                placeholder="URL (e.g. https://example.com)"
+                value={assessmentLinkUrl}
+                onChange={(e) => setAssessmentLinkUrl(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddAssessmentLink(); } }}
+                autoFocus
+              />
+              <Input
+                placeholder="Display name (optional — defaults to URL)"
+                value={assessmentLinkName}
+                onChange={(e) => setAssessmentLinkName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddAssessmentLink(); } }}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" size="sm" onClick={handleAddAssessmentLink} disabled={!assessmentLinkUrl.trim()}>
+                <Plus className="h-4 w-4 mr-1.5" />Add Link
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => { setShowAssessmentLinkForm(false); setAssessmentLinkUrl(""); setAssessmentLinkName(""); }}>Cancel</Button>
+            </div>
+          </div>
+        )}
+        <div className="flex gap-2 flex-wrap">
+          <input ref={assessmentFileInputRef} type="file" multiple className="hidden" onChange={handleAssessmentFileSelect} />
+          <Button type="button" variant="outline" onClick={() => assessmentFileInputRef.current?.click()} disabled={isAssessmentUploading}>
+            {isAssessmentUploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading…</> : <><Upload className="h-4 w-4 mr-2" />Upload File</>}
+          </Button>
+          {!showAssessmentLinkForm && (
+            <Button type="button" variant="outline" onClick={() => setShowAssessmentLinkForm(true)}>
+              <Link className="h-4 w-4 mr-2" />Add Link
+            </Button>
+          )}
+        </div>
+      </div>
     </>
   );
 }
 
 // ─── Assessment tab: view ──────────────────────────────────────────────────────
 
-function AssessmentViewContent({ ad, hasContent }: { ad: AssessmentData; hasContent: boolean }) {
+function AssessmentViewContent({ ad, hasContent, assessmentDocuments }: { ad: AssessmentData; hasContent: boolean; assessmentDocuments: DocEntry[] }) {
   if (!hasContent) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -1044,6 +1152,22 @@ function AssessmentViewContent({ ad, hasContent }: { ad: AssessmentData; hasCont
           {ad.askTheChildren.enjoyment && <ViewField label="Enjoyment" value={ad.askTheChildren.enjoyment} />}
           {ad.askTheChildren.learning && <ViewField label="Learning" value={ad.askTheChildren.learning} />}
           {ad.askTheChildren.improvements && <ViewField label="Ideas & Improvements" value={ad.askTheChildren.improvements} />}
+        </div>
+      )}
+
+      {assessmentDocuments.length > 0 && (
+        <div className="bg-white border rounded-xl p-6 space-y-3">
+          <SectionHeader title="Documents & Links" />
+          <ul className="space-y-2">
+            {assessmentDocuments.map((doc, i) => (
+              <li key={i} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
+                {doc.type === "link"
+                  ? <Link className="h-4 w-4 text-muted-foreground shrink-0" />
+                  : <FileText className="h-4 w-4 text-muted-foreground shrink-0" />}
+                <a href={getDocHref(doc)} target="_blank" rel="noopener noreferrer" className="flex-1 text-sm font-medium hover:underline truncate">{doc.name}</a>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </>

@@ -2934,6 +2934,14 @@ components:
           type: array
           items:
             type: string
+        assessmentDocumentPaths:
+          type: array
+          items:
+            type: string
+        assessmentDocumentNames:
+          type: array
+          items:
+            type: string
         isTemplate:
           type: boolean
           default: false
@@ -3008,6 +3016,14 @@ components:
           type: array
           items:
             type: string
+        assessmentDocumentPaths:
+          type: array
+          items:
+            type: string
+        assessmentDocumentNames:
+          type: array
+          items:
+            type: string
         isTemplate:
           type: boolean
           default: false
@@ -3074,6 +3090,14 @@ components:
           items:
             type: string
         documentNames:
+          type: array
+          items:
+            type: string
+        assessmentDocumentPaths:
+          type: array
+          items:
+            type: string
+        assessmentDocumentNames:
           type: array
           items:
             type: string

@@ -49,6 +49,8 @@ export interface PlanningExperience {
   editedBy?: string | null;
   documentPaths?: string[];
   documentNames?: string[];
+  assessmentDocumentPaths?: string[];
+  assessmentDocumentNames?: string[];
   isTemplate: boolean;
   assessmentData?: AssessmentData | null;
   createdAt: Date;

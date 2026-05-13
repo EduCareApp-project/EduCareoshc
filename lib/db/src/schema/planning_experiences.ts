@@ -28,6 +28,8 @@ export const planningExperiencesTable = pgTable("planning_experiences", {
   editedBy: text("edited_by"),
   documentPaths: text("document_paths").array().notNull().default([]),
   documentNames: text("document_names").array().notNull().default([]),
+  assessmentDocumentPaths: text("assessment_document_paths").array().notNull().default([]),
+  assessmentDocumentNames: text("assessment_document_names").array().notNull().default([]),
   isTemplate: boolean("is_template").notNull().default(false),
   assessmentData: jsonb("assessment_data"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

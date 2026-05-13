@@ -1268,6 +1268,8 @@ export const ListPlanningExperiencesResponseItem = zod.object({
   editedBy: zod.string().nullish(),
   documentPaths: zod.array(zod.string()).optional(),
   documentNames: zod.array(zod.string()).optional(),
+  assessmentDocumentPaths: zod.array(zod.string()).optional(),
+  assessmentDocumentNames: zod.array(zod.string()).optional(),
   isTemplate: zod
     .boolean()
     .default(listPlanningExperiencesResponseIsTemplateDefault),
@@ -1338,6 +1340,8 @@ export const CreatePlanningExperienceBody = zod.object({
   editedBy: zod.string().optional(),
   documentPaths: zod.array(zod.string()).optional(),
   documentNames: zod.array(zod.string()).optional(),
+  assessmentDocumentPaths: zod.array(zod.string()).optional(),
+  assessmentDocumentNames: zod.array(zod.string()).optional(),
   isTemplate: zod
     .boolean()
     .default(createPlanningExperienceBodyIsTemplateDefault),
@@ -1406,6 +1410,8 @@ export const GetPlanningExperienceResponse = zod.object({
   editedBy: zod.string().nullish(),
   documentPaths: zod.array(zod.string()).optional(),
   documentNames: zod.array(zod.string()).optional(),
+  assessmentDocumentPaths: zod.array(zod.string()).optional(),
+  assessmentDocumentNames: zod.array(zod.string()).optional(),
   isTemplate: zod
     .boolean()
     .default(getPlanningExperienceResponseIsTemplateDefault),
@@ -1472,6 +1478,8 @@ export const UpdatePlanningExperienceBody = zod.object({
   editedBy: zod.string().optional(),
   documentPaths: zod.array(zod.string()).optional(),
   documentNames: zod.array(zod.string()).optional(),
+  assessmentDocumentPaths: zod.array(zod.string()).optional(),
+  assessmentDocumentNames: zod.array(zod.string()).optional(),
   isTemplate: zod.boolean().optional(),
   assessmentData: zod
     .union([
@@ -1534,6 +1542,8 @@ export const UpdatePlanningExperienceResponse = zod.object({
   editedBy: zod.string().nullish(),
   documentPaths: zod.array(zod.string()).optional(),
   documentNames: zod.array(zod.string()).optional(),
+  assessmentDocumentPaths: zod.array(zod.string()).optional(),
+  assessmentDocumentNames: zod.array(zod.string()).optional(),
   isTemplate: zod
     .boolean()
     .default(updatePlanningExperienceResponseIsTemplateDefault),

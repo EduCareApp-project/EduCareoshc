@@ -20,6 +20,7 @@ import postsRouter from "./posts";
 import professionalDevelopmentRouter from "./professional-development";
 import planningRouter from "./planning";
 import reportsRouter from "./reports";
+import sitesRouter from "./sites";
 
 const router: IRouter = Router();
 
@@ -44,5 +45,6 @@ router.use(postsRouter);
 router.use(professionalDevelopmentRouter);
 router.use(planningRouter);
 router.use(reportsRouter);
+router.use(sitesRouter);
 
 export default router;

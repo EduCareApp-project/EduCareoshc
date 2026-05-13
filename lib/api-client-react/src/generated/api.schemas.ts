@@ -9,6 +9,24 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface Site {
+  id: number;
+  name: string;
+  /** @nullable */
+  address?: string | null;
+  createdAt: string;
+}
+
+export interface SiteInput {
+  name: string;
+  address?: string;
+}
+
+export interface SiteUpdate {
+  name?: string;
+  address?: string;
+}
+
 export type ChildAgeGroup = (typeof ChildAgeGroup)[keyof typeof ChildAgeGroup];
 
 export const ChildAgeGroup = {
@@ -47,6 +65,8 @@ export interface Child {
   temperament?: string | null;
   /** @nullable */
   background?: string | null;
+  /** @nullable */
+  siteId?: number | null;
   createdAt?: string;
 }
 
@@ -84,6 +104,7 @@ export interface ChildInput {
   dislikes?: string;
   temperament?: string;
   background?: string;
+  siteId?: number;
 }
 
 export type ChildUpdateAgeGroup =
@@ -120,6 +141,7 @@ export interface ChildUpdate {
   dislikes?: string;
   temperament?: string;
   background?: string;
+  siteId?: number;
 }
 
 export type StaffRole = (typeof StaffRole)[keyof typeof StaffRole];

@@ -29,5 +29,7 @@ export interface Child {
   temperament?: string | null;
   /** @nullable */
   background?: string | null;
+  /** @nullable */
+  siteId?: number | null;
   createdAt?: Date;
 }

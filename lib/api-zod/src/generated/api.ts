@@ -33,6 +33,7 @@ export const ListChildrenResponseItem = zod.object({
   dislikes: zod.string().nullish(),
   temperament: zod.string().nullish(),
   background: zod.string().nullish(),
+  siteId: zod.number().nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 export const ListChildrenResponse = zod.array(ListChildrenResponseItem);
@@ -56,6 +57,7 @@ export const CreateChildBody = zod.object({
   dislikes: zod.string().optional(),
   temperament: zod.string().optional(),
   background: zod.string().optional(),
+  siteId: zod.number().optional(),
 });
 
 export const GetChildParams = zod.object({
@@ -78,6 +80,7 @@ export const GetChildResponse = zod.object({
   dislikes: zod.string().nullish(),
   temperament: zod.string().nullish(),
   background: zod.string().nullish(),
+  siteId: zod.number().nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 
@@ -102,6 +105,7 @@ export const UpdateChildBody = zod.object({
   dislikes: zod.string().optional(),
   temperament: zod.string().optional(),
   background: zod.string().optional(),
+  siteId: zod.number().optional(),
 });
 
 export const UpdateChildResponse = zod.object({
@@ -120,6 +124,7 @@ export const UpdateChildResponse = zod.object({
   dislikes: zod.string().nullish(),
   temperament: zod.string().nullish(),
   background: zod.string().nullish(),
+  siteId: zod.number().nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 
@@ -1123,4 +1128,40 @@ export const GetStaffComplianceReportResponse = zod.object({
       pdHoursThisYear: zod.number(),
     }),
   ),
+});
+
+/**
+ * @summary List all sites
+ */
+export const ListSitesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  address: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListSitesResponse = zod.array(ListSitesResponseItem);
+
+export const CreateSiteBody = zod.object({
+  name: zod.string(),
+  address: zod.string().optional(),
+});
+
+export const UpdateSiteParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateSiteBody = zod.object({
+  name: zod.string().optional(),
+  address: zod.string().optional(),
+});
+
+export const UpdateSiteResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  address: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+export const DeleteSiteParams = zod.object({
+  id: zod.coerce.number(),
 });

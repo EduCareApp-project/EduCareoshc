@@ -21,7 +21,8 @@ import {
   HeartHandshake,
   FolderOpen,
   CheckSquare,
-  UserCheck
+  UserCheck,
+  Building2
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
@@ -72,6 +73,12 @@ const NAV_GROUPS = [
       { href: "/reports/learning", label: "Learning Stories", icon: BookMarked },
       { href: "/reports/service", label: "Service Compliance", icon: ShieldCheck },
       { href: "/reports/staff", label: "Staff Compliance", icon: UserCheck },
+    ]
+  },
+  {
+    label: "SETTINGS",
+    items: [
+      { href: "/sites", label: "Sites", icon: Building2 },
     ]
   }
 ];

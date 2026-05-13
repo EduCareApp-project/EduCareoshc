@@ -1,4 +1,4 @@
-import { useListChildren } from "@workspace/api-client-react";
+import { useListChildren, useListSites } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ function calcAge(dob: string) {
 
 export default function ChildrenList() {
   const { data: children, isLoading } = useListChildren();
+  const { data: sites } = useListSites();
   const [search, setSearch] = useState("");
 
   const filteredChildren = children?.filter(c => 
@@ -91,6 +92,12 @@ export default function ChildrenList() {
                       <span className="text-muted-foreground">Guardian</span>
                       <span className="font-medium truncate ml-4">{child.guardianName}</span>
                     </div>
+                    {child.siteId && sites && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Site</span>
+                        <span className="font-medium truncate ml-4">{sites.find(s => s.id === child.siteId)?.name ?? "—"}</span>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

@@ -1,4 +1,5 @@
-import { pgTable, serial, text, timestamp, date } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, date, integer } from "drizzle-orm/pg-core";
+import { sitesTable } from "./sites";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -18,6 +19,7 @@ export const childrenTable = pgTable("children", {
   dislikes: text("dislikes"),
   temperament: text("temperament"),
   background: text("background"),
+  siteId: integer("site_id").references(() => sitesTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

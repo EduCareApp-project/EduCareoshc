@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useCreateChild, getListChildrenQueryKey } from "@workspace/api-client-react";
+import { useCreateChild, useListSites, getListChildrenQueryKey } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ const formSchema = z.object({
   guardianEmail: z.string().email("Invalid email address"),
   guardianPhone: z.string().min(1, "Phone number is required"),
   medicalNotes: z.string().optional(),
+  siteId: z.number().optional(),
 });
 
 export default function EnrollChild() {
@@ -33,6 +34,7 @@ export default function EnrollChild() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const createChild = useCreateChild();
+  const { data: sites } = useListSites();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -180,6 +182,32 @@ export default function EnrollChild() {
                   </FormItem>
                 )}
               />
+              {sites && sites.length > 0 && (
+                <FormField
+                  control={form.control}
+                  name="siteId"
+                  render={({ field }) => (
+                    <FormItem className="sm:col-span-2">
+                      <FormLabel>Site</FormLabel>
+                      <Select
+                        onValueChange={(v) => field.onChange(v ? parseInt(v) : undefined)}
+                        value={field.value != null ? String(field.value) : ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Select site (optional)" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">No site</SelectItem>
+                          {sites.map((s) => (
+                            <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </CardContent>
           </Card>
 

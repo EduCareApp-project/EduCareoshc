@@ -34,6 +34,7 @@ import Checklists from "@/pages/checklists";
 import ReportsLearning from "@/pages/reports-learning";
 import ReportsService from "@/pages/reports-service";
 import ReportsStaff from "@/pages/reports-staff";
+import Sites from "@/pages/sites";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,6 +86,8 @@ function Router() {
         <Route path="/reports/learning" component={ReportsLearning} />
         <Route path="/reports/service" component={ReportsService} />
         <Route path="/reports/staff" component={ReportsStaff} />
+        
+        <Route path="/sites" component={Sites} />
         
         <Route component={NotFound} />
       </Switch>

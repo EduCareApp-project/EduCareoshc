@@ -23,4 +23,5 @@ export interface ChildInput {
   dislikes?: string;
   temperament?: string;
   background?: string;
+  siteId?: number;
 }

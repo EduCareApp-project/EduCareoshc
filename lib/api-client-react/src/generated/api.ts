@@ -65,6 +65,9 @@ import type {
   QipItemInput,
   QipItemUpdate,
   ServiceComplianceReport,
+  Site,
+  SiteInput,
+  SiteUpdate,
   Staff,
   StaffComplianceReport,
   StaffInput,
@@ -5474,3 +5477,307 @@ export function useGetStaffComplianceReport<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List all sites
+ */
+export const getListSitesUrl = () => {
+  return `/api/sites`;
+};
+
+export const listSites = async (options?: RequestInit): Promise<Site[]> => {
+  return customFetch<Site[]>(getListSitesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListSitesQueryKey = () => {
+  return [`/api/sites`] as const;
+};
+
+export const getListSitesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listSites>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof listSites>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListSitesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listSites>>> = ({
+    signal,
+  }) => listSites({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listSites>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListSitesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listSites>>
+>;
+export type ListSitesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all sites
+ */
+
+export function useListSites<
+  TData = Awaited<ReturnType<typeof listSites>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof listSites>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListSitesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateSiteUrl = () => {
+  return `/api/sites`;
+};
+
+export const createSite = async (
+  siteInput: SiteInput,
+  options?: RequestInit,
+): Promise<Site> => {
+  return customFetch<Site>(getCreateSiteUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(siteInput),
+  });
+};
+
+export const getCreateSiteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSite>>,
+    TError,
+    { data: BodyType<SiteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createSite>>,
+  TError,
+  { data: BodyType<SiteInput> },
+  TContext
+> => {
+  const mutationKey = ["createSite"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createSite>>,
+    { data: BodyType<SiteInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createSite(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateSiteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createSite>>
+>;
+export type CreateSiteMutationBody = BodyType<SiteInput>;
+export type CreateSiteMutationError = ErrorType<unknown>;
+
+export const useCreateSite = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSite>>,
+    TError,
+    { data: BodyType<SiteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createSite>>,
+  TError,
+  { data: BodyType<SiteInput> },
+  TContext
+> => {
+  return useMutation(getCreateSiteMutationOptions(options));
+};
+
+export const getUpdateSiteUrl = (id: number) => {
+  return `/api/sites/${id}`;
+};
+
+export const updateSite = async (
+  id: number,
+  siteUpdate: SiteUpdate,
+  options?: RequestInit,
+): Promise<Site> => {
+  return customFetch<Site>(getUpdateSiteUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(siteUpdate),
+  });
+};
+
+export const getUpdateSiteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateSite>>,
+    TError,
+    { id: number; data: BodyType<SiteUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateSite>>,
+  TError,
+  { id: number; data: BodyType<SiteUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateSite"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateSite>>,
+    { id: number; data: BodyType<SiteUpdate> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateSite(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateSiteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateSite>>
+>;
+export type UpdateSiteMutationBody = BodyType<SiteUpdate>;
+export type UpdateSiteMutationError = ErrorType<unknown>;
+
+export const useUpdateSite = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateSite>>,
+    TError,
+    { id: number; data: BodyType<SiteUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateSite>>,
+  TError,
+  { id: number; data: BodyType<SiteUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateSiteMutationOptions(options));
+};
+
+export const getDeleteSiteUrl = (id: number) => {
+  return `/api/sites/${id}`;
+};
+
+export const deleteSite = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteSiteUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteSiteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteSite>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteSite>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteSite"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteSite>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteSite(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteSiteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteSite>>
+>;
+
+export type DeleteSiteMutationError = ErrorType<unknown>;
+
+export const useDeleteSite = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteSite>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteSite>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteSiteMutationOptions(options));
+};

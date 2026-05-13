@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGetChild, useUpdateChild, useGetChildObservations } from "@workspace/api-client-react";
+import { useGetChild, useUpdateChild, useGetChildObservations, useListSites } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
-import { ArrowLeft, Edit, Plus, User, Phone, Mail, FileText, Calendar, Clock, Heart, ThumbsDown, Smile, BookOpen } from "lucide-react";
+import { ArrowLeft, Edit, Plus, User, Phone, Mail, FileText, Calendar, Clock, Heart, ThumbsDown, Smile, BookOpen, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const AGE_GROUP_LABELS: Record<string, string> = { infant: "Infant", toddler: "Toddler", preschool: "Preschool", school_age: "School Age" };
@@ -37,6 +37,7 @@ export default function ChildProfile() {
 
   const { data: child, isLoading } = useGetChild(id, { query: { enabled: !!id } });
   const { data: observations, isLoading: obsLoading } = useGetChildObservations(id, { query: { enabled: !!id } });
+  const { data: sites } = useListSites();
   const updateMutation = useUpdateChild();
 
   const [editOpen, setEditOpen] = useState(false);
@@ -44,6 +45,7 @@ export default function ChildProfile() {
     firstName: "", lastName: "", dateOfBirth: "", enrollmentDate: "",
     ageGroup: "", status: "", guardianName: "", guardianEmail: "", guardianPhone: "",
     medicalNotes: "", likes: "", dislikes: "", temperament: "", background: "",
+    siteId: "" as string,
   });
 
   function openEdit() {
@@ -63,6 +65,7 @@ export default function ChildProfile() {
       dislikes: child.dislikes ?? "",
       temperament: child.temperament ?? "",
       background: child.background ?? "",
+      siteId: child.siteId != null ? String(child.siteId) : "",
     });
     setEditOpen(true);
   }
@@ -75,6 +78,7 @@ export default function ChildProfile() {
     if (!data.dislikes) delete data.dislikes;
     if (!data.temperament) delete data.temperament;
     if (!data.background) delete data.background;
+    data.siteId = form.siteId ? parseInt(form.siteId) : null;
     updateMutation.mutate({ id, data: data as any }, {
       onSuccess: () => {
         setEditOpen(false);
@@ -94,6 +98,7 @@ export default function ChildProfile() {
   }
 
   const hasProfileInfo = child.likes || child.dislikes || child.temperament || child.background;
+  const assignedSite = sites?.find((s) => s.id === child.siteId);
 
   return (
     <div className="space-y-6">
@@ -124,6 +129,15 @@ export default function ChildProfile() {
           <Card>
             <CardHeader><CardTitle className="text-base">Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
+              {assignedSite && (
+                <>
+                  <div className="space-y-1">
+                    <div className="text-sm text-muted-foreground flex items-center gap-2"><Building2 className="h-4 w-4" />Site</div>
+                    <p className="font-medium">{assignedSite.name}</p>
+                  </div>
+                  <Separator />
+                </>
+              )}
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4" />Date of Birth</div>
                 <p className="font-medium">{safeDate(child.dateOfBirth, "MMMM d, yyyy")}</p>
@@ -264,6 +278,15 @@ export default function ChildProfile() {
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
                       <SelectItem value="waitlist">Waitlist</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1"><Label>Site</Label>
+                  <Select value={form.siteId} onValueChange={(v) => setForm({ ...form, siteId: v })}>
+                    <SelectTrigger><SelectValue placeholder="No site assigned" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No site</SelectItem>
+                      {sites?.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

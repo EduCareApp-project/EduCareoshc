@@ -584,9 +584,9 @@ export default function StaffProfile() {
                 }
                 return entries.map((entry, i) => (
                   <div key={i} className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      {entry.timestamp ?? "Date not recorded"}
-                    </p>
+                    {entry.timestamp && (
+                      <p className="text-xs font-medium text-muted-foreground">{entry.timestamp}</p>
+                    )}
                     <p className="text-sm whitespace-pre-wrap leading-relaxed">{entry.body}</p>
                     {i < entries.length - 1 && <hr className="mt-3" />}
                   </div>

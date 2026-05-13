@@ -1097,6 +1097,8 @@ export interface PlanningExperience {
   preparedBy?: string | null;
   /** @nullable */
   editedBy?: string | null;
+  documentPaths?: string[];
+  documentNames?: string[];
   createdAt: string;
 }
 
@@ -1132,6 +1134,8 @@ export interface PlanningExperienceInput {
   backgroundInformation?: string;
   preparedBy?: string;
   editedBy?: string;
+  documentPaths?: string[];
+  documentNames?: string[];
 }
 
 export type PlanningExperienceUpdateStage =
@@ -1167,6 +1171,8 @@ export interface PlanningExperienceUpdate {
   backgroundInformation?: string;
   preparedBy?: string;
   editedBy?: string;
+  documentPaths?: string[];
+  documentNames?: string[];
 }
 
 export type LearningStoriesReportByChildItem = {

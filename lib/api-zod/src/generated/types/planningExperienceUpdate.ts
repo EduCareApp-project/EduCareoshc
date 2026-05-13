@@ -30,4 +30,6 @@ export interface PlanningExperienceUpdate {
   backgroundInformation?: string;
   preparedBy?: string;
   editedBy?: string;
+  documentPaths?: string[];
+  documentNames?: string[];
 }

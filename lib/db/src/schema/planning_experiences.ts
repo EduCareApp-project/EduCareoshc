@@ -26,6 +26,8 @@ export const planningExperiencesTable = pgTable("planning_experiences", {
   backgroundInformation: text("background_information"),
   preparedBy: text("prepared_by"),
   editedBy: text("edited_by"),
+  documentPaths: text("document_paths").array().notNull().default([]),
+  documentNames: text("document_names").array().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

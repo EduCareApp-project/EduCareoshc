@@ -1264,6 +1264,8 @@ export const ListPlanningExperiencesResponseItem = zod.object({
   backgroundInformation: zod.string().nullish(),
   preparedBy: zod.string().nullish(),
   editedBy: zod.string().nullish(),
+  documentPaths: zod.array(zod.string()).optional(),
+  documentNames: zod.array(zod.string()).optional(),
   createdAt: zod.coerce.date(),
 });
 export const ListPlanningExperiencesResponse = zod.array(
@@ -1296,6 +1298,8 @@ export const CreatePlanningExperienceBody = zod.object({
   backgroundInformation: zod.string().optional(),
   preparedBy: zod.string().optional(),
   editedBy: zod.string().optional(),
+  documentPaths: zod.array(zod.string()).optional(),
+  documentNames: zod.array(zod.string()).optional(),
 });
 
 export const GetPlanningExperienceParams = zod.object({
@@ -1325,6 +1329,8 @@ export const GetPlanningExperienceResponse = zod.object({
   backgroundInformation: zod.string().nullish(),
   preparedBy: zod.string().nullish(),
   editedBy: zod.string().nullish(),
+  documentPaths: zod.array(zod.string()).optional(),
+  documentNames: zod.array(zod.string()).optional(),
   createdAt: zod.coerce.date(),
 });
 
@@ -1356,6 +1362,8 @@ export const UpdatePlanningExperienceBody = zod.object({
   backgroundInformation: zod.string().optional(),
   preparedBy: zod.string().optional(),
   editedBy: zod.string().optional(),
+  documentPaths: zod.array(zod.string()).optional(),
+  documentNames: zod.array(zod.string()).optional(),
 });
 
 export const UpdatePlanningExperienceResponse = zod.object({
@@ -1381,6 +1389,8 @@ export const UpdatePlanningExperienceResponse = zod.object({
   backgroundInformation: zod.string().nullish(),
   preparedBy: zod.string().nullish(),
   editedBy: zod.string().nullish(),
+  documentPaths: zod.array(zod.string()).optional(),
+  documentNames: zod.array(zod.string()).optional(),
   createdAt: zod.coerce.date(),
 });
 

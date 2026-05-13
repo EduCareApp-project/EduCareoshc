@@ -29,4 +29,6 @@ export interface PlanningExperienceInput {
   backgroundInformation?: string;
   preparedBy?: string;
   editedBy?: string;
+  documentPaths?: string[];
+  documentNames?: string[];
 }

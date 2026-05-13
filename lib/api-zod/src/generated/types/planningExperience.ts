@@ -46,5 +46,7 @@ export interface PlanningExperience {
   preparedBy?: string | null;
   /** @nullable */
   editedBy?: string | null;
+  documentPaths?: string[];
+  documentNames?: string[];
   createdAt: Date;
 }

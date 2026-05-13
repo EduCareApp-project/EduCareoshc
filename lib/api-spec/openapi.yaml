@@ -2926,6 +2926,14 @@ components:
           type: ["string", "null"]
         editedBy:
           type: ["string", "null"]
+        documentPaths:
+          type: array
+          items:
+            type: string
+        documentNames:
+          type: array
+          items:
+            type: string
         createdAt:
           type: string
           format: date-time
@@ -2985,6 +2993,14 @@ components:
           type: string
         editedBy:
           type: string
+        documentPaths:
+          type: array
+          items:
+            type: string
+        documentNames:
+          type: array
+          items:
+            type: string
 
     PlanningExperienceUpdate:
       type: object
@@ -3039,6 +3055,14 @@ components:
           type: string
         editedBy:
           type: string
+        documentPaths:
+          type: array
+          items:
+            type: string
+        documentNames:
+          type: array
+          items:
+            type: string
 
     LearningStoriesReport:
       type: object

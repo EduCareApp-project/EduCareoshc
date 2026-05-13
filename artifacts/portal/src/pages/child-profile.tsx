@@ -380,87 +380,86 @@ export default function ChildProfile() {
               )}
             </CardContent>
           </Card>
-
-          {hasProfileInfo && (
-            <Card>
-              <CardHeader><CardTitle className="text-base">Child Profile</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                {child.temperament && (
-                  <div className="space-y-1">
-                    <div className="text-sm text-muted-foreground flex items-center gap-2"><Smile className="h-4 w-4" />Temperament</div>
-                    <p className="text-sm leading-relaxed">{child.temperament}</p>
-                  </div>
-                )}
-                {child.background && (
-                  <div className="space-y-1">
-                    <div className="text-sm text-muted-foreground flex items-center gap-2"><BookOpen className="h-4 w-4" />Background</div>
-                    <p className="text-sm leading-relaxed">{child.background}</p>
-                  </div>
-                )}
-                {child.likes && (
-                  <div className="space-y-1">
-                    <div className="text-sm text-muted-foreground flex items-center gap-2"><Heart className="h-4 w-4 text-rose-500" />Likes</div>
-                    <p className="text-sm leading-relaxed">{child.likes}</p>
-                  </div>
-                )}
-                {child.dislikes && (
-                  <div className="space-y-1">
-                    <div className="text-sm text-muted-foreground flex items-center gap-2"><ThumbsDown className="h-4 w-4 text-slate-400" />Dislikes</div>
-                    <p className="text-sm leading-relaxed">{child.dislikes}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {!hasProfileInfo && (
-            <Card className="border-dashed">
-              <CardContent className="py-6 text-center text-muted-foreground text-sm">
-                <Smile className="h-6 w-6 mx-auto mb-2 opacity-40" />
-                <p>No profile info added yet.</p>
-                <Button variant="link" size="sm" className="mt-1 h-auto p-0" onClick={openEdit}>Add likes, dislikes & more</Button>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
-        <Card className="md:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base flex items-center gap-2"><FileText className="h-5 w-5" />Learning Observations</CardTitle>
-            <Link href={`/observations/new?childId=${child.id}`}>
-              <Button size="sm"><Plus className="h-4 w-4 mr-1" />New Observation</Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {obsLoading ? (
-              <div className="space-y-3 mt-4">
-                <Skeleton className="h-20 w-full" />
-                <Skeleton className="h-20 w-full" />
-              </div>
-            ) : !observations || observations.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg mt-4">
-                <FileText className="h-10 w-10 mx-auto mb-2 opacity-20" />
-                <p>No observations recorded yet</p>
-              </div>
-            ) : (
-              <div className="space-y-4 mt-4">
-                {observations.map((obs) => (
-                  <Link key={obs.id} href={`/observations/${obs.id}`}>
-                    <div className="p-3 rounded-lg border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer space-y-1">
-                      <p className="text-sm text-foreground line-clamp-2 leading-relaxed">{obs.description}</p>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>{safeDate(obs.observationDate, "d MMM yyyy")}</span>
-                        {obs.staffName && <span>· {obs.staffName}</span>}
-                        {obs.actionNotes && <span className="text-primary font-medium">· Action noted</span>}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {hasProfileInfo ? (
+          <Card className="md:col-span-2">
+            <CardHeader><CardTitle className="text-base">Child Profile</CardTitle></CardHeader>
+            <CardContent className="grid sm:grid-cols-2 gap-5">
+              {child.likes && (
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2"><Heart className="h-4 w-4 text-rose-500" />Likes</div>
+                  <p className="text-sm leading-relaxed">{child.likes}</p>
+                </div>
+              )}
+              {child.dislikes && (
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2"><ThumbsDown className="h-4 w-4 text-slate-400" />Dislikes</div>
+                  <p className="text-sm leading-relaxed">{child.dislikes}</p>
+                </div>
+              )}
+              {child.temperament && (
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2"><Smile className="h-4 w-4" />Temperament</div>
+                  <p className="text-sm leading-relaxed">{child.temperament}</p>
+                </div>
+              )}
+              {child.background && (
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2"><BookOpen className="h-4 w-4" />Background</div>
+                  <p className="text-sm leading-relaxed">{child.background}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="md:col-span-2 border-dashed">
+            <CardContent className="py-10 text-center text-muted-foreground text-sm">
+              <Smile className="h-6 w-6 mx-auto mb-2 opacity-40" />
+              <p>No profile info added yet.</p>
+              <Button variant="link" size="sm" className="mt-1 h-auto p-0" onClick={openEdit}>Add likes, dislikes & more</Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
+
+      {/* Learning Observations */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-base flex items-center gap-2"><FileText className="h-5 w-5" />Learning Observations</CardTitle>
+          <Link href={`/observations/new?childId=${child.id}`}>
+            <Button size="sm"><Plus className="h-4 w-4 mr-1" />New Observation</Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          {obsLoading ? (
+            <div className="space-y-3 mt-4">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          ) : !observations || observations.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg mt-4">
+              <FileText className="h-10 w-10 mx-auto mb-2 opacity-20" />
+              <p>No observations recorded yet</p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-3 mt-4">
+              {observations.map((obs) => (
+                <Link key={obs.id} href={`/observations/${obs.id}`}>
+                  <div className="p-3 rounded-lg border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer space-y-1 h-full">
+                    <p className="text-sm text-foreground line-clamp-2 leading-relaxed">{obs.description}</p>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span>{safeDate(obs.observationDate, "d MMM yyyy")}</span>
+                      {obs.staffName && <span>· {obs.staffName}</span>}
+                      {obs.actionNotes && <span className="text-primary font-medium">· Action noted</span>}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Welfare Notification Log */}
       <Card>

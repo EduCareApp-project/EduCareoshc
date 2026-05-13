@@ -19,4 +19,8 @@ export interface ChildInput {
   guardianEmail: string;
   guardianPhone: string;
   medicalNotes?: string;
+  likes?: string;
+  dislikes?: string;
+  temperament?: string;
+  background?: string;
 }

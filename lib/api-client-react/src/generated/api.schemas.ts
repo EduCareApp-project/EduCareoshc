@@ -39,6 +39,14 @@ export interface Child {
   guardianPhone: string;
   /** @nullable */
   medicalNotes?: string | null;
+  /** @nullable */
+  likes?: string | null;
+  /** @nullable */
+  dislikes?: string | null;
+  /** @nullable */
+  temperament?: string | null;
+  /** @nullable */
+  background?: string | null;
   createdAt?: string;
 }
 
@@ -72,6 +80,10 @@ export interface ChildInput {
   guardianEmail: string;
   guardianPhone: string;
   medicalNotes?: string;
+  likes?: string;
+  dislikes?: string;
+  temperament?: string;
+  background?: string;
 }
 
 export type ChildUpdateAgeGroup =
@@ -104,6 +116,10 @@ export interface ChildUpdate {
   guardianEmail?: string;
   guardianPhone?: string;
   medicalNotes?: string;
+  likes?: string;
+  dislikes?: string;
+  temperament?: string;
+  background?: string;
 }
 
 export type StaffRole = (typeof StaffRole)[keyof typeof StaffRole];

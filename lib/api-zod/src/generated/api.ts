@@ -29,6 +29,10 @@ export const ListChildrenResponseItem = zod.object({
   guardianEmail: zod.string(),
   guardianPhone: zod.string(),
   medicalNotes: zod.string().nullish(),
+  likes: zod.string().nullish(),
+  dislikes: zod.string().nullish(),
+  temperament: zod.string().nullish(),
+  background: zod.string().nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 export const ListChildrenResponse = zod.array(ListChildrenResponseItem);
@@ -48,6 +52,10 @@ export const CreateChildBody = zod.object({
   guardianEmail: zod.string(),
   guardianPhone: zod.string(),
   medicalNotes: zod.string().optional(),
+  likes: zod.string().optional(),
+  dislikes: zod.string().optional(),
+  temperament: zod.string().optional(),
+  background: zod.string().optional(),
 });
 
 export const GetChildParams = zod.object({
@@ -66,6 +74,10 @@ export const GetChildResponse = zod.object({
   guardianEmail: zod.string(),
   guardianPhone: zod.string(),
   medicalNotes: zod.string().nullish(),
+  likes: zod.string().nullish(),
+  dislikes: zod.string().nullish(),
+  temperament: zod.string().nullish(),
+  background: zod.string().nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 
@@ -86,6 +98,10 @@ export const UpdateChildBody = zod.object({
   guardianEmail: zod.string().optional(),
   guardianPhone: zod.string().optional(),
   medicalNotes: zod.string().optional(),
+  likes: zod.string().optional(),
+  dislikes: zod.string().optional(),
+  temperament: zod.string().optional(),
+  background: zod.string().optional(),
 });
 
 export const UpdateChildResponse = zod.object({
@@ -100,6 +116,10 @@ export const UpdateChildResponse = zod.object({
   guardianEmail: zod.string(),
   guardianPhone: zod.string(),
   medicalNotes: zod.string().nullish(),
+  likes: zod.string().nullish(),
+  dislikes: zod.string().nullish(),
+  temperament: zod.string().nullish(),
+  background: zod.string().nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 

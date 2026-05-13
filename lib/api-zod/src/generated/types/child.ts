@@ -21,5 +21,13 @@ export interface Child {
   guardianPhone: string;
   /** @nullable */
   medicalNotes?: string | null;
+  /** @nullable */
+  likes?: string | null;
+  /** @nullable */
+  dislikes?: string | null;
+  /** @nullable */
+  temperament?: string | null;
+  /** @nullable */
+  background?: string | null;
   createdAt?: Date;
 }

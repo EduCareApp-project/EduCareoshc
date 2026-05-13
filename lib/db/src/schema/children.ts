@@ -14,6 +14,10 @@ export const childrenTable = pgTable("children", {
   guardianEmail: text("guardian_email").notNull(),
   guardianPhone: text("guardian_phone").notNull(),
   medicalNotes: text("medical_notes"),
+  likes: text("likes"),
+  dislikes: text("dislikes"),
+  temperament: text("temperament"),
+  background: text("background"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

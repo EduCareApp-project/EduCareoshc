@@ -1239,6 +1239,14 @@ components:
           type: string
         medicalNotes:
           type: ["string", "null"]
+        likes:
+          type: ["string", "null"]
+        dislikes:
+          type: ["string", "null"]
+        temperament:
+          type: ["string", "null"]
+        background:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -1272,6 +1280,14 @@ components:
           type: string
         medicalNotes:
           type: string
+        likes:
+          type: string
+        dislikes:
+          type: string
+        temperament:
+          type: string
+        background:
+          type: string
 
     ChildUpdate:
       type: object
@@ -1299,6 +1315,14 @@ components:
         guardianPhone:
           type: string
         medicalNotes:
+          type: string
+        likes:
+          type: string
+        dislikes:
+          type: string
+        temperament:
+          type: string
+        background:
           type: string
 
     Staff:

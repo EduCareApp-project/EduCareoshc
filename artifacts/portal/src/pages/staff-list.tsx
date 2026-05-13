@@ -1,12 +1,29 @@
-import { useListStaff } from "@workspace/api-client-react";
+import { useListStaff, useGetStaffQualifications } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, UserCog, Mail, Phone, Award } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { computeQualLevel, QUAL_LEVEL_LABELS, QUAL_LEVEL_STYLES, type QualItem } from "@/lib/qual-level";
 
 const ROLE_LABELS: Record<string, string> = { admin: "Admin", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
+
+function QualLevelBadge({ staffId }: { staffId: number }) {
+  const { data: qualifications, isLoading } = useGetStaffQualifications(staffId);
+  if (isLoading) return <span className="text-xs text-muted-foreground">—</span>;
+  if (!qualifications?.length) return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-amber-100 text-amber-800 border-amber-200">
+      Incomplete
+    </span>
+  );
+  const level = computeQualLevel(qualifications as QualItem[]);
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${QUAL_LEVEL_STYLES[level]}`}>
+      {QUAL_LEVEL_LABELS[level]}
+    </span>
+  );
+}
 
 export default function StaffList() {
   const { data: staff, isLoading } = useListStaff();
@@ -73,12 +90,10 @@ export default function StaffList() {
                       <span>{member.phone}</span>
                     </div>
                   )}
-                  {member.wwccNumber && (
-                    <div className="mt-2 pt-2 border-t text-xs text-muted-foreground flex justify-between">
-                      <span>WWCC:</span>
-                      <span className="font-mono">{member.wwccNumber}</span>
-                    </div>
-                  )}
+                  <div className="mt-2 pt-2 border-t flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Qualification Level</span>
+                    <QualLevelBadge staffId={member.id} />
+                  </div>
                 </CardContent>
               </Card>
             </Link>

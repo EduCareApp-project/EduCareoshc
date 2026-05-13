@@ -283,6 +283,7 @@ export interface Observation {
   /** @nullable */
   actionNotes?: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface ObservationInput {

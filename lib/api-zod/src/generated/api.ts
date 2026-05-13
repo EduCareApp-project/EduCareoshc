@@ -147,6 +147,7 @@ export const GetChildObservationsResponseItem = zod.object({
   commentPlan: zod.string().nullish(),
   actionNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
 });
 export const GetChildObservationsResponse = zod.array(
   GetChildObservationsResponseItem,
@@ -403,6 +404,7 @@ export const ListObservationsResponseItem = zod.object({
   commentPlan: zod.string().nullish(),
   actionNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
 });
 export const ListObservationsResponse = zod.array(ListObservationsResponseItem);
 
@@ -430,6 +432,7 @@ export const GetObservationResponse = zod.object({
   commentPlan: zod.string().nullish(),
   actionNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
 });
 
 export const UpdateObservationParams = zod.object({
@@ -455,6 +458,7 @@ export const UpdateObservationResponse = zod.object({
   commentPlan: zod.string().nullish(),
   actionNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
 });
 
 export const DeleteObservationParams = zod.object({
@@ -593,6 +597,7 @@ export const GetRecentObservationsResponseItem = zod.object({
   commentPlan: zod.string().nullish(),
   actionNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
 });
 export const GetRecentObservationsResponse = zod.array(
   GetRecentObservationsResponseItem,

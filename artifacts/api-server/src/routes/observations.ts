@@ -94,7 +94,7 @@ router.patch("/observations/:id", async (req, res): Promise<void> => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [obs] = await db
     .update(observationsTable)
-    .set(parsed.data as any)
+    .set({ ...(parsed.data as any), updatedAt: new Date() })
     .where(eq(observationsTable.id, params.data.id))
     .returning();
   if (!obs) {

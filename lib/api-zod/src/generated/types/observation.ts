@@ -21,4 +21,5 @@ export interface Observation {
   /** @nullable */
   actionNotes?: string | null;
   createdAt: Date;
+  updatedAt: Date;
 }

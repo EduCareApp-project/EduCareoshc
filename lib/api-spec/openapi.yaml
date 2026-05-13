@@ -2010,7 +2010,7 @@ components:
 
     Observation:
       type: object
-      required: [id, childId, staffId, description, observationDate, createdAt]
+      required: [id, childId, staffId, description, observationDate, createdAt, updatedAt]
       properties:
         id:
           type: integer
@@ -2032,6 +2032,9 @@ components:
         actionNotes:
           type: ["string", "null"]
         createdAt:
+          type: string
+          format: date-time
+        updatedAt:
           type: string
           format: date-time
 

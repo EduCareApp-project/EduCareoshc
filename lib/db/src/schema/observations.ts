@@ -15,6 +15,7 @@ export const observationsTable = pgTable("observations", {
   commentPlan: text("comment_plan"),
   actionNotes: text("action_notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const insertObservationSchema = createInsertSchema(observationsTable).omit({ id: true, createdAt: true });

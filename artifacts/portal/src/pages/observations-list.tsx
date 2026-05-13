@@ -3,9 +3,9 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, FileText, Calendar, User } from "lucide-react";
+import { Plus, Search, FileText, Calendar, User, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
+import { format, isEqual } from "date-fns";
 import { useState } from "react";
 
 export default function ObservationsList() {
@@ -79,6 +79,10 @@ export default function ObservationsList() {
                         {format(new Date(obs.observationDate.length === 10 ? obs.observationDate + "T00:00:00" : obs.observationDate), "d MMM yyyy")}
                       </span>
                     </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground pt-1">
+                    <Clock className="h-3 w-3" />
+                    <span>Last edited {format(new Date(obs.updatedAt), "d MMM yyyy, h:mm a")}</span>
                   </div>
 
                   {obs.actionNotes && (

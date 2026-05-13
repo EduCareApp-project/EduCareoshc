@@ -798,6 +798,7 @@ export const GetChildWelfareNotesResponseItem = zod.object({
   cissNotes: zod.string().nullish(),
   fvissThresholdMet: zod.boolean(),
   fvissNotes: zod.string().nullish(),
+  confidentialNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const GetChildWelfareNotesResponse = zod.array(
@@ -862,6 +863,7 @@ export const CreateWelfareNoteBody = zod.object({
   cissNotes: zod.string().optional(),
   fvissThresholdMet: zod.boolean(),
   fvissNotes: zod.string().optional(),
+  confidentialNotes: zod.string().optional(),
 });
 
 export const DeleteWelfareNoteParams = zod.object({

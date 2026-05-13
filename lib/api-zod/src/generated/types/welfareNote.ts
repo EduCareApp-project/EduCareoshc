@@ -27,5 +27,7 @@ export interface WelfareNote {
   fvissThresholdMet: boolean;
   /** @nullable */
   fvissNotes?: string | null;
+  /** @nullable */
+  confidentialNotes?: string | null;
   createdAt: Date;
 }

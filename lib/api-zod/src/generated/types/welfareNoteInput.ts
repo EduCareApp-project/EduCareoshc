@@ -19,4 +19,5 @@ export interface WelfareNoteInput {
   cissNotes?: string;
   fvissThresholdMet: boolean;
   fvissNotes?: string;
+  confidentialNotes?: string;
 }

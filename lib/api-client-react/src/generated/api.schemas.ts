@@ -746,6 +746,8 @@ export interface WelfareNote {
   fvissThresholdMet: boolean;
   /** @nullable */
   fvissNotes?: string | null;
+  /** @nullable */
+  confidentialNotes?: string | null;
   createdAt: string;
 }
 
@@ -762,6 +764,7 @@ export interface WelfareNoteInput {
   cissNotes?: string;
   fvissThresholdMet: boolean;
   fvissNotes?: string;
+  confidentialNotes?: string;
 }
 
 export interface UploadUrlRequest {

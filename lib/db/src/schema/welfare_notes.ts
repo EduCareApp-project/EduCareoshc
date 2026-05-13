@@ -16,6 +16,7 @@ export const welfareNotesTable = pgTable("welfare_notes", {
   cissNotes: text("ciss_notes"),
   fvissThresholdMet: boolean("fviss_threshold_met").notNull().default(false),
   fvissNotes: text("fviss_notes"),
+  confidentialNotes: text("confidential_notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

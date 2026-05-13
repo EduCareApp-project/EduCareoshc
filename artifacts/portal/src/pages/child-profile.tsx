@@ -53,6 +53,7 @@ const EMPTY_WELFARE_FORM = {
   cissNotes: "",
   fvissThresholdMet: false,
   fvissNotes: "",
+  confidentialNotes: "",
 };
 
 export default function ChildProfile() {
@@ -167,6 +168,7 @@ export default function ChildProfile() {
     if (welfareForm.mandatoryReportNotes) body.mandatoryReportNotes = welfareForm.mandatoryReportNotes;
     if (welfareForm.cissNotes) body.cissNotes = welfareForm.cissNotes;
     if (welfareForm.fvissNotes) body.fvissNotes = welfareForm.fvissNotes;
+    if (welfareForm.confidentialNotes) body.confidentialNotes = welfareForm.confidentialNotes;
 
     createWelfareMutation.mutate({ data: body as any }, {
       onSuccess: () => {
@@ -527,6 +529,14 @@ export default function ChildProfile() {
                       <div className="space-y-1 bg-orange-50 border border-orange-200 rounded p-2">
                         <p className="text-xs font-medium text-orange-700 uppercase tracking-wide">FVISS Notes</p>
                         <p className="leading-relaxed">{note.fvissNotes}</p>
+                      </div>
+                    )}
+                    {note.confidentialNotes && (
+                      <div className="space-y-1 md:col-span-2 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded p-2">
+                        <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
+                          <Lock className="h-3 w-3" />Confidential Notes
+                        </p>
+                        <p className="leading-relaxed">{note.confidentialNotes}</p>
                       </div>
                     )}
                   </div>
@@ -924,6 +934,24 @@ export default function ChildProfile() {
                   </div>
                 )}
               </div>
+            </div>
+
+            <Separator />
+
+            <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4 text-slate-500 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">Confidential Notes</p>
+                  <p className="text-xs text-muted-foreground">Admin &amp; Educational Leader only — restriction enforced when authentication is added</p>
+                </div>
+              </div>
+              <Textarea
+                value={welfareForm.confidentialNotes}
+                onChange={(e) => setWelfareForm({ ...welfareForm, confidentialNotes: e.target.value })}
+                rows={3}
+                placeholder="Notes restricted to Admin and Educational Leader roles only..."
+              />
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t">

@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Save, Trash2, Users, Upload, FileText, X, Loader2, Copy, Pencil, Link, ExternalLink, Plus } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Users, Upload, FileText, X, Loader2, Copy, Pencil, Link, ExternalLink, Plus, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -460,8 +460,17 @@ export default function PlanningDetail() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-16">
+      {/* Print-only header */}
+      <div className="hidden print:flex items-center gap-3 pb-4 border-b border-gray-200 mb-2">
+        <img src="/educare-logo.png" alt="EduCare" className="h-10 w-10 object-contain" />
+        <div>
+          <p className="text-xs text-gray-500 uppercase tracking-widest font-medium">EduCare</p>
+          <p className="text-xs text-gray-400">Planning Cycle — printed {format(new Date(), "d MMM yyyy")}</p>
+        </div>
+      </div>
+
       {/* Top bar */}
-      <div className="flex items-center justify-between">
+      <div className="print:hidden flex items-center justify-between">
         <button
           onClick={() => (window.location.href = "/planning")}
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -469,6 +478,11 @@ export default function PlanningDetail() {
           <ArrowLeft className="h-4 w-4" />Back to Planning Cycle
         </button>
         <div className="flex items-center gap-2">
+          {!isNew && !isEditing && (
+            <Button variant="outline" size="sm" onClick={() => window.print()}>
+              <FileDown className="h-4 w-4 mr-1.5" />Export PDF
+            </Button>
+          )}
           {!isNew && !isEditing && (
             <Button variant="outline" size="sm" onClick={handleDuplicate} disabled={createMutation.isPending}>
               <Copy className="h-4 w-4 mr-1.5" />Duplicate
@@ -514,16 +528,16 @@ export default function PlanningDetail() {
       {/* Tabs — shown when stage is assessment or closed */}
       {showAssessmentTab ? (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList>
+          <TabsList className="print:hidden">
             <TabsTrigger value="planning">Planning Cycle</TabsTrigger>
             <TabsTrigger value="assessment">Assessment</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="planning" className="space-y-6 mt-0">
+          <TabsContent value="planning" className="space-y-6 mt-0 print:!block">
             {isEditing ? <PlanningEditContent {...{ form, set, sites, allChildren, visibleChildren, isTemplateMode, handleSiteChange, toggleChild, fileInputRef, handleFileSelect, removeDocument, isUploading, activeStaff, showLinkForm, setShowLinkForm, linkUrl, setLinkUrl, linkName, setLinkName, handleAddLink }} />
               : <PlanningViewContent {...{ form, siteName, focusChildrenNames }} />}
             {isEditing && (
-              <div className="flex justify-end gap-3">
+              <div className="print:hidden flex justify-end gap-3">
                 {!isNew && <Button variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>}
                 <Button onClick={handleSave} disabled={isSaving} size="lg">
                   <Save className="h-4 w-4 mr-1.5" />{isSaving ? "Saving…" : "Save"}
@@ -532,14 +546,14 @@ export default function PlanningDetail() {
             )}
           </TabsContent>
 
-          <TabsContent value="assessment" className="space-y-6 mt-0">
+          <TabsContent value="assessment" className="space-y-6 mt-0 print:!block">
             {isEditing ? (
               <AssessmentEditContent ad={ad} setMtop={setMtop} setEducatorReview={setEducatorReview} setAskChildren={setAskChildren} />
             ) : (
               <AssessmentViewContent ad={ad} hasContent={hasAssessmentContent} />
             )}
             {isEditing && (
-              <div className="flex justify-end gap-3">
+              <div className="print:hidden flex justify-end gap-3">
                 {!isNew && <Button variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>}
                 <Button onClick={handleSave} disabled={isSaving} size="lg">
                   <Save className="h-4 w-4 mr-1.5" />{isSaving ? "Saving…" : "Save"}
@@ -553,7 +567,7 @@ export default function PlanningDetail() {
           {isEditing ? <PlanningEditContent {...{ form, set, sites, allChildren, visibleChildren, isTemplateMode, handleSiteChange, toggleChild, fileInputRef, handleFileSelect, removeDocument, isUploading, activeStaff, showLinkForm, setShowLinkForm, linkUrl, setLinkUrl, linkName, setLinkName, handleAddLink }} />
             : <PlanningViewContent {...{ form, siteName, focusChildrenNames }} />}
           {isEditing && (
-            <div className="flex justify-end gap-3">
+            <div className="print:hidden flex justify-end gap-3">
               {!isNew && <Button variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>}
               <Button onClick={handleSave} disabled={isSaving} size="lg">
                 <Save className="h-4 w-4 mr-1.5" />{isSaving ? "Saving…" : "Save"}

@@ -123,7 +123,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-[100dvh] w-full bg-background">
-      <aside className="hidden lg:flex w-64 flex-col border-r bg-card h-[100dvh] sticky top-0">
+      <aside className="hidden lg:flex print:hidden w-64 flex-col border-r bg-card h-[100dvh] sticky top-0">
         <NavLinks location={location} />
       </aside>
 

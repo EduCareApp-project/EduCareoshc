@@ -96,6 +96,10 @@ export default function StaffProfile() {
   const [bioEditing, setBioEditing] = useState(false);
   const [bioSaving, setBioSaving] = useState(false);
 
+  const [notesText, setNotesText] = useState<string>("");
+  const [notesEditing, setNotesEditing] = useState(false);
+  const [notesSaving, setNotesSaving] = useState(false);
+
   const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [profileEditForm, setProfileEditForm] = useState({ firstName: "", lastName: "", email: "", phone: "", role: "", status: "", qualifications: "", wwccNumber: "" });
   const [profileEditSaving, setProfileEditSaving] = useState(false);
@@ -160,6 +164,23 @@ export default function StaffProfile() {
     await updateStaffMutation.mutateAsync({ id: staffId, data: { profilePicturePath: response.objectPath } });
     await queryClient.invalidateQueries({ queryKey: ["getStaff", staffId] });
     toast({ title: "Profile photo updated" });
+  }
+
+  function startEditNotes() {
+    setNotesText(staff?.employmentNotes ?? "");
+    setNotesEditing(true);
+  }
+
+  async function saveNotes() {
+    setNotesSaving(true);
+    try {
+      await updateStaffMutation.mutateAsync({ id: staffId, data: { employmentNotes: notesText } });
+      await queryClient.invalidateQueries({ queryKey: ["getStaff", staffId] });
+      setNotesEditing(false);
+      toast({ title: "Employment notes saved" });
+    } finally {
+      setNotesSaving(false);
+    }
   }
 
   function startEditBio() {
@@ -345,6 +366,44 @@ export default function StaffProfile() {
                   <p className={`font-medium ${!staff.wwccNumber ? "text-amber-600" : ""}`}>{staff.wwccNumber || "Not on file"}</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Employment Notes */}
+          <Card>
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Employment Notes</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">Internal notes — access will be restricted by role in a future update.</p>
+              </div>
+              {!notesEditing && (
+                <Button variant="outline" size="sm" onClick={startEditNotes}>
+                  <Pencil className="h-3.5 w-3.5 mr-1" />Edit
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              {notesEditing ? (
+                <div className="space-y-2">
+                  <Textarea
+                    value={notesText}
+                    onChange={(e) => setNotesText(e.target.value)}
+                    placeholder="e.g. Probation period ends 01/09/2025. Flexible hours arrangement in place. Supervisor: Jane Lee."
+                    rows={5}
+                    className="resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={saveNotes} disabled={notesSaving}>
+                      <Check className="h-3.5 w-3.5 mr-1" />{notesSaving ? "Saving…" : "Save"}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setNotesEditing(false)} disabled={notesSaving}>Cancel</Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                  {staff.employmentNotes || <span className="italic">No employment notes recorded.</span>}
+                </p>
+              )}
             </CardContent>
           </Card>
 

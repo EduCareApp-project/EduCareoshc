@@ -19,4 +19,5 @@ export interface StaffUpdate {
   wwccNumber?: string;
   bio?: string;
   profilePicturePath?: string;
+  employmentNotes?: string;
 }

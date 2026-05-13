@@ -14,6 +14,7 @@ export const staffTable = pgTable("staff", {
   wwccNumber: text("wwcc_number"),
   bio: text("bio"),
   profilePicturePath: text("profile_picture_path"),
+  employmentNotes: text("employment_notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

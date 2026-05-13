@@ -1769,6 +1769,8 @@ components:
           type: ["string", "null"]
         profilePicturePath:
           type: ["string", "null"]
+        employmentNotes:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -1821,6 +1823,8 @@ components:
         bio:
           type: string
         profilePicturePath:
+          type: string
+        employmentNotes:
           type: string
 
     Observation:

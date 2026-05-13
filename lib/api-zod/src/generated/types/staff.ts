@@ -24,5 +24,7 @@ export interface Staff {
   bio?: string | null;
   /** @nullable */
   profilePicturePath?: string | null;
+  /** @nullable */
+  employmentNotes?: string | null;
   createdAt?: Date;
 }

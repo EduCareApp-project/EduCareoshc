@@ -177,6 +177,8 @@ export interface Staff {
   bio?: string | null;
   /** @nullable */
   profilePicturePath?: string | null;
+  /** @nullable */
+  employmentNotes?: string | null;
   createdAt?: string;
 }
 
@@ -238,6 +240,7 @@ export interface StaffUpdate {
   wwccNumber?: string;
   bio?: string;
   profilePicturePath?: string;
+  employmentNotes?: string;
 }
 
 export interface Observation {

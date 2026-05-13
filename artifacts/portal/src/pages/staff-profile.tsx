@@ -69,6 +69,65 @@ const QUALIFICATION_NAMES = [
   "WWCC",
 ];
 
+const EDUCATOR_QUALS = [
+  "Child Safety - Foundation Child Safety Training (GECCKO)",
+  "Child Safety - Mandatory Reporting and Other Obligations",
+  "History & Compliance",
+  "Resume",
+  "Staff Details (DET)",
+  "WWCC",
+];
+
+const RP_QUALS = [
+  "Child Safety - Foundation Child Safety Training (GECCKO)",
+  "Child Safety - Mandatory Reporting and Other Obligations",
+  "CPR Renewal",
+  "Education Qualifications",
+  "First Aid",
+  "Food Safety",
+  "History & Compliance",
+  "Responsible Person Declaration",
+  "Resume",
+  "Risk Management (DET)",
+  "Staff Details (DET)",
+  "WWCC",
+];
+
+const CANNOT_WORK_QUALS = ["WWCC", "CPR Renewal", "First Aid"];
+
+type QualItem = { name: string; status: string; expiryDate?: Date | string | null };
+
+function isQualExpired(q: QualItem): boolean {
+  const now = new Date();
+  const d = q.expiryDate instanceof Date ? q.expiryDate : q.expiryDate ? new Date(String(q.expiryDate)) : null;
+  return Boolean((d && !isNaN(d.getTime()) && d < now) || q.status === "expired");
+}
+
+type QualLevel = "cannot-work" | "responsible-person" | "educator" | "incomplete";
+
+function computeQualLevel(quals: QualItem[]): QualLevel {
+  const expiredNames = new Set(quals.filter(isQualExpired).map((q) => q.name));
+  if (CANNOT_WORK_QUALS.some((n) => expiredNames.has(n))) return "cannot-work";
+  const currentNames = new Set(quals.filter((q) => !isQualExpired(q)).map((q) => q.name));
+  if (RP_QUALS.every((n) => currentNames.has(n))) return "responsible-person";
+  if (EDUCATOR_QUALS.every((n) => currentNames.has(n))) return "educator";
+  return "incomplete";
+}
+
+const QUAL_LEVEL_LABELS: Record<QualLevel, string> = {
+  "cannot-work": "Cannot Work",
+  "responsible-person": "Responsible Person",
+  educator: "Educator",
+  incomplete: "Incomplete",
+};
+
+const QUAL_LEVEL_STYLES: Record<QualLevel, string> = {
+  "cannot-work": "bg-red-100 text-red-800 border-red-200",
+  "responsible-person": "bg-green-100 text-green-800 border-green-200",
+  educator: "bg-blue-100 text-blue-800 border-blue-200",
+  incomplete: "bg-amber-100 text-amber-800 border-amber-200",
+};
+
 const EMPTY_QUAL_FORM = { name: "", status: "current", referenceNumber: "", expiryDate: "" };
 
 export default function StaffProfile() {
@@ -354,25 +413,53 @@ export default function StaffProfile() {
         {/* Profile Tab */}
         <TabsContent value="profile" className="mt-4 space-y-4">
           {/* Details */}
-          <Card>
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-base">Details</CardTitle>
-              <Button variant="outline" size="sm" onClick={openProfileEdit}>
-                <Pencil className="h-3.5 w-3.5 mr-1" />Edit Profile
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div><p className="text-xs text-muted-foreground mb-1">Email</p><p className="font-medium">{staff.email}</p></div>
-                <div><p className="text-xs text-muted-foreground mb-1">Phone</p><p className="font-medium">{staff.phone || <span className="text-muted-foreground italic">Not set</span>}</p></div>
-                <div><p className="text-xs text-muted-foreground mb-1">Qualifications</p><p className="font-medium">{staff.qualifications}</p></div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">WWCC Number</p>
-                  <p className={`font-medium ${!staff.wwccNumber ? "text-amber-600" : ""}`}>{staff.wwccNumber || "Not on file"}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {(() => {
+            const wwccRef = qualifications?.find((q) => q.name === "WWCC")?.referenceNumber ?? null;
+            const qualLevel = qualifications ? computeQualLevel(qualifications as QualItem[]) : null;
+            return (
+              <Card>
+                <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                  <CardTitle className="text-base">Details</CardTitle>
+                  <Button variant="outline" size="sm" onClick={openProfileEdit}>
+                    <Pencil className="h-3.5 w-3.5 mr-1" />Edit Profile
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Row 1: 3-column contact details */}
+                  <div className="grid gap-4 grid-cols-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Phone Number</p>
+                      <p className="font-medium">{staff.phone || <span className="text-muted-foreground italic">Not set</span>}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Email</p>
+                      <p className="font-medium break-all">{staff.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">WWCC Number</p>
+                      {wwccRef ? (
+                        <p className="font-medium">{wwccRef}</p>
+                      ) : (
+                        <p className="font-medium text-red-600">Not on file</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Row 2: Qualification level */}
+                  <div className="flex items-center gap-3 pt-1 border-t">
+                    <p className="text-xs text-muted-foreground">Qualification Level</p>
+                    {loadingQuals ? (
+                      <span className="text-xs text-muted-foreground italic">Loading…</span>
+                    ) : qualLevel ? (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${QUAL_LEVEL_STYLES[qualLevel]}`}>
+                        {QUAL_LEVEL_LABELS[qualLevel]}
+                      </span>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* Picture + Bio row */}
           <Card>

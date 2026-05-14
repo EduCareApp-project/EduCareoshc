@@ -17,6 +17,7 @@ import {
 import { format, differenceInDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@workspace/object-storage-web";
+import { melbourneDateStr } from "@/lib/timezone";
 
 const DRILL_LABELS: Record<string, string> = {
   evacuation: "Evacuation",
@@ -114,7 +115,7 @@ function FileUploadField({
 
 const EMPTY_FORM = {
   drillType: "evacuation",
-  conductedDate: new Date().toISOString().slice(0, 10),
+  conductedDate: melbourneDateStr(),
   conductedTime: "09:00",
   notes: "",
   conductedBy: "",

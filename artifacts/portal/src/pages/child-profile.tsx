@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { melbourneDateTimeStr } from "@/lib/timezone";
 import {
   useGetChild, useUpdateChild, useDeleteChild,
   useGetChildObservations, useListSites,
@@ -45,7 +46,7 @@ function safeDate(value: string, fmt: string) {
 }
 
 const EMPTY_WELFARE_FORM = {
-  occurredAt: new Date().toISOString().slice(0, 16),
+  occurredAt: melbourneDateTimeStr(),
   staffId: "",
   concerns: "",
   riskFactors: "",

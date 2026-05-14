@@ -17,7 +17,7 @@ const EMPTY_FORM = {
   siteId: "",
   childIds: [] as number[],
   title: "",
-  date: new Date().toISOString().split("T")[0],
+  date: new Date().toLocaleDateString("en-CA", { timeZone: "Australia/Melbourne" }),
   staffId: "",
   description: "",
   learning: "",

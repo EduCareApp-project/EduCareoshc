@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { melbourneDateTimeStr } from "@/lib/timezone";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -100,13 +101,13 @@ function LogIncidentDialog({ open, onOpenChange }: { open: boolean; onOpenChange
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
-    incidentDatetime: "", siteId: "none", childId: "none",
+    incidentDatetime: melbourneDateTimeStr(), siteId: "none", childId: "none",
     respondentId: "none", description: "", firstAidProvided: "",
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   function resetForm() {
-    setForm({ incidentDatetime: "", siteId: "none", childId: "none", respondentId: "none", description: "", firstAidProvided: "" });
+    setForm({ incidentDatetime: melbourneDateTimeStr(), siteId: "none", childId: "none", respondentId: "none", description: "", firstAidProvided: "" });
     setSelectedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }

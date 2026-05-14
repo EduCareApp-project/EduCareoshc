@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
+import { melbourneDateStr } from "@/lib/timezone";
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -44,7 +45,7 @@ export default function NewProgram() {
     defaultValues: {
       title: "",
       description: "",
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: melbourneDateStr(),
       endDate: "",
       status: "planned",
       outcomeIds: [],

@@ -42,7 +42,7 @@ export default function EnrollChild() {
       firstName: "",
       lastName: "",
       dateOfBirth: "",
-      enrollmentDate: new Date().toISOString().split('T')[0],
+      enrollmentDate: new Date().toLocaleDateString("en-CA", { timeZone: "Australia/Melbourne" }),
       ageGroup: "preschool",
       status: "active",
       guardianName: "",

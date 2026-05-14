@@ -25,6 +25,7 @@ import { ClipboardX, Plus, Paperclip, X, Upload, ShieldCheck, CheckCircle2, Penc
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@workspace/object-storage-web";
+import { melbourneDateStr } from "@/lib/timezone";
 
 function statusBadge(s: string) {
   if (s === "resolved") return <Badge className="bg-green-100 text-green-800 border-0">Resolved</Badge>;
@@ -42,7 +43,7 @@ function safeDate(val: string | null | undefined, fmt: string) {
 }
 
 const EMPTY_FORM = {
-  reportedDate: new Date().toISOString().slice(0, 10),
+  reportedDate: melbourneDateStr(),
   staffId: "",
   siteId: "",
   description: "",

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { melbourneDate, melbourneDateStr } from "@/lib/timezone";
 import {
   useListChecklistTemplates, useCreateChecklistTemplate, useUpdateChecklistTemplate, useDeleteChecklistTemplate,
   useListChecklistRoutines, useCreateChecklistRoutine, useUpdateChecklistRoutine, useDeleteChecklistRoutine,
@@ -413,7 +414,7 @@ function RoutineDialog({
   const { data: sites } = useListSites();
   const { data: staff } = useListStaff();
 
-  const [targetDate, setTargetDate] = useState("");
+  const [targetDate, setTargetDate] = useState(melbourneDateStr());
   const [isRepeating, setIsRepeating] = useState(false);
   const [frequency, setFrequency] = useState("none");
   const [siteId, setSiteId] = useState("none");
@@ -624,14 +625,14 @@ function ChecklistDoDialog({
   const queryClient = useQueryClient();
   const { data: staff } = useListStaff();
 
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(melbourneDate());
   const [completingAsId, setCompletingAsId] = useState<string>(() => {
     try { return localStorage.getItem("checklist_completing_as") ?? "none"; } catch { return "none"; }
   });
 
   useEffect(() => {
     if (!open) return;
-    setCurrentDate(new Date());
+    setCurrentDate(melbourneDate());
   }, [open]);
 
   function handleCompletingAsChange(v: string) {
@@ -793,8 +794,8 @@ function ActiveChecklistTile({
   onOpen: () => void;
 }) {
   const freq = routine.frequency ?? "daily";
-  const periodKey = getPeriodKey(new Date(), freq);
-  const periodLabel = getPeriodLabel(new Date(), freq);
+  const periodKey = getPeriodKey(melbourneDate(), freq);
+  const periodLabel = getPeriodLabel(melbourneDate(), freq);
 
   const { data: completions } = useListRoutineItemCompletions({ routineId: routine.id, periodKey });
 

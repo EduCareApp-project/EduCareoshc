@@ -24,7 +24,7 @@ export default function Procedures() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { upload, uploading } = useUpload();
+  const { uploadFile, isUploading } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: allPolicies, isLoading } = useListPolicies();
@@ -51,7 +51,9 @@ export default function Procedures() {
 
     let docPath = "";
     try {
-      docPath = await upload(selectedFile, { prefix: "procedure-docs/" });
+      const result = await uploadFile(selectedFile);
+      if (!result) throw new Error("Upload returned null");
+      docPath = result.objectPath;
     } catch {
       toast({ title: "File upload failed", variant: "destructive" });
       return;
@@ -76,7 +78,7 @@ export default function Procedures() {
     });
   }
 
-  const isSaving = createMutation.isPending || uploading;
+  const isSaving = createMutation.isPending || isUploading;
 
   return (
     <div className="space-y-6">
@@ -205,7 +207,7 @@ export default function Procedures() {
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => { setShowSheet(false); resetForm(); }}>Cancel</Button>
               <Button type="submit" disabled={!selectedFile || isSaving}>
-                {uploading ? "Uploading…" : isSaving ? "Saving…" : "Add Procedure"}
+                {isUploading ? "Uploading…" : isSaving ? "Saving…" : "Add Procedure"}
               </Button>
             </div>
           </form>

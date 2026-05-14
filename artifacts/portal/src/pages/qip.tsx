@@ -751,15 +751,24 @@ export default function Qip() {
                   </Card>
                 ) : (
                   <div className="rounded-md border overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse table-fixed">
+                      <colgroup>
+                        <col className="w-28" />
+                        <col className="w-24" />
+                        <col style={{ width: "calc(100% / 3)" }} />
+                        <col style={{ width: "calc(100% / 3)" }} />
+                        <col style={{ width: "calc(100% / 3)" }} />
+                        <col className="w-24" />
+                        <col className="w-10" />
+                      </colgroup>
                       <thead>
                         <tr className="bg-muted/60 border-b">
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">NQS</th>
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Priority</th>
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-1/3">Issue Identified</th>
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-1/3">What outcome or goal do we seek?</th>
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-1/3">Progress Notes</th>
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Due By</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">NQS</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Priority</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Issue Identified</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">What outcome or goal do we seek?</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Progress Notes</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Due By</th>
                           <th className="py-2.5 px-2"></th>
                         </tr>
                       </thead>

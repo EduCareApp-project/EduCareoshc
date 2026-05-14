@@ -159,6 +159,7 @@ export default function PostDetail() {
   const { toast } = useToast();
 
   const id = params?.id ? parseInt(params.id) : 0;
+  const backPath = new URLSearchParams(window.location.search).get("back") ?? "/posts";
   const { data: post, isLoading } = useGetPost(id, { query: { enabled: id > 0 } });
   const deleteMutation = useDeletePost();
 
@@ -168,7 +169,7 @@ export default function PostDetail() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() });
         toast({ title: "Post deleted" });
-        setLocation("/posts");
+        setLocation(backPath);
       },
       onError: () => toast({ title: "Failed to delete post", variant: "destructive" }),
     });
@@ -190,7 +191,7 @@ export default function PostDetail() {
     return (
       <div className="max-w-2xl mx-auto text-center py-16 text-muted-foreground">
         <p>Post not found.</p>
-        <Button variant="link" onClick={() => setLocation("/posts")}>Back to Posts</Button>
+        <Button variant="link" onClick={() => setLocation(backPath)}>Back to Posts</Button>
       </div>
     );
   }
@@ -198,7 +199,7 @@ export default function PostDetail() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-16">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => setLocation("/posts")} className="gap-1.5">
+        <Button variant="ghost" size="sm" onClick={() => setLocation(backPath)} className="gap-1.5">
           <ArrowLeft className="h-4 w-4" />Back
         </Button>
         <Button

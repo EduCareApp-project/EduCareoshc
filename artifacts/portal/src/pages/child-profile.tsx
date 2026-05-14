@@ -827,7 +827,7 @@ export default function ChildProfile() {
                       <div className="space-y-0">
                         <div className="divide-y">
                           {[...childPosts].reverse().slice(0, 3).map((p) => (
-                            <Link key={p.id} href={`/posts/${p.id}`}>
+                            <Link key={p.id} href={`/posts/${p.id}?back=/children/${child.id}`}>
                               <div className="py-3 flex items-center justify-between gap-4 bg-green-50 hover:bg-green-100 px-2 rounded cursor-pointer">
                                 <div className="min-w-0">
                                   <p className="text-sm font-medium line-clamp-1">{p.title}</p>

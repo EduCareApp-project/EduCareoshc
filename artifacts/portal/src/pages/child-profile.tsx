@@ -720,7 +720,7 @@ export default function ChildProfile() {
             return (
               <>
                 {/* Jottings */}
-                <Card className="bg-green-50">
+                <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-base flex items-center gap-2">
                       <StickyNote className="h-5 w-5" />Jottings
@@ -735,7 +735,7 @@ export default function ChildProfile() {
                     ) : (
                       <div className="space-y-2">
                         {[...childJottings].reverse().map((j) => (
-                          <div key={j.id} className={`flex items-start gap-3 p-3 rounded-lg border text-sm ${j.archivedAt ? "bg-muted/40 opacity-70" : "bg-card"}`}>
+                          <div key={j.id} className={`flex items-start gap-3 p-3 rounded-lg border text-sm ${j.archivedAt ? "bg-muted/40 opacity-70" : "bg-green-50"}`}>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="leading-relaxed line-clamp-2 flex-1">{j.content}</p>
@@ -751,7 +751,7 @@ export default function ChildProfile() {
                 </Card>
 
                 {/* Observations */}
-                <Card className="bg-green-50">
+                <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-base flex items-center gap-2">
                       <FileText className="h-5 w-5" />Observations
@@ -769,7 +769,7 @@ export default function ChildProfile() {
                       <div className="flex flex-col divide-y">
                         {observations.map((obs) => (
                           <Link key={obs.id} href={`/observations/${obs.id}`}>
-                            <div className="py-2.5 px-1 grid grid-cols-[1fr_auto_auto] gap-x-4 items-center hover:bg-muted/40 rounded transition-colors cursor-pointer">
+                            <div className="py-2.5 px-2 grid grid-cols-[1fr_auto_auto] gap-x-4 items-center bg-green-50 hover:bg-green-100 rounded transition-colors cursor-pointer">
                               <p className="text-sm line-clamp-1 leading-relaxed">{obs.description}</p>
                               <p className="text-xs text-muted-foreground whitespace-nowrap">{obs.staffName ?? "—"}</p>
                               <div className="text-right">
@@ -785,7 +785,7 @@ export default function ChildProfile() {
                 </Card>
 
                 {/* Programmed Experiences */}
-                <Card className="bg-green-50">
+                <Card>
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-base flex items-center gap-2">
                       <BookOpen className="h-5 w-5" />Programmed Experiences
@@ -801,7 +801,7 @@ export default function ChildProfile() {
                       <div className="grid sm:grid-cols-2 gap-3">
                         {childPlanningExps.map((p) => (
                           <Link key={p.id} href={`/planning/${p.id}`}>
-                            <div className="px-3 py-2.5 rounded-lg border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer flex items-center gap-2 min-w-0">
+                            <div className="px-3 py-2.5 rounded-lg border bg-green-50 hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer flex items-center gap-2 min-w-0">
                               <span className="text-sm font-medium truncate flex-1">{p.title}</span>
                               <Badge variant="outline" className="text-xs capitalize shrink-0">{p.stage}</Badge>
                               {p.startDate && <span className="text-xs text-muted-foreground shrink-0">{safeDate(p.startDate, "d MMM yyyy")}</span>}
@@ -814,7 +814,7 @@ export default function ChildProfile() {
                 </Card>
 
                 {/* Posts */}
-                <Card className="bg-green-50">
+                <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Newspaper className="h-5 w-5" />Posts
@@ -827,7 +827,7 @@ export default function ChildProfile() {
                       <div className="divide-y">
                         {[...childPosts].reverse().map((p) => (
                           <Link key={p.id} href={`/posts/${p.id}`}>
-                            <div className="py-3 flex items-center justify-between gap-4 hover:bg-muted/40 px-1 rounded cursor-pointer">
+                            <div className="py-3 flex items-center justify-between gap-4 bg-green-50 hover:bg-green-100 px-2 rounded cursor-pointer">
                               <div className="min-w-0">
                                 <p className="text-sm font-medium line-clamp-1">{p.title}</p>
                                 <p className="text-xs text-muted-foreground">

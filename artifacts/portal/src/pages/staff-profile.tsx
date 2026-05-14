@@ -773,11 +773,11 @@ export default function StaffProfile() {
                 </div>
                 <div className="flex items-start gap-3">
                   <Badge className="bg-blue-100 text-blue-800 border-blue-200 shrink-0 mt-0.5" variant="outline">Educator</Badge>
-                  <span>Core compliance documents are current — WWCC, Staff Details (DET), History &amp; Compliance, Resume, and both Child Safety modules</span>
+                  <span>All three core documents are current — Staff Details (DET), WWCC, and Child Safety - Mandatory Reporting and Other Obligations</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <Badge className="bg-amber-100 text-amber-800 border-amber-200 shrink-0 mt-0.5" variant="outline">Incomplete</Badge>
-                  <span>One or more required qualifications for Educator status are missing or not yet recorded</span>
+                  <span>One or more of the following are missing or not yet recorded: Staff Details (DET), WWCC, Child Safety - Mandatory Reporting and Other Obligations</span>
                 </div>
               </div>
             </CardContent>

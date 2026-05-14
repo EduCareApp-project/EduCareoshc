@@ -1,10 +1,7 @@
 export const EDUCATOR_QUALS = [
-  "Child Safety - Foundation Child Safety Training (GECCKO)",
-  "Child Safety - Mandatory Reporting and Other Obligations",
-  "History & Compliance",
-  "Resume",
   "Staff Details (DET)",
   "WWCC",
+  "Child Safety - Mandatory Reporting and Other Obligations",
 ];
 
 export const RP_QUALS = [

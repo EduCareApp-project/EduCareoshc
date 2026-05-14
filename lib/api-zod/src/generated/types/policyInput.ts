@@ -7,11 +7,16 @@
  */
 
 export interface PolicyInput {
+  policyNumber?: number;
   title: string;
   category: string;
   description?: string;
+  content?: string;
+  documentPath?: string;
+  documentName?: string;
   fileUrl?: string;
   version?: string;
   lastReviewedAt?: Date;
   requiresAcknowledgment?: string;
+  notifyRoles?: string;
 }

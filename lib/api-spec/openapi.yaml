@@ -1320,6 +1320,42 @@ paths:
               schema:
                 $ref: "#/components/schemas/Policy"
 
+  /policies/{id}:
+    patch:
+      operationId: updatePolicy
+      tags: [policies]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+    delete:
+      operationId: deletePolicy
+      tags: [policies]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /policies/{id}/acknowledge:
     post:
       operationId: acknowledgePolicy
@@ -1363,6 +1399,116 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PolicyAcknowledgment"
+
+  /file-categories:
+    get:
+      operationId: listFileCategories
+      tags: [file-library]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FileCategory"
+    post:
+      operationId: createFileCategory
+      tags: [file-library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FileCategoryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileCategory"
+
+  /file-categories/{id}:
+    patch:
+      operationId: updateFileCategory
+      tags: [file-library]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FileCategoryUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileCategory"
+    delete:
+      operationId: deleteFileCategory
+      tags: [file-library]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /file-library:
+    get:
+      operationId: listFileLibrary
+      tags: [file-library]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FileLibraryItem"
+    post:
+      operationId: createFileLibraryItem
+      tags: [file-library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FileLibraryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileLibraryItem"
+
+  /file-library/{id}:
+    delete:
+      operationId: deleteFileLibraryItem
+      tags: [file-library]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
 
   /checklists:
     get:
@@ -2813,26 +2959,41 @@ components:
 
     Policy:
       type: object
-      required: [id, title, category, requiresAcknowledgment, createdAt]
+      required: [id, title, category, versionNumber, requiresAcknowledgment, createdAt]
       properties:
         id:
           type: integer
+        policyNumber:
+          type: ["integer", "null"]
         title:
           type: string
         category:
           type: string
         description:
           type: ["string", "null"]
+        content:
+          type: ["string", "null"]
+        documentPath:
+          type: ["string", "null"]
+        documentName:
+          type: ["string", "null"]
         fileUrl:
           type: ["string", "null"]
         version:
           type: ["string", "null"]
+        versionNumber:
+          type: integer
         lastReviewedAt:
           type: ["string", "null"]
           format: date
         requiresAcknowledgment:
           type: string
+        notifyRoles:
+          type: ["string", "null"]
         createdAt:
+          type: string
+          format: date-time
+        updatedAt:
           type: string
           format: date-time
 
@@ -2840,11 +3001,19 @@ components:
       type: object
       required: [title, category]
       properties:
+        policyNumber:
+          type: integer
         title:
           type: string
         category:
           type: string
         description:
+          type: string
+        content:
+          type: string
+        documentPath:
+          type: string
+        documentName:
           type: string
         fileUrl:
           type: string
@@ -2855,10 +3024,39 @@ components:
           format: date
         requiresAcknowledgment:
           type: string
+        notifyRoles:
+          type: string
+
+    PolicyUpdate:
+      type: object
+      properties:
+        policyNumber:
+          type: integer
+        title:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        content:
+          type: string
+        documentPath:
+          type: string
+        documentName:
+          type: string
+        version:
+          type: string
+        lastReviewedAt:
+          type: string
+          format: date
+        notifyRoles:
+          type: string
+        bumpVersion:
+          type: boolean
 
     PolicyAcknowledgment:
       type: object
-      required: [id, policyId, staffId, acknowledgedAt]
+      required: [id, policyId, staffId, policyVersion, acknowledgedAt]
       properties:
         id:
           type: integer
@@ -2866,7 +3064,11 @@ components:
           type: integer
         staffId:
           type: integer
+        policyVersion:
+          type: integer
         staffName:
+          type: ["string", "null"]
+        staffRole:
           type: ["string", "null"]
         acknowledgedAt:
           type: string
@@ -2878,6 +3080,70 @@ components:
       properties:
         staffId:
           type: integer
+
+    FileCategory:
+      type: object
+      required: [id, name, sortOrder, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    FileCategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        sortOrder:
+          type: integer
+
+    FileCategoryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        sortOrder:
+          type: integer
+
+    FileLibraryItem:
+      type: object
+      required: [id, name, documentPath, documentName, createdAt]
+      properties:
+        id:
+          type: integer
+        categoryId:
+          type: ["integer", "null"]
+        categoryName:
+          type: ["string", "null"]
+        name:
+          type: string
+        documentPath:
+          type: string
+        documentName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    FileLibraryInput:
+      type: object
+      required: [name, documentPath, documentName]
+      properties:
+        name:
+          type: string
+        categoryId:
+          type: integer
+        documentPath:
+          type: string
+        documentName:
+          type: string
 
     Checklist:
       type: object

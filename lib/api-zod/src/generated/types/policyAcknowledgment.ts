@@ -10,7 +10,10 @@ export interface PolicyAcknowledgment {
   id: number;
   policyId: number;
   staffId: number;
+  policyVersion: number;
   /** @nullable */
   staffName?: string | null;
+  /** @nullable */
+  staffRole?: string | null;
   acknowledgedAt: Date;
 }

@@ -8,16 +8,28 @@
 
 export interface Policy {
   id: number;
+  /** @nullable */
+  policyNumber?: number | null;
   title: string;
   category: string;
   /** @nullable */
   description?: string | null;
   /** @nullable */
+  content?: string | null;
+  /** @nullable */
+  documentPath?: string | null;
+  /** @nullable */
+  documentName?: string | null;
+  /** @nullable */
   fileUrl?: string | null;
   /** @nullable */
   version?: string | null;
+  versionNumber: number;
   /** @nullable */
   lastReviewedAt?: Date | null;
   requiresAcknowledgment: string;
+  /** @nullable */
+  notifyRoles?: string | null;
   createdAt: Date;
+  updatedAt?: Date;
 }

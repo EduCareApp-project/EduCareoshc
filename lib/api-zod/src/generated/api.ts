@@ -1198,25 +1198,78 @@ export const GetWellbeingReportResponse = zod.object({
 
 export const ListPoliciesResponseItem = zod.object({
   id: zod.number(),
+  policyNumber: zod.number().nullish(),
   title: zod.string(),
   category: zod.string(),
   description: zod.string().nullish(),
+  content: zod.string().nullish(),
+  documentPath: zod.string().nullish(),
+  documentName: zod.string().nullish(),
   fileUrl: zod.string().nullish(),
   version: zod.string().nullish(),
+  versionNumber: zod.number(),
   lastReviewedAt: zod.coerce.date().nullish(),
   requiresAcknowledgment: zod.string(),
+  notifyRoles: zod.string().nullish(),
   createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date().optional(),
 });
 export const ListPoliciesResponse = zod.array(ListPoliciesResponseItem);
 
 export const CreatePolicyBody = zod.object({
+  policyNumber: zod.number().optional(),
   title: zod.string(),
   category: zod.string(),
   description: zod.string().optional(),
+  content: zod.string().optional(),
+  documentPath: zod.string().optional(),
+  documentName: zod.string().optional(),
   fileUrl: zod.string().optional(),
   version: zod.string().optional(),
   lastReviewedAt: zod.coerce.date().optional(),
   requiresAcknowledgment: zod.string().optional(),
+  notifyRoles: zod.string().optional(),
+});
+
+export const UpdatePolicyParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdatePolicyBody = zod.object({
+  policyNumber: zod.number().optional(),
+  title: zod.string().optional(),
+  category: zod.string().optional(),
+  description: zod.string().optional(),
+  content: zod.string().optional(),
+  documentPath: zod.string().optional(),
+  documentName: zod.string().optional(),
+  version: zod.string().optional(),
+  lastReviewedAt: zod.coerce.date().optional(),
+  notifyRoles: zod.string().optional(),
+  bumpVersion: zod.boolean().optional(),
+});
+
+export const UpdatePolicyResponse = zod.object({
+  id: zod.number(),
+  policyNumber: zod.number().nullish(),
+  title: zod.string(),
+  category: zod.string(),
+  description: zod.string().nullish(),
+  content: zod.string().nullish(),
+  documentPath: zod.string().nullish(),
+  documentName: zod.string().nullish(),
+  fileUrl: zod.string().nullish(),
+  version: zod.string().nullish(),
+  versionNumber: zod.number(),
+  lastReviewedAt: zod.coerce.date().nullish(),
+  requiresAcknowledgment: zod.string(),
+  notifyRoles: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date().optional(),
+});
+
+export const DeletePolicyParams = zod.object({
+  id: zod.coerce.number(),
 });
 
 export const AcknowledgePolicyParams = zod.object({
@@ -1235,12 +1288,71 @@ export const GetPolicyAcknowledgmentsResponseItem = zod.object({
   id: zod.number(),
   policyId: zod.number(),
   staffId: zod.number(),
+  policyVersion: zod.number(),
   staffName: zod.string().nullish(),
+  staffRole: zod.string().nullish(),
   acknowledgedAt: zod.coerce.date(),
 });
 export const GetPolicyAcknowledgmentsResponse = zod.array(
   GetPolicyAcknowledgmentsResponseItem,
 );
+
+export const ListFileCategoriesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  sortOrder: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+export const ListFileCategoriesResponse = zod.array(
+  ListFileCategoriesResponseItem,
+);
+
+export const CreateFileCategoryBody = zod.object({
+  name: zod.string(),
+  sortOrder: zod.number().optional(),
+});
+
+export const UpdateFileCategoryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateFileCategoryBody = zod.object({
+  name: zod.string().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+export const UpdateFileCategoryResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  sortOrder: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+
+export const DeleteFileCategoryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListFileLibraryResponseItem = zod.object({
+  id: zod.number(),
+  categoryId: zod.number().nullish(),
+  categoryName: zod.string().nullish(),
+  name: zod.string(),
+  documentPath: zod.string(),
+  documentName: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListFileLibraryResponse = zod.array(ListFileLibraryResponseItem);
+
+export const CreateFileLibraryItemBody = zod.object({
+  name: zod.string(),
+  categoryId: zod.number().optional(),
+  documentPath: zod.string(),
+  documentName: zod.string(),
+});
+
+export const DeleteFileLibraryItemParams = zod.object({
+  id: zod.coerce.number(),
+});
 
 export const ListChecklistsResponseItem = zod.object({
   id: zod.number(),

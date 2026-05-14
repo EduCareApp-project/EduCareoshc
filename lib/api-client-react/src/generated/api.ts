@@ -33,6 +33,11 @@ import type {
   ErrorEnvelope,
   Evacuation,
   EvacuationInput,
+  FileCategory,
+  FileCategoryInput,
+  FileCategoryUpdate,
+  FileLibraryInput,
+  FileLibraryItem,
   Guardian,
   GuardianUpdate,
   HealthStatus,
@@ -60,6 +65,7 @@ import type {
   PolicyAcknowledgeInput,
   PolicyAcknowledgment,
   PolicyInput,
+  PolicyUpdate,
   Post,
   PostInput,
   PostUpdate,
@@ -5858,6 +5864,165 @@ export const useCreatePolicy = <
   return useMutation(getCreatePolicyMutationOptions(options));
 };
 
+export const getUpdatePolicyUrl = (id: number) => {
+  return `/api/policies/${id}`;
+};
+
+export const updatePolicy = async (
+  id: number,
+  policyUpdate: PolicyUpdate,
+  options?: RequestInit,
+): Promise<Policy> => {
+  return customFetch<Policy>(getUpdatePolicyUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(policyUpdate),
+  });
+};
+
+export const getUpdatePolicyMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePolicy>>,
+    TError,
+    { id: number; data: BodyType<PolicyUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updatePolicy>>,
+  TError,
+  { id: number; data: BodyType<PolicyUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updatePolicy"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updatePolicy>>,
+    { id: number; data: BodyType<PolicyUpdate> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updatePolicy(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdatePolicyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updatePolicy>>
+>;
+export type UpdatePolicyMutationBody = BodyType<PolicyUpdate>;
+export type UpdatePolicyMutationError = ErrorType<unknown>;
+
+export const useUpdatePolicy = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePolicy>>,
+    TError,
+    { id: number; data: BodyType<PolicyUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updatePolicy>>,
+  TError,
+  { id: number; data: BodyType<PolicyUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdatePolicyMutationOptions(options));
+};
+
+export const getDeletePolicyUrl = (id: number) => {
+  return `/api/policies/${id}`;
+};
+
+export const deletePolicy = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeletePolicyUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeletePolicyMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deletePolicy>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deletePolicy>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deletePolicy"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deletePolicy>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deletePolicy(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeletePolicyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deletePolicy>>
+>;
+
+export type DeletePolicyMutationError = ErrorType<unknown>;
+
+export const useDeletePolicy = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deletePolicy>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deletePolicy>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeletePolicyMutationOptions(options));
+};
+
 export const getAcknowledgePolicyUrl = (id: number) => {
   return `/api/policies/${id}/acknowledge`;
 };
@@ -6023,6 +6188,539 @@ export function useGetPolicyAcknowledgments<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+export const getListFileCategoriesUrl = () => {
+  return `/api/file-categories`;
+};
+
+export const listFileCategories = async (
+  options?: RequestInit,
+): Promise<FileCategory[]> => {
+  return customFetch<FileCategory[]>(getListFileCategoriesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListFileCategoriesQueryKey = () => {
+  return [`/api/file-categories`] as const;
+};
+
+export const getListFileCategoriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listFileCategories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listFileCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListFileCategoriesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listFileCategories>>
+  > = ({ signal }) => listFileCategories({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listFileCategories>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListFileCategoriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listFileCategories>>
+>;
+export type ListFileCategoriesQueryError = ErrorType<unknown>;
+
+export function useListFileCategories<
+  TData = Awaited<ReturnType<typeof listFileCategories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listFileCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListFileCategoriesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateFileCategoryUrl = () => {
+  return `/api/file-categories`;
+};
+
+export const createFileCategory = async (
+  fileCategoryInput: FileCategoryInput,
+  options?: RequestInit,
+): Promise<FileCategory> => {
+  return customFetch<FileCategory>(getCreateFileCategoryUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(fileCategoryInput),
+  });
+};
+
+export const getCreateFileCategoryMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createFileCategory>>,
+    TError,
+    { data: BodyType<FileCategoryInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createFileCategory>>,
+  TError,
+  { data: BodyType<FileCategoryInput> },
+  TContext
+> => {
+  const mutationKey = ["createFileCategory"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createFileCategory>>,
+    { data: BodyType<FileCategoryInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createFileCategory(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateFileCategoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createFileCategory>>
+>;
+export type CreateFileCategoryMutationBody = BodyType<FileCategoryInput>;
+export type CreateFileCategoryMutationError = ErrorType<unknown>;
+
+export const useCreateFileCategory = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createFileCategory>>,
+    TError,
+    { data: BodyType<FileCategoryInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createFileCategory>>,
+  TError,
+  { data: BodyType<FileCategoryInput> },
+  TContext
+> => {
+  return useMutation(getCreateFileCategoryMutationOptions(options));
+};
+
+export const getUpdateFileCategoryUrl = (id: number) => {
+  return `/api/file-categories/${id}`;
+};
+
+export const updateFileCategory = async (
+  id: number,
+  fileCategoryUpdate: FileCategoryUpdate,
+  options?: RequestInit,
+): Promise<FileCategory> => {
+  return customFetch<FileCategory>(getUpdateFileCategoryUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(fileCategoryUpdate),
+  });
+};
+
+export const getUpdateFileCategoryMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateFileCategory>>,
+    TError,
+    { id: number; data: BodyType<FileCategoryUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateFileCategory>>,
+  TError,
+  { id: number; data: BodyType<FileCategoryUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateFileCategory"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateFileCategory>>,
+    { id: number; data: BodyType<FileCategoryUpdate> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateFileCategory(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateFileCategoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateFileCategory>>
+>;
+export type UpdateFileCategoryMutationBody = BodyType<FileCategoryUpdate>;
+export type UpdateFileCategoryMutationError = ErrorType<unknown>;
+
+export const useUpdateFileCategory = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateFileCategory>>,
+    TError,
+    { id: number; data: BodyType<FileCategoryUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateFileCategory>>,
+  TError,
+  { id: number; data: BodyType<FileCategoryUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateFileCategoryMutationOptions(options));
+};
+
+export const getDeleteFileCategoryUrl = (id: number) => {
+  return `/api/file-categories/${id}`;
+};
+
+export const deleteFileCategory = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteFileCategoryUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteFileCategoryMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteFileCategory>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteFileCategory>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteFileCategory"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteFileCategory>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteFileCategory(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteFileCategoryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteFileCategory>>
+>;
+
+export type DeleteFileCategoryMutationError = ErrorType<unknown>;
+
+export const useDeleteFileCategory = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteFileCategory>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteFileCategory>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteFileCategoryMutationOptions(options));
+};
+
+export const getListFileLibraryUrl = () => {
+  return `/api/file-library`;
+};
+
+export const listFileLibrary = async (
+  options?: RequestInit,
+): Promise<FileLibraryItem[]> => {
+  return customFetch<FileLibraryItem[]>(getListFileLibraryUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListFileLibraryQueryKey = () => {
+  return [`/api/file-library`] as const;
+};
+
+export const getListFileLibraryQueryOptions = <
+  TData = Awaited<ReturnType<typeof listFileLibrary>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listFileLibrary>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListFileLibraryQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listFileLibrary>>> = ({
+    signal,
+  }) => listFileLibrary({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listFileLibrary>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListFileLibraryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listFileLibrary>>
+>;
+export type ListFileLibraryQueryError = ErrorType<unknown>;
+
+export function useListFileLibrary<
+  TData = Awaited<ReturnType<typeof listFileLibrary>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listFileLibrary>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListFileLibraryQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateFileLibraryItemUrl = () => {
+  return `/api/file-library`;
+};
+
+export const createFileLibraryItem = async (
+  fileLibraryInput: FileLibraryInput,
+  options?: RequestInit,
+): Promise<FileLibraryItem> => {
+  return customFetch<FileLibraryItem>(getCreateFileLibraryItemUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(fileLibraryInput),
+  });
+};
+
+export const getCreateFileLibraryItemMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createFileLibraryItem>>,
+    TError,
+    { data: BodyType<FileLibraryInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createFileLibraryItem>>,
+  TError,
+  { data: BodyType<FileLibraryInput> },
+  TContext
+> => {
+  const mutationKey = ["createFileLibraryItem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createFileLibraryItem>>,
+    { data: BodyType<FileLibraryInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createFileLibraryItem(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateFileLibraryItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createFileLibraryItem>>
+>;
+export type CreateFileLibraryItemMutationBody = BodyType<FileLibraryInput>;
+export type CreateFileLibraryItemMutationError = ErrorType<unknown>;
+
+export const useCreateFileLibraryItem = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createFileLibraryItem>>,
+    TError,
+    { data: BodyType<FileLibraryInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createFileLibraryItem>>,
+  TError,
+  { data: BodyType<FileLibraryInput> },
+  TContext
+> => {
+  return useMutation(getCreateFileLibraryItemMutationOptions(options));
+};
+
+export const getDeleteFileLibraryItemUrl = (id: number) => {
+  return `/api/file-library/${id}`;
+};
+
+export const deleteFileLibraryItem = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteFileLibraryItemUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteFileLibraryItemMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteFileLibraryItem>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteFileLibraryItem>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteFileLibraryItem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteFileLibraryItem>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteFileLibraryItem(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteFileLibraryItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteFileLibraryItem>>
+>;
+
+export type DeleteFileLibraryItemMutationError = ErrorType<unknown>;
+
+export const useDeleteFileLibraryItem = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteFileLibraryItem>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteFileLibraryItem>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteFileLibraryItemMutationOptions(options));
+};
 
 export const getListChecklistsUrl = () => {
   return `/api/checklists`;

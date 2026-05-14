@@ -33,6 +33,8 @@ import Evacuations from "@/pages/evacuations";
 import Qip from "@/pages/qip";
 import Wellbeing from "@/pages/wellbeing";
 import Policies from "@/pages/policies";
+import PoliciesList from "@/pages/policies-list";
+import FileLibrary from "@/pages/file-library";
 import Checklists from "@/pages/checklists";
 import ReportsLearning from "@/pages/reports-learning";
 import ReportsService from "@/pages/reports-service";
@@ -89,6 +91,8 @@ function Router() {
         <Route path="/qip" component={Qip} />
         <Route path="/wellbeing" component={Wellbeing} />
         <Route path="/policies" component={Policies} />
+        <Route path="/policies/list" component={PoliciesList} />
+        <Route path="/policies/files" component={FileLibrary} />
         <Route path="/checklists" component={Checklists} />
         
         <Route path="/reports/learning" component={ReportsLearning} />

@@ -22,3 +22,5 @@ export * from "./welfare_notes";
 export * from "./confidential_notes";
 export * from "./staff_qualifications";
 export * from "./qualification_documents";
+export * from "./file_categories";
+export * from "./file_library";

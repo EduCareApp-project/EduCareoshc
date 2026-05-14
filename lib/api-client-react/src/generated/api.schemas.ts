@@ -873,41 +873,111 @@ export interface WellbeingReportInput {
 
 export interface Policy {
   id: number;
+  /** @nullable */
+  policyNumber?: number | null;
   title: string;
   category: string;
   /** @nullable */
   description?: string | null;
   /** @nullable */
+  content?: string | null;
+  /** @nullable */
+  documentPath?: string | null;
+  /** @nullable */
+  documentName?: string | null;
+  /** @nullable */
   fileUrl?: string | null;
   /** @nullable */
   version?: string | null;
+  versionNumber: number;
   /** @nullable */
   lastReviewedAt?: string | null;
   requiresAcknowledgment: string;
+  /** @nullable */
+  notifyRoles?: string | null;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface PolicyInput {
+  policyNumber?: number;
   title: string;
   category: string;
   description?: string;
+  content?: string;
+  documentPath?: string;
+  documentName?: string;
   fileUrl?: string;
   version?: string;
   lastReviewedAt?: string;
   requiresAcknowledgment?: string;
+  notifyRoles?: string;
+}
+
+export interface PolicyUpdate {
+  policyNumber?: number;
+  title?: string;
+  category?: string;
+  description?: string;
+  content?: string;
+  documentPath?: string;
+  documentName?: string;
+  version?: string;
+  lastReviewedAt?: string;
+  notifyRoles?: string;
+  bumpVersion?: boolean;
 }
 
 export interface PolicyAcknowledgment {
   id: number;
   policyId: number;
   staffId: number;
+  policyVersion: number;
   /** @nullable */
   staffName?: string | null;
+  /** @nullable */
+  staffRole?: string | null;
   acknowledgedAt: string;
 }
 
 export interface PolicyAcknowledgeInput {
   staffId: number;
+}
+
+export interface FileCategory {
+  id: number;
+  name: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface FileCategoryInput {
+  name: string;
+  sortOrder?: number;
+}
+
+export interface FileCategoryUpdate {
+  name?: string;
+  sortOrder?: number;
+}
+
+export interface FileLibraryItem {
+  id: number;
+  /** @nullable */
+  categoryId?: number | null;
+  /** @nullable */
+  categoryName?: string | null;
+  name: string;
+  documentPath: string;
+  documentName: string;
+  createdAt: string;
+}
+
+export interface FileLibraryInput {
+  name: string;
+  categoryId?: number;
+  documentPath: string;
+  documentName: string;
 }
 
 export type ChecklistType = (typeof ChecklistType)[keyof typeof ChecklistType];

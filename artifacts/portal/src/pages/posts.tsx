@@ -93,10 +93,14 @@ export default function Posts() {
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-semibold leading-snug line-clamp-2">{post.title}</h3>
                   </div>
-                  {post.childName && (
-                    <Badge variant="secondary" className="text-xs gap-1">
-                      <User className="h-2.5 w-2.5" />{post.childName}
-                    </Badge>
+                  {post.childNames && post.childNames.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {post.childNames.map((name) => (
+                        <Badge key={name} variant="secondary" className="text-xs gap-1">
+                          <User className="h-2.5 w-2.5" />{name}
+                        </Badge>
+                      ))}
+                    </div>
                   )}
                   {post.aiSummary ? (
                     <p className="text-sm text-muted-foreground line-clamp-3">{post.aiSummary}</p>

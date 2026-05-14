@@ -16,12 +16,15 @@ async function enrichPost(p: typeof postsTable.$inferSelect) {
     db.select().from(staffTable),
     db.select().from(sitesTable),
   ]);
-  const child = childList.find((c) => c.id === p.childId);
   const staff = staffList.find((s) => s.id === p.staffId);
   const site = siteList.find((s) => s.id === p.siteId);
+  const childNames = (p.childIds ?? []).map((cid) => {
+    const c = childList.find((ch) => ch.id === cid);
+    return c ? `${c.firstName} ${c.lastName}` : null;
+  }).filter(Boolean) as string[];
   return {
     ...p,
-    childName: child ? `${child.firstName} ${child.lastName}` : null,
+    childNames,
     staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
     siteName: site ? site.name : null,
   };
@@ -59,12 +62,15 @@ router.get("/posts", async (_req, res): Promise<void> => {
     db.select().from(sitesTable),
   ]);
   const enriched = rows.map((p) => {
-    const child = childList.find((c) => c.id === p.childId);
     const staff = staffList.find((s) => s.id === p.staffId);
     const site = siteList.find((s) => s.id === p.siteId);
+    const childNames = (p.childIds ?? []).map((cid) => {
+      const c = childList.find((ch) => ch.id === cid);
+      return c ? `${c.firstName} ${c.lastName}` : null;
+    }).filter(Boolean) as string[];
     return {
       ...p,
-      childName: child ? `${child.firstName} ${child.lastName}` : null,
+      childNames,
       staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
       siteName: site ? site.name : null,
     };
@@ -86,6 +92,7 @@ router.post("/posts", async (req, res): Promise<void> => {
     ...parsed.data,
     date: parsed.data.date as any,
     images: parsed.data.images ?? [],
+    childIds: parsed.data.childIds ?? [],
     aiSummary,
   }).returning();
   res.status(201).json(GetPostResponse.parse(await enrichPost(post)));

@@ -15,7 +15,7 @@ import { useMemo } from "react";
 
 const EMPTY_FORM = {
   siteId: "",
-  childId: "",
+  childIds: [] as number[],
   title: "",
   date: new Date().toISOString().split("T")[0],
   staffId: "",
@@ -34,7 +34,7 @@ export default function NewPost() {
   const { data: staff } = useListStaff();
   const createPost = useCreatePost();
 
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState<typeof EMPTY_FORM>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [images, setImages] = useState<string[]>([]);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
@@ -46,6 +46,13 @@ export default function NewPost() {
     if (!form.siteId || form.siteId === "none") return children ?? [];
     return (children ?? []).filter((c) => String(c.siteId) === form.siteId);
   }, [children, form.siteId]);
+
+  function toggleChild(id: number) {
+    setForm((f) => ({
+      ...f,
+      childIds: f.childIds.includes(id) ? f.childIds.filter((c) => c !== id) : [...f.childIds, id],
+    }));
+  }
 
   function validate() {
     const e: Record<string, string> = {};
@@ -89,9 +96,9 @@ export default function NewPost() {
       title: form.title,
       date: form.date,
       images,
+      childIds: form.childIds,
     };
     if (form.siteId && form.siteId !== "none") body.siteId = parseInt(form.siteId);
-    if (form.childId && form.childId !== "none") body.childId = parseInt(form.childId);
     if (form.staffId && form.staffId !== "none") body.staffId = parseInt(form.staffId);
     if (form.description.trim()) body.description = form.description;
     if (form.learning.trim()) body.learning = form.learning;
@@ -128,7 +135,7 @@ export default function NewPost() {
                 <Label>Site</Label>
                 <Select
                   value={form.siteId}
-                  onValueChange={(v) => setForm({ ...form, siteId: v, childId: "" })}
+                  onValueChange={(v) => setForm({ ...form, siteId: v, childIds: [] })}
                 >
                   <SelectTrigger><SelectValue placeholder="Select site" /></SelectTrigger>
                   <SelectContent>
@@ -140,21 +147,29 @@ export default function NewPost() {
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <Label>Child</Label>
-                <Select
-                  value={form.childId}
-                  onValueChange={(v) => setForm({ ...form, childId: v })}
-                  disabled={filteredChildren.length === 0}
-                >
-                  <SelectTrigger><SelectValue placeholder="Select child" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No specific child</SelectItem>
-                    {filteredChildren.map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)}>{c.firstName} {c.lastName}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>Children</Label>
+                {filteredChildren.length === 0 ? (
+                  <p className="text-sm text-muted-foreground italic">
+                    {form.siteId && form.siteId !== "none" ? "No active children at this site." : "Select a site to filter children, or all children will be shown once a site has children enrolled."}
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {filteredChildren.map((c) => {
+                      const selected = form.childIds.includes(c.id);
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => toggleChild(c.id)}
+                          className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}
+                        >
+                          {c.firstName} {c.lastName}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 

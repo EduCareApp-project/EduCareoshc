@@ -3503,10 +3503,14 @@ components:
           type: ["integer", "null"]
         siteName:
           type: ["string", "null"]
-        childId:
-          type: ["integer", "null"]
-        childName:
-          type: ["string", "null"]
+        childIds:
+          type: array
+          items:
+            type: integer
+        childNames:
+          type: array
+          items:
+            type: string
         staffId:
           type: ["integer", "null"]
         staffName:
@@ -3539,8 +3543,10 @@ components:
       properties:
         siteId:
           type: integer
-        childId:
-          type: integer
+        childIds:
+          type: array
+          items:
+            type: integer
         staffId:
           type: integer
         title:
@@ -3565,8 +3571,10 @@ components:
       properties:
         siteId:
           type: integer
-        childId:
-          type: integer
+        childIds:
+          type: array
+          items:
+            type: integer
         staffId:
           type: integer
         title:

@@ -8,7 +8,7 @@ import { z } from "zod/v4";
 export const postsTable = pgTable("posts", {
   id: serial("id").primaryKey(),
   siteId: integer("site_id").references(() => sitesTable.id, { onDelete: "set null" }),
-  childId: integer("child_id").references(() => childrenTable.id, { onDelete: "set null" }),
+  childIds: integer("child_ids").array().notNull().default([]),
   title: text("title").notNull(),
   date: date("date"),
   staffId: integer("staff_id").references(() => staffTable.id, { onDelete: "set null" }),

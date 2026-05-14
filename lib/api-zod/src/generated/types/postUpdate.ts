@@ -8,7 +8,7 @@
 
 export interface PostUpdate {
   siteId?: number;
-  childId?: number;
+  childIds?: number[];
   staffId?: number;
   title?: string;
   date?: Date;

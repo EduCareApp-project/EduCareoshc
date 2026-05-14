@@ -1110,10 +1110,8 @@ export interface Post {
   siteId?: number | null;
   /** @nullable */
   siteName?: string | null;
-  /** @nullable */
-  childId?: number | null;
-  /** @nullable */
-  childName?: string | null;
+  childIds?: number[];
+  childNames?: string[];
   /** @nullable */
   staffId?: number | null;
   /** @nullable */
@@ -1136,7 +1134,7 @@ export interface Post {
 
 export interface PostInput {
   siteId?: number;
-  childId?: number;
+  childIds?: number[];
   staffId?: number;
   title: string;
   date?: string;
@@ -1149,7 +1147,7 @@ export interface PostInput {
 
 export interface PostUpdate {
   siteId?: number;
-  childId?: number;
+  childIds?: number[];
   staffId?: number;
   title?: string;
   date?: string;

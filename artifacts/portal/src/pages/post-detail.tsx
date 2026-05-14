@@ -87,10 +87,14 @@ export default function PostDetail() {
 
       <article className="space-y-6">
         <div className="space-y-3">
-          {post.childName && (
-            <Badge variant="secondary" className="gap-1.5">
-              <User className="h-3 w-3" />{post.childName}
-            </Badge>
+          {post.childNames && post.childNames.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {post.childNames.map((name) => (
+                <Badge key={name} variant="secondary" className="gap-1.5">
+                  <User className="h-3 w-3" />{name}
+                </Badge>
+              ))}
+            </div>
           )}
           <h1 className="text-3xl font-bold tracking-tight leading-tight">{post.title}</h1>
 

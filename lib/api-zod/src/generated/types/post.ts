@@ -12,10 +12,8 @@ export interface Post {
   siteId?: number | null;
   /** @nullable */
   siteName?: string | null;
-  /** @nullable */
-  childId?: number | null;
-  /** @nullable */
-  childName?: string | null;
+  childIds?: number[];
+  childNames?: string[];
   /** @nullable */
   staffId?: number | null;
   /** @nullable */

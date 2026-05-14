@@ -397,8 +397,9 @@ function ItemRow({
 
   return (
     <tr className="border-b last:border-b-0 align-top hover:bg-muted/30 transition-colors group">
-      <td className="py-3 px-4 text-sm font-medium text-foreground whitespace-nowrap">QA{item.qualityArea}</td>
-      <td className="py-3 px-4 text-sm text-foreground whitespace-nowrap">{item.standardElement ?? <span className="text-muted-foreground">—</span>}</td>
+      <td className="py-3 px-4 text-sm font-medium text-foreground whitespace-nowrap">
+        QA{item.qualityArea}{item.standardElement ? ` ${item.standardElement}` : ""}
+      </td>
       <td className="py-3 px-4 whitespace-nowrap">
         <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full border ${PRIORITY_COLOURS[item.priority] ?? PRIORITY_COLOURS.medium}`}>
           {priorityLabel}
@@ -465,8 +466,9 @@ function ArchivedItemRow({
 
   return (
     <tr className="border-b last:border-b-0 align-top hover:bg-muted/30 transition-colors group opacity-70">
-      <td className="py-3 px-4 text-sm font-medium text-foreground whitespace-nowrap">QA{item.qualityArea}</td>
-      <td className="py-3 px-4 text-sm text-foreground whitespace-nowrap">{item.standardElement ?? <span className="text-muted-foreground">—</span>}</td>
+      <td className="py-3 px-4 text-sm font-medium text-foreground whitespace-nowrap">
+        QA{item.qualityArea}{item.standardElement ? ` ${item.standardElement}` : ""}
+      </td>
       <td className="py-3 px-4 whitespace-nowrap">
         <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full border ${PRIORITY_COLOURS[item.priority] ?? PRIORITY_COLOURS.medium}`}>
           {priorityLabel}
@@ -538,8 +540,7 @@ function ArchivedSection({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-muted/40 border-b">
-                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Quality Area</th>
-                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Standard / Element</th>
+                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">NQS</th>
                 <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Priority</th>
                 <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Issue Identified</th>
                 <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">What outcome or goal do we seek?</th>
@@ -746,8 +747,7 @@ export default function Qip() {
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-muted/60 border-b">
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Quality Area</th>
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Standard / Element</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">NQS</th>
                           <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Priority</th>
                           <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Issue Identified</th>
                           <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">What outcome or goal do we seek?</th>

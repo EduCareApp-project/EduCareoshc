@@ -408,6 +408,9 @@ function ItemRow({
       <td className="py-3 px-4 text-sm text-foreground">{item.issueIdentified ?? <span className="text-muted-foreground">—</span>}</td>
       <td className="py-3 px-4 text-sm text-foreground">{item.outcomeGoal ?? <span className="text-muted-foreground">—</span>}</td>
       <td className="py-3 px-4 text-sm text-foreground">{item.progressNotes ?? <span className="text-muted-foreground">—</span>}</td>
+      <td className="py-3 px-4 text-sm text-foreground whitespace-nowrap">
+        {item.dueDate ? new Date(item.dueDate).toLocaleDateString("en-AU") : <span className="text-muted-foreground">—</span>}
+      </td>
       <td className="py-3 px-2 whitespace-nowrap">
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <Dialog open={editOpen} onOpenChange={setEditOpen}>
@@ -477,6 +480,9 @@ function ArchivedItemRow({
       <td className="py-3 px-4 text-sm text-foreground">{item.issueIdentified ?? <span className="text-muted-foreground">—</span>}</td>
       <td className="py-3 px-4 text-sm text-foreground">{item.outcomeGoal ?? <span className="text-muted-foreground">—</span>}</td>
       <td className="py-3 px-4 text-sm text-foreground">{item.progressNotes ?? <span className="text-muted-foreground">—</span>}</td>
+      <td className="py-3 px-4 text-sm text-foreground whitespace-nowrap">
+        {item.dueDate ? new Date(item.dueDate).toLocaleDateString("en-AU") : <span className="text-muted-foreground">—</span>}
+      </td>
       <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">
         {item.archivedAt ? new Date(item.archivedAt).toLocaleDateString("en-AU") : "—"}
       </td>
@@ -545,6 +551,7 @@ function ArchivedSection({
                 <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Issue Identified</th>
                 <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">What outcome or goal do we seek?</th>
                 <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Progress Notes</th>
+                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Due By</th>
                 <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Archived</th>
                 <th className="py-2 px-2"></th>
               </tr>
@@ -752,6 +759,7 @@ export default function Qip() {
                           <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Issue Identified</th>
                           <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">What outcome or goal do we seek?</th>
                           <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Progress Notes</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Due By</th>
                           <th className="py-2.5 px-2"></th>
                         </tr>
                       </thead>

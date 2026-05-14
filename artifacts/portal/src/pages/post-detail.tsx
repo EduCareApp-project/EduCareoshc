@@ -107,7 +107,7 @@ export default function PostDetail() {
             {post.date && (
               <span className="flex items-center gap-1.5">
                 <CalendarDays className="h-3.5 w-3.5" />
-                {format(new Date(post.date + "T00:00:00"), "d MMMM yyyy")}
+                {format(new Date(post.date.slice(0, 10) + "T00:00:00"), "d MMMM yyyy")}
               </span>
             )}
             {post.siteName && (

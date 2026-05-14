@@ -116,8 +116,6 @@ const EMPTY_FORM = {
   drillType: "evacuation",
   conductedDate: new Date().toISOString().slice(0, 10),
   conductedTime: "09:00",
-  participantCount: "",
-  durationMinutes: "",
   notes: "",
   conductedBy: "",
   siteId: "",
@@ -178,8 +176,6 @@ export default function Evacuations() {
       conductedAt,
     };
     if (form.siteId) data.siteId = Number(form.siteId);
-    if (form.participantCount) data.participantCount = parseInt(form.participantCount);
-    if (form.durationMinutes) data.durationMinutes = parseInt(form.durationMinutes);
     if (form.notes) data.notes = form.notes;
     if (form.conductedBy) data.conductedBy = form.conductedBy;
     if (evacDocPath) { data.evacuationDocPath = evacDocPath; data.evacuationDocName = evacDocName; }
@@ -270,17 +266,6 @@ export default function Evacuations() {
                     onChange={(e) => setForm({ ...form, conductedTime: e.target.value })}
                     className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>Participants</Label>
-                  <Input type="number" min="0" value={form.participantCount} onChange={(e) => setForm({ ...form, participantCount: e.target.value })} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Duration (min)</Label>
-                  <Input type="number" min="0" value={form.durationMinutes} onChange={(e) => setForm({ ...form, durationMinutes: e.target.value })} />
                 </div>
               </div>
 
@@ -378,8 +363,6 @@ export default function Evacuations() {
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(evac.conductedAt), "d MMMM yyyy 'at' h:mm a")}
-                        {evac.participantCount != null && ` • ${evac.participantCount} participants`}
-                        {evac.durationMinutes != null && ` • ${evac.durationMinutes} min`}
                         {evac.conductedBy && ` • ${evac.conductedBy}`}
                       </p>
                     </div>

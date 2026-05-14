@@ -16,6 +16,7 @@ export const qipItemsTable = pgTable("qip_items", {
   successMeasure: text("success_measure"),
   dueDate: date("due_date"),
   progressNotes: text("progress_notes"),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, Plus, Trash2, Pencil, X } from "lucide-react";
+import { TrendingUp, Plus, Trash2, Pencil, X, Archive, ArchiveRestore, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const QA_AREAS = [
@@ -411,7 +411,7 @@ function ItemRow({
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <Dialog open={editOpen} onOpenChange={setEditOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Edit">
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
             </DialogTrigger>
@@ -427,12 +427,136 @@ function ItemRow({
               />
             </DialogContent>
           </Dialog>
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={handleDelete}>
+          <Button
+            size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-amber-600"
+            title="Archive"
+            onClick={() => updateMutation.mutate(
+              { id: item.id, data: { archivedAt: new Date().toISOString() } as any },
+              {
+                onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/qip"] }); toast({ title: "Item archived" }); },
+                onError: () => toast({ title: "Failed to archive item", variant: "destructive" }),
+              }
+            )}
+          >
+            <Archive className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" title="Delete" onClick={handleDelete}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       </td>
     </tr>
+  );
+}
+
+function ArchivedItemRow({
+  item,
+  sites,
+}: {
+  item: any;
+  sites: { id: number; name: string }[];
+}) {
+  const queryClient = useQueryClient();
+  const updateMutation = useUpdateQipItem();
+  const deleteMutation = useDeleteQipItem();
+  const { toast } = useToast();
+
+  const priorityLabel = (item.priority ?? "medium").charAt(0).toUpperCase() + (item.priority ?? "medium").slice(1);
+
+  return (
+    <tr className="border-b last:border-b-0 align-top hover:bg-muted/30 transition-colors group opacity-70">
+      <td className="py-3 px-4 text-sm font-medium text-foreground whitespace-nowrap">QA{item.qualityArea}</td>
+      <td className="py-3 px-4 text-sm text-foreground whitespace-nowrap">{item.standardElement ?? <span className="text-muted-foreground">—</span>}</td>
+      <td className="py-3 px-4 whitespace-nowrap">
+        <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full border ${PRIORITY_COLOURS[item.priority] ?? PRIORITY_COLOURS.medium}`}>
+          {priorityLabel}
+        </span>
+      </td>
+      <td className="py-3 px-4 text-sm text-foreground">{item.issueIdentified ?? <span className="text-muted-foreground">—</span>}</td>
+      <td className="py-3 px-4 text-sm text-foreground">{item.outcomeGoal ?? <span className="text-muted-foreground">—</span>}</td>
+      <td className="py-3 px-4 text-sm text-foreground">{item.progressNotes ?? <span className="text-muted-foreground">—</span>}</td>
+      <td className="py-3 px-4 text-xs text-muted-foreground whitespace-nowrap">
+        {item.archivedAt ? new Date(item.archivedAt).toLocaleDateString("en-AU") : "—"}
+      </td>
+      <td className="py-3 px-2 whitespace-nowrap">
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+            title="Restore"
+            onClick={() => updateMutation.mutate(
+              { id: item.id, data: { archivedAt: null } as any },
+              {
+                onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/qip"] }); toast({ title: "Item restored" }); },
+                onError: () => toast({ title: "Failed to restore item", variant: "destructive" }),
+              }
+            )}
+          >
+            <ArchiveRestore className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+            title="Delete permanently"
+            onClick={() => {
+              if (!confirm("Permanently delete this archived item?")) return;
+              deleteMutation.mutate({ id: item.id }, {
+                onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/qip"] }),
+                onError: () => toast({ title: "Failed to delete item", variant: "destructive" }),
+              });
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function ArchivedSection({
+  items,
+  sites,
+}: {
+  items: any[];
+  sites: { id: number; name: string }[];
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-md border border-dashed">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors rounded-md"
+      >
+        <span className="flex items-center gap-2">
+          <Archive className="h-4 w-4" />
+          Archived Items ({items.length})
+        </span>
+        {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
+      {open && (
+        <div className="overflow-x-auto border-t">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-muted/40 border-b">
+                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Quality Area</th>
+                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Standard / Element</th>
+                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Priority</th>
+                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Issue Identified</th>
+                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">What outcome or goal do we seek?</th>
+                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Progress Notes</th>
+                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Archived</th>
+                <th className="py-2 px-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <ArchivedItemRow key={item.id} item={item} sites={sites} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -588,6 +712,9 @@ export default function Qip() {
 
           {QA_AREAS.map((a) => {
             const qaItems = itemsByQA[a.key] ?? [];
+            const activeItems = qaItems.filter((i) => !i.archivedAt);
+            const archivedItems = qaItems.filter((i) => !!i.archivedAt);
+
             return (
               <TabsContent key={a.key} value={a.key} className="mt-0 space-y-4">
                 <div>
@@ -597,7 +724,7 @@ export default function Qip() {
                 <StrengthsEditor qualityArea={a.key} />
 
                 <div className="flex items-center justify-between">
-                  <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Improvement Items ({qaItems.length})</h3>
+                  <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Improvement Items ({activeItems.length})</h3>
                   <Button
                     size="sm"
                     variant="outline"
@@ -607,7 +734,7 @@ export default function Qip() {
                   </Button>
                 </div>
 
-                {qaItems.length === 0 ? (
+                {activeItems.length === 0 ? (
                   <Card>
                     <CardContent className="py-10 text-center text-muted-foreground flex flex-col items-center gap-2">
                       <TrendingUp className="h-7 w-7 mb-1 opacity-40" />
@@ -629,7 +756,7 @@ export default function Qip() {
                         </tr>
                       </thead>
                       <tbody>
-                        {qaItems.map((item) => (
+                        {activeItems.map((item) => (
                           <ItemRow
                             key={item.id}
                             item={item}
@@ -641,6 +768,11 @@ export default function Qip() {
                       </tbody>
                     </table>
                   </div>
+                )}
+
+                {/* ── Archived Items ── */}
+                {archivedItems.length > 0 && (
+                  <ArchivedSection items={archivedItems} sites={sites} />
                 )}
               </TabsContent>
             );

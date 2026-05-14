@@ -2905,6 +2905,9 @@ components:
           format: date
         progressNotes:
           type: ["string", "null"]
+        archivedAt:
+          type: ["string", "null"]
+          format: date-time
         createdAt:
           type: string
           format: date-time
@@ -2975,6 +2978,9 @@ components:
           format: date
         progressNotes:
           type: string
+        archivedAt:
+          type: ["string", "null"]
+          format: date-time
 
     QipSource:
       type: object

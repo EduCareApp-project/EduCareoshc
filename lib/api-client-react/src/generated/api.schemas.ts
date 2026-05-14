@@ -719,6 +719,8 @@ export interface QipItem {
   dueDate?: string | null;
   /** @nullable */
   progressNotes?: string | null;
+  /** @nullable */
+  archivedAt?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
@@ -769,6 +771,8 @@ export interface QipItemUpdate {
   successMeasure?: string;
   dueDate?: string;
   progressNotes?: string;
+  /** @nullable */
+  archivedAt?: string | null;
 }
 
 export interface QipSource {

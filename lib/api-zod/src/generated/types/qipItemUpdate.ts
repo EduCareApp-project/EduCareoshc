@@ -20,4 +20,6 @@ export interface QipItemUpdate {
   successMeasure?: string;
   dueDate?: Date;
   progressNotes?: string;
+  /** @nullable */
+  archivedAt?: Date | null;
 }

@@ -942,6 +942,7 @@ export const ListQipItemsResponseItem = zod.object({
   successMeasure: zod.string().nullish(),
   dueDate: zod.coerce.date().nullish(),
   progressNotes: zod.string().nullish(),
+  archivedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date().optional(),
 });
@@ -983,6 +984,7 @@ export const UpdateQipItemBody = zod.object({
   successMeasure: zod.string().optional(),
   dueDate: zod.coerce.date().optional(),
   progressNotes: zod.string().optional(),
+  archivedAt: zod.coerce.date().nullish(),
 });
 
 export const UpdateQipItemResponse = zod.object({
@@ -999,6 +1001,7 @@ export const UpdateQipItemResponse = zod.object({
   successMeasure: zod.string().nullish(),
   dueDate: zod.coerce.date().nullish(),
   progressNotes: zod.string().nullish(),
+  archivedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date().optional(),
 });

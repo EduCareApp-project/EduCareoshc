@@ -31,6 +31,8 @@ export interface QipItem {
   dueDate?: Date | null;
   /** @nullable */
   progressNotes?: string | null;
+  /** @nullable */
+  archivedAt?: Date | null;
   createdAt: Date;
   updatedAt?: Date;
 }

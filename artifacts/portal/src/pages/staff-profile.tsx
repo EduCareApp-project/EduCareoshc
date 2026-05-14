@@ -757,6 +757,31 @@ export default function StaffProfile() {
               })}
             </div>
           )}
+
+          {/* Status logic legend */}
+          <Card className="border-dashed bg-muted/30">
+            <CardContent className="py-4 space-y-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">How Qualification Status is Calculated</p>
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <div className="flex items-start gap-3">
+                  <Badge className="bg-red-100 text-red-800 border-red-200 shrink-0 mt-0.5" variant="outline">Cannot Work</Badge>
+                  <span>Any of the following are <span className="font-medium text-foreground">expired</span>: WWCC, CPR Renewal, First Aid</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Badge className="bg-green-100 text-green-800 border-green-200 shrink-0 mt-0.5" variant="outline">Responsible Person</Badge>
+                  <span>All required qualifications are current — includes Education Qualifications, First Aid, CPR Renewal, Food Safety, Responsible Person Declaration, Risk Management (DET), Staff Details (DET), History &amp; Compliance, Resume, WWCC, and both Child Safety modules</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 shrink-0 mt-0.5" variant="outline">Educator</Badge>
+                  <span>Core compliance documents are current — WWCC, Staff Details (DET), History &amp; Compliance, Resume, and both Child Safety modules</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Badge className="bg-amber-100 text-amber-800 border-amber-200 shrink-0 mt-0.5" variant="outline">Incomplete</Badge>
+                  <span>One or more required qualifications for Educator status are missing or not yet recorded</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Professional Development Tab */}

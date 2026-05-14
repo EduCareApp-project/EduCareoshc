@@ -1168,6 +1168,14 @@ export interface ChecklistRoutine {
   createdAt: string;
 }
 
+export interface ChecklistRoutineUpdateInput {
+  siteId?: number | null;
+  staffId?: number | null;
+  targetDate: string;
+  isRepeating: boolean;
+  frequency?: string | null;
+}
+
 export interface ChecklistRoutineInput {
   templateId: number;
   title: string;

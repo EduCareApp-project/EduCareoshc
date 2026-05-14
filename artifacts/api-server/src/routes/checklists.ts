@@ -12,6 +12,7 @@ import {
   UpdateChecklistTemplateParams, UpdateChecklistTemplateBody, UpdateChecklistTemplateResponse,
   DeleteChecklistTemplateParams,
   ListChecklistRoutinesResponse, CreateChecklistRoutineBody,
+  UpdateChecklistRoutineParams, UpdateChecklistRoutineBody,
   DeleteChecklistRoutineParams,
 } from "@workspace/api-zod";
 
@@ -137,6 +138,33 @@ router.post("/checklist-routines", async (req, res): Promise<void> => {
   const site = sites.find((s) => s.id === row.siteId);
   const member = staff.find((s) => s.id === row.staffId);
   res.status(201).json(ListChecklistRoutinesResponse.element.parse({
+    ...row,
+    siteName: site?.name ?? null,
+    staffName: member ? `${member.firstName} ${member.lastName}` : null,
+  }));
+});
+
+router.put("/checklist-routines/:id", async (req, res): Promise<void> => {
+  const params = UpdateChecklistRoutineParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const parsed = UpdateChecklistRoutineBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  const [row] = await db.update(checklistRoutinesTable)
+    .set({
+      siteId: parsed.data.siteId ?? null,
+      staffId: parsed.data.staffId ?? null,
+      targetDate: parsed.data.targetDate as any,
+      isRepeating: parsed.data.isRepeating,
+      frequency: parsed.data.frequency ?? null,
+    })
+    .where(eq(checklistRoutinesTable.id, params.data.id))
+    .returning();
+  if (!row) { res.status(404).json({ error: "Not found" }); return; }
+  const sites = await db.select().from(sitesTable);
+  const staff = await db.select().from(staffTable);
+  const site = sites.find((s) => s.id === row.siteId);
+  const member = staff.find((s) => s.id === row.staffId);
+  res.json(ListChecklistRoutinesResponse.element.parse({
     ...row,
     siteName: site?.name ?? null,
     staffName: member ? `${member.firstName} ${member.lastName}` : null,

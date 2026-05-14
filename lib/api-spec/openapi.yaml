@@ -1846,6 +1846,28 @@ paths:
                 $ref: "#/components/schemas/ChecklistRoutine"
 
   /checklist-routines/{id}:
+    put:
+      operationId: updateChecklistRoutine
+      tags: [checklists]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChecklistRoutineUpdateInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistRoutine"
     delete:
       operationId: deleteChecklistRoutine
       tags: [checklists]
@@ -3768,6 +3790,25 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    ChecklistRoutineUpdateInput:
+      type: object
+      required: [targetDate, isRepeating]
+      properties:
+        siteId:
+          type: integer
+          nullable: true
+        staffId:
+          type: integer
+          nullable: true
+        targetDate:
+          type: string
+          format: date
+        isRepeating:
+          type: boolean
+        frequency:
+          type: string
+          nullable: true
 
     ChecklistRoutineInput:
       type: object

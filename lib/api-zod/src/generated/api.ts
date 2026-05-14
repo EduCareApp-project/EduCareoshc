@@ -1658,6 +1658,44 @@ export const CreateChecklistRoutineBody = zod.object({
   ),
 });
 
+export const UpdateChecklistRoutineParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateChecklistRoutineBody = zod.object({
+  siteId: zod.number().nullish(),
+  staffId: zod.number().nullish(),
+  targetDate: zod.coerce.date(),
+  isRepeating: zod.boolean(),
+  frequency: zod.string().nullish(),
+});
+
+export const UpdateChecklistRoutineResponse = zod.object({
+  id: zod.number(),
+  templateId: zod.number(),
+  title: zod.string(),
+  siteId: zod.number().nullish(),
+  siteName: zod.string().nullish(),
+  staffId: zod.number().nullish(),
+  staffName: zod.string().nullish(),
+  targetDate: zod.coerce.date(),
+  isRepeating: zod.boolean(),
+  frequency: zod.string().nullish(),
+  sectionsSnapshot: zod.array(
+    zod.object({
+      title: zod.string(),
+      items: zod.array(
+        zod.object({
+          title: zod.string(),
+          days: zod.array(zod.number()).nullish(),
+          months: zod.array(zod.number()).nullish(),
+        }),
+      ),
+    }),
+  ),
+  createdAt: zod.coerce.date(),
+});
+
 export const DeleteChecklistRoutineParams = zod.object({
   id: zod.coerce.number(),
 });

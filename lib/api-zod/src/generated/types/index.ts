@@ -18,6 +18,7 @@ export * from "./checklistInputType";
 export * from "./checklistItem";
 export * from "./checklistRoutine";
 export * from "./checklistRoutineInput";
+export * from "./checklistRoutineUpdateInput";
 export * from "./checklistSection";
 export * from "./checklistTemplate";
 export * from "./checklistTemplateInput";

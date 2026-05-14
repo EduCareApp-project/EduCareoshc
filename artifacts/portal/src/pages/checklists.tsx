@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   useListChecklistTemplates, useCreateChecklistTemplate, useUpdateChecklistTemplate, useDeleteChecklistTemplate,
-  useListChecklistRoutines, useCreateChecklistRoutine, useDeleteChecklistRoutine,
+  useListChecklistRoutines, useCreateChecklistRoutine, useUpdateChecklistRoutine, useDeleteChecklistRoutine,
   useListStaff, useListSites,
   getListChecklistTemplatesQueryKey, getListChecklistRoutinesQueryKey,
 } from "@workspace/api-client-react";
@@ -544,7 +544,128 @@ function TemplateTile({
 }
 
 // ── Routine row ─────────────────────────────────────────────────────────────
-function RoutineRow({ routine, onDelete }: { routine: any; onDelete: () => void }) {
+// ── Edit Routine Dialog ─────────────────────────────────────────────────────
+function EditRoutineDialog({
+  open, onOpenChange, routine,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  routine: any | null;
+}) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const updateMutation = useUpdateChecklistRoutine();
+  const { data: sites } = useListSites();
+  const { data: staff } = useListStaff();
+
+  const [targetDate, setTargetDate] = useState(routine?.targetDate ?? "");
+  const [isRepeating, setIsRepeating] = useState(routine?.isRepeating ?? false);
+  const [frequency, setFrequency] = useState(routine?.frequency ?? "none");
+  const [siteId, setSiteId] = useState(routine?.siteId ? String(routine.siteId) : "none");
+  const [staffId, setStaffId] = useState(routine?.staffId ? String(routine.staffId) : "none");
+
+  // Sync state when routine changes (dialog re-opened with different routine)
+  const routineId = routine?.id;
+  useState(() => {
+    if (routine) {
+      setTargetDate(routine.targetDate ?? "");
+      setIsRepeating(routine.isRepeating ?? false);
+      setFrequency(routine.frequency ?? "none");
+      setSiteId(routine.siteId ? String(routine.siteId) : "none");
+      setStaffId(routine.staffId ? String(routine.staffId) : "none");
+    }
+  });
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!routine) return;
+    updateMutation.mutate({
+      id: routine.id,
+      data: {
+        siteId: siteId !== "none" ? parseInt(siteId) : null,
+        staffId: staffId !== "none" ? parseInt(staffId) : null,
+        targetDate,
+        isRepeating,
+        frequency: isRepeating && frequency !== "none" ? frequency : null,
+      },
+    }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListChecklistRoutinesQueryKey() });
+        toast({ title: "Routine updated" });
+        onOpenChange(false);
+      },
+      onError: () => toast({ title: "Failed to update routine", variant: "destructive" }),
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Routine — {routine?.title}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <Label>Target Date</Label>
+            <Input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} required />
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border px-3 py-2.5">
+            <div>
+              <p className="text-sm font-medium">Repeating Routine</p>
+              <p className="text-xs text-muted-foreground">Recurs from the target date</p>
+            </div>
+            <Switch checked={isRepeating} onCheckedChange={setIsRepeating} />
+          </div>
+
+          {isRepeating && (
+            <div className="space-y-1">
+              <Label>Frequency</Label>
+              <Select value={frequency} onValueChange={setFrequency}>
+                <SelectTrigger><SelectValue placeholder="Select frequency" /></SelectTrigger>
+                <SelectContent>
+                  {FREQUENCIES.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <Separator />
+
+          <div className="space-y-1">
+            <Label>Assign to Site (optional)</Label>
+            <Select value={siteId} onValueChange={setSiteId}>
+              <SelectTrigger><SelectValue placeholder="Any site" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Any site</SelectItem>
+                {(sites ?? []).map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label>Assign to Staff (optional)</Label>
+            <Select value={staffId} onValueChange={setStaffId}>
+              <SelectTrigger><SelectValue placeholder="Any staff" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Any staff</SelectItem>
+                {(staff ?? []).map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" disabled={updateMutation.isPending}>Save Changes</Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Routine row ─────────────────────────────────────────────────────────────
+function RoutineRow({ routine, onEdit, onDelete }: { routine: any; onEdit: () => void; onDelete: () => void }) {
   const itemCount = routine.sectionsSnapshot.reduce((n: number, s: any) => n + s.items.length, 0);
 
   return (
@@ -553,7 +674,7 @@ function RoutineRow({ routine, onDelete }: { routine: any; onDelete: () => void 
         <p className="font-medium text-sm">{routine.title}</p>
         <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
           <span className="text-xs text-muted-foreground">
-            Target: {routine.targetDate}
+            Target: {String(routine.targetDate).slice(0, 10)}
           </span>
           {routine.isRepeating && (
             <span className="text-xs text-muted-foreground flex items-center gap-0.5">
@@ -566,14 +687,14 @@ function RoutineRow({ routine, onDelete }: { routine: any; onDelete: () => void 
           <span className="text-xs text-muted-foreground">{itemCount} item{itemCount !== 1 ? "s" : ""}</span>
         </div>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7 opacity-0 group-hover:opacity-100 text-destructive shrink-0"
-        onClick={onDelete}
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </Button>
+      <div className="flex gap-1 opacity-0 group-hover:opacity-100 shrink-0">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit}>
+          <Edit className="h-3.5 w-3.5" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={onDelete}>
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
     </div>
   );
 }
@@ -591,10 +712,12 @@ export default function Checklists() {
   const [formOpen, setFormOpen] = useState(false);
   const [editTemplate, setEditTemplate] = useState<any | null>(null);
   const [routineTemplate, setRoutineTemplate] = useState<any | null>(null);
+  const [editRoutine, setEditRoutine] = useState<any | null>(null);
 
   function openCreate() { setEditTemplate(null); setFormOpen(true); }
   function openEdit(t: any) { setEditTemplate(t); setFormOpen(true); }
   function openRoutine(t: any) { setRoutineTemplate(t); }
+  function openEditRoutine(r: any) { setEditRoutine(r); }
 
   function handleDeleteTemplate(id: number) {
     if (!confirm("Delete this template and all its routines?")) return;
@@ -678,7 +801,7 @@ export default function Checklists() {
         ) : (
           <div className="space-y-2">
             {(routines ?? []).map((r) => (
-              <RoutineRow key={r.id} routine={r} onDelete={() => handleDeleteRoutine(r.id)} />
+              <RoutineRow key={r.id} routine={r} onEdit={() => openEditRoutine(r)} onDelete={() => handleDeleteRoutine(r.id)} />
             ))}
           </div>
         )}
@@ -695,6 +818,12 @@ export default function Checklists() {
         open={!!routineTemplate}
         onOpenChange={(o) => { if (!o) setRoutineTemplate(null); }}
         template={routineTemplate}
+      />
+      <EditRoutineDialog
+        key={editRoutine?.id}
+        open={!!editRoutine}
+        onOpenChange={(o) => { if (!o) setEditRoutine(null); }}
+        routine={editRoutine}
       />
     </div>
   );

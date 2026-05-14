@@ -23,6 +23,7 @@ import type {
   ChecklistInput,
   ChecklistRoutine,
   ChecklistRoutineInput,
+  ChecklistRoutineUpdateInput,
   ChecklistTemplate,
   ChecklistTemplateInput,
   Child,
@@ -8199,6 +8200,88 @@ export const useCreateChecklistRoutine = <
   TContext
 > => {
   return useMutation(getCreateChecklistRoutineMutationOptions(options));
+};
+
+export const getUpdateChecklistRoutineUrl = (id: number) => {
+  return `/api/checklist-routines/${id}`;
+};
+
+export const updateChecklistRoutine = async (
+  id: number,
+  checklistRoutineUpdateInput: ChecklistRoutineUpdateInput,
+  options?: RequestInit,
+): Promise<ChecklistRoutine> => {
+  return customFetch<ChecklistRoutine>(getUpdateChecklistRoutineUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(checklistRoutineUpdateInput),
+  });
+};
+
+export const getUpdateChecklistRoutineMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateChecklistRoutine>>,
+    TError,
+    { id: number; data: BodyType<ChecklistRoutineUpdateInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateChecklistRoutine>>,
+  TError,
+  { id: number; data: BodyType<ChecklistRoutineUpdateInput> },
+  TContext
+> => {
+  const mutationKey = ["updateChecklistRoutine"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateChecklistRoutine>>,
+    { id: number; data: BodyType<ChecklistRoutineUpdateInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateChecklistRoutine(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateChecklistRoutineMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateChecklistRoutine>>
+>;
+export type UpdateChecklistRoutineMutationBody =
+  BodyType<ChecklistRoutineUpdateInput>;
+export type UpdateChecklistRoutineMutationError = ErrorType<unknown>;
+
+export const useUpdateChecklistRoutine = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateChecklistRoutine>>,
+    TError,
+    { id: number; data: BodyType<ChecklistRoutineUpdateInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateChecklistRoutine>>,
+  TError,
+  { id: number; data: BodyType<ChecklistRoutineUpdateInput> },
+  TContext
+> => {
+  return useMutation(getUpdateChecklistRoutineMutationOptions(options));
 };
 
 export const getDeleteChecklistRoutineUrl = (id: number) => {

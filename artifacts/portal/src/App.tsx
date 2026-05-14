@@ -42,6 +42,7 @@ import ReportsService from "@/pages/reports-service";
 import ReportsStaff from "@/pages/reports-staff";
 import Sites from "@/pages/sites";
 import Settings from "@/pages/settings";
+import SettingsQip from "@/pages/settings-qip";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -104,6 +105,7 @@ function Router() {
         
         <Route path="/sites" component={Sites} />
         <Route path="/settings" component={Settings} />
+        <Route path="/settings/qip" component={SettingsQip} />
         
         <Route component={NotFound} />
       </Switch>

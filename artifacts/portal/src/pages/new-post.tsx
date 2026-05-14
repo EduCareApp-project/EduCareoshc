@@ -69,8 +69,8 @@ export default function NewPost() {
     const idx = images.length;
     setUploadingIndex(idx);
     try {
-      const path = await uploadFile(file);
-      setImages((prev) => [...prev, path]);
+      const response = await uploadFile(file);
+      if (response) setImages((prev) => [...prev, response.objectPath]);
     } catch {
       toast({ title: "Image upload failed", variant: "destructive" });
     } finally {

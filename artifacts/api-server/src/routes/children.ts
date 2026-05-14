@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, childrenTable, observationsTable, staffTable, outcomesTable, programsTable } from "@workspace/db";
+import { db, childrenTable, observationsTable, staffTable, outcomesTable, programsTable, childDocumentsTable } from "@workspace/db";
 import {
   CreateChildBody,
   GetChildParams,
@@ -12,6 +12,12 @@ import {
   ListChildrenResponse,
   GetChildObservationsParams,
   GetChildObservationsResponse,
+  ListChildDocumentsParams,
+  ListChildDocumentsResponse,
+  CreateChildDocumentParams,
+  CreateChildDocumentBody,
+  ListChildDocumentsResponseItem,
+  DeleteChildDocumentParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -81,6 +87,30 @@ router.delete("/children/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Child not found" });
     return;
   }
+  res.sendStatus(204);
+});
+
+router.get("/children/:id/documents", async (req, res): Promise<void> => {
+  const params = ListChildDocumentsParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const docs = await db.select().from(childDocumentsTable).where(eq(childDocumentsTable.childId, params.data.id)).orderBy(childDocumentsTable.uploadedAt);
+  res.json(ListChildDocumentsResponse.parse(docs));
+});
+
+router.post("/children/:id/documents", async (req, res): Promise<void> => {
+  const params = CreateChildDocumentParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const parsed = CreateChildDocumentBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  const [doc] = await db.insert(childDocumentsTable).values({ childId: params.data.id, ...parsed.data }).returning();
+  res.status(201).json(ListChildDocumentsResponseItem.parse(doc));
+});
+
+router.delete("/children/:id/documents/:docId", async (req, res): Promise<void> => {
+  const params = DeleteChildDocumentParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const [doc] = await db.delete(childDocumentsTable).where(eq(childDocumentsTable.id, params.data.docId)).returning();
+  if (!doc) { res.status(404).json({ error: "Document not found" }); return; }
   res.sendStatus(204);
 });
 

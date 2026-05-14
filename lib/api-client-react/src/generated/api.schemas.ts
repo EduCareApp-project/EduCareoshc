@@ -799,6 +799,23 @@ export interface QipStrengthUpdate {
   content: string;
 }
 
+export interface ChildDocument {
+  id: number;
+  childId: number;
+  documentPath: string;
+  /** @nullable */
+  documentName?: string | null;
+  /** @nullable */
+  category?: string | null;
+  uploadedAt: string;
+}
+
+export interface ChildDocumentInput {
+  documentPath: string;
+  documentName?: string;
+  category?: string;
+}
+
 export interface ConfidentialNote {
   id: number;
   childId: number;

@@ -5,6 +5,7 @@ import {
   useGetChildWelfareNotes, useCreateWelfareNote, useUpdateWelfareNote, useDeleteWelfareNote,
   useGetChildConfidentialNotes, useCreateConfidentialNote, useUpdateConfidentialNote, useDeleteConfidentialNote,
   useListStaff, useListJottings, useListPlanningExperiences, useListPosts,
+  useListChildDocuments, useCreateChildDocument, useDeleteChildDocument,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
@@ -26,6 +27,7 @@ import {
   ArrowLeft, Edit, Plus, Trash2, User, Users, Phone, Mail, FileText,
   Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2,
   ShieldAlert, AlertTriangle, Paperclip, X, Lock, Pencil, StickyNote, Newspaper,
+  Upload, FolderOpen,
 } from "lucide-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { useToast } from "@/hooks/use-toast";
@@ -97,6 +99,42 @@ export default function ChildProfile() {
   const { uploadFile, isUploading: isUploadingEvidence } = useUpload({
     onError: () => toast({ title: "File upload failed", variant: "destructive" }),
   });
+
+  const { data: childDocuments, isLoading: docsLoading } = useListChildDocuments(id, { query: { enabled: !!id } });
+  const createDocMutation = useCreateChildDocument();
+  const deleteDocMutation = useDeleteChildDocument();
+  const { uploadFile: uploadDoc, isUploading: isUploadingDoc } = useUpload({
+    onError: () => toast({ title: "Document upload failed", variant: "destructive" }),
+  });
+
+  async function handleDocUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const result = await uploadDoc(file);
+    if (!result) return;
+    createDocMutation.mutate(
+      { id, data: { documentPath: result.objectPath, documentName: file.name } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: [`/api/children/${id}/documents`] });
+          toast({ title: "Document uploaded" });
+        },
+        onError: () => toast({ title: "Failed to save document", variant: "destructive" }),
+      }
+    );
+    e.target.value = "";
+  }
+
+  function handleDocDelete(docId: number, docName: string | null) {
+    if (!confirm(`Delete "${docName ?? "this document"}"?`)) return;
+    deleteDocMutation.mutate(
+      { id, docId },
+      {
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: [`/api/children/${id}/documents`] }),
+        onError: () => toast({ title: "Failed to delete document", variant: "destructive" }),
+      }
+    );
+  }
 
   const [form, setForm] = useState({
     firstName: "", lastName: "", dateOfBirth: "", enrollmentDate: "",
@@ -345,6 +383,7 @@ export default function ChildProfile() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="childdata">Child's Data</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
 
         {/* ── Overview ── */}
@@ -804,6 +843,68 @@ export default function ChildProfile() {
               </>
             );
           })()}
+        </TabsContent>
+
+        {/* ── Documents ── */}
+        <TabsContent value="documents" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FolderOpen className="h-5 w-5 text-muted-foreground" />
+                Documents
+              </CardTitle>
+              <label className={`inline-flex items-center gap-2 cursor-pointer rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground ${isUploadingDoc ? "opacity-50 pointer-events-none" : ""}`}>
+                <Upload className="h-3.5 w-3.5" />
+                {isUploadingDoc ? "Uploading…" : "Upload Document"}
+                <input
+                  type="file"
+                  className="hidden"
+                  disabled={isUploadingDoc}
+                  onChange={handleDocUpload}
+                />
+              </label>
+            </CardHeader>
+            <CardContent>
+              {docsLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : !childDocuments || childDocuments.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground border-2 border-dashed rounded-lg">
+                  <FolderOpen className="h-8 w-8 mb-2 opacity-30" />
+                  <p className="text-sm font-medium">No documents uploaded yet</p>
+                  <p className="text-xs mt-1">Use the Upload Document button to add files for this child.</p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {childDocuments.map((doc) => (
+                    <div key={doc.id} className="flex items-center gap-3 py-2.5 group">
+                      <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <a
+                        href={`/api/storage/objects/${doc.documentPath.replace(/^\/?(objects\/)?/, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 text-sm font-medium text-primary hover:underline underline-offset-4 truncate"
+                      >
+                        {doc.documentName ?? doc.documentPath.split("/").pop()}
+                      </a>
+                      <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">
+                        {format(new Date(doc.uploadedAt), "d MMM yyyy")}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleDocDelete(doc.id, doc.documentName)}
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity shrink-0"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
       </Tabs>

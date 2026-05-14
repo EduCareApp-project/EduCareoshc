@@ -1089,6 +1089,37 @@ export const GetChildWelfareNotesResponse = zod.array(
   GetChildWelfareNotesResponseItem,
 );
 
+export const ListChildDocumentsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListChildDocumentsResponseItem = zod.object({
+  id: zod.number(),
+  childId: zod.number(),
+  documentPath: zod.string(),
+  documentName: zod.string().nullish(),
+  category: zod.string().nullish(),
+  uploadedAt: zod.coerce.date(),
+});
+export const ListChildDocumentsResponse = zod.array(
+  ListChildDocumentsResponseItem,
+);
+
+export const CreateChildDocumentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CreateChildDocumentBody = zod.object({
+  documentPath: zod.string(),
+  documentName: zod.string().optional(),
+  category: zod.string().optional(),
+});
+
+export const DeleteChildDocumentParams = zod.object({
+  id: zod.coerce.number(),
+  docId: zod.coerce.number(),
+});
+
 export const GetChildConfidentialNotesParams = zod.object({
   id: zod.coerce.number(),
 });

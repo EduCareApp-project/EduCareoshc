@@ -22,6 +22,8 @@ import type {
   ChecklistCompletionInput,
   ChecklistInput,
   Child,
+  ChildDocument,
+  ChildDocumentInput,
   ChildInput,
   ChildUpdate,
   ConditionReport,
@@ -5123,6 +5125,246 @@ export function useGetChildWelfareNotes<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+export const getListChildDocumentsUrl = (id: number) => {
+  return `/api/children/${id}/documents`;
+};
+
+export const listChildDocuments = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ChildDocument[]> => {
+  return customFetch<ChildDocument[]>(getListChildDocumentsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListChildDocumentsQueryKey = (id: number) => {
+  return [`/api/children/${id}/documents`] as const;
+};
+
+export const getListChildDocumentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listChildDocuments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listChildDocuments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListChildDocumentsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listChildDocuments>>
+  > = ({ signal }) => listChildDocuments(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listChildDocuments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListChildDocumentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listChildDocuments>>
+>;
+export type ListChildDocumentsQueryError = ErrorType<unknown>;
+
+export function useListChildDocuments<
+  TData = Awaited<ReturnType<typeof listChildDocuments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listChildDocuments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListChildDocumentsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateChildDocumentUrl = (id: number) => {
+  return `/api/children/${id}/documents`;
+};
+
+export const createChildDocument = async (
+  id: number,
+  childDocumentInput: ChildDocumentInput,
+  options?: RequestInit,
+): Promise<ChildDocument> => {
+  return customFetch<ChildDocument>(getCreateChildDocumentUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(childDocumentInput),
+  });
+};
+
+export const getCreateChildDocumentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createChildDocument>>,
+    TError,
+    { id: number; data: BodyType<ChildDocumentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createChildDocument>>,
+  TError,
+  { id: number; data: BodyType<ChildDocumentInput> },
+  TContext
+> => {
+  const mutationKey = ["createChildDocument"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createChildDocument>>,
+    { id: number; data: BodyType<ChildDocumentInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return createChildDocument(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateChildDocumentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createChildDocument>>
+>;
+export type CreateChildDocumentMutationBody = BodyType<ChildDocumentInput>;
+export type CreateChildDocumentMutationError = ErrorType<unknown>;
+
+export const useCreateChildDocument = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createChildDocument>>,
+    TError,
+    { id: number; data: BodyType<ChildDocumentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createChildDocument>>,
+  TError,
+  { id: number; data: BodyType<ChildDocumentInput> },
+  TContext
+> => {
+  return useMutation(getCreateChildDocumentMutationOptions(options));
+};
+
+export const getDeleteChildDocumentUrl = (id: number, docId: number) => {
+  return `/api/children/${id}/documents/${docId}`;
+};
+
+export const deleteChildDocument = async (
+  id: number,
+  docId: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteChildDocumentUrl(id, docId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteChildDocumentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteChildDocument>>,
+    TError,
+    { id: number; docId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteChildDocument>>,
+  TError,
+  { id: number; docId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteChildDocument"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteChildDocument>>,
+    { id: number; docId: number }
+  > = (props) => {
+    const { id, docId } = props ?? {};
+
+    return deleteChildDocument(id, docId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteChildDocumentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteChildDocument>>
+>;
+
+export type DeleteChildDocumentMutationError = ErrorType<unknown>;
+
+export const useDeleteChildDocument = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteChildDocument>>,
+    TError,
+    { id: number; docId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteChildDocument>>,
+  TError,
+  { id: number; docId: number },
+  TContext
+> => {
+  return useMutation(getDeleteChildDocumentMutationOptions(options));
+};
 
 export const getGetChildConfidentialNotesUrl = (id: number) => {
   return `/api/children/${id}/confidential-notes`;

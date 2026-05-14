@@ -1135,6 +1135,67 @@ paths:
                 items:
                   $ref: "#/components/schemas/WelfareNote"
 
+  /children/{id}/documents:
+    get:
+      operationId: listChildDocuments
+      tags: [children]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChildDocument"
+    post:
+      operationId: createChildDocument
+      tags: [children]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChildDocumentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChildDocument"
+
+  /children/{id}/documents/{docId}:
+    delete:
+      operationId: deleteChildDocument
+      tags: [children]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /children/{id}/confidential-notes:
     get:
       operationId: getChildConfidentialNotes
@@ -2965,6 +3026,35 @@ components:
       required: [content]
       properties:
         content:
+          type: string
+
+    ChildDocument:
+      type: object
+      required: [id, childId, documentPath, uploadedAt]
+      properties:
+        id:
+          type: integer
+        childId:
+          type: integer
+        documentPath:
+          type: string
+        documentName:
+          type: ["string", "null"]
+        category:
+          type: ["string", "null"]
+        uploadedAt:
+          type: string
+          format: date-time
+
+    ChildDocumentInput:
+      type: object
+      required: [documentPath]
+      properties:
+        documentPath:
+          type: string
+        documentName:
+          type: string
+        category:
           type: string
 
     ConfidentialNote:

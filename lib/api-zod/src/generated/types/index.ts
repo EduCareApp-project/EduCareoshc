@@ -18,6 +18,8 @@ export * from "./checklistInputType";
 export * from "./checklistType";
 export * from "./child";
 export * from "./childAgeGroup";
+export * from "./childDocument";
+export * from "./childDocumentInput";
 export * from "./childInput";
 export * from "./childInputAgeGroup";
 export * from "./childInputStatus";

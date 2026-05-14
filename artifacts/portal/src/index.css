@@ -67,44 +67,44 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  /* Fresh green theme */
-  --background: 138 40% 94%; /* Light green */
-  --foreground: 156 30% 12%;
-  --card: 138 25% 99%;
-  --card-foreground: 156 30% 12%;
-  --card-border: 138 25% 87%;
+  /* EduCare brand theme */
+  --background: 0 0% 100%; /* White */
+  --foreground: 220 15% 15%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 15% 15%;
+  --card-border: 220 13% 91%;
 
-  --sidebar: 156 48% 18%; /* Dark forest green */
+  --sidebar: 152 100% 27%; /* Brand green #008848 */
   --sidebar-foreground: 0 0% 100%;
-  --sidebar-border: 156 45% 14%;
-  --sidebar-primary: 156 45% 26%;
+  --sidebar-border: 152 100% 20%;
+  --sidebar-primary: 152 100% 22%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 156 42% 24%;
+  --sidebar-accent: 152 100% 32%;
   --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-ring: 138 50% 60%;
+  --sidebar-ring: 152 60% 60%;
 
-  --popover: 138 25% 99%;
-  --popover-foreground: 156 30% 12%;
-  --popover-border: 138 25% 87%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 15% 15%;
+  --popover-border: 220 13% 91%;
 
-  --primary: 156 48% 28%; /* Deep forest green */
+  --primary: 152 100% 27%; /* Brand green */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 156 35% 42%; /* Mid green */
-  --secondary-foreground: 0 0% 100%;
+  --secondary: 220 10% 92%;
+  --secondary-foreground: 220 15% 20%;
 
-  --muted: 138 25% 89%;
-  --muted-foreground: 156 20% 40%;
+  --muted: 220 10% 95%;
+  --muted-foreground: 220 10% 46%;
 
-  --accent: 138 30% 86%;
-  --accent-foreground: 156 30% 15%;
+  --accent: 220 10% 93%;
+  --accent-foreground: 220 15% 15%;
 
   --destructive: 0 60% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 138 25% 86%;
-  --input: 138 25% 86%;
-  --ring: 156 48% 28%;
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 152 100% 27%;
 
   --chart-1: 156 48% 35%;
   --chart-2: 138 40% 50%;

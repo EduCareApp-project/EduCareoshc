@@ -84,16 +84,16 @@ const NAV_GROUPS = [
 function NavLinks({ location }: { location: string }) {
   return (
     <div className="flex flex-col h-full">
-      <div className="px-6 py-4 flex items-center space-x-2 shrink-0 border-b">
+      <div className="px-6 py-4 flex items-center space-x-2 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.2)" }}>
         <img src="/educare-logo.png" alt="EduCare" className="h-14 w-14 object-contain" />
-        <span className="text-xl font-bold text-foreground">EduCare</span>
+        <span className="text-xl font-bold text-white">EduCare</span>
       </div>
       <ScrollArea className="flex-1">
         <div className="px-4 py-4 space-y-5 pb-8">
           {NAV_GROUPS.map((group, i) => (
             <div key={i} className="space-y-1">
               {group.label && (
-                <div className="px-3 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <div className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.55)" }}>
                   {group.label}
                 </div>
               )}
@@ -102,7 +102,14 @@ function NavLinks({ location }: { location: string }) {
                 const Icon = item.icon;
                 return (
                   <Link key={item.href} href={item.href}>
-                    <div className={`flex items-center space-x-3 rounded-md px-3 py-2 text-sm transition-colors cursor-pointer ${isActive ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'}`}>
+                    <div
+                      className="flex items-center space-x-3 rounded-md px-3 py-2 text-sm transition-colors cursor-pointer"
+                      style={isActive
+                        ? { backgroundColor: "rgba(255,255,255,0.2)", color: "#fff", fontWeight: 600 }
+                        : { color: "rgba(255,255,255,0.8)" }}
+                      onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLDivElement).style.backgroundColor = "rgba(255,255,255,0.1)"; }}
+                      onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent"; }}
+                    >
                       <Icon className="h-4 w-4 shrink-0" />
                       <span>{item.label}</span>
                     </div>
@@ -122,7 +129,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-[100dvh] w-full bg-background">
-      <aside className="hidden lg:flex print:hidden w-64 flex-col border-r bg-card h-[100dvh] sticky top-0">
+      <aside className="hidden lg:flex print:hidden w-64 flex-col border-r h-[100dvh] sticky top-0" style={{ backgroundColor: "#008848" }}>
         <NavLinks location={location} />
       </aside>
 

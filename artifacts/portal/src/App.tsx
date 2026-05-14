@@ -41,6 +41,7 @@ import ReportsLearning from "@/pages/reports-learning";
 import ReportsService from "@/pages/reports-service";
 import ReportsStaff from "@/pages/reports-staff";
 import Sites from "@/pages/sites";
+import Settings from "@/pages/settings";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -102,6 +103,7 @@ function Router() {
         <Route path="/reports/staff" component={ReportsStaff} />
         
         <Route path="/sites" component={Sites} />
+        <Route path="/settings" component={Settings} />
         
         <Route component={NotFound} />
       </Switch>

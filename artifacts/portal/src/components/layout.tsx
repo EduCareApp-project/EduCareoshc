@@ -23,6 +23,7 @@ import {
   UserCheck,
   Building2,
   UserCog,
+  Settings2,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
@@ -73,11 +74,11 @@ const NAV_GROUPS = [
     ]
   },
   {
-    label: "SETTINGS",
+    label: null,
     items: [
-      { href: "/sites", label: "Sites", icon: Building2 },
+      { href: "/settings", label: "Settings", icon: Settings2 },
     ]
-  }
+  },
 ];
 
 function NavLinks({ location }: { location: string }) {

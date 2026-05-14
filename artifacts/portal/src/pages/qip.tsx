@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, Plus, Trash2, Pencil, Settings, X } from "lucide-react";
+import { TrendingUp, Plus, Trash2, Pencil, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const QA_AREAS = [
@@ -557,8 +557,6 @@ export default function Qip() {
 
   const [activeTab, setActiveTab] = useState("1");
   const [addOpen, setAddOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-
   const itemsByQA = (items ?? []).reduce<Record<string, typeof items>>((acc, item) => {
     const qa = item.qualityArea ?? "1";
     if (!acc[qa]) acc[qa] = [];
@@ -599,17 +597,6 @@ export default function Qip() {
           <p className="text-muted-foreground mt-1">Continuous improvement goals across all seven quality areas.</p>
         </div>
         <div className="flex gap-2">
-          <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />QIP Settings
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader><DialogTitle>QIP Settings – Sources</DialogTitle></DialogHeader>
-              <SourcesDialog />
-            </DialogContent>
-          </Dialog>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button>

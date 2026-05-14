@@ -902,6 +902,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ConditionReport"
+    delete:
+      operationId: deleteConditionReport
+      tags: [condition-reports]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
 
   /evacuations:
     get:
@@ -2457,6 +2469,23 @@ components:
     ConditionReportUpdate:
       type: object
       properties:
+        reportedDate:
+          type: string
+          format: date
+        staffId:
+          type: integer
+        siteId:
+          type: integer
+        description:
+          type: string
+        immediateActionRequired:
+          type: boolean
+        actionTaken:
+          type: string
+        evidenceDocumentPath:
+          type: string
+        evidenceDocumentName:
+          type: string
         status:
           type: string
           enum: [open, resolved]

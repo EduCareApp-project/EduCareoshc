@@ -858,6 +858,14 @@ export const UpdateConditionReportParams = zod.object({
 });
 
 export const UpdateConditionReportBody = zod.object({
+  reportedDate: zod.coerce.date().optional(),
+  staffId: zod.number().optional(),
+  siteId: zod.number().optional(),
+  description: zod.string().optional(),
+  immediateActionRequired: zod.boolean().optional(),
+  actionTaken: zod.string().optional(),
+  evidenceDocumentPath: zod.string().optional(),
+  evidenceDocumentName: zod.string().optional(),
   status: zod.enum(["open", "resolved"]).optional(),
   leadershipNotes: zod.string().optional(),
 });
@@ -877,6 +885,10 @@ export const UpdateConditionReportResponse = zod.object({
   leadershipNotes: zod.string().nullish(),
   status: zod.enum(["open", "resolved"]),
   createdAt: zod.coerce.date(),
+});
+
+export const DeleteConditionReportParams = zod.object({
+  id: zod.coerce.number(),
 });
 
 export const ListEvacuationsResponseItem = zod.object({

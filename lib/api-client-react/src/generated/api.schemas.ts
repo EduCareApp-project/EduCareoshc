@@ -611,6 +611,14 @@ export const ConditionReportUpdateStatus = {
 } as const;
 
 export interface ConditionReportUpdate {
+  reportedDate?: string;
+  staffId?: number;
+  siteId?: number;
+  description?: string;
+  immediateActionRequired?: boolean;
+  actionTaken?: string;
+  evidenceDocumentPath?: string;
+  evidenceDocumentName?: string;
   status?: ConditionReportUpdateStatus;
   leadershipNotes?: string;
 }

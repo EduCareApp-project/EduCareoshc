@@ -4043,6 +4043,84 @@ export const useUpdateConditionReport = <
   return useMutation(getUpdateConditionReportMutationOptions(options));
 };
 
+export const getDeleteConditionReportUrl = (id: number) => {
+  return `/api/condition-reports/${id}`;
+};
+
+export const deleteConditionReport = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteConditionReportUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteConditionReportMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteConditionReport>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteConditionReport>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteConditionReport"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteConditionReport>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteConditionReport(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteConditionReportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteConditionReport>>
+>;
+
+export type DeleteConditionReportMutationError = ErrorType<unknown>;
+
+export const useDeleteConditionReport = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteConditionReport>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteConditionReport>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteConditionReportMutationOptions(options));
+};
+
 export const getListEvacuationsUrl = () => {
   return `/api/evacuations`;
 };

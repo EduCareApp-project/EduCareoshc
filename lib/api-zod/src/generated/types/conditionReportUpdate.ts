@@ -8,6 +8,14 @@
 import type { ConditionReportUpdateStatus } from "./conditionReportUpdateStatus";
 
 export interface ConditionReportUpdate {
+  reportedDate?: Date;
+  staffId?: number;
+  siteId?: number;
+  description?: string;
+  immediateActionRequired?: boolean;
+  actionTaken?: string;
+  evidenceDocumentPath?: string;
+  evidenceDocumentName?: string;
   status?: ConditionReportUpdateStatus;
   leadershipNotes?: string;
 }

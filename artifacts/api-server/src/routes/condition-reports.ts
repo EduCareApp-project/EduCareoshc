@@ -4,6 +4,7 @@ import { db, conditionReportsTable, staffTable, sitesTable } from "@workspace/db
 import {
   CreateConditionReportBody, UpdateConditionReportParams, UpdateConditionReportBody,
   UpdateConditionReportResponse, ListConditionReportsResponse, ListConditionReportsResponseItem,
+  DeleteConditionReportParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -58,6 +59,14 @@ router.patch("/condition-reports/:id", async (req, res): Promise<void> => {
   const report = rows.find((r) => r.id === params.data.id);
   if (!report) { res.status(404).json({ error: "Condition report not found" }); return; }
   res.json(UpdateConditionReportResponse.parse(report));
+});
+
+router.delete("/condition-reports/:id", async (req, res): Promise<void> => {
+  const params = DeleteConditionReportParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const [row] = await db.delete(conditionReportsTable).where(eq(conditionReportsTable.id, params.data.id)).returning();
+  if (!row) { res.status(404).json({ error: "Condition report not found" }); return; }
+  res.sendStatus(204);
 });
 
 export default router;

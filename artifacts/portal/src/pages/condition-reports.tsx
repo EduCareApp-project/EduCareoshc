@@ -3,6 +3,7 @@ import {
   useListConditionReports,
   useCreateConditionReport,
   useUpdateConditionReport,
+  useDeleteConditionReport,
   useListStaff,
   useListSites,
 } from "@workspace/api-client-react";
@@ -16,7 +17,11 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { ClipboardX, Plus, Paperclip, X, Upload, ShieldCheck, CheckCircle2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { ClipboardX, Plus, Paperclip, X, Upload, ShieldCheck, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@workspace/object-storage-web";
@@ -57,8 +62,10 @@ export default function ConditionReports() {
   const { data: sites } = useListSites();
   const createMutation = useCreateConditionReport();
   const updateMutation = useUpdateConditionReport();
+  const deleteMutation = useDeleteConditionReport();
 
   const [showForm, setShowForm] = useState(false);
+  const [editingExistingId, setEditingExistingId] = useState<number | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -75,8 +82,7 @@ export default function ConditionReports() {
   const selectedReport = (reports ?? []).find((r) => r.id === selectedId);
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null;
-    setSelectedFile(file);
+    setSelectedFile(e.target.files?.[0] ?? null);
   }
 
   function removeFile() {
@@ -85,7 +91,31 @@ export default function ConditionReports() {
     setForm((f) => ({ ...f, evidenceDocumentPath: "", evidenceDocumentName: "" }));
   }
 
-  async function handleCreate(e: React.FormEvent) {
+  function openNewReport() {
+    setForm({ ...EMPTY_FORM });
+    setSelectedFile(null);
+    setEditingExistingId(null);
+    setShowForm(true);
+  }
+
+  function openEdit(r: NonNullable<typeof selectedReport>) {
+    setForm({
+      reportedDate: r.reportedDate ?? new Date().toISOString().slice(0, 10),
+      staffId: String(r.staffId),
+      siteId: r.siteId ? String(r.siteId) : "",
+      description: r.description,
+      immediateActionRequired: r.immediateActionRequired,
+      actionTaken: r.actionTaken ?? "",
+      evidenceDocumentPath: r.evidenceDocumentPath ?? "",
+      evidenceDocumentName: r.evidenceDocumentName ?? "",
+    });
+    setSelectedFile(null);
+    setEditingExistingId(r.id);
+    setSelectedId(null);
+    setShowForm(true);
+  }
+
+  async function handleSubmitForm(e: React.FormEvent) {
     e.preventDefault();
     if (!form.staffId) { toast({ title: "Please select a staff member", variant: "destructive" }); return; }
 
@@ -106,24 +136,36 @@ export default function ConditionReports() {
     const payload = {
       reportedDate: form.reportedDate,
       staffId: Number(form.staffId),
-      ...(form.siteId ? { siteId: Number(form.siteId) } : {}),
+      siteId: form.siteId ? Number(form.siteId) : undefined,
       description: form.description,
       immediateActionRequired: form.immediateActionRequired,
       ...(form.actionTaken ? { actionTaken: form.actionTaken } : {}),
       ...(docPath ? { evidenceDocumentPath: docPath, evidenceDocumentName: docName } : {}),
     };
 
-    createMutation.mutate({ data: payload as any }, {
-      onSuccess: (data) => {
-        setShowForm(false);
-        setForm({ ...EMPTY_FORM });
-        setSelectedFile(null);
-        queryClient.invalidateQueries({ queryKey: ["/api/condition-reports"] });
-        toast({ title: "Condition report submitted" });
-        setSelectedId((data as any).id);
-      },
-      onError: () => toast({ title: "Failed to submit report", variant: "destructive" }),
-    });
+    if (editingExistingId !== null) {
+      updateMutation.mutate({ id: editingExistingId, data: payload as any }, {
+        onSuccess: () => {
+          setShowForm(false);
+          setEditingExistingId(null);
+          queryClient.invalidateQueries({ queryKey: ["/api/condition-reports"] });
+          toast({ title: "Report updated" });
+        },
+        onError: () => toast({ title: "Failed to update report", variant: "destructive" }),
+      });
+    } else {
+      createMutation.mutate({ data: payload as any }, {
+        onSuccess: (data) => {
+          setShowForm(false);
+          setForm({ ...EMPTY_FORM });
+          setSelectedFile(null);
+          queryClient.invalidateQueries({ queryKey: ["/api/condition-reports"] });
+          toast({ title: "Condition report submitted" });
+          setSelectedId((data as any).id);
+        },
+        onError: () => toast({ title: "Failed to submit report", variant: "destructive" }),
+      });
+    }
   }
 
   function handleSaveLeadershipNotes() {
@@ -148,6 +190,17 @@ export default function ConditionReports() {
     });
   }
 
+  function handleDelete(id: number) {
+    deleteMutation.mutate({ id }, {
+      onSuccess: () => {
+        setSelectedId(null);
+        queryClient.invalidateQueries({ queryKey: ["/api/condition-reports"] });
+        toast({ title: "Report deleted" });
+      },
+      onError: () => toast({ title: "Failed to delete report", variant: "destructive" }),
+    });
+  }
+
   function openDetail(id: number) {
     const r = (reports ?? []).find((r) => r.id === id);
     setSelectedId(id);
@@ -155,18 +208,22 @@ export default function ConditionReports() {
     setEditingLeadership(false);
   }
 
+  const isSaving = createMutation.isPending || updateMutation.isPending || uploading;
+
+  // ── Form view (create or edit) ──────────────────────────────────────────────
   if (showForm) {
+    const isEditing = editingExistingId !== null;
     return (
       <div className="max-w-2xl space-y-6">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>← Back</Button>
+          <Button variant="ghost" size="sm" onClick={() => { setShowForm(false); setEditingExistingId(null); }}>← Back</Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">New Condition Report</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{isEditing ? "Edit Condition Report" : "New Condition Report"}</h1>
             <p className="text-muted-foreground text-sm">Document a hazard, unsafe condition, or equipment issue.</p>
           </div>
         </div>
 
-        <form onSubmit={handleCreate} className="space-y-5">
+        <form onSubmit={handleSubmitForm} className="space-y-5">
           <Card>
             <CardHeader><CardTitle className="text-base">Report Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -182,16 +239,13 @@ export default function ConditionReports() {
                     className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   />
                 </div>
-
                 <div className="space-y-1.5">
                   <Label>Staff Member <span className="text-destructive">*</span></Label>
                   <Select value={form.staffId} onValueChange={(v) => setForm({ ...form, staffId: v })} required>
                     <SelectTrigger><SelectValue placeholder="Select staff…" /></SelectTrigger>
                     <SelectContent>
                       {(staffList ?? []).map((s) => (
-                        <SelectItem key={s.id} value={String(s.id)}>
-                          {s.firstName} {s.lastName}
-                        </SelectItem>
+                        <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -229,16 +283,12 @@ export default function ConditionReports() {
                     type="button"
                     onClick={() => setForm({ ...form, immediateActionRequired: true })}
                     className={`flex-1 py-2 rounded-md border text-sm font-medium transition-colors ${form.immediateActionRequired ? "bg-red-50 border-red-400 text-red-700" : "bg-background border-input text-muted-foreground hover:bg-muted"}`}
-                  >
-                    Yes
-                  </button>
+                  >Yes</button>
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, immediateActionRequired: false })}
                     className={`flex-1 py-2 rounded-md border text-sm font-medium transition-colors ${!form.immediateActionRequired ? "bg-green-50 border-green-400 text-green-700" : "bg-background border-input text-muted-foreground hover:bg-muted"}`}
-                  >
-                    No
-                  </button>
+                  >No</button>
                 </div>
               </div>
 
@@ -260,9 +310,13 @@ export default function ConditionReports() {
                   <div className="flex items-center gap-2 p-3 rounded-md border bg-muted/40 text-sm">
                     <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="flex-1 truncate">{selectedFile.name}</span>
-                    <button type="button" onClick={removeFile} className="text-muted-foreground hover:text-destructive">
-                      <X className="h-4 w-4" />
-                    </button>
+                    <button type="button" onClick={removeFile} className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
+                  </div>
+                ) : form.evidenceDocumentName ? (
+                  <div className="flex items-center gap-2 p-3 rounded-md border bg-muted/40 text-sm">
+                    <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="flex-1 truncate text-muted-foreground">{form.evidenceDocumentName} (existing)</span>
+                    <button type="button" onClick={removeFile} className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
                   </div>
                 ) : (
                   <button
@@ -287,9 +341,9 @@ export default function ConditionReports() {
           </div>
 
           <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-            <Button type="submit" disabled={createMutation.isPending || uploading}>
-              {uploading ? "Uploading…" : createMutation.isPending ? "Submitting…" : "Submit Report"}
+            <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingExistingId(null); }}>Cancel</Button>
+            <Button type="submit" disabled={isSaving}>
+              {uploading ? "Uploading…" : isSaving ? "Saving…" : isEditing ? "Save Changes" : "Submit Report"}
             </Button>
           </div>
         </form>
@@ -297,6 +351,7 @@ export default function ConditionReports() {
     );
   }
 
+  // ── List view ───────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -304,14 +359,12 @@ export default function ConditionReports() {
           <h1 className="text-3xl font-bold tracking-tight">Condition Reports</h1>
           <p className="text-muted-foreground mt-1">Report and track hazards, damaged equipment, or unsafe conditions.</p>
         </div>
-        <Button onClick={() => setShowForm(true)}><Plus className="h-4 w-4 mr-2" />New Report</Button>
+        <Button onClick={openNewReport}><Plus className="h-4 w-4 mr-2" />New Report</Button>
       </div>
 
       <div className="flex items-center gap-3">
         <Select value={siteFilter} onValueChange={setSiteFilter}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="All sites" />
-          </SelectTrigger>
+          <SelectTrigger className="w-48"><SelectValue placeholder="All sites" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All sites</SelectItem>
             {(sites ?? []).map((s) => (
@@ -374,12 +427,55 @@ export default function ConditionReports() {
         </Card>
       )}
 
+      {/* Detail sheet */}
       <Sheet open={selectedId !== null} onOpenChange={(o) => { if (!o) { setSelectedId(null); setEditingLeadership(false); } }}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           {selectedReport && (
             <div className="space-y-5">
               <SheetHeader>
-                <SheetTitle className="text-lg leading-snug line-clamp-3 pr-6">{selectedReport.description}</SheetTitle>
+                <div className="flex items-start justify-between gap-2 pr-8">
+                  <SheetTitle className="text-lg leading-snug">{selectedReport.description}</SheetTitle>
+                  <div className="flex gap-1 shrink-0 mt-0.5">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                      title="Edit report"
+                      onClick={() => openEdit(selectedReport)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          title="Delete report"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete condition report?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete this report and cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={() => handleDelete(selectedReport.id)}
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
                 <div className="flex items-center gap-2 pt-1">
                   {statusBadge(selectedReport.status)}
                   {selectedReport.immediateActionRequired && <Badge className="bg-red-100 text-red-700 border-0">Immediate Action Required</Badge>}
@@ -410,7 +506,6 @@ export default function ConditionReports() {
                     {selectedReport.actionTaken ?? "No action recorded"}
                   </p>
                 </div>
-
                 {selectedReport.evidenceDocumentPath && (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Evidence</p>
@@ -435,7 +530,6 @@ export default function ConditionReports() {
                   <p className="text-sm font-semibold">Leadership Notes</p>
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0">Admin / Ed. Leader</Badge>
                 </div>
-
                 {editingLeadership ? (
                   <div className="space-y-2">
                     <Textarea
@@ -465,12 +559,7 @@ export default function ConditionReports() {
               {selectedReport.status === "open" && (
                 <>
                   <Separator />
-                  <Button
-                    className="w-full"
-                    variant="outline"
-                    onClick={handleResolve}
-                    disabled={updateMutation.isPending}
-                  >
+                  <Button className="w-full" variant="outline" onClick={handleResolve} disabled={updateMutation.isPending}>
                     <CheckCircle2 className="h-4 w-4 mr-2" />
                     Mark as Resolved
                   </Button>

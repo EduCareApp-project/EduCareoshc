@@ -84,9 +84,9 @@ const NAV_GROUPS = [
 function NavLinks({ location }: { location: string }) {
   return (
     <div className="flex flex-col h-full">
-      <div className="px-6 py-4 flex items-center space-x-2 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.2)" }}>
+      <div className="px-10 py-4 flex items-center space-x-3 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.2)" }}>
         <img src="/educare-logo.png" alt="EduCare" className="h-28 w-28 object-contain" />
-        <span className="text-xl font-bold text-white">EduCare</span>
+        <span className="text-3xl font-bold text-white">EduCare</span>
       </div>
       <ScrollArea className="flex-1">
         <div className="px-4 py-4 space-y-5 pb-8">
@@ -129,7 +129,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-[100dvh] w-full bg-background">
-      <aside className="hidden lg:flex print:hidden w-64 flex-col border-r h-[100dvh] sticky top-0" style={{ backgroundColor: "#008848" }}>
+      <aside className="hidden lg:flex print:hidden w-72 flex-col border-r h-[100dvh] sticky top-0" style={{ backgroundColor: "#008848" }}>
         <NavLinks location={location} />
       </aside>
 

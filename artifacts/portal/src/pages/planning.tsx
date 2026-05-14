@@ -4,7 +4,8 @@ import { useListPlanningExperiences, useListChildren, useListSites } from "@work
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, CalendarDays, MapPin, Users, ChevronRight } from "lucide-react";
+import { Plus, CalendarDays, MapPin, Users, ChevronRight, Award } from "lucide-react";
+import { Link } from "wouter";
 import { format } from "date-fns";
 
 const STAGE_LABELS: Record<string, string> = {
@@ -52,9 +53,16 @@ export default function Planning() {
           <h1 className="text-3xl font-bold tracking-tight">Planning Cycle</h1>
           <p className="text-muted-foreground mt-1">Document and track educational experiences through the planning cycle.</p>
         </div>
-        <Button onClick={() => navigate(siteFilter === "templates" ? "/planning/new?template=1" : "/planning/new")}>
-          <Plus className="h-4 w-4 mr-2" />{siteFilter === "templates" ? "New Template" : "New Planning Cycle"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link href="/outcomes">
+            <Button variant="outline">
+              <Award className="h-4 w-4 mr-2" />MTOP Outcomes
+            </Button>
+          </Link>
+          <Button onClick={() => navigate(siteFilter === "templates" ? "/planning/new?template=1" : "/planning/new")}>
+            <Plus className="h-4 w-4 mr-2" />{siteFilter === "templates" ? "New Template" : "New Planning Cycle"}
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">

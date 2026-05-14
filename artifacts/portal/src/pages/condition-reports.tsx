@@ -101,7 +101,7 @@ export default function ConditionReports() {
 
   function openEdit(r: NonNullable<typeof selectedReport>) {
     setForm({
-      reportedDate: r.reportedDate ?? new Date().toISOString().slice(0, 10),
+      reportedDate: (r.reportedDate ?? new Date().toISOString()).slice(0, 10),
       staffId: String(r.staffId),
       siteId: r.siteId ? String(r.siteId) : "",
       description: r.description,

@@ -824,20 +824,31 @@ export default function ChildProfile() {
                     {childPosts.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg text-sm">No posts for this child</div>
                     ) : (
-                      <div className="divide-y">
-                        {[...childPosts].reverse().map((p) => (
-                          <Link key={p.id} href={`/posts/${p.id}`}>
-                            <div className="py-3 flex items-center justify-between gap-4 bg-green-50 hover:bg-green-100 px-2 rounded cursor-pointer">
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium line-clamp-1">{p.title}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {p.date ? safeDate(p.date.slice(0, 10) + "T00:00:00", "d MMM yyyy") : safeDate(p.createdAt, "d MMM yyyy")}
-                                  {p.staffName ? ` · ${p.staffName}` : ""}
-                                </p>
+                      <div className="space-y-0">
+                        <div className="divide-y">
+                          {[...childPosts].reverse().slice(0, 3).map((p) => (
+                            <Link key={p.id} href={`/posts/${p.id}`}>
+                              <div className="py-3 flex items-center justify-between gap-4 bg-green-50 hover:bg-green-100 px-2 rounded cursor-pointer">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium line-clamp-1">{p.title}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {p.date ? safeDate(p.date.slice(0, 10) + "T00:00:00", "d MMM yyyy") : safeDate(p.createdAt, "d MMM yyyy")}
+                                    {p.staffName ? ` · ${p.staffName}` : ""}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          </Link>
-                        ))}
+                            </Link>
+                          ))}
+                        </div>
+                        {childPosts.length > 3 && (
+                          <div className="pt-3">
+                            <Link href={`/posts?childId=${child.id}`}>
+                              <Button variant="outline" size="sm" className="w-full">
+                                Show more ({childPosts.length - 3} more)
+                              </Button>
+                            </Link>
+                          </div>
+                        )}
                       </div>
                     )}
                   </CardContent>

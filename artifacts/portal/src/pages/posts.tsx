@@ -1,13 +1,13 @@
-import { useListPosts, useDeletePost, getListPostsQueryKey } from "@workspace/api-client-react";
+import { useListPosts, useListChildren, useDeletePost, getListPostsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Newspaper, Plus, Trash2, User } from "lucide-react";
+import { Newspaper, Plus, Trash2, User, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 
 function imageUrl(path: string) {
   const stripped = path.replace(/^\/objects\//, "");
@@ -18,8 +18,25 @@ export default function Posts() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+
+  const childIdParam = new URLSearchParams(window.location.search).get("childId");
+  const filterChildId = childIdParam ? parseInt(childIdParam) : null;
+
   const { data: posts, isLoading } = useListPosts();
+  const { data: children } = useListChildren();
   const deleteMutation = useDeletePost();
+
+  const filteredChild = filterChildId
+    ? (children ?? []).find((c) => c.id === filterChildId)
+    : null;
+
+  const filteredChildName = filteredChild
+    ? `${filteredChild.firstName} ${filteredChild.lastName}`
+    : null;
+
+  const displayedPosts = filterChildId
+    ? (posts ?? []).filter((p) => (p.childIds ?? []).includes(filterChildId))
+    : (posts ?? []);
 
   function handleDelete(e: React.MouseEvent, id: number) {
     e.stopPropagation();
@@ -36,9 +53,20 @@ export default function Posts() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="space-y-1">
+          {filterChildId && (
+            <Link href="/posts">
+              <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-1">
+                <ArrowLeft className="h-3.5 w-3.5" />All posts
+              </button>
+            </Link>
+          )}
           <h1 className="text-3xl font-bold tracking-tight">Posts</h1>
-          <p className="text-muted-foreground mt-1">Learning stories and observations shared with families.</p>
+          <p className="text-muted-foreground">
+            {filteredChildName
+              ? `Showing all posts for ${filteredChildName}.`
+              : "Learning stories and observations shared with families."}
+          </p>
         </div>
         <Button onClick={() => setLocation("/posts/new")}>
           <Plus className="h-4 w-4 mr-2" />New Post
@@ -49,12 +77,16 @@ export default function Posts() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-72 rounded-xl" />)}
         </div>
-      ) : (posts ?? []).length === 0 ? (
+      ) : displayedPosts.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center text-muted-foreground flex flex-col items-center gap-2">
             <Newspaper className="h-10 w-10 mb-2 opacity-40" />
-            <p className="font-medium">No posts yet</p>
-            <p className="text-sm">Create your first learning story to share with families.</p>
+            <p className="font-medium">
+              {filteredChildName ? `No posts for ${filteredChildName}` : "No posts yet"}
+            </p>
+            {!filteredChildName && (
+              <p className="text-sm">Create your first learning story to share with families.</p>
+            )}
             <Button className="mt-3" onClick={() => setLocation("/posts/new")}>
               <Plus className="h-4 w-4 mr-2" />New Post
             </Button>
@@ -62,7 +94,7 @@ export default function Posts() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {[...(posts ?? [])].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((post) => {
+          {[...displayedPosts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((post) => {
             const coverImage = post.images?.[0];
             return (
               <Card

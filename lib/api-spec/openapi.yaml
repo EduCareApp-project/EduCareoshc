@@ -1881,6 +1881,61 @@ paths:
         "204":
           description: Deleted
 
+  /routine-item-completions:
+    get:
+      operationId: listRoutineItemCompletions
+      tags: [checklists]
+      parameters:
+        - name: routineId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: periodKey
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoutineItemCompletion"
+    post:
+      operationId: createRoutineItemCompletion
+      tags: [checklists]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoutineItemCompletionInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoutineItemCompletion"
+
+  /routine-item-completions/{id}:
+    delete:
+      operationId: deleteRoutineItemCompletion
+      tags: [checklists]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /posts:
     get:
       operationId: listPosts
@@ -3885,6 +3940,44 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ChecklistSection"
+
+    RoutineItemCompletion:
+      type: object
+      required: [id, routineId, periodKey, sectionIndex, itemIndex, completedAt]
+      properties:
+        id:
+          type: integer
+        routineId:
+          type: integer
+        periodKey:
+          type: string
+        sectionIndex:
+          type: integer
+        itemIndex:
+          type: integer
+        completedByStaffId:
+          type: ["integer", "null"]
+        completedByStaffName:
+          type: ["string", "null"]
+        completedAt:
+          type: string
+          format: date-time
+
+    RoutineItemCompletionInput:
+      type: object
+      required: [routineId, periodKey, sectionIndex, itemIndex]
+      properties:
+        routineId:
+          type: integer
+        periodKey:
+          type: string
+        sectionIndex:
+          type: integer
+        itemIndex:
+          type: integer
+        completedByStaffId:
+          type: integer
+          nullable: true
 
     Post:
       type: object

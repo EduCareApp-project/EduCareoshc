@@ -1,8 +1,9 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import {
   db, checklistsTable, checklistCompletionsTable, staffTable,
   checklistTemplatesTable, checklistRoutinesTable, sitesTable,
+  routineItemCompletionsTable,
 } from "@workspace/db";
 import {
   CreateChecklistBody, CompleteChecklistParams, CompleteChecklistBody,
@@ -14,6 +15,8 @@ import {
   ListChecklistRoutinesResponse, CreateChecklistRoutineBody,
   UpdateChecklistRoutineParams, UpdateChecklistRoutineBody,
   DeleteChecklistRoutineParams,
+  ListRoutineItemCompletionsQueryParams, ListRoutineItemCompletionsResponse,
+  CreateRoutineItemCompletionBody, DeleteRoutineItemCompletionParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -175,6 +178,56 @@ router.delete("/checklist-routines/:id", async (req, res): Promise<void> => {
   const params = DeleteChecklistRoutineParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   await db.delete(checklistRoutinesTable).where(eq(checklistRoutinesTable.id, params.data.id));
+  res.status(204).send();
+});
+
+// ── Routine Item Completions ─────────────────────────────────────────────────
+
+router.get("/routine-item-completions", async (req, res): Promise<void> => {
+  const params = ListRoutineItemCompletionsQueryParams.safeParse(req.query);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const rows = await db
+    .select()
+    .from(routineItemCompletionsTable)
+    .where(
+      and(
+        eq(routineItemCompletionsTable.routineId, params.data.routineId),
+        eq(routineItemCompletionsTable.periodKey, params.data.periodKey),
+      )
+    );
+  const staffList = await db.select().from(staffTable);
+  const enriched = rows.map((r) => {
+    const member = staffList.find((s) => s.id === r.completedByStaffId);
+    return {
+      ...r,
+      completedByStaffName: member ? `${member.firstName} ${member.lastName}` : null,
+    };
+  });
+  res.json(ListRoutineItemCompletionsResponse.parse(enriched));
+});
+
+router.post("/routine-item-completions", async (req, res): Promise<void> => {
+  const parsed = CreateRoutineItemCompletionBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  const [row] = await db.insert(routineItemCompletionsTable).values({
+    routineId: parsed.data.routineId,
+    periodKey: parsed.data.periodKey,
+    sectionIndex: parsed.data.sectionIndex,
+    itemIndex: parsed.data.itemIndex,
+    completedByStaffId: parsed.data.completedByStaffId ?? null,
+  }).returning();
+  const staffList = await db.select().from(staffTable);
+  const member = staffList.find((s) => s.id === row.completedByStaffId);
+  res.status(201).json({
+    ...row,
+    completedByStaffName: member ? `${member.firstName} ${member.lastName}` : null,
+  });
+});
+
+router.delete("/routine-item-completions/:id", async (req, res): Promise<void> => {
+  const params = DeleteRoutineItemCompletionParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  await db.delete(routineItemCompletionsTable).where(eq(routineItemCompletionsTable.id, params.data.id));
   res.status(204).send();
 });
 

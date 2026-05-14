@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useListChecklistTemplates, useCreateChecklistTemplate, useUpdateChecklistTemplate, useDeleteChecklistTemplate,
   useListChecklistRoutines, useCreateChecklistRoutine, useUpdateChecklistRoutine, useDeleteChecklistRoutine,
+  useListRoutineItemCompletions, useCreateRoutineItemCompletion, useDeleteRoutineItemCompletion,
   useListStaff, useListSites,
-  getListChecklistTemplatesQueryKey, getListChecklistRoutinesQueryKey,
+  getListChecklistTemplatesQueryKey, getListChecklistRoutinesQueryKey, getListRoutineItemCompletionsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,9 +18,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { CheckSquare, Plus, Trash2, Edit, CalendarClock, X, GripVertical, RefreshCw } from "lucide-react";
-import { format } from "date-fns";
+import { Progress } from "@/components/ui/progress";
+import {
+  CheckSquare, Plus, Trash2, Edit, CalendarClock, X, GripVertical, RefreshCw,
+  ChevronLeft, ChevronRight, Play, User,
+} from "lucide-react";
+import {
+  format, addDays, addWeeks, addMonths, addYears,
+  startOfISOWeek, endOfISOWeek,
+} from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────────────────────
 
 const TEMPLATE_TYPES = [
   { value: "daily", label: "Daily" },
@@ -55,6 +67,69 @@ const FREQUENCIES = [
   { value: "annual", label: "Annual" },
 ];
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Period helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getPeriodKey(date: Date, frequency: string): string {
+  switch (frequency) {
+    case "daily": return format(date, "yyyy-MM-dd");
+    case "weekly": return format(date, "RRRR-'W'II");
+    case "fortnightly": {
+      const wn = parseInt(format(date, "II"), 10);
+      return `${format(date, "RRRR")}-FN${Math.ceil(wn / 2)}`;
+    }
+    case "monthly": return format(date, "yyyy-MM");
+    case "term": {
+      const m = date.getMonth() + 1;
+      const t = m <= 3 ? 1 : m <= 6 ? 2 : m <= 9 ? 3 : 4;
+      return `${date.getFullYear()}-T${t}`;
+    }
+    case "annual": return String(date.getFullYear());
+    default: return format(date, "yyyy-MM-dd");
+  }
+}
+
+function getPeriodLabel(date: Date, frequency: string): string {
+  switch (frequency) {
+    case "daily": return format(date, "EEEE, d MMMM yyyy");
+    case "weekly": {
+      const s = startOfISOWeek(date);
+      const e = endOfISOWeek(date);
+      return `${format(s, "d MMM")} – ${format(e, "d MMM yyyy")}`;
+    }
+    case "fortnightly": {
+      const s = startOfISOWeek(date);
+      const e = addDays(s, 13);
+      return `${format(s, "d MMM")} – ${format(e, "d MMM yyyy")} (Fortnight)`;
+    }
+    case "monthly": return format(date, "MMMM yyyy");
+    case "term": {
+      const m = date.getMonth() + 1;
+      const t = m <= 3 ? 1 : m <= 6 ? 2 : m <= 9 ? 3 : 4;
+      return `Term ${t}, ${date.getFullYear()}`;
+    }
+    case "annual": return String(date.getFullYear());
+    default: return format(date, "d MMMM yyyy");
+  }
+}
+
+function navigatePeriod(date: Date, frequency: string, dir: 1 | -1): Date {
+  switch (frequency) {
+    case "daily": return addDays(date, dir);
+    case "weekly": return addWeeks(date, dir);
+    case "fortnightly": return addWeeks(date, dir * 2);
+    case "monthly": return addMonths(date, dir);
+    case "term": return addMonths(date, dir * 3);
+    case "annual": return addYears(date, dir);
+    default: return addDays(date, dir);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Type helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface ChecklistItemDraft {
   title: string;
   days: number[];
@@ -84,18 +159,21 @@ function TypeBadge({ type }: { type: string }) {
   };
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colors[type] ?? "bg-gray-100 text-gray-800"}`}>
-      {TEMPLATE_TYPES.find((t) => t.value === type)?.label ?? type}
+      {TEMPLATE_TYPES.find((t) => t.value === type)?.label ?? FREQUENCIES.find((f) => f.value === type)?.label ?? type}
     </span>
   );
 }
 
-// ── Item row — shows toggles depending on type ──────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Template form helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
 function ItemRow({
   item, type, onChange, onRemove, canRemove,
 }: {
   item: ChecklistItemDraft;
   type: TemplateType;
-  onChange: (updated: ChecklistItemDraft) => void;
+  onChange: (u: ChecklistItemDraft) => void;
   onRemove: () => void;
   canRemove: boolean;
 }) {
@@ -128,11 +206,7 @@ function ItemRow({
         <div className="flex gap-2 pl-6 flex-wrap">
           {DAYS.map((d) => (
             <label key={d.value} className="flex items-center gap-1 text-xs cursor-pointer">
-              <Checkbox
-                checked={item.days.includes(d.value)}
-                onCheckedChange={() => toggleDay(d.value)}
-                className="h-3.5 w-3.5"
-              />
+              <Checkbox checked={item.days.includes(d.value)} onCheckedChange={() => toggleDay(d.value)} className="h-3.5 w-3.5" />
               {d.label}
             </label>
           ))}
@@ -142,11 +216,7 @@ function ItemRow({
         <div className="flex gap-2 pl-6 flex-wrap">
           {MONTHS.map((m) => (
             <label key={m.value} className="flex items-center gap-1 text-xs cursor-pointer">
-              <Checkbox
-                checked={item.months.includes(m.value)}
-                onCheckedChange={() => toggleMonth(m.value)}
-                className="h-3.5 w-3.5"
-              />
+              <Checkbox checked={item.months.includes(m.value)} onCheckedChange={() => toggleMonth(m.value)} className="h-3.5 w-3.5" />
               {m.label}
             </label>
           ))}
@@ -156,28 +226,21 @@ function ItemRow({
   );
 }
 
-// ── Section editor ──────────────────────────────────────────────────────────
 function SectionEditor({
   section, index, type, onChange, onRemove, canRemove,
 }: {
   section: ChecklistSectionDraft;
   index: number;
   type: TemplateType;
-  onChange: (updated: ChecklistSectionDraft) => void;
+  onChange: (u: ChecklistSectionDraft) => void;
   onRemove: () => void;
   canRemove: boolean;
 }) {
-  function updateItem(i: number, updated: ChecklistItemDraft) {
-    const items = [...section.items];
-    items[i] = updated;
-    onChange({ ...section, items });
+  function updateItem(i: number, u: ChecklistItemDraft) {
+    const items = [...section.items]; items[i] = u; onChange({ ...section, items });
   }
-  function removeItem(i: number) {
-    onChange({ ...section, items: section.items.filter((_, idx) => idx !== i) });
-  }
-  function addItem() {
-    onChange({ ...section, items: [...section.items, emptyItem()] });
-  }
+  function removeItem(i: number) { onChange({ ...section, items: section.items.filter((_, idx) => idx !== i) }); }
+  function addItem() { onChange({ ...section, items: [...section.items, emptyItem()] }); }
 
   return (
     <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
@@ -199,14 +262,7 @@ function SectionEditor({
       </div>
       <div className="pl-2">
         {section.items.map((item, i) => (
-          <ItemRow
-            key={i}
-            item={item}
-            type={type}
-            onChange={(u) => updateItem(i, u)}
-            onRemove={() => removeItem(i)}
-            canRemove={section.items.length > 1}
-          />
+          <ItemRow key={i} item={item} type={type} onChange={(u) => updateItem(i, u)} onRemove={() => removeItem(i)} canRemove={section.items.length > 1} />
         ))}
         <Button type="button" variant="ghost" size="sm" className="mt-1 h-7 text-xs gap-1" onClick={addItem}>
           <Plus className="h-3 w-3" />Add item
@@ -216,7 +272,10 @@ function SectionEditor({
   );
 }
 
-// ── Template form dialog ────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Template form dialog
+// ─────────────────────────────────────────────────────────────────────────────
+
 function TemplateFormDialog({
   open, onOpenChange, editTemplate,
 }: {
@@ -245,9 +304,7 @@ function TemplateFormDialog({
 
   function addSection() { setSections([...sections, emptySection()]); }
   function removeSection(i: number) { setSections(sections.filter((_, idx) => idx !== i)); }
-  function updateSection(i: number, updated: ChecklistSectionDraft) {
-    const next = [...sections]; next[i] = updated; setSections(next);
-  }
+  function updateSection(i: number, u: ChecklistSectionDraft) { const next = [...sections]; next[i] = u; setSections(next); }
 
   function buildPayload() {
     return {
@@ -256,13 +313,11 @@ function TemplateFormDialog({
       commencementMonth: type === "annual" && commencementMonth ? parseInt(commencementMonth) : null,
       sections: sections.map((s) => ({
         title: s.title.trim(),
-        items: s.items
-          .filter((it) => it.title.trim())
-          .map((it) => ({
-            title: it.title.trim(),
-            days: type === "weekly" ? it.days : null,
-            months: type === "monthly" ? it.months : null,
-          })),
+        items: s.items.filter((it) => it.title.trim()).map((it) => ({
+          title: it.title.trim(),
+          days: type === "weekly" ? it.days : null,
+          months: type === "monthly" ? it.months : null,
+        })),
       })).filter((s) => s.title || s.items.length),
     };
   }
@@ -272,26 +327,16 @@ function TemplateFormDialog({
     const payload = buildPayload();
     if (editTemplate) {
       updateMutation.mutate({ id: editTemplate.id, data: payload as any }, {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getListChecklistTemplatesQueryKey() });
-          toast({ title: "Template updated" });
-          onOpenChange(false);
-        },
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListChecklistTemplatesQueryKey() }); toast({ title: "Template updated" }); onOpenChange(false); },
         onError: () => toast({ title: "Failed to update template", variant: "destructive" }),
       });
     } else {
       createMutation.mutate({ data: payload as any }, {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getListChecklistTemplatesQueryKey() });
-          toast({ title: "Template created" });
-          onOpenChange(false);
-        },
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListChecklistTemplatesQueryKey() }); toast({ title: "Template created" }); onOpenChange(false); },
         onError: () => toast({ title: "Failed to create template", variant: "destructive" }),
       });
     }
   }
-
-  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -310,9 +355,7 @@ function TemplateFormDialog({
               <Select value={type} onValueChange={(v) => setType(v as TemplateType)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {TEMPLATE_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                  ))}
+                  {TEMPLATE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -328,18 +371,8 @@ function TemplateFormDialog({
               </div>
             )}
           </div>
-
-          {type === "weekly" && (
-            <p className="text-xs text-muted-foreground bg-purple-50 rounded px-3 py-2">
-              For each item, tick the days of the week it applies to.
-            </p>
-          )}
-          {type === "monthly" && (
-            <p className="text-xs text-muted-foreground bg-orange-50 rounded px-3 py-2">
-              For each item, tick the months of the year it applies to.
-            </p>
-          )}
-
+          {type === "weekly" && <p className="text-xs text-muted-foreground bg-purple-50 rounded px-3 py-2">For each item, tick the days of the week it applies to.</p>}
+          {type === "monthly" && <p className="text-xs text-muted-foreground bg-orange-50 rounded px-3 py-2">For each item, tick the months of the year it applies to.</p>}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>Sections &amp; Items</Label>
@@ -348,21 +381,12 @@ function TemplateFormDialog({
               </Button>
             </div>
             {sections.map((s, i) => (
-              <SectionEditor
-                key={i}
-                section={s}
-                index={i}
-                type={type}
-                onChange={(u) => updateSection(i, u)}
-                onRemove={() => removeSection(i)}
-                canRemove={sections.length > 1}
-              />
+              <SectionEditor key={i} section={s} index={i} type={type} onChange={(u) => updateSection(i, u)} onRemove={() => removeSection(i)} canRemove={sections.length > 1} />
             ))}
           </div>
-
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
               {editTemplate ? "Save Changes" : "Create Template"}
             </Button>
           </div>
@@ -372,7 +396,10 @@ function TemplateFormDialog({
   );
 }
 
-// ── Routine dialog ──────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Routine dialog (create)
+// ─────────────────────────────────────────────────────────────────────────────
+
 function RoutineDialog({
   open, onOpenChange, template,
 }: {
@@ -411,11 +438,7 @@ function RoutineDialog({
         queryClient.invalidateQueries({ queryKey: getListChecklistRoutinesQueryKey() });
         toast({ title: "Routine created" });
         onOpenChange(false);
-        setTargetDate("");
-        setIsRepeating(false);
-        setFrequency("none");
-        setSiteId("none");
-        setStaffId("none");
+        setTargetDate(""); setIsRepeating(false); setFrequency("none"); setSiteId("none"); setStaffId("none");
       },
       onError: () => toast({ title: "Failed to create routine", variant: "destructive" }),
     });
@@ -424,15 +447,12 @@ function RoutineDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Create Routine — {template?.title}</DialogTitle>
-        </DialogHeader>
+        <DialogHeader><DialogTitle>Create Routine — {template?.title}</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
             <Label>Target Date</Label>
             <Input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} required />
           </div>
-
           <div className="flex items-center justify-between rounded-lg border px-3 py-2.5">
             <div>
               <p className="text-sm font-medium">Repeating Routine</p>
@@ -440,7 +460,6 @@ function RoutineDialog({
             </div>
             <Switch checked={isRepeating} onCheckedChange={setIsRepeating} />
           </div>
-
           {isRepeating && (
             <div className="space-y-1">
               <Label>Frequency</Label>
@@ -452,9 +471,7 @@ function RoutineDialog({
               </Select>
             </div>
           )}
-
           <Separator />
-
           <div className="space-y-1">
             <Label>Assign to Site (optional)</Label>
             <Select value={siteId} onValueChange={setSiteId}>
@@ -465,7 +482,6 @@ function RoutineDialog({
               </SelectContent>
             </Select>
           </div>
-
           <div className="space-y-1">
             <Label>Assign to Staff (optional)</Label>
             <Select value={staffId} onValueChange={setStaffId}>
@@ -476,7 +492,6 @@ function RoutineDialog({
               </SelectContent>
             </Select>
           </div>
-
           <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={createMutation.isPending}>Save Routine</Button>
@@ -487,7 +502,346 @@ function RoutineDialog({
   );
 }
 
-// ── Template tile ───────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Edit routine dialog
+// ─────────────────────────────────────────────────────────────────────────────
+
+function EditRoutineDialog({
+  open, onOpenChange, routine,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  routine: any | null;
+}) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const updateMutation = useUpdateChecklistRoutine();
+  const { data: sites } = useListSites();
+  const { data: staff } = useListStaff();
+
+  const [targetDate, setTargetDate] = useState(routine?.targetDate ?? "");
+  const [isRepeating, setIsRepeating] = useState(routine?.isRepeating ?? false);
+  const [frequency, setFrequency] = useState(routine?.frequency ?? "none");
+  const [siteId, setSiteId] = useState(routine?.siteId ? String(routine.siteId) : "none");
+  const [staffId, setStaffId] = useState(routine?.staffId ? String(routine.staffId) : "none");
+
+  useState(() => {
+    if (routine) {
+      setTargetDate(routine.targetDate ?? ""); setIsRepeating(routine.isRepeating ?? false);
+      setFrequency(routine.frequency ?? "none");
+      setSiteId(routine.siteId ? String(routine.siteId) : "none");
+      setStaffId(routine.staffId ? String(routine.staffId) : "none");
+    }
+  });
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!routine) return;
+    updateMutation.mutate({
+      id: routine.id,
+      data: {
+        siteId: siteId !== "none" ? parseInt(siteId) : null,
+        staffId: staffId !== "none" ? parseInt(staffId) : null,
+        targetDate,
+        isRepeating,
+        frequency: isRepeating && frequency !== "none" ? frequency : null,
+      },
+    }, {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListChecklistRoutinesQueryKey() }); toast({ title: "Routine updated" }); onOpenChange(false); },
+      onError: () => toast({ title: "Failed to update routine", variant: "destructive" }),
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>Edit Routine — {routine?.title}</DialogTitle></DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <Label>Target Date</Label>
+            <Input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} required />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border px-3 py-2.5">
+            <div>
+              <p className="text-sm font-medium">Repeating Routine</p>
+              <p className="text-xs text-muted-foreground">Recurs from the target date</p>
+            </div>
+            <Switch checked={isRepeating} onCheckedChange={setIsRepeating} />
+          </div>
+          {isRepeating && (
+            <div className="space-y-1">
+              <Label>Frequency</Label>
+              <Select value={frequency} onValueChange={setFrequency}>
+                <SelectTrigger><SelectValue placeholder="Select frequency" /></SelectTrigger>
+                <SelectContent>
+                  {FREQUENCIES.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <Separator />
+          <div className="space-y-1">
+            <Label>Assign to Site (optional)</Label>
+            <Select value={siteId} onValueChange={setSiteId}>
+              <SelectTrigger><SelectValue placeholder="Any site" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Any site</SelectItem>
+                {(sites ?? []).map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Assign to Staff (optional)</Label>
+            <Select value={staffId} onValueChange={setStaffId}>
+              <SelectTrigger><SelectValue placeholder="Any staff" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Any staff</SelectItem>
+                {(staff ?? []).map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" disabled={updateMutation.isPending}>Save Changes</Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Checklist "Do" dialog — complete items with period navigation
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ChecklistDoDialog({
+  routine, open, onOpenChange,
+}: {
+  routine: any;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) {
+  const queryClient = useQueryClient();
+  const { data: staff } = useListStaff();
+
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [completingAsId, setCompletingAsId] = useState<string>(() => {
+    try { return localStorage.getItem("checklist_completing_as") ?? "none"; } catch { return "none"; }
+  });
+
+  useEffect(() => {
+    if (!open) return;
+    setCurrentDate(new Date());
+  }, [open]);
+
+  function handleCompletingAsChange(v: string) {
+    setCompletingAsId(v);
+    try { localStorage.setItem("checklist_completing_as", v); } catch {}
+  }
+
+  const freq = routine.frequency ?? "daily";
+  const periodKey = getPeriodKey(currentDate, freq);
+  const periodLabel = getPeriodLabel(currentDate, freq);
+
+  const { data: completions, isLoading } = useListRoutineItemCompletions(
+    { routineId: routine.id, periodKey },
+    { query: { enabled: open } }
+  );
+  const createMutation = useCreateRoutineItemCompletion();
+  const deleteMutation = useDeleteRoutineItemCompletion();
+
+  const qKey = getListRoutineItemCompletionsQueryKey({ routineId: routine.id, periodKey });
+
+  function getCompletion(si: number, ii: number) {
+    return completions?.find((c) => c.sectionIndex === si && c.itemIndex === ii);
+  }
+
+  function toggleItem(si: number, ii: number) {
+    const existing = getCompletion(si, ii);
+    if (existing) {
+      deleteMutation.mutate({ id: existing.id }, {
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: qKey }),
+      });
+    } else {
+      createMutation.mutate({
+        data: {
+          routineId: routine.id,
+          periodKey,
+          sectionIndex: si,
+          itemIndex: ii,
+          completedByStaffId: completingAsId !== "none" ? parseInt(completingAsId) : null,
+        },
+      }, {
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: qKey }),
+      });
+    }
+  }
+
+  const sections: any[] = routine.sectionsSnapshot ?? [];
+  const totalItems = sections.reduce((n: number, s: any) => n + (s.items?.length ?? 0), 0);
+  const doneCount = completions?.length ?? 0;
+  const pct = totalItems > 0 ? Math.round((doneCount / totalItems) * 100) : 0;
+
+  const isPending = createMutation.isPending || deleteMutation.isPending;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{routine.title}</DialogTitle>
+          <div className="flex items-center gap-2 flex-wrap">
+            <TypeBadge type={freq} />
+            {routine.siteName && <span className="text-xs text-muted-foreground">{routine.siteName}</span>}
+          </div>
+        </DialogHeader>
+
+        {/* Completing as */}
+        <div className="flex items-center gap-2 rounded-lg border px-3 py-2">
+          <User className="h-4 w-4 text-muted-foreground shrink-0" />
+          <span className="text-sm text-muted-foreground">Completing as</span>
+          <Select value={completingAsId} onValueChange={handleCompletingAsChange}>
+            <SelectTrigger className="flex-1 h-8 text-sm border-0 shadow-none px-1">
+              <SelectValue placeholder="Select staff" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Not specified</SelectItem>
+              {(staff ?? []).map((s) => (
+                <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Period navigation */}
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => setCurrentDate((d) => navigatePeriod(d, freq, -1))}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex-1 text-center">
+            <p className="text-sm font-medium">{periodLabel}</p>
+          </div>
+          <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => setCurrentDate((d) => navigatePeriod(d, freq, 1))}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Progress */}
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>{doneCount} of {totalItems} items completed</span>
+            <span>{pct}%</span>
+          </div>
+          <Progress value={pct} className="h-2" />
+        </div>
+
+        <Separator />
+
+        {/* Checklist items */}
+        {isLoading ? (
+          <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
+        ) : sections.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">No items in this checklist.</p>
+        ) : (
+          <div className="space-y-4">
+            {sections.map((section: any, si: number) => (
+              <div key={si}>
+                {section.title && (
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.title}</p>
+                )}
+                <div className="space-y-1">
+                  {(section.items ?? []).map((item: any, ii: number) => {
+                    const completion = getCompletion(si, ii);
+                    const done = !!completion;
+                    return (
+                      <label
+                        key={ii}
+                        className={`flex items-start gap-3 rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${done ? "bg-green-50" : "hover:bg-muted/40"} ${isPending ? "pointer-events-none opacity-70" : ""}`}
+                        onClick={() => toggleItem(si, ii)}
+                      >
+                        <Checkbox
+                          checked={done}
+                          onCheckedChange={() => toggleItem(si, ii)}
+                          className="mt-0.5 shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm ${done ? "line-through text-muted-foreground" : ""}`}>{item.title}</p>
+                          {done && completion.completedByStaffName && (
+                            <p className="text-xs text-green-700 mt-0.5">Completed by {completion.completedByStaffName}</p>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Active checklist tile
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ActiveChecklistTile({
+  routine, onOpen,
+}: {
+  routine: any;
+  onOpen: () => void;
+}) {
+  const freq = routine.frequency ?? "daily";
+  const periodKey = getPeriodKey(new Date(), freq);
+  const periodLabel = getPeriodLabel(new Date(), freq);
+
+  const { data: completions } = useListRoutineItemCompletions({ routineId: routine.id, periodKey });
+
+  const totalItems = (routine.sectionsSnapshot ?? []).reduce((n: number, s: any) => n + (s.items?.length ?? 0), 0);
+  const doneCount = completions?.length ?? 0;
+  const pct = totalItems > 0 ? Math.round((doneCount / totalItems) * 100) : 0;
+  const allDone = totalItems > 0 && doneCount >= totalItems;
+
+  return (
+    <Card className={`flex flex-col transition-shadow hover:shadow-md cursor-pointer ${allDone ? "border-green-200 bg-green-50/30" : ""}`} onClick={onOpen}>
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-base leading-snug">{routine.title}</CardTitle>
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              <TypeBadge type={freq} />
+              {routine.siteName && <span className="text-xs text-muted-foreground">{routine.siteName}</span>}
+              {routine.staffName && <span className="text-xs text-muted-foreground">{routine.staffName}</span>}
+            </div>
+          </div>
+          {allDone && (
+            <Badge className="bg-green-100 text-green-800 border-green-200 shrink-0 text-xs">Done</Badge>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="flex-1 pb-3 space-y-3">
+        <p className="text-xs text-muted-foreground">{periodLabel}</p>
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>{doneCount}/{totalItems} items</span>
+            <span>{pct}%</span>
+          </div>
+          <Progress value={pct} className="h-1.5" />
+        </div>
+        <Button size="sm" className="w-full h-8 text-xs gap-1.5" onClick={(e) => { e.stopPropagation(); onOpen(); }}>
+          <Play className="h-3.5 w-3.5" />
+          {allDone ? "Review" : "Open Checklist"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Template tile
+// ─────────────────────────────────────────────────────────────────────────────
+
 function TemplateTile({
   template, onRoutine, onEdit, onDelete,
 }: {
@@ -543,128 +897,10 @@ function TemplateTile({
   );
 }
 
-// ── Routine row ─────────────────────────────────────────────────────────────
-// ── Edit Routine Dialog ─────────────────────────────────────────────────────
-function EditRoutineDialog({
-  open, onOpenChange, routine,
-}: {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
-  routine: any | null;
-}) {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const updateMutation = useUpdateChecklistRoutine();
-  const { data: sites } = useListSites();
-  const { data: staff } = useListStaff();
+// ─────────────────────────────────────────────────────────────────────────────
+// Routine row
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const [targetDate, setTargetDate] = useState(routine?.targetDate ?? "");
-  const [isRepeating, setIsRepeating] = useState(routine?.isRepeating ?? false);
-  const [frequency, setFrequency] = useState(routine?.frequency ?? "none");
-  const [siteId, setSiteId] = useState(routine?.siteId ? String(routine.siteId) : "none");
-  const [staffId, setStaffId] = useState(routine?.staffId ? String(routine.staffId) : "none");
-
-  // Sync state when routine changes (dialog re-opened with different routine)
-  const routineId = routine?.id;
-  useState(() => {
-    if (routine) {
-      setTargetDate(routine.targetDate ?? "");
-      setIsRepeating(routine.isRepeating ?? false);
-      setFrequency(routine.frequency ?? "none");
-      setSiteId(routine.siteId ? String(routine.siteId) : "none");
-      setStaffId(routine.staffId ? String(routine.staffId) : "none");
-    }
-  });
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!routine) return;
-    updateMutation.mutate({
-      id: routine.id,
-      data: {
-        siteId: siteId !== "none" ? parseInt(siteId) : null,
-        staffId: staffId !== "none" ? parseInt(staffId) : null,
-        targetDate,
-        isRepeating,
-        frequency: isRepeating && frequency !== "none" ? frequency : null,
-      },
-    }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListChecklistRoutinesQueryKey() });
-        toast({ title: "Routine updated" });
-        onOpenChange(false);
-      },
-      onError: () => toast({ title: "Failed to update routine", variant: "destructive" }),
-    });
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Edit Routine — {routine?.title}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <Label>Target Date</Label>
-            <Input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} required />
-          </div>
-
-          <div className="flex items-center justify-between rounded-lg border px-3 py-2.5">
-            <div>
-              <p className="text-sm font-medium">Repeating Routine</p>
-              <p className="text-xs text-muted-foreground">Recurs from the target date</p>
-            </div>
-            <Switch checked={isRepeating} onCheckedChange={setIsRepeating} />
-          </div>
-
-          {isRepeating && (
-            <div className="space-y-1">
-              <Label>Frequency</Label>
-              <Select value={frequency} onValueChange={setFrequency}>
-                <SelectTrigger><SelectValue placeholder="Select frequency" /></SelectTrigger>
-                <SelectContent>
-                  {FREQUENCIES.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          <Separator />
-
-          <div className="space-y-1">
-            <Label>Assign to Site (optional)</Label>
-            <Select value={siteId} onValueChange={setSiteId}>
-              <SelectTrigger><SelectValue placeholder="Any site" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Any site</SelectItem>
-                {(sites ?? []).map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1">
-            <Label>Assign to Staff (optional)</Label>
-            <Select value={staffId} onValueChange={setStaffId}>
-              <SelectTrigger><SelectValue placeholder="Any staff" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Any staff</SelectItem>
-                {(staff ?? []).map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-1">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={updateMutation.isPending}>Save Changes</Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ── Routine row ─────────────────────────────────────────────────────────────
 function RoutineRow({ routine, onEdit, onDelete }: { routine: any; onEdit: () => void; onDelete: () => void }) {
   const itemCount = routine.sectionsSnapshot.reduce((n: number, s: any) => n + s.items.length, 0);
 
@@ -699,7 +935,10 @@ function RoutineRow({ routine, onEdit, onDelete }: { routine: any; onEdit: () =>
   );
 }
 
-// ── Main page ───────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Main page
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function Checklists() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -713,6 +952,7 @@ export default function Checklists() {
   const [editTemplate, setEditTemplate] = useState<any | null>(null);
   const [routineTemplate, setRoutineTemplate] = useState<any | null>(null);
   const [editRoutine, setEditRoutine] = useState<any | null>(null);
+  const [activeRoutine, setActiveRoutine] = useState<any | null>(null);
 
   function openCreate() { setEditTemplate(null); setFormOpen(true); }
   function openEdit(t: any) { setEditTemplate(t); setFormOpen(true); }
@@ -734,13 +974,15 @@ export default function Checklists() {
   function handleDeleteRoutine(id: number) {
     if (!confirm("Remove this routine?")) return;
     deleteRoutineMutation.mutate({ id }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListChecklistRoutinesQueryKey() });
-        toast({ title: "Routine removed" });
-      },
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListChecklistRoutinesQueryKey() }); toast({ title: "Routine removed" }); },
       onError: () => toast({ title: "Failed to remove", variant: "destructive" }),
     });
   }
+
+  // Only show routines that have a frequency (repeating) or are due
+  const activeRoutines = (routines ?? []).filter((r) => r.isRepeating || r.frequency);
+  const nonRepeatingRoutines = (routines ?? []).filter((r) => !r.isRepeating && !r.frequency);
+  const allRoutines = routines ?? [];
 
   return (
     <div className="space-y-8">
@@ -792,7 +1034,7 @@ export default function Checklists() {
         <h2 className="text-lg font-semibold mb-3">Routines</h2>
         {routinesLoading ? (
           <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
-        ) : (routines ?? []).length === 0 ? (
+        ) : allRoutines.length === 0 ? (
           <Card>
             <CardContent className="py-10 text-center text-muted-foreground text-sm">
               No routines yet. Use the <strong>Routine</strong> button on a template tile to schedule one.
@@ -800,8 +1042,39 @@ export default function Checklists() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {(routines ?? []).map((r) => (
+            {allRoutines.map((r) => (
               <RoutineRow key={r.id} routine={r} onEdit={() => openEditRoutine(r)} onDelete={() => handleDeleteRoutine(r.id)} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Active Checklists */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-lg font-semibold">Active Checklists</h2>
+            <p className="text-sm text-muted-foreground">Complete checklists for the current period. Tick items as you go — progress saves automatically.</p>
+          </div>
+        </div>
+        {routinesLoading ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}
+          </div>
+        ) : allRoutines.length === 0 ? (
+          <Card>
+            <CardContent className="py-10 text-center text-muted-foreground text-sm">
+              No routines scheduled yet. Create a routine from a template above to get started.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {allRoutines.map((r) => (
+              <ActiveChecklistTile
+                key={r.id}
+                routine={r}
+                onOpen={() => setActiveRoutine(r)}
+              />
             ))}
           </div>
         )}
@@ -825,6 +1098,14 @@ export default function Checklists() {
         onOpenChange={(o) => { if (!o) setEditRoutine(null); }}
         routine={editRoutine}
       />
+      {activeRoutine && (
+        <ChecklistDoDialog
+          key={activeRoutine.id}
+          routine={activeRoutine}
+          open={!!activeRoutine}
+          onOpenChange={(o) => { if (!o) setActiveRoutine(null); }}
+        />
+      )}
     </div>
   );
 }

@@ -1183,6 +1183,27 @@ export interface ChecklistRoutineInput {
   sectionsSnapshot: ChecklistSection[];
 }
 
+export interface RoutineItemCompletion {
+  id: number;
+  routineId: number;
+  periodKey: string;
+  sectionIndex: number;
+  itemIndex: number;
+  /** @nullable */
+  completedByStaffId?: number | null;
+  /** @nullable */
+  completedByStaffName?: string | null;
+  completedAt: string;
+}
+
+export interface RoutineItemCompletionInput {
+  routineId: number;
+  periodKey: string;
+  sectionIndex: number;
+  itemIndex: number;
+  completedByStaffId?: number | null;
+}
+
 export interface Post {
   id: number;
   /** @nullable */
@@ -1523,4 +1544,9 @@ export interface StaffComplianceReport {
 
 export type ListJottingsParams = {
   includeArchived?: boolean;
+};
+
+export type ListRoutineItemCompletionsParams = {
+  routineId: number;
+  periodKey: string;
 };

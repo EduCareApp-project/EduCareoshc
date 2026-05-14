@@ -42,6 +42,16 @@ export const checklistRoutinesTable = pgTable("checklist_routines", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const routineItemCompletionsTable = pgTable("routine_item_completions", {
+  id: serial("id").primaryKey(),
+  routineId: integer("routine_id").notNull().references(() => checklistRoutinesTable.id, { onDelete: "cascade" }),
+  periodKey: text("period_key").notNull(),
+  sectionIndex: integer("section_index").notNull(),
+  itemIndex: integer("item_index").notNull(),
+  completedByStaffId: integer("completed_by_staff_id").references(() => staffTable.id, { onDelete: "set null" }),
+  completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const insertChecklistSchema = createInsertSchema(checklistsTable).omit({ id: true, createdAt: true });
 export type InsertChecklist = z.infer<typeof insertChecklistSchema>;
 export type Checklist = typeof checklistsTable.$inferSelect;

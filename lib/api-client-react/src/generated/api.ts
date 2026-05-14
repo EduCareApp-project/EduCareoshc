@@ -55,6 +55,7 @@ import type {
   JottingInput,
   LearningStoriesReport,
   ListJottingsParams,
+  ListRoutineItemCompletionsParams,
   NewPasswordResult,
   Notice,
   NoticeInput,
@@ -91,6 +92,8 @@ import type {
   QipSourceUpdate,
   QipStrength,
   QipStrengthUpdate,
+  RoutineItemCompletion,
+  RoutineItemCompletionInput,
   ServiceComplianceReport,
   Site,
   SiteInput,
@@ -8360,6 +8363,270 @@ export const useDeleteChecklistRoutine = <
   TContext
 > => {
   return useMutation(getDeleteChecklistRoutineMutationOptions(options));
+};
+
+export const getListRoutineItemCompletionsUrl = (
+  params: ListRoutineItemCompletionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/routine-item-completions?${stringifiedParams}`
+    : `/api/routine-item-completions`;
+};
+
+export const listRoutineItemCompletions = async (
+  params: ListRoutineItemCompletionsParams,
+  options?: RequestInit,
+): Promise<RoutineItemCompletion[]> => {
+  return customFetch<RoutineItemCompletion[]>(
+    getListRoutineItemCompletionsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListRoutineItemCompletionsQueryKey = (
+  params?: ListRoutineItemCompletionsParams,
+) => {
+  return [
+    `/api/routine-item-completions`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getListRoutineItemCompletionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listRoutineItemCompletions>>,
+  TError = ErrorType<unknown>,
+>(
+  params: ListRoutineItemCompletionsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listRoutineItemCompletions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListRoutineItemCompletionsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listRoutineItemCompletions>>
+  > = ({ signal }) =>
+    listRoutineItemCompletions(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listRoutineItemCompletions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListRoutineItemCompletionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listRoutineItemCompletions>>
+>;
+export type ListRoutineItemCompletionsQueryError = ErrorType<unknown>;
+
+export function useListRoutineItemCompletions<
+  TData = Awaited<ReturnType<typeof listRoutineItemCompletions>>,
+  TError = ErrorType<unknown>,
+>(
+  params: ListRoutineItemCompletionsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listRoutineItemCompletions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListRoutineItemCompletionsQueryOptions(
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateRoutineItemCompletionUrl = () => {
+  return `/api/routine-item-completions`;
+};
+
+export const createRoutineItemCompletion = async (
+  routineItemCompletionInput: RoutineItemCompletionInput,
+  options?: RequestInit,
+): Promise<RoutineItemCompletion> => {
+  return customFetch<RoutineItemCompletion>(
+    getCreateRoutineItemCompletionUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(routineItemCompletionInput),
+    },
+  );
+};
+
+export const getCreateRoutineItemCompletionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createRoutineItemCompletion>>,
+    TError,
+    { data: BodyType<RoutineItemCompletionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createRoutineItemCompletion>>,
+  TError,
+  { data: BodyType<RoutineItemCompletionInput> },
+  TContext
+> => {
+  const mutationKey = ["createRoutineItemCompletion"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createRoutineItemCompletion>>,
+    { data: BodyType<RoutineItemCompletionInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createRoutineItemCompletion(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateRoutineItemCompletionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createRoutineItemCompletion>>
+>;
+export type CreateRoutineItemCompletionMutationBody =
+  BodyType<RoutineItemCompletionInput>;
+export type CreateRoutineItemCompletionMutationError = ErrorType<unknown>;
+
+export const useCreateRoutineItemCompletion = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createRoutineItemCompletion>>,
+    TError,
+    { data: BodyType<RoutineItemCompletionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createRoutineItemCompletion>>,
+  TError,
+  { data: BodyType<RoutineItemCompletionInput> },
+  TContext
+> => {
+  return useMutation(getCreateRoutineItemCompletionMutationOptions(options));
+};
+
+export const getDeleteRoutineItemCompletionUrl = (id: number) => {
+  return `/api/routine-item-completions/${id}`;
+};
+
+export const deleteRoutineItemCompletion = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteRoutineItemCompletionUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteRoutineItemCompletionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteRoutineItemCompletion>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteRoutineItemCompletion>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteRoutineItemCompletion"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteRoutineItemCompletion>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteRoutineItemCompletion(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteRoutineItemCompletionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteRoutineItemCompletion>>
+>;
+
+export type DeleteRoutineItemCompletionMutationError = ErrorType<unknown>;
+
+export const useDeleteRoutineItemCompletion = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteRoutineItemCompletion>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteRoutineItemCompletion>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteRoutineItemCompletionMutationOptions(options));
 };
 
 export const getListPostsUrl = () => {

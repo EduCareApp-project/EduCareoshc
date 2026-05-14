@@ -1701,6 +1701,37 @@ export const DeleteChecklistRoutineParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const ListRoutineItemCompletionsQueryParams = zod.object({
+  routineId: zod.coerce.number(),
+  periodKey: zod.coerce.string(),
+});
+
+export const ListRoutineItemCompletionsResponseItem = zod.object({
+  id: zod.number(),
+  routineId: zod.number(),
+  periodKey: zod.string(),
+  sectionIndex: zod.number(),
+  itemIndex: zod.number(),
+  completedByStaffId: zod.number().nullish(),
+  completedByStaffName: zod.string().nullish(),
+  completedAt: zod.coerce.date(),
+});
+export const ListRoutineItemCompletionsResponse = zod.array(
+  ListRoutineItemCompletionsResponseItem,
+);
+
+export const CreateRoutineItemCompletionBody = zod.object({
+  routineId: zod.number(),
+  periodKey: zod.string(),
+  sectionIndex: zod.number(),
+  itemIndex: zod.number(),
+  completedByStaffId: zod.number().nullish(),
+});
+
+export const DeleteRoutineItemCompletionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
 export const listPostsResponseImagesMax = 3;
 
 export const ListPostsResponseItem = zod.object({

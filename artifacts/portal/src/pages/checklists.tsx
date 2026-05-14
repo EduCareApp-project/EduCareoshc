@@ -901,13 +901,32 @@ function TemplateTile({
 // Routine row
 // ─────────────────────────────────────────────────────────────────────────────
 
-function RoutineRow({ routine, onEdit, onDelete }: { routine: any; onEdit: () => void; onDelete: () => void }) {
+function RoutineRow({
+  routine, currentTemplateSections, onEdit, onDelete, onSync, isSyncing,
+}: {
+  routine: any;
+  currentTemplateSections: any[] | undefined;
+  onEdit: () => void;
+  onDelete: () => void;
+  onSync: () => void;
+  isSyncing: boolean;
+}) {
   const itemCount = routine.sectionsSnapshot.reduce((n: number, s: any) => n + s.items.length, 0);
 
+  const isOutOfSync = currentTemplateSections !== undefined &&
+    JSON.stringify(currentTemplateSections) !== JSON.stringify(routine.sectionsSnapshot);
+
   return (
-    <div className="flex items-center gap-4 py-3 px-4 border rounded-lg hover:bg-muted/30 group">
+    <div className={`flex items-center gap-4 py-3 px-4 border rounded-lg hover:bg-muted/30 group ${isOutOfSync ? "border-amber-200 bg-amber-50/40" : ""}`}>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm">{routine.title}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-medium text-sm">{routine.title}</p>
+          {isOutOfSync && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+              <RefreshCw className="h-2.5 w-2.5" />Template updated
+            </span>
+          )}
+        </div>
         <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
           <span className="text-xs text-muted-foreground">
             Target: {String(routine.targetDate).slice(0, 10)}
@@ -923,7 +942,19 @@ function RoutineRow({ routine, onEdit, onDelete }: { routine: any; onEdit: () =>
           <span className="text-xs text-muted-foreground">{itemCount} item{itemCount !== 1 ? "s" : ""}</span>
         </div>
       </div>
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 shrink-0">
+      <div className="flex gap-1 opacity-0 group-hover:opacity-100 shrink-0 transition-opacity">
+        {isOutOfSync && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs gap-1 border-amber-300 text-amber-800 hover:bg-amber-50"
+            onClick={onSync}
+            disabled={isSyncing}
+          >
+            <RefreshCw className={`h-3 w-3 ${isSyncing ? "animate-spin" : ""}`} />
+            Sync
+          </Button>
+        )}
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit}>
           <Edit className="h-3.5 w-3.5" />
         </Button>
@@ -947,12 +978,14 @@ export default function Checklists() {
   const { data: routines, isLoading: routinesLoading } = useListChecklistRoutines();
   const deleteTmplMutation = useDeleteChecklistTemplate();
   const deleteRoutineMutation = useDeleteChecklistRoutine();
+  const updateRoutineMutation = useUpdateChecklistRoutine();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editTemplate, setEditTemplate] = useState<any | null>(null);
   const [routineTemplate, setRoutineTemplate] = useState<any | null>(null);
   const [editRoutine, setEditRoutine] = useState<any | null>(null);
   const [activeRoutine, setActiveRoutine] = useState<any | null>(null);
+  const [syncingRoutineId, setSyncingRoutineId] = useState<number | null>(null);
 
   function openCreate() { setEditTemplate(null); setFormOpen(true); }
   function openEdit(t: any) { setEditTemplate(t); setFormOpen(true); }
@@ -976,6 +1009,33 @@ export default function Checklists() {
     deleteRoutineMutation.mutate({ id }, {
       onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListChecklistRoutinesQueryKey() }); toast({ title: "Routine removed" }); },
       onError: () => toast({ title: "Failed to remove", variant: "destructive" }),
+    });
+  }
+
+  function handleSyncRoutine(routine: any) {
+    const template = (templates ?? []).find((t) => t.id === routine.templateId);
+    if (!template) {
+      toast({ title: "Original template not found", variant: "destructive" });
+      return;
+    }
+    setSyncingRoutineId(routine.id);
+    updateRoutineMutation.mutate({
+      id: routine.id,
+      data: {
+        siteId: routine.siteId ?? null,
+        staffId: routine.staffId ?? null,
+        targetDate: String(routine.targetDate).slice(0, 10),
+        isRepeating: routine.isRepeating,
+        frequency: routine.frequency ?? null,
+        sectionsSnapshot: template.sections as any,
+      },
+    }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListChecklistRoutinesQueryKey() });
+        toast({ title: "Routine synced from template" });
+      },
+      onError: () => toast({ title: "Failed to sync routine", variant: "destructive" }),
+      onSettled: () => setSyncingRoutineId(null),
     });
   }
 
@@ -1042,9 +1102,20 @@ export default function Checklists() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {allRoutines.map((r) => (
-              <RoutineRow key={r.id} routine={r} onEdit={() => openEditRoutine(r)} onDelete={() => handleDeleteRoutine(r.id)} />
-            ))}
+            {allRoutines.map((r) => {
+              const currentTemplate = (templates ?? []).find((t) => t.id === r.templateId);
+              return (
+                <RoutineRow
+                  key={r.id}
+                  routine={r}
+                  currentTemplateSections={currentTemplate?.sections}
+                  onEdit={() => openEditRoutine(r)}
+                  onDelete={() => handleDeleteRoutine(r.id)}
+                  onSync={() => handleSyncRoutine(r)}
+                  isSyncing={syncingRoutineId === r.id}
+                />
+              );
+            })}
           </div>
         )}
       </section>

@@ -159,6 +159,9 @@ router.put("/checklist-routines/:id", async (req, res): Promise<void> => {
       targetDate: parsed.data.targetDate as any,
       isRepeating: parsed.data.isRepeating,
       frequency: parsed.data.frequency ?? null,
+      ...(parsed.data.sectionsSnapshot != null
+        ? { sectionsSnapshot: parsed.data.sectionsSnapshot }
+        : {}),
     })
     .where(eq(checklistRoutinesTable.id, params.data.id))
     .returning();

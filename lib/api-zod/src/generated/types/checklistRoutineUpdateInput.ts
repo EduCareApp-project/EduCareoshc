@@ -5,6 +5,7 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+import type { ChecklistSection } from "./checklistSection";
 
 export interface ChecklistRoutineUpdateInput {
   siteId?: number | null;
@@ -12,4 +13,5 @@ export interface ChecklistRoutineUpdateInput {
   targetDate: Date;
   isRepeating: boolean;
   frequency?: string | null;
+  sectionsSnapshot?: ChecklistSection[] | null;
 }

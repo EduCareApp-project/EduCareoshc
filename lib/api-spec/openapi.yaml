@@ -3925,6 +3925,11 @@ components:
         frequency:
           type: string
           nullable: true
+        sectionsSnapshot:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/ChecklistSection"
 
     ChecklistRoutineInput:
       type: object

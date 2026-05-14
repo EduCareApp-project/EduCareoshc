@@ -1673,6 +1673,20 @@ export const UpdateChecklistRoutineBody = zod.object({
   targetDate: zod.coerce.date(),
   isRepeating: zod.boolean(),
   frequency: zod.string().nullish(),
+  sectionsSnapshot: zod
+    .array(
+      zod.object({
+        title: zod.string(),
+        items: zod.array(
+          zod.object({
+            title: zod.string(),
+            days: zod.array(zod.number()).nullish(),
+            months: zod.array(zod.number()).nullish(),
+          }),
+        ),
+      }),
+    )
+    .nullish(),
 });
 
 export const UpdateChecklistRoutineResponse = zod.object({

@@ -1170,6 +1170,7 @@ export interface ChecklistRoutineUpdateInput {
   targetDate: string;
   isRepeating: boolean;
   frequency?: string | null;
+  sectionsSnapshot?: ChecklistSection[] | null;
 }
 
 export interface ChecklistRoutineInput {

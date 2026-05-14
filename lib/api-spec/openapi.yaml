@@ -1749,6 +1749,116 @@ paths:
                 items:
                   $ref: "#/components/schemas/ChecklistCompletion"
 
+  /checklist-templates:
+    get:
+      operationId: listChecklistTemplates
+      tags: [checklists]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChecklistTemplate"
+    post:
+      operationId: createChecklistTemplate
+      tags: [checklists]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChecklistTemplateInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistTemplate"
+
+  /checklist-templates/{id}:
+    put:
+      operationId: updateChecklistTemplate
+      tags: [checklists]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChecklistTemplateInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistTemplate"
+    delete:
+      operationId: deleteChecklistTemplate
+      tags: [checklists]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /checklist-routines:
+    get:
+      operationId: listChecklistRoutines
+      tags: [checklists]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChecklistRoutine"
+    post:
+      operationId: createChecklistRoutine
+      tags: [checklists]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChecklistRoutineInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistRoutine"
+
+  /checklist-routines/{id}:
+    delete:
+      operationId: deleteChecklistRoutine
+      tags: [checklists]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /posts:
     get:
       operationId: listPosts
@@ -3553,6 +3663,138 @@ components:
           type: integer
         notes:
           type: string
+
+    ChecklistItem:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        days:
+          type: array
+          items:
+            type: integer
+          nullable: true
+        months:
+          type: array
+          items:
+            type: integer
+          nullable: true
+
+    ChecklistSection:
+      type: object
+      required: [title, items]
+      properties:
+        title:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChecklistItem"
+
+    ChecklistTemplate:
+      type: object
+      required: [id, title, type, sections, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        type:
+          type: string
+          enum: [daily, weekly, monthly, term, annual]
+        commencementMonth:
+          type: integer
+          nullable: true
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChecklistSection"
+        createdAt:
+          type: string
+          format: date-time
+
+    ChecklistTemplateInput:
+      type: object
+      required: [title, type, sections]
+      properties:
+        title:
+          type: string
+        type:
+          type: string
+          enum: [daily, weekly, monthly, term, annual]
+        commencementMonth:
+          type: integer
+          nullable: true
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChecklistSection"
+
+    ChecklistRoutine:
+      type: object
+      required: [id, templateId, title, targetDate, isRepeating, sectionsSnapshot, createdAt]
+      properties:
+        id:
+          type: integer
+        templateId:
+          type: integer
+        title:
+          type: string
+        siteId:
+          type: integer
+          nullable: true
+        siteName:
+          type: string
+          nullable: true
+        staffId:
+          type: integer
+          nullable: true
+        staffName:
+          type: string
+          nullable: true
+        targetDate:
+          type: string
+          format: date
+        isRepeating:
+          type: boolean
+        frequency:
+          type: string
+          nullable: true
+        sectionsSnapshot:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChecklistSection"
+        createdAt:
+          type: string
+          format: date-time
+
+    ChecklistRoutineInput:
+      type: object
+      required: [templateId, title, targetDate, isRepeating, sectionsSnapshot]
+      properties:
+        templateId:
+          type: integer
+        title:
+          type: string
+        siteId:
+          type: integer
+          nullable: true
+        staffId:
+          type: integer
+          nullable: true
+        targetDate:
+          type: string
+          format: date
+        isRepeating:
+          type: boolean
+        frequency:
+          type: string
+          nullable: true
+        sectionsSnapshot:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChecklistSection"
 
     Post:
       type: object

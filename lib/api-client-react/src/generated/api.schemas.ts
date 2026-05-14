@@ -1104,6 +1104,81 @@ export interface ChecklistCompletionInput {
   notes?: string;
 }
 
+export interface ChecklistItem {
+  title: string;
+  days?: number[] | null;
+  months?: number[] | null;
+}
+
+export interface ChecklistSection {
+  title: string;
+  items: ChecklistItem[];
+}
+
+export type ChecklistTemplateType =
+  (typeof ChecklistTemplateType)[keyof typeof ChecklistTemplateType];
+
+export const ChecklistTemplateType = {
+  daily: "daily",
+  weekly: "weekly",
+  monthly: "monthly",
+  term: "term",
+  annual: "annual",
+} as const;
+
+export interface ChecklistTemplate {
+  id: number;
+  title: string;
+  type: ChecklistTemplateType;
+  commencementMonth?: number | null;
+  sections: ChecklistSection[];
+  createdAt: string;
+}
+
+export type ChecklistTemplateInputType =
+  (typeof ChecklistTemplateInputType)[keyof typeof ChecklistTemplateInputType];
+
+export const ChecklistTemplateInputType = {
+  daily: "daily",
+  weekly: "weekly",
+  monthly: "monthly",
+  term: "term",
+  annual: "annual",
+} as const;
+
+export interface ChecklistTemplateInput {
+  title: string;
+  type: ChecklistTemplateInputType;
+  commencementMonth?: number | null;
+  sections: ChecklistSection[];
+}
+
+export interface ChecklistRoutine {
+  id: number;
+  templateId: number;
+  title: string;
+  siteId?: number | null;
+  siteName?: string | null;
+  staffId?: number | null;
+  staffName?: string | null;
+  targetDate: string;
+  isRepeating: boolean;
+  frequency?: string | null;
+  sectionsSnapshot: ChecklistSection[];
+  createdAt: string;
+}
+
+export interface ChecklistRoutineInput {
+  templateId: number;
+  title: string;
+  siteId?: number | null;
+  staffId?: number | null;
+  targetDate: string;
+  isRepeating: boolean;
+  frequency?: string | null;
+  sectionsSnapshot: ChecklistSection[];
+}
+
 export interface Post {
   id: number;
   /** @nullable */

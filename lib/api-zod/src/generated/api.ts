@@ -1520,6 +1520,148 @@ export const GetChecklistCompletionsResponse = zod.array(
   GetChecklistCompletionsResponseItem,
 );
 
+export const ListChecklistTemplatesResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  type: zod.enum(["daily", "weekly", "monthly", "term", "annual"]),
+  commencementMonth: zod.number().nullish(),
+  sections: zod.array(
+    zod.object({
+      title: zod.string(),
+      items: zod.array(
+        zod.object({
+          title: zod.string(),
+          days: zod.array(zod.number()).nullish(),
+          months: zod.array(zod.number()).nullish(),
+        }),
+      ),
+    }),
+  ),
+  createdAt: zod.coerce.date(),
+});
+export const ListChecklistTemplatesResponse = zod.array(
+  ListChecklistTemplatesResponseItem,
+);
+
+export const CreateChecklistTemplateBody = zod.object({
+  title: zod.string(),
+  type: zod.enum(["daily", "weekly", "monthly", "term", "annual"]),
+  commencementMonth: zod.number().nullish(),
+  sections: zod.array(
+    zod.object({
+      title: zod.string(),
+      items: zod.array(
+        zod.object({
+          title: zod.string(),
+          days: zod.array(zod.number()).nullish(),
+          months: zod.array(zod.number()).nullish(),
+        }),
+      ),
+    }),
+  ),
+});
+
+export const UpdateChecklistTemplateParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateChecklistTemplateBody = zod.object({
+  title: zod.string(),
+  type: zod.enum(["daily", "weekly", "monthly", "term", "annual"]),
+  commencementMonth: zod.number().nullish(),
+  sections: zod.array(
+    zod.object({
+      title: zod.string(),
+      items: zod.array(
+        zod.object({
+          title: zod.string(),
+          days: zod.array(zod.number()).nullish(),
+          months: zod.array(zod.number()).nullish(),
+        }),
+      ),
+    }),
+  ),
+});
+
+export const UpdateChecklistTemplateResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  type: zod.enum(["daily", "weekly", "monthly", "term", "annual"]),
+  commencementMonth: zod.number().nullish(),
+  sections: zod.array(
+    zod.object({
+      title: zod.string(),
+      items: zod.array(
+        zod.object({
+          title: zod.string(),
+          days: zod.array(zod.number()).nullish(),
+          months: zod.array(zod.number()).nullish(),
+        }),
+      ),
+    }),
+  ),
+  createdAt: zod.coerce.date(),
+});
+
+export const DeleteChecklistTemplateParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListChecklistRoutinesResponseItem = zod.object({
+  id: zod.number(),
+  templateId: zod.number(),
+  title: zod.string(),
+  siteId: zod.number().nullish(),
+  siteName: zod.string().nullish(),
+  staffId: zod.number().nullish(),
+  staffName: zod.string().nullish(),
+  targetDate: zod.coerce.date(),
+  isRepeating: zod.boolean(),
+  frequency: zod.string().nullish(),
+  sectionsSnapshot: zod.array(
+    zod.object({
+      title: zod.string(),
+      items: zod.array(
+        zod.object({
+          title: zod.string(),
+          days: zod.array(zod.number()).nullish(),
+          months: zod.array(zod.number()).nullish(),
+        }),
+      ),
+    }),
+  ),
+  createdAt: zod.coerce.date(),
+});
+export const ListChecklistRoutinesResponse = zod.array(
+  ListChecklistRoutinesResponseItem,
+);
+
+export const CreateChecklistRoutineBody = zod.object({
+  templateId: zod.number(),
+  title: zod.string(),
+  siteId: zod.number().nullish(),
+  staffId: zod.number().nullish(),
+  targetDate: zod.coerce.date(),
+  isRepeating: zod.boolean(),
+  frequency: zod.string().nullish(),
+  sectionsSnapshot: zod.array(
+    zod.object({
+      title: zod.string(),
+      items: zod.array(
+        zod.object({
+          title: zod.string(),
+          days: zod.array(zod.number()).nullish(),
+          months: zod.array(zod.number()).nullish(),
+        }),
+      ),
+    }),
+  ),
+});
+
+export const DeleteChecklistRoutineParams = zod.object({
+  id: zod.coerce.number(),
+});
+
 export const listPostsResponseImagesMax = 3;
 
 export const ListPostsResponseItem = zod.object({

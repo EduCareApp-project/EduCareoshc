@@ -50,6 +50,7 @@ const EMPTY_FORM = {
   actionTaken: "",
   evidenceDocumentPath: "",
   evidenceDocumentName: "",
+  status: "open",
 };
 
 export default function ConditionReports() {
@@ -108,6 +109,7 @@ export default function ConditionReports() {
       actionTaken: r.actionTaken ?? "",
       evidenceDocumentPath: r.evidenceDocumentPath ?? "",
       evidenceDocumentName: r.evidenceDocumentName ?? "",
+      status: r.status,
     });
     setSelectedFile(null);
     setEditingExistingId(r.id);
@@ -139,6 +141,7 @@ export default function ConditionReports() {
       siteId: form.siteId ? Number(form.siteId) : undefined,
       description: form.description,
       immediateActionRequired: form.immediateActionRequired,
+      ...(editingExistingId !== null ? { status: form.status } : {}),
       ...(form.actionTaken ? { actionTaken: form.actionTaken } : {}),
       ...(docPath ? { evidenceDocumentPath: docPath, evidenceDocumentName: docName } : {}),
     };
@@ -275,6 +278,19 @@ export default function ConditionReports() {
                   required
                 />
               </div>
+
+              {isEditing && (
+                <div className="space-y-1.5">
+                  <Label>Status</Label>
+                  <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="open">Open</SelectItem>
+                      <SelectItem value="resolved">Resolved</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <Label>Immediate Action Required?</Label>

@@ -633,11 +633,11 @@ export default function Qip() {
         </div>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="flex flex-wrap gap-1 h-auto mb-4 bg-muted p-1">
+          <TabsList className="w-full h-auto mb-4 bg-muted p-1 flex">
             {QA_AREAS.map((a) => {
               const count = (itemsByQA[a.key] ?? []).length;
               return (
-                <TabsTrigger key={a.key} value={a.key} className="text-xs px-3 py-1.5 flex items-center gap-1.5">
+                <TabsTrigger key={a.key} value={a.key} className="flex-1 text-xs px-2 py-1.5 flex items-center justify-center gap-1.5">
                   QA {a.key}
                   {count > 0 && (
                     <span className="rounded-full bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 leading-none font-medium">

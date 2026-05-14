@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, Plus, Trash2, Pencil, Settings, X, ChevronDown, ChevronUp } from "lucide-react";
+import { TrendingUp, Plus, Trash2, Pencil, Settings, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const QA_AREAS = [
@@ -340,7 +340,6 @@ function ItemCard({
   const updateMutation = useUpdateQipItem();
   const deleteMutation = useDeleteQipItem();
   const { toast } = useToast();
-  const [expanded, setExpanded] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
   const siteName = item.siteId ? (sites.find((s) => s.id === item.siteId)?.name ?? `Site ${item.siteId}`) : null;
@@ -402,7 +401,7 @@ function ItemCard({
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
             {/* Top row: badges */}
-            <div className="flex flex-wrap gap-1.5 mb-2">
+            <div className="flex flex-wrap gap-1.5 mb-3">
               <Badge className={`text-xs border ${PRIORITY_COLOURS[item.priority] ?? PRIORITY_COLOURS.medium}`}>
                 {(item.priority ?? "medium").charAt(0).toUpperCase() + (item.priority ?? "medium").slice(1)} Priority
               </Badge>
@@ -420,40 +419,45 @@ function ItemCard({
               )}
             </div>
 
-            {/* Issue */}
-            {item.issueIdentified && (
-              <p className="text-sm font-medium text-foreground mb-1">{item.issueIdentified}</p>
-            )}
-
-            {/* Expandable detail */}
-            {expanded && (
-              <div className="mt-3 space-y-2 text-sm text-muted-foreground border-t pt-3">
-                {item.outcomeGoal && (
-                  <div><span className="font-medium text-foreground/80">Goal: </span>{item.outcomeGoal}</div>
-                )}
-                {item.howToAchieve && (
-                  <div><span className="font-medium text-foreground/80">How: </span>{item.howToAchieve}</div>
-                )}
-                {item.successMeasure && (
-                  <div><span className="font-medium text-foreground/80">Success Measure: </span>{item.successMeasure}</div>
-                )}
-                {item.dueDate && (
-                  <div><span className="font-medium text-foreground/80">Due: </span>{new Date(item.dueDate).toLocaleDateString("en-AU")}</div>
-                )}
-                {item.progressNotes && (
-                  <div className="mt-2 rounded bg-muted/40 p-2 italic">{item.progressNotes}</div>
-                )}
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setExpanded((e) => !e)}
-              className="mt-2 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              {expanded ? "Show less" : "Show detail"}
-            </button>
+            {/* Column grid of fields */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 text-sm">
+              {item.issueIdentified && (
+                <div className="col-span-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Issue Identified</p>
+                  <p className="text-foreground">{item.issueIdentified}</p>
+                </div>
+              )}
+              {item.outcomeGoal && (
+                <div className="col-span-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Goal</p>
+                  <p className="text-foreground">{item.outcomeGoal}</p>
+                </div>
+              )}
+              {item.howToAchieve && (
+                <div className="col-span-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">How to Achieve</p>
+                  <p className="text-foreground">{item.howToAchieve}</p>
+                </div>
+              )}
+              {item.successMeasure && (
+                <div className="col-span-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Success Measure</p>
+                  <p className="text-foreground">{item.successMeasure}</p>
+                </div>
+              )}
+              {item.dueDate && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Due Date</p>
+                  <p className="text-foreground">{new Date(item.dueDate).toLocaleDateString("en-AU")}</p>
+                </div>
+              )}
+              {item.progressNotes && (
+                <div className="col-span-2 md:col-span-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Progress Notes</p>
+                  <p className="text-foreground italic">{item.progressNotes}</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Actions */}

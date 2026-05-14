@@ -533,9 +533,11 @@ function ArchivedItemRow({
 function ArchivedSection({
   items,
   sites,
+  colour,
 }: {
   items: any[];
   sites: { id: number; name: string }[];
+  colour: { bg: string; text: string };
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -555,14 +557,14 @@ function ArchivedSection({
         <div className="overflow-x-auto border-t">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-muted/40 border-b">
-                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">NQS</th>
-                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Priority</th>
-                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-1/3">Issue Identified</th>
-                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-1/3">What outcome or goal do we seek?</th>
-                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-1/3">Progress Notes</th>
-                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Due By</th>
-                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Archived</th>
+              <tr style={{ backgroundColor: colour.bg }}>
+                <th className="py-2 px-4 text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: colour.text }}>NQS</th>
+                <th className="py-2 px-4 text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: colour.text }}>Priority</th>
+                <th className="py-2 px-4 text-xs font-semibold uppercase tracking-wide w-1/3" style={{ color: colour.text }}>Issue Identified</th>
+                <th className="py-2 px-4 text-xs font-semibold uppercase tracking-wide w-1/3" style={{ color: colour.text }}>What outcome or goal do we seek?</th>
+                <th className="py-2 px-4 text-xs font-semibold uppercase tracking-wide w-1/3" style={{ color: colour.text }}>Progress Notes</th>
+                <th className="py-2 px-4 text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: colour.text }}>Due By</th>
+                <th className="py-2 px-4 text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: colour.text }}>Archived</th>
                 <th className="py-2 px-2"></th>
               </tr>
             </thead>
@@ -785,13 +787,13 @@ export default function Qip() {
                         <col className="w-10" />
                       </colgroup>
                       <thead>
-                        <tr className="bg-muted/60 border-b">
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">NQS</th>
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Priority</th>
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Issue Identified</th>
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">What outcome or goal do we seek?</th>
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Progress Notes</th>
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Due By</th>
+                        <tr style={{ backgroundColor: QA_COLOURS[a.key].bg }}>
+                          <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide" style={{ color: QA_COLOURS[a.key].text }}>NQS</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide" style={{ color: QA_COLOURS[a.key].text }}>Priority</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide" style={{ color: QA_COLOURS[a.key].text }}>Issue Identified</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide" style={{ color: QA_COLOURS[a.key].text }}>What outcome or goal do we seek?</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide" style={{ color: QA_COLOURS[a.key].text }}>Progress Notes</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide" style={{ color: QA_COLOURS[a.key].text }}>Due By</th>
                           <th className="py-2.5 px-2"></th>
                         </tr>
                       </thead>
@@ -812,7 +814,7 @@ export default function Qip() {
 
                 {/* ── Archived Items ── */}
                 {archivedItems.length > 0 && (
-                  <ArchivedSection items={archivedItems} sites={sites} />
+                  <ArchivedSection items={archivedItems} sites={sites} colour={QA_COLOURS[a.key]} />
                 )}
               </TabsContent>
             );

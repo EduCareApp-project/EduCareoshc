@@ -72,6 +72,13 @@ router.get("/incidents/:id", async (req, res): Promise<void> => {
   res.json(GetIncidentResponse.parse(await enrichIncident(inc)));
 });
 
+router.delete("/incidents/:id", async (req, res): Promise<void> => {
+  const params = GetIncidentParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  await db.delete(incidentsTable).where(eq(incidentsTable.id, params.data.id));
+  res.status(204).send();
+});
+
 router.patch("/incidents/:id", async (req, res): Promise<void> => {
   const params = UpdateIncidentParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }

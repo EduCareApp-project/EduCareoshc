@@ -823,6 +823,10 @@ export const UpdateIncidentResponse = zod.object({
   createdAt: zod.coerce.date(),
 });
 
+export const DeleteIncidentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
 export const ListConditionReportsResponseItem = zod.object({
   id: zod.number(),
   reportedDate: zod.coerce.date(),

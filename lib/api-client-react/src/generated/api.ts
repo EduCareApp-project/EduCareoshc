@@ -3837,6 +3837,84 @@ export const useUpdateIncident = <
   return useMutation(getUpdateIncidentMutationOptions(options));
 };
 
+export const getDeleteIncidentUrl = (id: number) => {
+  return `/api/incidents/${id}`;
+};
+
+export const deleteIncident = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteIncidentUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteIncidentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteIncident>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteIncident>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteIncident"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteIncident>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteIncident(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteIncidentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteIncident>>
+>;
+
+export type DeleteIncidentMutationError = ErrorType<unknown>;
+
+export const useDeleteIncident = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteIncident>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteIncident>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteIncidentMutationOptions(options));
+};
+
 export const getListConditionReportsUrl = () => {
   return `/api/condition-reports`;
 };

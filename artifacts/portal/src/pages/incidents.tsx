@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  useListIncidents, useCreateIncident, useUpdateIncident,
+  useListIncidents, useCreateIncident, useUpdateIncident, useDeleteIncident,
   useListChildren, useListStaff, useListSites,
   getListIncidentsQueryKey,
 } from "@workspace/api-client-react";
@@ -13,13 +13,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import {
   AlertTriangle, Plus, Edit, CheckCircle2, Circle, Building2, User, Calendar,
-  ClipboardList, Shield, BookOpen, Paperclip, ChevronDown, ChevronUp,
+  ClipboardList, Shield, BookOpen, Paperclip, ChevronDown, ChevronUp, Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -177,6 +177,99 @@ function LogIncidentDialog({ open, onOpenChange }: { open: boolean; onOpenChange
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ── Tier 1 edit form (Admin) ─────────────────────────────────────────────────
+function IncidentSubmitterForm({ incident, onDone }: { incident: any; onDone: () => void }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const updateMutation = useUpdateIncident();
+  const { data: children } = useListChildren();
+  const { data: staff } = useListStaff();
+  const { data: sites } = useListSites();
+
+  const [form, setForm] = useState({
+    incidentDatetime: incident.incidentDatetime ? String(incident.incidentDatetime).slice(0, 16) : "",
+    siteId: incident.siteId ? String(incident.siteId) : "none",
+    childId: incident.childId ? String(incident.childId) : "none",
+    respondentId: incident.respondentId ? String(incident.respondentId) : "none",
+    description: incident.description ?? "",
+    firstAidProvided: incident.firstAidProvided ?? "",
+  });
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    updateMutation.mutate({
+      id: incident.id,
+      data: {
+        incidentDatetime: form.incidentDatetime || null,
+        siteId: form.siteId !== "none" ? parseInt(form.siteId) : null,
+        childId: parseInt(form.childId),
+        respondentId: form.respondentId !== "none" ? parseInt(form.respondentId) : null,
+        description: form.description,
+        firstAidProvided: form.firstAidProvided || null,
+      } as any,
+    }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListIncidentsQueryKey() });
+        toast({ title: "Incident details updated" });
+        onDone();
+      },
+      onError: () => toast({ title: "Failed to update incident", variant: "destructive" }),
+    });
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="space-y-1">
+        <Label>Date &amp; Time of Incident</Label>
+        <Input type="datetime-local" value={form.incidentDatetime} onChange={(e) => setForm({ ...form, incidentDatetime: e.target.value })} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label>Site</Label>
+          <Select value={form.siteId} onValueChange={(v) => setForm({ ...form, siteId: v })}>
+            <SelectTrigger><SelectValue placeholder="No site" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No site</SelectItem>
+              {(sites ?? []).map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label>Child <span className="text-destructive">*</span></Label>
+          <Select value={form.childId} onValueChange={(v) => setForm({ ...form, childId: v })}>
+            <SelectTrigger><SelectValue placeholder="Select child" /></SelectTrigger>
+            <SelectContent>
+              {(children ?? []).map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.firstName} {c.lastName}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="space-y-1">
+        <Label>Respondent (First Aid Provider)</Label>
+        <Select value={form.respondentId} onValueChange={(v) => setForm({ ...form, respondentId: v })}>
+          <SelectTrigger><SelectValue placeholder="Not specified" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Not specified</SelectItem>
+            {(staff ?? []).map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1">
+        <Label>Description <span className="text-destructive">*</span></Label>
+        <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} required />
+      </div>
+      <div className="space-y-1">
+        <Label>First Aid Provided</Label>
+        <Textarea value={form.firstAidProvided} onChange={(e) => setForm({ ...form, firstAidProvided: e.target.value })} rows={2} />
+      </div>
+      <div className="flex gap-2 justify-end">
+        <Button type="button" variant="outline" size="sm" onClick={onDone}>Cancel</Button>
+        <Button type="submit" size="sm" disabled={updateMutation.isPending || form.childId === "none"}>Save Changes</Button>
+      </div>
+    </form>
   );
 }
 
@@ -345,10 +438,15 @@ function ReviewForm({ incident, onDone }: { incident: any; onDone: () => void })
 }
 
 // ── Incident detail panel ────────────────────────────────────────────────────
-function IncidentDetail({ incident }: { incident: any }) {
+function IncidentDetail({ incident, onDelete }: { incident: any; onDelete: () => void }) {
+  const [editingSubmitter, setEditingSubmitter] = useState(false);
   const [editingHeadOffice, setEditingHeadOffice] = useState(false);
   const [editingRegulatory, setEditingRegulatory] = useState(false);
   const [editingReview, setEditingReview] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const deleteMutation = useDeleteIncident();
 
   const hasHeadOffice = !!(incident.reportMadeAt || incident.reportMethod || incident.reportPersonId);
   const hasRegulatory = incident.regulatoryNotifyRequired !== null && incident.regulatoryNotifyRequired !== undefined;
@@ -360,30 +458,88 @@ function IncidentDetail({ incident }: { incident: any }) {
     </Button>
   );
 
+  function handleDelete() {
+    deleteMutation.mutate({ id: incident.id }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListIncidentsQueryKey() });
+        toast({ title: "Incident deleted" });
+        setConfirmDelete(false);
+        onDelete();
+      },
+      onError: () => toast({ title: "Failed to delete incident", variant: "destructive" }),
+    });
+  }
+
   return (
     <div className="space-y-3">
+      {/* Admin actions bar */}
+      <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+        <Shield className="h-4 w-4 text-amber-600 shrink-0" />
+        <span className="text-xs font-medium text-amber-800 flex-1">Admin</span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs gap-1.5 border-amber-300 bg-white hover:bg-amber-50"
+          onClick={() => { setEditingSubmitter(true); setEditingHeadOffice(false); setEditingRegulatory(false); setEditingReview(false); }}
+        >
+          <Edit className="h-3 w-3" />Edit Incident
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs gap-1.5 border-red-300 bg-white text-destructive hover:bg-red-50 hover:text-destructive"
+          onClick={() => setConfirmDelete(true)}
+        >
+          <Trash2 className="h-3 w-3" />Delete
+        </Button>
+      </div>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete this incident?</DialogTitle>
+            <DialogDescription>
+              This will permanently remove the incident record for <strong>{incident.childName}</strong>. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmDelete(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteMutation.isPending}>
+              <Trash2 className="h-4 w-4 mr-1.5" />Delete Incident
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Tier 1 — Incident */}
       <TierSection
         icon={<AlertTriangle className="h-4 w-4" />}
         title="Incident Details"
         badge={statusBadge(incident)}
       >
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Date & Time" value={incident.incidentDatetime ? fmt(incident.incidentDatetime) : undefined} />
-          <Field label="Site" value={incident.siteName} />
-          <Field label="Child" value={incident.childName} />
-          <Field label="Respondent" value={incident.respondentName} />
-        </div>
-        <Separator />
-        <Field label="Description" value={incident.description} />
-        {incident.firstAidProvided && <Field label="First Aid Provided" value={incident.firstAidProvided} />}
-        {incident.attachmentPath && (
-          <div>
-            <p className="text-xs text-muted-foreground mb-0.5">Attachment</p>
-            <a href={incident.attachmentPath} target="_blank" rel="noopener noreferrer" className="text-primary text-sm flex items-center gap-1 underline">
-              <Paperclip className="h-3.5 w-3.5" />View file
-            </a>
-          </div>
+        {editingSubmitter ? (
+          <IncidentSubmitterForm incident={incident} onDone={() => setEditingSubmitter(false)} />
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Date & Time" value={incident.incidentDatetime ? fmt(incident.incidentDatetime) : undefined} />
+              <Field label="Site" value={incident.siteName} />
+              <Field label="Child" value={incident.childName} />
+              <Field label="Respondent" value={incident.respondentName} />
+            </div>
+            <Separator />
+            <Field label="Description" value={incident.description} />
+            {incident.firstAidProvided && <Field label="First Aid Provided" value={incident.firstAidProvided} />}
+            {incident.attachmentPath && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Attachment</p>
+                <a href={incident.attachmentPath} target="_blank" rel="noopener noreferrer" className="text-primary text-sm flex items-center gap-1 underline">
+                  <Paperclip className="h-3.5 w-3.5" />View file
+                </a>
+              </div>
+            )}
+          </>
         )}
       </TierSection>
 
@@ -558,11 +714,11 @@ export default function Incidents() {
             <>
               <SheetHeader className="mb-4">
                 <SheetTitle>{selectedIncident.childName ?? "Incident"}</SheetTitle>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground" suppressHydrationWarning>
                   Logged {format(new Date(selectedIncident.createdAt), "d MMM yyyy 'at' h:mm a")}
                 </p>
               </SheetHeader>
-              <IncidentDetail key={selectedIncident.id} incident={selectedIncident} />
+              <IncidentDetail key={selectedIncident.id} incident={selectedIncident} onDelete={() => setSelected(null)} />
             </>
           )}
         </SheetContent>

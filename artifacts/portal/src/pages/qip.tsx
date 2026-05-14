@@ -398,7 +398,7 @@ function ItemRow({
   return (
     <tr className="border-b last:border-b-0 align-top hover:bg-muted/30 transition-colors group">
       <td className="py-3 px-4 text-sm font-medium text-foreground whitespace-nowrap">
-        QA{item.qualityArea}{item.standardElement ? ` ${item.standardElement}` : ""}
+        QA{item.qualityArea}{item.standardElement ? ` - ${item.standardElement}` : ""}
       </td>
       <td className="py-3 px-4 whitespace-nowrap">
         <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full border ${PRIORITY_COLOURS[item.priority] ?? PRIORITY_COLOURS.medium}`}>
@@ -470,7 +470,7 @@ function ArchivedItemRow({
   return (
     <tr className="border-b last:border-b-0 align-top hover:bg-muted/30 transition-colors group opacity-70">
       <td className="py-3 px-4 text-sm font-medium text-foreground whitespace-nowrap">
-        QA{item.qualityArea}{item.standardElement ? ` ${item.standardElement}` : ""}
+        QA{item.qualityArea}{item.standardElement ? ` - ${item.standardElement}` : ""}
       </td>
       <td className="py-3 px-4 whitespace-nowrap">
         <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full border ${PRIORITY_COLOURS[item.priority] ?? PRIORITY_COLOURS.medium}`}>

@@ -715,7 +715,7 @@ export default function ChildProfile() {
           {(() => {
             const childJottings = (allJottings ?? []).filter((j) => j.childId === child.id);
             const childPlanningExps = (allPlanningExperiences ?? []).filter((p) => (p.childIds ?? []).includes(child.id));
-            const childPosts = (allPosts ?? []).filter((p) => p.childId === child.id);
+            const childPosts = (allPosts ?? []).filter((p) => (p.childIds ?? []).includes(child.id));
 
             return (
               <>
@@ -830,9 +830,11 @@ export default function ChildProfile() {
                             <div className="py-3 flex items-center justify-between gap-4 hover:bg-muted/40 px-1 rounded cursor-pointer">
                               <div className="min-w-0">
                                 <p className="text-sm font-medium line-clamp-1">{p.title}</p>
-                                <p className="text-xs text-muted-foreground">{safeDate(p.createdAt, "d MMM yyyy")}{p.staffName ? ` · ${p.staffName}` : ""}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {p.date ? safeDate(p.date.slice(0, 10) + "T00:00:00", "d MMM yyyy") : safeDate(p.createdAt, "d MMM yyyy")}
+                                  {p.staffName ? ` · ${p.staffName}` : ""}
+                                </p>
                               </div>
-                              <Badge variant={p.status === "published" ? "default" : "secondary"} className="text-xs shrink-0 capitalize">{p.status}</Badge>
                             </div>
                           </Link>
                         ))}

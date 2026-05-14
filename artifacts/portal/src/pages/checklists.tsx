@@ -679,7 +679,7 @@ function ChecklistDoDialog({
 
   const sections: any[] = routine.sectionsSnapshot ?? [];
   const totalItems = sections.reduce((n: number, s: any) => n + (s.items?.length ?? 0), 0);
-  const doneCount = completions?.length ?? 0;
+  const doneCount = new Set((completions ?? []).map((c) => `${c.sectionIndex}:${c.itemIndex}`)).size;
   const pct = totalItems > 0 ? Math.round((doneCount / totalItems) * 100) : 0;
 
   const isPending = createMutation.isPending || deleteMutation.isPending;
@@ -799,7 +799,7 @@ function ActiveChecklistTile({
   const { data: completions } = useListRoutineItemCompletions({ routineId: routine.id, periodKey });
 
   const totalItems = (routine.sectionsSnapshot ?? []).reduce((n: number, s: any) => n + (s.items?.length ?? 0), 0);
-  const doneCount = completions?.length ?? 0;
+  const doneCount = new Set((completions ?? []).map((c) => `${c.sectionIndex}:${c.itemIndex}`)).size;
   const pct = totalItems > 0 ? Math.round((doneCount / totalItems) * 100) : 0;
   const allDone = totalItems > 0 && doneCount >= totalItems;
 

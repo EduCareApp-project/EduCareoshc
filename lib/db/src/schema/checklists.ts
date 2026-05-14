@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, boolean, jsonb, date } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, boolean, jsonb, date, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { sitesTable } from "./sites";
@@ -50,7 +50,9 @@ export const routineItemCompletionsTable = pgTable("routine_item_completions", {
   itemIndex: integer("item_index").notNull(),
   completedByStaffId: integer("completed_by_staff_id").references(() => staffTable.id, { onDelete: "set null" }),
   completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  unique("uq_completion_item").on(t.routineId, t.periodKey, t.sectionIndex, t.itemIndex),
+]);
 
 export const insertChecklistSchema = createInsertSchema(checklistsTable).omit({ id: true, createdAt: true });
 export type InsertChecklist = z.infer<typeof insertChecklistSchema>;

@@ -218,7 +218,7 @@ router.post("/routine-item-completions", async (req, res): Promise<void> => {
     sectionIndex: parsed.data.sectionIndex,
     itemIndex: parsed.data.itemIndex,
     completedByStaffId: parsed.data.completedByStaffId ?? null,
-  }).returning();
+  }).onConflictDoNothing().returning();
   const staffList = await db.select().from(staffTable);
   const member = staffList.find((s) => s.id === row.completedByStaffId);
   res.status(201).json({

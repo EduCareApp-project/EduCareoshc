@@ -2515,6 +2515,18 @@ components:
           type: ["string", "null"]
         conductedBy:
           type: ["string", "null"]
+        siteId:
+          type: ["integer", "null"]
+        siteName:
+          type: ["string", "null"]
+        evacuationDocPath:
+          type: ["string", "null"]
+        evacuationDocName:
+          type: ["string", "null"]
+        attendanceDocPath:
+          type: ["string", "null"]
+        attendanceDocName:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -2530,9 +2542,6 @@ components:
         conductedAt:
           type: string
           format: date-time
-        nextDueAt:
-          type: string
-          format: date-time
         participantCount:
           type: integer
         durationMinutes:
@@ -2540,6 +2549,16 @@ components:
         notes:
           type: string
         conductedBy:
+          type: string
+        siteId:
+          type: integer
+        evacuationDocPath:
+          type: string
+        evacuationDocName:
+          type: string
+        attendanceDocPath:
+          type: string
+        attendanceDocName:
           type: string
 
     QipItem:

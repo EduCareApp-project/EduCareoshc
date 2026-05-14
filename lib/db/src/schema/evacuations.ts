@@ -11,6 +11,11 @@ export const evacuationsTable = pgTable("evacuations", {
   durationMinutes: integer("duration_minutes"),
   notes: text("notes"),
   conductedBy: text("conducted_by"),
+  siteId: integer("site_id"),
+  evacuationDocPath: text("evacuation_doc_path"),
+  evacuationDocName: text("evacuation_doc_name"),
+  attendanceDocPath: text("attendance_doc_path"),
+  attendanceDocName: text("attendance_doc_name"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

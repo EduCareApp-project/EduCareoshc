@@ -647,6 +647,18 @@ export interface Evacuation {
   notes?: string | null;
   /** @nullable */
   conductedBy?: string | null;
+  /** @nullable */
+  siteId?: number | null;
+  /** @nullable */
+  siteName?: string | null;
+  /** @nullable */
+  evacuationDocPath?: string | null;
+  /** @nullable */
+  evacuationDocName?: string | null;
+  /** @nullable */
+  attendanceDocPath?: string | null;
+  /** @nullable */
+  attendanceDocName?: string | null;
   createdAt: string;
 }
 
@@ -663,11 +675,15 @@ export const EvacuationInputDrillType = {
 export interface EvacuationInput {
   drillType: EvacuationInputDrillType;
   conductedAt: string;
-  nextDueAt?: string;
   participantCount?: number;
   durationMinutes?: number;
   notes?: string;
   conductedBy?: string;
+  siteId?: number;
+  evacuationDocPath?: string;
+  evacuationDocName?: string;
+  attendanceDocPath?: string;
+  attendanceDocName?: string;
 }
 
 export type QipItemStatus = (typeof QipItemStatus)[keyof typeof QipItemStatus];

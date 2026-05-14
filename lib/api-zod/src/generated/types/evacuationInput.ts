@@ -10,9 +10,13 @@ import type { EvacuationInputDrillType } from "./evacuationInputDrillType";
 export interface EvacuationInput {
   drillType: EvacuationInputDrillType;
   conductedAt: Date;
-  nextDueAt?: Date;
   participantCount?: number;
   durationMinutes?: number;
   notes?: string;
   conductedBy?: string;
+  siteId?: number;
+  evacuationDocPath?: string;
+  evacuationDocName?: string;
+  attendanceDocPath?: string;
+  attendanceDocName?: string;
 }

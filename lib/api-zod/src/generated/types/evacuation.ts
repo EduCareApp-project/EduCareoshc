@@ -21,5 +21,17 @@ export interface Evacuation {
   notes?: string | null;
   /** @nullable */
   conductedBy?: string | null;
+  /** @nullable */
+  siteId?: number | null;
+  /** @nullable */
+  siteName?: string | null;
+  /** @nullable */
+  evacuationDocPath?: string | null;
+  /** @nullable */
+  evacuationDocName?: string | null;
+  /** @nullable */
+  attendanceDocPath?: string | null;
+  /** @nullable */
+  attendanceDocName?: string | null;
   createdAt: Date;
 }

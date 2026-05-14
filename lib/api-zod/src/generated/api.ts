@@ -328,6 +328,18 @@ export const GetStaffQualificationsResponseItem = zod.object({
   referenceNumber: zod.string().nullish(),
   expiryDate: zod.coerce.date().nullish(),
   documentPath: zod.string().nullish(),
+  documents: zod
+    .array(
+      zod.object({
+        id: zod.number(),
+        qualificationId: zod.number(),
+        documentPath: zod.string(),
+        documentName: zod.string().nullish(),
+        active: zod.boolean(),
+        uploadedAt: zod.coerce.date(),
+      }),
+    )
+    .optional(),
   createdAt: zod.coerce.date(),
 });
 export const GetStaffQualificationsResponse = zod.array(
@@ -345,6 +357,7 @@ export const CreateStaffQualificationBody = zod.object({
   referenceNumber: zod.string().optional(),
   expiryDate: zod.coerce.date().optional(),
   documentPath: zod.string().optional(),
+  documentName: zod.string().optional(),
 });
 
 export const UpdateStaffQualificationParams = zod.object({
@@ -358,6 +371,7 @@ export const UpdateStaffQualificationBody = zod.object({
   referenceNumber: zod.string().optional(),
   expiryDate: zod.coerce.date().optional(),
   documentPath: zod.string().optional(),
+  documentName: zod.string().optional(),
 });
 
 export const UpdateStaffQualificationResponse = zod.object({
@@ -368,6 +382,18 @@ export const UpdateStaffQualificationResponse = zod.object({
   referenceNumber: zod.string().nullish(),
   expiryDate: zod.coerce.date().nullish(),
   documentPath: zod.string().nullish(),
+  documents: zod
+    .array(
+      zod.object({
+        id: zod.number(),
+        qualificationId: zod.number(),
+        documentPath: zod.string(),
+        documentName: zod.string().nullish(),
+        active: zod.boolean(),
+        uploadedAt: zod.coerce.date(),
+      }),
+    )
+    .optional(),
   createdAt: zod.coerce.date(),
 });
 

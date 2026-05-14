@@ -99,6 +99,7 @@ export * from "./qipItemInputStatus";
 export * from "./qipItemStatus";
 export * from "./qipItemUpdate";
 export * from "./qipItemUpdateStatus";
+export * from "./qualificationDocument";
 export * from "./serviceComplianceReport";
 export * from "./serviceComplianceReportEvacuationStatus";
 export * from "./site";

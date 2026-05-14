@@ -108,6 +108,7 @@ export default function StaffProfile() {
   const [editingQualId, setEditingQualId] = useState<number | null>(null);
   const [qualDocPath, setQualDocPath] = useState<string | null>(null);
   const [qualDocName, setQualDocName] = useState<string | null>(null);
+  const [originalDocPath, setOriginalDocPath] = useState<string | null>(null);
 
   const [bioText, setBioText] = useState<string>("");
   const [bioEditing, setBioEditing] = useState(false);
@@ -254,6 +255,7 @@ export default function StaffProfile() {
       const d = q.expiryDate instanceof Date ? q.expiryDate : new Date(String(q.expiryDate));
       if (!isNaN(d.getTime())) expiryStr = format(d, "yyyy-MM-dd");
     }
+    const activeDoc = (q as any).documents?.find((d: any) => d.active) ?? null;
     setQualForm({
       name: q.name,
       status: q.status,
@@ -261,7 +263,8 @@ export default function StaffProfile() {
       expiryDate: expiryStr,
     });
     setQualDocPath(q.documentPath ?? null);
-    setQualDocName(q.documentPath ? q.documentPath.split("/").pop() ?? null : null);
+    setQualDocName(activeDoc?.documentName ?? (q.documentPath ? q.documentPath.split("/").pop() ?? null : null));
+    setOriginalDocPath(q.documentPath ?? null);
     setEditingQualId(q.id);
     setQualOpen(true);
   }
@@ -271,6 +274,7 @@ export default function StaffProfile() {
     setQualForm(EMPTY_QUAL_FORM);
     setQualDocPath(null);
     setQualDocName(null);
+    setOriginalDocPath(null);
     setEditingQualId(null);
   }
 
@@ -283,7 +287,10 @@ export default function StaffProfile() {
     };
     if (qualForm.referenceNumber) body.referenceNumber = qualForm.referenceNumber;
     if (qualForm.expiryDate) body.expiryDate = qualForm.expiryDate;
-    if (qualDocPath) body.documentPath = qualDocPath;
+    if (qualDocPath) {
+      body.documentPath = qualDocPath;
+      if (qualDocName) body.documentName = qualDocName;
+    }
 
     const invalidate = () => queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}/qualifications`] });
 
@@ -710,17 +717,49 @@ export default function StaffProfile() {
                             {format(expiry!, "d MMM yyyy")}
                           </span></span>
                         )}
-                        {q.documentPath && (
-                          <a
-                            href={storageUrl(q.documentPath)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-primary hover:underline"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <FileText className="h-3 w-3" />View document
-                          </a>
-                        )}
+                        {(() => {
+                          const docs = (q as any).documents as Array<{ id: number; documentPath: string; documentName: string | null; active: boolean; uploadedAt: string }> | undefined;
+                          const activeDoc = docs?.find((d) => d.active);
+                          const inactiveDocs = docs?.filter((d) => !d.active) ?? [];
+                          if (!activeDoc && !q.documentPath) return null;
+                          const docPath = activeDoc?.documentPath ?? q.documentPath!;
+                          const docName = activeDoc?.documentName ?? docPath.split("/").pop() ?? "View document";
+                          return (
+                            <>
+                              <a
+                                href={storageUrl(docPath)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-primary hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <FileText className="h-3 w-3" />{docName}
+                              </a>
+                              {inactiveDocs.length > 0 && (
+                                <details className="mt-1">
+                                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground select-none">
+                                    {inactiveDocs.length} previous {inactiveDocs.length === 1 ? "version" : "versions"}
+                                  </summary>
+                                  <div className="mt-1 pl-2 border-l space-y-1">
+                                    {[...inactiveDocs].reverse().map((d) => (
+                                      <a
+                                        key={d.id}
+                                        href={storageUrl(d.documentPath)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline line-through decoration-muted-foreground/40"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <FileText className="h-3 w-3 shrink-0" />
+                                        <span>{d.documentName ?? d.documentPath.split("/").pop() ?? "Document"}</span>
+                                      </a>
+                                    ))}
+                                  </div>
+                                </details>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">

@@ -2943,6 +2943,24 @@ components:
           type: string
           format: date-time
 
+    QualificationDocument:
+      type: object
+      required: [id, qualificationId, documentPath, active, uploadedAt]
+      properties:
+        id:
+          type: integer
+        qualificationId:
+          type: integer
+        documentPath:
+          type: string
+        documentName:
+          type: ["string", "null"]
+        active:
+          type: boolean
+        uploadedAt:
+          type: string
+          format: date-time
+
     StaffQualification:
       type: object
       required: [id, staffId, name, status, createdAt]
@@ -2962,6 +2980,10 @@ components:
           format: date
         documentPath:
           type: ["string", "null"]
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/QualificationDocument"
         createdAt:
           type: string
           format: date-time
@@ -2982,6 +3004,8 @@ components:
           type: string
           format: date
         documentPath:
+          type: string
+        documentName:
           type: string
 
     ProfessionalDevelopment:

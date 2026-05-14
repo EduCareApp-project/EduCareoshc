@@ -5,6 +5,7 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+import type { QualificationDocument } from "./qualificationDocument";
 
 export interface StaffQualification {
   id: number;
@@ -17,5 +18,6 @@ export interface StaffQualification {
   expiryDate?: Date | null;
   /** @nullable */
   documentPath?: string | null;
+  documents?: QualificationDocument[];
   createdAt: Date;
 }

@@ -13,4 +13,5 @@ export interface StaffQualificationInput {
   referenceNumber?: string;
   expiryDate?: Date;
   documentPath?: string;
+  documentName?: string;
 }

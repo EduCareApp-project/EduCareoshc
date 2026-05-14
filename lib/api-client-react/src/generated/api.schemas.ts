@@ -1011,6 +1011,16 @@ export interface PostUpdate {
   publishedAt?: string;
 }
 
+export interface QualificationDocument {
+  id: number;
+  qualificationId: number;
+  documentPath: string;
+  /** @nullable */
+  documentName?: string | null;
+  active: boolean;
+  uploadedAt: string;
+}
+
 export interface StaffQualification {
   id: number;
   staffId: number;
@@ -1022,6 +1032,7 @@ export interface StaffQualification {
   expiryDate?: string | null;
   /** @nullable */
   documentPath?: string | null;
+  documents?: QualificationDocument[];
   createdAt: string;
 }
 
@@ -1032,6 +1043,7 @@ export interface StaffQualificationInput {
   referenceNumber?: string;
   expiryDate?: string;
   documentPath?: string;
+  documentName?: string;
 }
 
 export interface ProfessionalDevelopment {

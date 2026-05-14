@@ -388,9 +388,9 @@ function RoutineDialog({
 
   const [targetDate, setTargetDate] = useState("");
   const [isRepeating, setIsRepeating] = useState(false);
-  const [frequency, setFrequency] = useState("");
-  const [siteId, setSiteId] = useState("");
-  const [staffId, setStaffId] = useState("");
+  const [frequency, setFrequency] = useState("none");
+  const [siteId, setSiteId] = useState("none");
+  const [staffId, setStaffId] = useState("none");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -399,11 +399,11 @@ function RoutineDialog({
       data: {
         templateId: template.id,
         title: template.title,
-        siteId: siteId ? parseInt(siteId) : null,
-        staffId: staffId ? parseInt(staffId) : null,
+        siteId: siteId !== "none" ? parseInt(siteId) : null,
+        staffId: staffId !== "none" ? parseInt(staffId) : null,
         targetDate,
         isRepeating,
-        frequency: isRepeating && frequency ? frequency : null,
+        frequency: isRepeating && frequency !== "none" ? frequency : null,
         sectionsSnapshot: template.sections as any,
       },
     }, {
@@ -413,9 +413,9 @@ function RoutineDialog({
         onOpenChange(false);
         setTargetDate("");
         setIsRepeating(false);
-        setFrequency("");
-        setSiteId("");
-        setStaffId("");
+        setFrequency("none");
+        setSiteId("none");
+        setStaffId("none");
       },
       onError: () => toast({ title: "Failed to create routine", variant: "destructive" }),
     });
@@ -460,7 +460,7 @@ function RoutineDialog({
             <Select value={siteId} onValueChange={setSiteId}>
               <SelectTrigger><SelectValue placeholder="Any site" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Any site</SelectItem>
+                <SelectItem value="none">Any site</SelectItem>
                 {(sites ?? []).map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -471,7 +471,7 @@ function RoutineDialog({
             <Select value={staffId} onValueChange={setStaffId}>
               <SelectTrigger><SelectValue placeholder="Any staff" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Any staff</SelectItem>
+                <SelectItem value="none">Any staff</SelectItem>
                 {(staff ?? []).map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>)}
               </SelectContent>
             </Select>

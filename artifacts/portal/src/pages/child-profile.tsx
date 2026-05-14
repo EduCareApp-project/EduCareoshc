@@ -720,7 +720,7 @@ export default function ChildProfile() {
             return (
               <>
                 {/* Jottings */}
-                <Card>
+                <Card className="bg-green-50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-base flex items-center gap-2">
                       <StickyNote className="h-5 w-5" />Jottings
@@ -751,7 +751,7 @@ export default function ChildProfile() {
                 </Card>
 
                 {/* Observations */}
-                <Card>
+                <Card className="bg-green-50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-base flex items-center gap-2">
                       <FileText className="h-5 w-5" />Observations
@@ -785,7 +785,7 @@ export default function ChildProfile() {
                 </Card>
 
                 {/* Programmed Experiences */}
-                <Card>
+                <Card className="bg-green-50">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-base flex items-center gap-2">
                       <BookOpen className="h-5 w-5" />Programmed Experiences
@@ -814,7 +814,7 @@ export default function ChildProfile() {
                 </Card>
 
                 {/* Posts */}
-                <Card>
+                <Card className="bg-green-50">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Newspaper className="h-5 w-5" />Posts

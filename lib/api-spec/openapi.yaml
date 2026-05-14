@@ -1831,6 +1831,67 @@ paths:
         "204":
           description: Deleted
 
+  /posts/{id}/comments:
+    get:
+      operationId: listPostComments
+      tags: [posts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PostComment"
+    post:
+      operationId: createPostComment
+      tags: [posts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostCommentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostComment"
+
+  /posts/{id}/comments/{commentId}:
+    delete:
+      operationId: deletePostComment
+      tags: [posts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /professional-development:
     post:
       operationId: createProfessionalDevelopment
@@ -3536,6 +3597,31 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    PostComment:
+      type: object
+      required: [id, postId, authorName, body, createdAt]
+      properties:
+        id:
+          type: integer
+        postId:
+          type: integer
+        authorName:
+          type: string
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    PostCommentInput:
+      type: object
+      required: [authorName, body]
+      properties:
+        authorName:
+          type: string
+        body:
+          type: string
 
     PostInput:
       type: object

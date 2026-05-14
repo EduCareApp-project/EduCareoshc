@@ -86,6 +86,8 @@ export * from "./policyAcknowledgment";
 export * from "./policyInput";
 export * from "./policyUpdate";
 export * from "./post";
+export * from "./postComment";
+export * from "./postCommentInput";
 export * from "./postInput";
 export * from "./postUpdate";
 export * from "./professionalDevelopment";

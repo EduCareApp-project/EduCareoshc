@@ -1132,6 +1132,19 @@ export interface Post {
   createdAt: string;
 }
 
+export interface PostComment {
+  id: number;
+  postId: number;
+  authorName: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface PostCommentInput {
+  authorName: string;
+  body: string;
+}
+
 export interface PostInput {
   siteId?: number;
   childIds?: number[];

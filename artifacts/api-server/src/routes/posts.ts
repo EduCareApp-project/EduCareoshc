@@ -1,10 +1,13 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
-import { db, postsTable, childrenTable, staffTable, sitesTable } from "@workspace/db";
+import { eq, and } from "drizzle-orm";
+import { db, postsTable, postCommentsTable, childrenTable, staffTable, sitesTable } from "@workspace/db";
 import {
   CreatePostBody, GetPostParams, GetPostResponse,
   UpdatePostParams, UpdatePostBody, UpdatePostResponse,
   DeletePostParams, ListPostsResponse,
+  ListPostCommentsParams, ListPostCommentsResponse,
+  CreatePostCommentParams, CreatePostCommentBody,
+  DeletePostCommentParams,
 } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
 
@@ -121,6 +124,37 @@ router.delete("/posts/:id", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const [post] = await db.delete(postsTable).where(eq(postsTable.id, params.data.id)).returning();
   if (!post) { res.status(404).json({ error: "Post not found" }); return; }
+  res.sendStatus(204);
+});
+
+router.get("/posts/:id/comments", async (req, res): Promise<void> => {
+  const params = ListPostCommentsParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const rows = await db.select().from(postCommentsTable)
+    .where(eq(postCommentsTable.postId, params.data.id))
+    .orderBy(postCommentsTable.createdAt);
+  res.json(ListPostCommentsResponse.parse(rows));
+});
+
+router.post("/posts/:id/comments", async (req, res): Promise<void> => {
+  const params = CreatePostCommentParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const body = CreatePostCommentBody.safeParse(req.body);
+  if (!body.success) { res.status(400).json({ error: body.error.message }); return; }
+  const [comment] = await db.insert(postCommentsTable).values({
+    postId: params.data.id,
+    authorName: body.data.authorName,
+    body: body.data.body,
+  }).returning();
+  res.status(201).json(comment);
+});
+
+router.delete("/posts/:id/comments/:commentId", async (req, res): Promise<void> => {
+  const params = DeletePostCommentParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  await db.delete(postCommentsTable).where(
+    and(eq(postCommentsTable.id, params.data.commentId), eq(postCommentsTable.postId, params.data.id))
+  );
   res.sendStatus(204);
 });
 

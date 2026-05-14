@@ -1622,6 +1622,33 @@ export const DeletePostParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const ListPostCommentsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListPostCommentsResponseItem = zod.object({
+  id: zod.number(),
+  postId: zod.number(),
+  authorName: zod.string(),
+  body: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListPostCommentsResponse = zod.array(ListPostCommentsResponseItem);
+
+export const CreatePostCommentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CreatePostCommentBody = zod.object({
+  authorName: zod.string(),
+  body: zod.string(),
+});
+
+export const DeletePostCommentParams = zod.object({
+  id: zod.coerce.number(),
+  commentId: zod.coerce.number(),
+});
+
 export const CreateProfessionalDevelopmentBody = zod.object({
   staffId: zod.number(),
   title: zod.string(),

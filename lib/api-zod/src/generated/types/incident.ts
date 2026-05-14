@@ -5,28 +5,46 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
-import type { IncidentStatus } from "./incidentStatus";
 
 export interface Incident {
   id: number;
-  title: string;
-  description: string;
   childId: number;
   /** @nullable */
   childName?: string | null;
-  incidentDate: Date;
   /** @nullable */
-  location?: string | null;
+  siteId?: number | null;
   /** @nullable */
-  injuryDescription?: string | null;
+  siteName?: string | null;
   /** @nullable */
-  actionTaken?: string | null;
-  status: IncidentStatus;
+  respondentId?: number | null;
   /** @nullable */
-  parentNotifiedAt?: Date | null;
+  respondentName?: string | null;
   /** @nullable */
-  directorNotifiedAt?: Date | null;
+  incidentDatetime?: Date | null;
+  description: string;
   /** @nullable */
-  deptNotifiedAt?: Date | null;
+  firstAidProvided?: string | null;
+  /** @nullable */
+  attachmentPath?: string | null;
+  /** @nullable */
+  reportPersonId?: number | null;
+  /** @nullable */
+  reportPersonName?: string | null;
+  /** @nullable */
+  reportMethod?: string | null;
+  /** @nullable */
+  reportMadeAt?: Date | null;
+  /** @nullable */
+  regulatoryNotifyRequired?: boolean | null;
+  /** @nullable */
+  regulatoryNotifiedAt?: Date | null;
+  /** @nullable */
+  notificationId?: string | null;
+  /** @nullable */
+  reviewNotes?: string | null;
+  /** @nullable */
+  checkInFamily?: string | null;
+  archived: boolean;
+  status: string;
   createdAt: Date;
 }

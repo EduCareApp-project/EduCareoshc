@@ -2833,84 +2833,133 @@ components:
 
     Incident:
       type: object
-      required: [id, title, description, childId, incidentDate, status, createdAt]
+      required: [id, description, childId, status, archived, createdAt]
       properties:
         id:
           type: integer
-        title:
-          type: string
-        description:
-          type: string
         childId:
           type: integer
         childName:
           type: ["string", "null"]
-        incidentDate:
+        siteId:
+          type: ["integer", "null"]
+        siteName:
+          type: ["string", "null"]
+        respondentId:
+          type: ["integer", "null"]
+        respondentName:
+          type: ["string", "null"]
+        incidentDatetime:
+          type: ["string", "null"]
+          format: date-time
+        description:
           type: string
+        firstAidProvided:
+          type: ["string", "null"]
+        attachmentPath:
+          type: ["string", "null"]
+        reportPersonId:
+          type: ["integer", "null"]
+        reportPersonName:
+          type: ["string", "null"]
+        reportMethod:
+          type: ["string", "null"]
+        reportMadeAt:
+          type: ["string", "null"]
+          format: date-time
+        regulatoryNotifyRequired:
+          type: ["boolean", "null"]
+        regulatoryNotifiedAt:
+          type: ["string", "null"]
           format: date
-        location:
+        notificationId:
           type: ["string", "null"]
-        injuryDescription:
+        reviewNotes:
           type: ["string", "null"]
-        actionTaken:
+        checkInFamily:
           type: ["string", "null"]
+        archived:
+          type: boolean
         status:
           type: string
-          enum: [open, parent_notified, director_notified, dept_notified, closed]
-        parentNotifiedAt:
-          type: ["string", "null"]
-          format: date-time
-        directorNotifiedAt:
-          type: ["string", "null"]
-          format: date-time
-        deptNotifiedAt:
-          type: ["string", "null"]
-          format: date-time
         createdAt:
           type: string
           format: date-time
 
     IncidentInput:
       type: object
-      required: [title, description, childId, incidentDate]
+      required: [description, childId]
       properties:
-        title:
+        incidentDatetime:
           type: string
-        description:
-          type: string
+          format: date-time
+        siteId:
+          type: integer
+          nullable: true
         childId:
           type: integer
-        incidentDate:
+        respondentId:
+          type: integer
+          nullable: true
+        description:
           type: string
-          format: date
-        location:
+        firstAidProvided:
           type: string
-        injuryDescription:
+          nullable: true
+        attachmentPath:
           type: string
-        actionTaken:
-          type: string
-        status:
-          type: string
-          enum: [open, parent_notified, director_notified, dept_notified, closed]
-          default: open
+          nullable: true
 
     IncidentUpdate:
       type: object
       properties:
+        incidentDatetime:
+          type: string
+          format: date-time
+        siteId:
+          type: integer
+          nullable: true
+        respondentId:
+          type: integer
+          nullable: true
+        description:
+          type: string
+        firstAidProvided:
+          type: string
+          nullable: true
+        attachmentPath:
+          type: string
+          nullable: true
+        reportPersonId:
+          type: integer
+          nullable: true
+        reportMethod:
+          type: string
+          nullable: true
+        reportMadeAt:
+          type: string
+          format: date-time
+          nullable: true
+        regulatoryNotifyRequired:
+          type: boolean
+          nullable: true
+        regulatoryNotifiedAt:
+          type: string
+          format: date
+          nullable: true
+        notificationId:
+          type: string
+          nullable: true
+        reviewNotes:
+          type: string
+          nullable: true
+        checkInFamily:
+          type: string
+          nullable: true
+        archived:
+          type: boolean
         status:
           type: string
-          enum: [open, parent_notified, director_notified, dept_notified, closed]
-        actionTaken:
-          type: string
-        parentNotifiedAt:
-          type: string
-          format: date-time
-        directorNotifiedAt:
-          type: string
-          format: date-time
-        deptNotifiedAt:
-          type: string
-          format: date-time
 
     ConditionReport:
       type: object

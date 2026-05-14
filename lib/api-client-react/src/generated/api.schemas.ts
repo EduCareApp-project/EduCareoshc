@@ -483,80 +483,76 @@ export interface JottingInput {
   staffId?: number;
 }
 
-export type IncidentStatus =
-  (typeof IncidentStatus)[keyof typeof IncidentStatus];
-
-export const IncidentStatus = {
-  open: "open",
-  parent_notified: "parent_notified",
-  director_notified: "director_notified",
-  dept_notified: "dept_notified",
-  closed: "closed",
-} as const;
-
 export interface Incident {
   id: number;
-  title: string;
-  description: string;
   childId: number;
   /** @nullable */
   childName?: string | null;
-  incidentDate: string;
   /** @nullable */
-  location?: string | null;
+  siteId?: number | null;
   /** @nullable */
-  injuryDescription?: string | null;
+  siteName?: string | null;
   /** @nullable */
-  actionTaken?: string | null;
-  status: IncidentStatus;
+  respondentId?: number | null;
   /** @nullable */
-  parentNotifiedAt?: string | null;
+  respondentName?: string | null;
   /** @nullable */
-  directorNotifiedAt?: string | null;
+  incidentDatetime?: string | null;
+  description: string;
   /** @nullable */
-  deptNotifiedAt?: string | null;
+  firstAidProvided?: string | null;
+  /** @nullable */
+  attachmentPath?: string | null;
+  /** @nullable */
+  reportPersonId?: number | null;
+  /** @nullable */
+  reportPersonName?: string | null;
+  /** @nullable */
+  reportMethod?: string | null;
+  /** @nullable */
+  reportMadeAt?: string | null;
+  /** @nullable */
+  regulatoryNotifyRequired?: boolean | null;
+  /** @nullable */
+  regulatoryNotifiedAt?: string | null;
+  /** @nullable */
+  notificationId?: string | null;
+  /** @nullable */
+  reviewNotes?: string | null;
+  /** @nullable */
+  checkInFamily?: string | null;
+  archived: boolean;
+  status: string;
   createdAt: string;
 }
 
-export type IncidentInputStatus =
-  (typeof IncidentInputStatus)[keyof typeof IncidentInputStatus];
-
-export const IncidentInputStatus = {
-  open: "open",
-  parent_notified: "parent_notified",
-  director_notified: "director_notified",
-  dept_notified: "dept_notified",
-  closed: "closed",
-} as const;
-
 export interface IncidentInput {
-  title: string;
-  description: string;
+  incidentDatetime?: string;
+  siteId?: number | null;
   childId: number;
-  incidentDate: string;
-  location?: string;
-  injuryDescription?: string;
-  actionTaken?: string;
-  status?: IncidentInputStatus;
+  respondentId?: number | null;
+  description: string;
+  firstAidProvided?: string | null;
+  attachmentPath?: string | null;
 }
 
-export type IncidentUpdateStatus =
-  (typeof IncidentUpdateStatus)[keyof typeof IncidentUpdateStatus];
-
-export const IncidentUpdateStatus = {
-  open: "open",
-  parent_notified: "parent_notified",
-  director_notified: "director_notified",
-  dept_notified: "dept_notified",
-  closed: "closed",
-} as const;
-
 export interface IncidentUpdate {
-  status?: IncidentUpdateStatus;
-  actionTaken?: string;
-  parentNotifiedAt?: string;
-  directorNotifiedAt?: string;
-  deptNotifiedAt?: string;
+  incidentDatetime?: string;
+  siteId?: number | null;
+  respondentId?: number | null;
+  description?: string;
+  firstAidProvided?: string | null;
+  attachmentPath?: string | null;
+  reportPersonId?: number | null;
+  reportMethod?: string | null;
+  reportMadeAt?: string | null;
+  regulatoryNotifyRequired?: boolean | null;
+  regulatoryNotifiedAt?: string | null;
+  notificationId?: string | null;
+  reviewNotes?: string | null;
+  checkInFamily?: string | null;
+  archived?: boolean;
+  status?: string;
 }
 
 export type ConditionReportStatus =

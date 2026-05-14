@@ -5,15 +5,13 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
-import type { IncidentInputStatus } from "./incidentInputStatus";
 
 export interface IncidentInput {
-  title: string;
-  description: string;
+  incidentDatetime?: Date;
+  siteId?: number | null;
   childId: number;
-  incidentDate: Date;
-  location?: string;
-  injuryDescription?: string;
-  actionTaken?: string;
-  status?: IncidentInputStatus;
+  respondentId?: number | null;
+  description: string;
+  firstAidProvided?: string | null;
+  attachmentPath?: string | null;
 }

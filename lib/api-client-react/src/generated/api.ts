@@ -77,6 +77,11 @@ import type {
   QipItem,
   QipItemInput,
   QipItemUpdate,
+  QipSource,
+  QipSourceInput,
+  QipSourceUpdate,
+  QipStrength,
+  QipStrengthUpdate,
   ServiceComplianceReport,
   Site,
   SiteInput,
@@ -4580,6 +4585,462 @@ export const useDeleteQipItem = <
   TContext
 > => {
   return useMutation(getDeleteQipItemMutationOptions(options));
+};
+
+export const getListQipSourcesUrl = () => {
+  return `/api/qip-sources`;
+};
+
+export const listQipSources = async (
+  options?: RequestInit,
+): Promise<QipSource[]> => {
+  return customFetch<QipSource[]>(getListQipSourcesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListQipSourcesQueryKey = () => {
+  return [`/api/qip-sources`] as const;
+};
+
+export const getListQipSourcesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listQipSources>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listQipSources>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListQipSourcesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listQipSources>>> = ({
+    signal,
+  }) => listQipSources({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listQipSources>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListQipSourcesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listQipSources>>
+>;
+export type ListQipSourcesQueryError = ErrorType<unknown>;
+
+export function useListQipSources<
+  TData = Awaited<ReturnType<typeof listQipSources>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listQipSources>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListQipSourcesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateQipSourceUrl = () => {
+  return `/api/qip-sources`;
+};
+
+export const createQipSource = async (
+  qipSourceInput: QipSourceInput,
+  options?: RequestInit,
+): Promise<QipSource> => {
+  return customFetch<QipSource>(getCreateQipSourceUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(qipSourceInput),
+  });
+};
+
+export const getCreateQipSourceMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createQipSource>>,
+    TError,
+    { data: BodyType<QipSourceInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createQipSource>>,
+  TError,
+  { data: BodyType<QipSourceInput> },
+  TContext
+> => {
+  const mutationKey = ["createQipSource"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createQipSource>>,
+    { data: BodyType<QipSourceInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createQipSource(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateQipSourceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createQipSource>>
+>;
+export type CreateQipSourceMutationBody = BodyType<QipSourceInput>;
+export type CreateQipSourceMutationError = ErrorType<unknown>;
+
+export const useCreateQipSource = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createQipSource>>,
+    TError,
+    { data: BodyType<QipSourceInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createQipSource>>,
+  TError,
+  { data: BodyType<QipSourceInput> },
+  TContext
+> => {
+  return useMutation(getCreateQipSourceMutationOptions(options));
+};
+
+export const getUpdateQipSourceUrl = (id: number) => {
+  return `/api/qip-sources/${id}`;
+};
+
+export const updateQipSource = async (
+  id: number,
+  qipSourceUpdate: QipSourceUpdate,
+  options?: RequestInit,
+): Promise<QipSource> => {
+  return customFetch<QipSource>(getUpdateQipSourceUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(qipSourceUpdate),
+  });
+};
+
+export const getUpdateQipSourceMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateQipSource>>,
+    TError,
+    { id: number; data: BodyType<QipSourceUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateQipSource>>,
+  TError,
+  { id: number; data: BodyType<QipSourceUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateQipSource"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateQipSource>>,
+    { id: number; data: BodyType<QipSourceUpdate> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateQipSource(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateQipSourceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateQipSource>>
+>;
+export type UpdateQipSourceMutationBody = BodyType<QipSourceUpdate>;
+export type UpdateQipSourceMutationError = ErrorType<unknown>;
+
+export const useUpdateQipSource = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateQipSource>>,
+    TError,
+    { id: number; data: BodyType<QipSourceUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateQipSource>>,
+  TError,
+  { id: number; data: BodyType<QipSourceUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateQipSourceMutationOptions(options));
+};
+
+export const getDeleteQipSourceUrl = (id: number) => {
+  return `/api/qip-sources/${id}`;
+};
+
+export const deleteQipSource = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteQipSourceUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteQipSourceMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteQipSource>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteQipSource>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteQipSource"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteQipSource>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteQipSource(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteQipSourceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteQipSource>>
+>;
+
+export type DeleteQipSourceMutationError = ErrorType<unknown>;
+
+export const useDeleteQipSource = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteQipSource>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteQipSource>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteQipSourceMutationOptions(options));
+};
+
+export const getListQipStrengthsUrl = () => {
+  return `/api/qip-strengths`;
+};
+
+export const listQipStrengths = async (
+  options?: RequestInit,
+): Promise<QipStrength[]> => {
+  return customFetch<QipStrength[]>(getListQipStrengthsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListQipStrengthsQueryKey = () => {
+  return [`/api/qip-strengths`] as const;
+};
+
+export const getListQipStrengthsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listQipStrengths>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listQipStrengths>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListQipStrengthsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listQipStrengths>>
+  > = ({ signal }) => listQipStrengths({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listQipStrengths>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListQipStrengthsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listQipStrengths>>
+>;
+export type ListQipStrengthsQueryError = ErrorType<unknown>;
+
+export function useListQipStrengths<
+  TData = Awaited<ReturnType<typeof listQipStrengths>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listQipStrengths>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListQipStrengthsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getUpsertQipStrengthUrl = (qualityArea: string) => {
+  return `/api/qip-strengths/${qualityArea}`;
+};
+
+export const upsertQipStrength = async (
+  qualityArea: string,
+  qipStrengthUpdate: QipStrengthUpdate,
+  options?: RequestInit,
+): Promise<QipStrength> => {
+  return customFetch<QipStrength>(getUpsertQipStrengthUrl(qualityArea), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(qipStrengthUpdate),
+  });
+};
+
+export const getUpsertQipStrengthMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upsertQipStrength>>,
+    TError,
+    { qualityArea: string; data: BodyType<QipStrengthUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof upsertQipStrength>>,
+  TError,
+  { qualityArea: string; data: BodyType<QipStrengthUpdate> },
+  TContext
+> => {
+  const mutationKey = ["upsertQipStrength"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof upsertQipStrength>>,
+    { qualityArea: string; data: BodyType<QipStrengthUpdate> }
+  > = (props) => {
+    const { qualityArea, data } = props ?? {};
+
+    return upsertQipStrength(qualityArea, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpsertQipStrengthMutationResult = NonNullable<
+  Awaited<ReturnType<typeof upsertQipStrength>>
+>;
+export type UpsertQipStrengthMutationBody = BodyType<QipStrengthUpdate>;
+export type UpsertQipStrengthMutationError = ErrorType<unknown>;
+
+export const useUpsertQipStrength = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upsertQipStrength>>,
+    TError,
+    { qualityArea: string; data: BodyType<QipStrengthUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof upsertQipStrength>>,
+  TError,
+  { qualityArea: string; data: BodyType<QipStrengthUpdate> },
+  TContext
+> => {
+  return useMutation(getUpsertQipStrengthMutationOptions(options));
 };
 
 export const getGetChildWelfareNotesUrl = (id: number) => {

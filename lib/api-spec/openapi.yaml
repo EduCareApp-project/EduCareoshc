@@ -1011,6 +1011,110 @@ paths:
         "204":
           description: Deleted
 
+  /qip-sources:
+    get:
+      operationId: listQipSources
+      tags: [qip]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QipSource"
+    post:
+      operationId: createQipSource
+      tags: [qip]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QipSourceInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QipSource"
+
+  /qip-sources/{id}:
+    patch:
+      operationId: updateQipSource
+      tags: [qip]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QipSourceUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QipSource"
+    delete:
+      operationId: deleteQipSource
+      tags: [qip]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /qip-strengths:
+    get:
+      operationId: listQipStrengths
+      tags: [qip]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QipStrength"
+
+  /qip-strengths/{qualityArea}:
+    put:
+      operationId: upsertQipStrength
+      tags: [qip]
+      parameters:
+        - name: qualityArea
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QipStrengthUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QipStrength"
+
   /children/{id}/welfare-notes:
     get:
       operationId: getChildWelfareNotes
@@ -2709,24 +2813,36 @@ components:
 
     QipItem:
       type: object
-      required: [id, qualityArea, goal, strategy, status, createdAt]
+      required: [id, qualityArea, priority, createdAt]
       properties:
         id:
           type: integer
+        siteId:
+          type: ["integer", "null"]
+        date:
+          type: ["string", "null"]
+          format: date
         qualityArea:
           type: string
-        goal:
+        standardElement:
+          type: ["string", "null"]
+        source:
+          type: ["string", "null"]
+        priority:
           type: string
-        strategy:
-          type: string
+          enum: [low, medium, high]
+        issueIdentified:
+          type: ["string", "null"]
+        outcomeGoal:
+          type: ["string", "null"]
+        howToAchieve:
+          type: ["string", "null"]
         successMeasure:
           type: ["string", "null"]
-        timeline:
+        dueDate:
           type: ["string", "null"]
-        status:
-          type: string
-          enum: [in_progress, completed, on_hold]
-        notes:
+          format: date
+        progressNotes:
           type: ["string", "null"]
         createdAt:
           type: string
@@ -2737,42 +2853,118 @@ components:
 
     QipItemInput:
       type: object
-      required: [qualityArea, goal, strategy]
+      required: [qualityArea]
       properties:
+        siteId:
+          type: integer
+        date:
+          type: string
+          format: date
         qualityArea:
           type: string
-        goal:
+        standardElement:
           type: string
-        strategy:
+        source:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+        issueIdentified:
+          type: string
+        outcomeGoal:
+          type: string
+        howToAchieve:
           type: string
         successMeasure:
           type: string
-        timeline:
+        dueDate:
           type: string
-        status:
-          type: string
-          enum: [in_progress, completed, on_hold]
-          default: in_progress
-        notes:
+          format: date
+        progressNotes:
           type: string
 
     QipItemUpdate:
       type: object
       properties:
+        siteId:
+          type: integer
+        date:
+          type: string
+          format: date
         qualityArea:
           type: string
-        goal:
+        standardElement:
           type: string
-        strategy:
+        source:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high]
+        issueIdentified:
+          type: string
+        outcomeGoal:
+          type: string
+        howToAchieve:
           type: string
         successMeasure:
           type: string
-        timeline:
+        dueDate:
           type: string
-        status:
+          format: date
+        progressNotes:
           type: string
-          enum: [in_progress, completed, on_hold]
-        notes:
+
+    QipSource:
+      type: object
+      required: [id, name, sortOrder, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    QipSourceInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        sortOrder:
+          type: integer
+
+    QipSourceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        sortOrder:
+          type: integer
+
+    QipStrength:
+      type: object
+      required: [id, qualityArea, content, updatedAt]
+      properties:
+        id:
+          type: integer
+        qualityArea:
+          type: string
+        content:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+
+    QipStrengthUpdate:
+      type: object
+      required: [content]
+      properties:
+        content:
           type: string
 
     ConfidentialNote:

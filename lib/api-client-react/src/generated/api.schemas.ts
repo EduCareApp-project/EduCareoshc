@@ -686,66 +686,117 @@ export interface EvacuationInput {
   attendanceDocName?: string;
 }
 
-export type QipItemStatus = (typeof QipItemStatus)[keyof typeof QipItemStatus];
+export type QipItemPriority =
+  (typeof QipItemPriority)[keyof typeof QipItemPriority];
 
-export const QipItemStatus = {
-  in_progress: "in_progress",
-  completed: "completed",
-  on_hold: "on_hold",
+export const QipItemPriority = {
+  low: "low",
+  medium: "medium",
+  high: "high",
 } as const;
 
 export interface QipItem {
   id: number;
+  /** @nullable */
+  siteId?: number | null;
+  /** @nullable */
+  date?: string | null;
   qualityArea: string;
-  goal: string;
-  strategy: string;
+  /** @nullable */
+  standardElement?: string | null;
+  /** @nullable */
+  source?: string | null;
+  priority: QipItemPriority;
+  /** @nullable */
+  issueIdentified?: string | null;
+  /** @nullable */
+  outcomeGoal?: string | null;
+  /** @nullable */
+  howToAchieve?: string | null;
   /** @nullable */
   successMeasure?: string | null;
   /** @nullable */
-  timeline?: string | null;
-  status: QipItemStatus;
+  dueDate?: string | null;
   /** @nullable */
-  notes?: string | null;
+  progressNotes?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
 
-export type QipItemInputStatus =
-  (typeof QipItemInputStatus)[keyof typeof QipItemInputStatus];
+export type QipItemInputPriority =
+  (typeof QipItemInputPriority)[keyof typeof QipItemInputPriority];
 
-export const QipItemInputStatus = {
-  in_progress: "in_progress",
-  completed: "completed",
-  on_hold: "on_hold",
+export const QipItemInputPriority = {
+  low: "low",
+  medium: "medium",
+  high: "high",
 } as const;
 
 export interface QipItemInput {
+  siteId?: number;
+  date?: string;
   qualityArea: string;
-  goal: string;
-  strategy: string;
+  standardElement?: string;
+  source?: string;
+  priority?: QipItemInputPriority;
+  issueIdentified?: string;
+  outcomeGoal?: string;
+  howToAchieve?: string;
   successMeasure?: string;
-  timeline?: string;
-  status?: QipItemInputStatus;
-  notes?: string;
+  dueDate?: string;
+  progressNotes?: string;
 }
 
-export type QipItemUpdateStatus =
-  (typeof QipItemUpdateStatus)[keyof typeof QipItemUpdateStatus];
+export type QipItemUpdatePriority =
+  (typeof QipItemUpdatePriority)[keyof typeof QipItemUpdatePriority];
 
-export const QipItemUpdateStatus = {
-  in_progress: "in_progress",
-  completed: "completed",
-  on_hold: "on_hold",
+export const QipItemUpdatePriority = {
+  low: "low",
+  medium: "medium",
+  high: "high",
 } as const;
 
 export interface QipItemUpdate {
+  siteId?: number;
+  date?: string;
   qualityArea?: string;
-  goal?: string;
-  strategy?: string;
+  standardElement?: string;
+  source?: string;
+  priority?: QipItemUpdatePriority;
+  issueIdentified?: string;
+  outcomeGoal?: string;
+  howToAchieve?: string;
   successMeasure?: string;
-  timeline?: string;
-  status?: QipItemUpdateStatus;
-  notes?: string;
+  dueDate?: string;
+  progressNotes?: string;
+}
+
+export interface QipSource {
+  id: number;
+  name: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface QipSourceInput {
+  name: string;
+  sortOrder?: number;
+}
+
+export interface QipSourceUpdate {
+  name?: string;
+  sortOrder?: number;
+}
+
+export interface QipStrength {
+  id: number;
+  qualityArea: string;
+  content: string;
+  updatedAt: string;
+}
+
+export interface QipStrengthUpdate {
+  content: string;
 }
 
 export interface ConfidentialNote {

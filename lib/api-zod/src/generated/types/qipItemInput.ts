@@ -5,14 +5,19 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
-import type { QipItemInputStatus } from "./qipItemInputStatus";
+import type { QipItemInputPriority } from "./qipItemInputPriority";
 
 export interface QipItemInput {
+  siteId?: number;
+  date?: Date;
   qualityArea: string;
-  goal: string;
-  strategy: string;
+  standardElement?: string;
+  source?: string;
+  priority?: QipItemInputPriority;
+  issueIdentified?: string;
+  outcomeGoal?: string;
+  howToAchieve?: string;
   successMeasure?: string;
-  timeline?: string;
-  status?: QipItemInputStatus;
-  notes?: string;
+  dueDate?: Date;
+  progressNotes?: string;
 }

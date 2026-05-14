@@ -36,7 +36,7 @@ router.get("/reports/service-compliance", async (_req, res): Promise<void> => {
 
   const openIncidents = (await db.select().from(incidentsTable)).filter((i) => i.status !== "closed").length;
   const openConditionReports = (await db.select().from(conditionReportsTable)).filter((r) => r.status !== "resolved").length;
-  const openQipItems = (await db.select().from(qipItemsTable)).filter((q) => q.status === "in_progress").length;
+  const openQipItems = (await db.select().from(qipItemsTable)).length;
   const activeChecklists = (await db.select().from(checklistsTable)).length;
 
   const now = new Date();

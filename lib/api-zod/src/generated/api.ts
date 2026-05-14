@@ -930,30 +930,40 @@ export const CreateEvacuationBody = zod.object({
 
 export const ListQipItemsResponseItem = zod.object({
   id: zod.number(),
+  siteId: zod.number().nullish(),
+  date: zod.coerce.date().nullish(),
   qualityArea: zod.string(),
-  goal: zod.string(),
-  strategy: zod.string(),
+  standardElement: zod.string().nullish(),
+  source: zod.string().nullish(),
+  priority: zod.enum(["low", "medium", "high"]),
+  issueIdentified: zod.string().nullish(),
+  outcomeGoal: zod.string().nullish(),
+  howToAchieve: zod.string().nullish(),
   successMeasure: zod.string().nullish(),
-  timeline: zod.string().nullish(),
-  status: zod.enum(["in_progress", "completed", "on_hold"]),
-  notes: zod.string().nullish(),
+  dueDate: zod.coerce.date().nullish(),
+  progressNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date().optional(),
 });
 export const ListQipItemsResponse = zod.array(ListQipItemsResponseItem);
 
-export const createQipItemBodyStatusDefault = `in_progress`;
+export const createQipItemBodyPriorityDefault = `medium`;
 
 export const CreateQipItemBody = zod.object({
+  siteId: zod.number().optional(),
+  date: zod.coerce.date().optional(),
   qualityArea: zod.string(),
-  goal: zod.string(),
-  strategy: zod.string(),
+  standardElement: zod.string().optional(),
+  source: zod.string().optional(),
+  priority: zod
+    .enum(["low", "medium", "high"])
+    .default(createQipItemBodyPriorityDefault),
+  issueIdentified: zod.string().optional(),
+  outcomeGoal: zod.string().optional(),
+  howToAchieve: zod.string().optional(),
   successMeasure: zod.string().optional(),
-  timeline: zod.string().optional(),
-  status: zod
-    .enum(["in_progress", "completed", "on_hold"])
-    .default(createQipItemBodyStatusDefault),
-  notes: zod.string().optional(),
+  dueDate: zod.coerce.date().optional(),
+  progressNotes: zod.string().optional(),
 });
 
 export const UpdateQipItemParams = zod.object({
@@ -961,30 +971,96 @@ export const UpdateQipItemParams = zod.object({
 });
 
 export const UpdateQipItemBody = zod.object({
+  siteId: zod.number().optional(),
+  date: zod.coerce.date().optional(),
   qualityArea: zod.string().optional(),
-  goal: zod.string().optional(),
-  strategy: zod.string().optional(),
+  standardElement: zod.string().optional(),
+  source: zod.string().optional(),
+  priority: zod.enum(["low", "medium", "high"]).optional(),
+  issueIdentified: zod.string().optional(),
+  outcomeGoal: zod.string().optional(),
+  howToAchieve: zod.string().optional(),
   successMeasure: zod.string().optional(),
-  timeline: zod.string().optional(),
-  status: zod.enum(["in_progress", "completed", "on_hold"]).optional(),
-  notes: zod.string().optional(),
+  dueDate: zod.coerce.date().optional(),
+  progressNotes: zod.string().optional(),
 });
 
 export const UpdateQipItemResponse = zod.object({
   id: zod.number(),
+  siteId: zod.number().nullish(),
+  date: zod.coerce.date().nullish(),
   qualityArea: zod.string(),
-  goal: zod.string(),
-  strategy: zod.string(),
+  standardElement: zod.string().nullish(),
+  source: zod.string().nullish(),
+  priority: zod.enum(["low", "medium", "high"]),
+  issueIdentified: zod.string().nullish(),
+  outcomeGoal: zod.string().nullish(),
+  howToAchieve: zod.string().nullish(),
   successMeasure: zod.string().nullish(),
-  timeline: zod.string().nullish(),
-  status: zod.enum(["in_progress", "completed", "on_hold"]),
-  notes: zod.string().nullish(),
+  dueDate: zod.coerce.date().nullish(),
+  progressNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date().optional(),
 });
 
 export const DeleteQipItemParams = zod.object({
   id: zod.coerce.number(),
+});
+
+export const ListQipSourcesResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  sortOrder: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+export const ListQipSourcesResponse = zod.array(ListQipSourcesResponseItem);
+
+export const CreateQipSourceBody = zod.object({
+  name: zod.string(),
+  sortOrder: zod.number().optional(),
+});
+
+export const UpdateQipSourceParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateQipSourceBody = zod.object({
+  name: zod.string().optional(),
+  sortOrder: zod.number().optional(),
+});
+
+export const UpdateQipSourceResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  sortOrder: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+
+export const DeleteQipSourceParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListQipStrengthsResponseItem = zod.object({
+  id: zod.number(),
+  qualityArea: zod.string(),
+  content: zod.string(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListQipStrengthsResponse = zod.array(ListQipStrengthsResponseItem);
+
+export const UpsertQipStrengthParams = zod.object({
+  qualityArea: zod.coerce.string(),
+});
+
+export const UpsertQipStrengthBody = zod.object({
+  content: zod.string(),
+});
+
+export const UpsertQipStrengthResponse = zod.object({
+  id: zod.number(),
+  qualityArea: zod.string(),
+  content: zod.string(),
+  updatedAt: zod.coerce.date(),
 });
 
 export const GetChildWelfareNotesParams = zod.object({

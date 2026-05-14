@@ -19,6 +19,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, Plus, Trash2, Pencil, X, Archive, ArchiveRestore, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const QA_COLOURS: Record<string, { bg: string; text: string; badgeBg: string; badgeText: string }> = {
+  "1": { bg: "#7DC242", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff" },
+  "2": { bg: "#EC008C", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff" },
+  "3": { bg: "#F49AC2", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff" },
+  "4": { bg: "#FFF200", text: "#444", badgeBg: "rgba(0,0,0,0.15)", badgeText: "#444" },
+  "5": { bg: "#F7941D", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff" },
+  "6": { bg: "#BE2180", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff" },
+  "7": { bg: "#00AEEF", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff" },
+};
+
 const QA_AREAS = [
   { key: "1", label: "Quality Area 1: Educational Program and Practice" },
   { key: "2", label: "Quality Area 2: Children's Health and Safety" },
@@ -705,11 +715,24 @@ export default function Qip() {
           <TabsList className="w-full h-auto mb-4 bg-muted p-1 flex">
             {QA_AREAS.map((a) => {
               const count = (itemsByQA[a.key] ?? []).length;
+              const colour = QA_COLOURS[a.key];
+              const isActive = activeTab === a.key;
               return (
-                <TabsTrigger key={a.key} value={a.key} className="flex-1 text-xs px-2 py-1.5 flex items-center justify-center gap-1.5">
+                <TabsTrigger
+                  key={a.key}
+                  value={a.key}
+                  className="flex-1 text-xs px-2 py-1.5 flex items-center justify-center gap-1.5 transition-all"
+                  style={isActive ? { backgroundColor: colour.bg, color: colour.text } : {}}
+                >
                   QA {a.key}
                   {count > 0 && (
-                    <span className="rounded-full bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 leading-none font-medium">
+                    <span
+                      className="rounded-full text-[10px] px-1.5 py-0.5 leading-none font-medium"
+                      style={isActive
+                        ? { backgroundColor: colour.badgeBg, color: colour.badgeText }
+                        : { backgroundColor: "var(--primary)", color: "var(--primary-foreground)" }
+                      }
+                    >
                       {count}
                     </span>
                   )}

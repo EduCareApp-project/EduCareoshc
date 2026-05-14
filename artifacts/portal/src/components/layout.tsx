@@ -84,7 +84,7 @@ const NAV_GROUPS = [
 function NavLinks({ location }: { location: string }) {
   return (
     <div className="flex flex-col h-full">
-      <div className="px-10 py-4 flex items-center space-x-3 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.2)" }}>
+      <div className="px-4 py-4 flex items-center space-x-3 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.2)" }}>
         <img src="/educare-logo.png" alt="EduCare" className="h-28 w-28 object-contain" />
         <span className="text-3xl font-bold text-white">EduCare</span>
       </div>

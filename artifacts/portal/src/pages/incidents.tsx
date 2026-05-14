@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   useListIncidents, useCreateIncident, useUpdateIncident, useDeleteIncident,
   useListChildren, useListStaff, useListSites,
   getListIncidentsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useUpload } from "@workspace/object-storage-web";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   AlertTriangle, Plus, Edit, CheckCircle2, Circle, Building2, User, Calendar,
   ClipboardList, Shield, BookOpen, Paperclip, ChevronDown, ChevronUp, Trash2,
+  Upload, X as XIcon,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -94,14 +96,34 @@ function LogIncidentDialog({ open, onOpenChange }: { open: boolean; onOpenChange
   const { data: children } = useListChildren();
   const { data: staff } = useListStaff();
   const { data: sites } = useListSites();
+  const { uploadFile, isUploading } = useUpload();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     incidentDatetime: "", siteId: "none", childId: "none",
     respondentId: "none", description: "", firstAidProvided: "",
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  function resetForm() {
+    setForm({ incidentDatetime: "", siteId: "none", childId: "none", respondentId: "none", description: "", firstAidProvided: "" });
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    let attachmentPath: string | null = null;
+    if (selectedFile) {
+      const result = await uploadFile(selectedFile);
+      if (!result) {
+        toast({ title: "File upload failed", variant: "destructive" });
+        return;
+      }
+      attachmentPath = result.objectPath;
+    }
+
     createMutation.mutate({
       data: {
         childId: parseInt(form.childId),
@@ -110,20 +132,23 @@ function LogIncidentDialog({ open, onOpenChange }: { open: boolean; onOpenChange
         respondentId: form.respondentId !== "none" ? parseInt(form.respondentId) : null,
         description: form.description,
         firstAidProvided: form.firstAidProvided || null,
+        attachmentPath,
       } as any,
     }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListIncidentsQueryKey() });
         toast({ title: "Incident logged" });
         onOpenChange(false);
-        setForm({ incidentDatetime: "", siteId: "none", childId: "none", respondentId: "none", description: "", firstAidProvided: "" });
+        resetForm();
       },
       onError: () => toast({ title: "Failed to log incident", variant: "destructive" }),
     });
   }
 
+  const isBusy = isUploading || createMutation.isPending;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) resetForm(); onOpenChange(o); }}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Log Incident</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -170,9 +195,45 @@ function LogIncidentDialog({ open, onOpenChange }: { open: boolean; onOpenChange
             <Label>First Aid Provided</Label>
             <Textarea value={form.firstAidProvided} onChange={(e) => setForm({ ...form, firstAidProvided: e.target.value })} rows={2} placeholder="Describe any first aid given..." />
           </div>
+
+          <div className="space-y-1">
+            <Label>Upload Image / Document</Label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept="image/*,.pdf,.doc,.docx"
+              onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+            />
+            {selectedFile ? (
+              <div className="flex items-center gap-2 rounded-md border border-dashed px-3 py-2 bg-muted/30 text-sm">
+                <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="flex-1 truncate text-muted-foreground">{selectedFile.name}</span>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <XIcon className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full flex items-center gap-2 rounded-md border border-dashed px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:border-muted-foreground transition-colors"
+              >
+                <Upload className="h-4 w-4 shrink-0" />
+                <span>Click to attach a photo or document…</span>
+              </button>
+            )}
+          </div>
+
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={createMutation.isPending || form.childId === "none"}>Log Incident</Button>
+            <Button type="button" variant="outline" onClick={() => { resetForm(); onOpenChange(false); }}>Cancel</Button>
+            <Button type="submit" disabled={isBusy || form.childId === "none"}>
+              {isUploading ? "Uploading…" : createMutation.isPending ? "Saving…" : "Log Incident"}
+            </Button>
           </div>
         </form>
       </DialogContent>

@@ -27,7 +27,7 @@ export default function GuardiansList() {
   const { data: sites } = useListSites();
   const [search, setSearch] = useState("");
   const [siteFilter, setSiteFilter] = useState("all");
-  const [view, setView] = useState<ViewMode>("tiles");
+  const [view, setView] = useState<ViewMode>("list");
 
   const filtered = [...(guardians ?? [])]
     .sort((a, b) => a.guardianName.localeCompare(b.guardianName))
@@ -103,20 +103,20 @@ export default function GuardiansList() {
         {/* View toggle */}
         <div className="flex rounded-md border border-input bg-card overflow-hidden text-sm ml-auto shrink-0">
           <button
-            onClick={() => setView("tiles")}
-            className={`flex items-center gap-1.5 px-3 py-2 transition-colors ${view === "tiles" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
-            aria-label="Tile view"
-          >
-            <LayoutGrid className="h-4 w-4" />
-            <span className="hidden sm:inline">Tiles</span>
-          </button>
-          <button
             onClick={() => setView("list")}
             className={`flex items-center gap-1.5 px-3 py-2 transition-colors ${view === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
             aria-label="List view"
           >
             <List className="h-4 w-4" />
             <span className="hidden sm:inline">List</span>
+          </button>
+          <button
+            onClick={() => setView("tiles")}
+            className={`flex items-center gap-1.5 px-3 py-2 transition-colors ${view === "tiles" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+            aria-label="Tile view"
+          >
+            <LayoutGrid className="h-4 w-4" />
+            <span className="hidden sm:inline">Tiles</span>
           </button>
         </div>
       </div>

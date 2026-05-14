@@ -325,7 +325,7 @@ function StrengthsEditor({ qualityArea }: { qualityArea: string }) {
   );
 }
 
-function ItemCard({
+function ItemRow({
   item,
   sites,
   sources,
@@ -341,8 +341,6 @@ function ItemCard({
   const deleteMutation = useDeleteQipItem();
   const { toast } = useToast();
   const [editOpen, setEditOpen] = useState(false);
-
-  const siteName = item.siteId ? (sites.find((s) => s.id === item.siteId)?.name ?? `Site ${item.siteId}`) : null;
 
   function handleEdit(data: FormState) {
     const payload: Record<string, any> = {
@@ -395,98 +393,46 @@ function ItemCard({
     progressNotes: item.progressNotes ?? "",
   };
 
+  const priorityLabel = (item.priority ?? "medium").charAt(0).toUpperCase() + (item.priority ?? "medium").slice(1);
+
   return (
-    <Card className="border shadow-sm">
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          <div className="flex-1 min-w-0">
-            {/* Top row: badges */}
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              <Badge className={`text-xs border ${PRIORITY_COLOURS[item.priority] ?? PRIORITY_COLOURS.medium}`}>
-                {(item.priority ?? "medium").charAt(0).toUpperCase() + (item.priority ?? "medium").slice(1)} Priority
-              </Badge>
-              {item.standardElement && (
-                <Badge variant="outline" className="text-xs">{item.standardElement}</Badge>
-              )}
-              {item.source && (
-                <Badge variant="outline" className="text-xs">{item.source}</Badge>
-              )}
-              {siteName && (
-                <Badge variant="outline" className="text-xs">{siteName}</Badge>
-              )}
-              {item.date && (
-                <Badge variant="outline" className="text-xs">{new Date(item.date).toLocaleDateString("en-AU")}</Badge>
-              )}
-            </div>
-
-            {/* Column grid of fields */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 text-sm">
-              {item.issueIdentified && (
-                <div className="col-span-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Issue Identified</p>
-                  <p className="text-foreground">{item.issueIdentified}</p>
-                </div>
-              )}
-              {item.outcomeGoal && (
-                <div className="col-span-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Goal</p>
-                  <p className="text-foreground">{item.outcomeGoal}</p>
-                </div>
-              )}
-              {item.howToAchieve && (
-                <div className="col-span-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">How to Achieve</p>
-                  <p className="text-foreground">{item.howToAchieve}</p>
-                </div>
-              )}
-              {item.successMeasure && (
-                <div className="col-span-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Success Measure</p>
-                  <p className="text-foreground">{item.successMeasure}</p>
-                </div>
-              )}
-              {item.dueDate && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Due Date</p>
-                  <p className="text-foreground">{new Date(item.dueDate).toLocaleDateString("en-AU")}</p>
-                </div>
-              )}
-              {item.progressNotes && (
-                <div className="col-span-2 md:col-span-4">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Progress Notes</p>
-                  <p className="text-foreground italic">{item.progressNotes}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-1 shrink-0">
-            <Dialog open={editOpen} onOpenChange={setEditOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader><DialogTitle>Edit QIP Item</DialogTitle></DialogHeader>
-                <ItemForm
-                  initial={initialForm}
-                  sites={sites}
-                  sources={sources}
-                  onSubmit={handleEdit}
-                  onCancel={() => setEditOpen(false)}
-                  isPending={updateMutation.isPending}
-                />
-              </DialogContent>
-            </Dialog>
-            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" onClick={handleDelete}>
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+    <tr className="border-b last:border-b-0 align-top hover:bg-muted/30 transition-colors group">
+      <td className="py-3 px-4 text-sm font-medium text-foreground whitespace-nowrap">QA{item.qualityArea}</td>
+      <td className="py-3 px-4 text-sm text-foreground whitespace-nowrap">{item.standardElement ?? <span className="text-muted-foreground">—</span>}</td>
+      <td className="py-3 px-4 whitespace-nowrap">
+        <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full border ${PRIORITY_COLOURS[item.priority] ?? PRIORITY_COLOURS.medium}`}>
+          {priorityLabel}
+        </span>
+      </td>
+      <td className="py-3 px-4 text-sm text-foreground">{item.issueIdentified ?? <span className="text-muted-foreground">—</span>}</td>
+      <td className="py-3 px-4 text-sm text-foreground">{item.outcomeGoal ?? <span className="text-muted-foreground">—</span>}</td>
+      <td className="py-3 px-4 text-sm text-foreground">{item.progressNotes ?? <span className="text-muted-foreground">—</span>}</td>
+      <td className="py-3 px-2 whitespace-nowrap">
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>Edit QIP Item</DialogTitle></DialogHeader>
+              <ItemForm
+                initial={initialForm}
+                sites={sites}
+                sources={sources}
+                onSubmit={handleEdit}
+                onCancel={() => setEditOpen(false)}
+                isPending={updateMutation.isPending}
+              />
+            </DialogContent>
+          </Dialog>
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={handleDelete}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
         </div>
-      </CardContent>
-    </Card>
+      </td>
+    </tr>
   );
 }
 
@@ -669,16 +615,31 @@ export default function Qip() {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="space-y-3">
-                    {qaItems.map((item) => (
-                      <ItemCard
-                        key={item.id}
-                        item={item}
-                        sites={sites}
-                        sources={sources}
-                        onDeleted={() => queryClient.invalidateQueries({ queryKey: ["/api/qip"] })}
-                      />
-                    ))}
+                  <div className="rounded-md border overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-muted/60 border-b">
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Quality Area</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Standard / Element</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Priority</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Issue Identified</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">What outcome or goal do we seek?</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Progress Notes</th>
+                          <th className="py-2.5 px-2"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {qaItems.map((item) => (
+                          <ItemRow
+                            key={item.id}
+                            item={item}
+                            sites={sites}
+                            sources={sources}
+                            onDeleted={() => queryClient.invalidateQueries({ queryKey: ["/api/qip"] })}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </TabsContent>

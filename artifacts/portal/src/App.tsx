@@ -34,6 +34,7 @@ import Qip from "@/pages/qip";
 import Wellbeing from "@/pages/wellbeing";
 import Policies from "@/pages/policies";
 import PoliciesList from "@/pages/policies-list";
+import Procedures from "@/pages/procedures";
 import FileLibrary from "@/pages/file-library";
 import Checklists from "@/pages/checklists";
 import ReportsLearning from "@/pages/reports-learning";
@@ -92,6 +93,7 @@ function Router() {
         <Route path="/wellbeing" component={Wellbeing} />
         <Route path="/policies" component={Policies} />
         <Route path="/policies/list" component={PoliciesList} />
+        <Route path="/policies/procedures" component={Procedures} />
         <Route path="/policies/files" component={FileLibrary} />
         <Route path="/checklists" component={Checklists} />
         

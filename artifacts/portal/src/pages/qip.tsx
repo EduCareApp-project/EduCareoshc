@@ -548,9 +548,9 @@ function ArchivedSection({
               <tr className="bg-muted/40 border-b">
                 <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">NQS</th>
                 <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Priority</th>
-                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Issue Identified</th>
-                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">What outcome or goal do we seek?</th>
-                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-full">Progress Notes</th>
+                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-1/3">Issue Identified</th>
+                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-1/3">What outcome or goal do we seek?</th>
+                <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-1/3">Progress Notes</th>
                 <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Due By</th>
                 <th className="py-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Archived</th>
                 <th className="py-2 px-2"></th>
@@ -756,9 +756,9 @@ export default function Qip() {
                         <tr className="bg-muted/60 border-b">
                           <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">NQS</th>
                           <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Priority</th>
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Issue Identified</th>
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">What outcome or goal do we seek?</th>
-                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-full">Progress Notes</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-1/3">Issue Identified</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-1/3">What outcome or goal do we seek?</th>
+                          <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-1/3">Progress Notes</th>
                           <th className="py-2.5 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">Due By</th>
                           <th className="py-2.5 px-2"></th>
                         </tr>

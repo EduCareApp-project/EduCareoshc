@@ -12,6 +12,7 @@ import {
   useCreateStaffQualification,
   useUpdateStaffQualification,
   useDeleteStaffQualification,
+  useDeleteQualificationDocument,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpload } from "@workspace/object-storage-web";
@@ -99,6 +100,7 @@ export default function StaffProfile() {
   const createQualMutation = useCreateStaffQualification();
   const updateQualMutation = useUpdateStaffQualification();
   const deleteQualMutation = useDeleteStaffQualification();
+  const deleteQualDocMutation = useDeleteQualificationDocument();
 
   const [pdOpen, setPdOpen] = useState(false);
   const [pdForm, setPdForm] = useState({ title: "", provider: "", completedAt: "", hoursEarned: "", notes: "" });
@@ -314,6 +316,16 @@ export default function StaffProfile() {
         toast({ title: "Qualification removed" });
       },
       onError: () => toast({ title: "Failed to remove qualification", variant: "destructive" }),
+    });
+  }
+
+  function handleDeleteArchivedDoc(docId: number) {
+    deleteQualDocMutation.mutate({ id: docId }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}/qualifications`] });
+        toast({ title: "Archived document deleted" });
+      },
+      onError: () => toast({ title: "Failed to delete document", variant: "destructive" }),
     });
   }
 
@@ -742,17 +754,27 @@ export default function StaffProfile() {
                                   </summary>
                                   <div className="mt-1 pl-2 border-l space-y-1">
                                     {[...inactiveDocs].reverse().map((d) => (
-                                      <a
-                                        key={d.id}
-                                        href={storageUrl(d.documentPath)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline line-through decoration-muted-foreground/40"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <FileText className="h-3 w-3 shrink-0" />
-                                        <span>{d.documentName ?? d.documentPath.split("/").pop() ?? "Document"}</span>
-                                      </a>
+                                      <div key={d.id} className="flex items-center gap-1 group">
+                                        <a
+                                          href={storageUrl(d.documentPath)}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline line-through decoration-muted-foreground/40 flex-1 min-w-0"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <FileText className="h-3 w-3 shrink-0" />
+                                          <span className="truncate">{d.documentName ?? d.documentPath.split("/").pop() ?? "Document"}</span>
+                                        </a>
+                                        <button
+                                          type="button"
+                                          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-muted-foreground hover:text-destructive shrink-0"
+                                          title="Delete archived document"
+                                          onClick={(e) => { e.stopPropagation(); handleDeleteArchivedDoc(d.id); }}
+                                          disabled={deleteQualDocMutation.isPending}
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </button>
+                                      </div>
                                     ))}
                                   </div>
                                 </details>

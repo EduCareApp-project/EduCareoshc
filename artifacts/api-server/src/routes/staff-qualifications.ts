@@ -104,6 +104,17 @@ router.patch("/qualifications/:id", async (req, res): Promise<void> => {
   res.json(withDocs);
 });
 
+router.delete("/qualification-documents/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const [row] = await db
+    .delete(qualificationDocumentsTable)
+    .where(eq(qualificationDocumentsTable.id, id))
+    .returning();
+  if (!row) { res.status(404).json({ error: "Document not found" }); return; }
+  res.sendStatus(204);
+});
+
 router.delete("/qualifications/:id", async (req, res): Promise<void> => {
   const params = DeleteStaffQualificationParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }

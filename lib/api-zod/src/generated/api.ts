@@ -360,6 +360,10 @@ export const CreateStaffQualificationBody = zod.object({
   documentName: zod.string().optional(),
 });
 
+export const DeleteQualificationDocumentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
 export const UpdateStaffQualificationParams = zod.object({
   id: zod.coerce.number(),
 });

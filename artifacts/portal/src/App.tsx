@@ -26,6 +26,8 @@ import Calendar from "@/pages/calendar";
 import Planning from "@/pages/planning";
 import PlanningDetail from "@/pages/planning-detail";
 import Posts from "@/pages/posts";
+import NewPost from "@/pages/new-post";
+import PostDetail from "@/pages/post-detail";
 import Jottings from "@/pages/jottings";
 import Incidents from "@/pages/incidents";
 import ConditionReports from "@/pages/condition-reports";
@@ -86,6 +88,8 @@ function Router() {
         <Route path="/planning/:id" component={PlanningDetail} />
         
         <Route path="/posts" component={Posts} />
+        <Route path="/posts/new" component={NewPost} />
+        <Route path="/posts/:id" component={PostDetail} />
         <Route path="/jottings" component={Jottings} />
         
         <Route path="/incidents" component={Incidents} />

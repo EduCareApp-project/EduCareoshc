@@ -3495,17 +3495,14 @@ components:
 
     Post:
       type: object
-      required: [id, title, content, postType, status, createdAt]
+      required: [id, title, images, createdAt]
       properties:
         id:
           type: integer
-        title:
-          type: string
-        content:
-          type: string
-        postType:
-          type: string
-          enum: [individual, group]
+        siteId:
+          type: ["integer", "null"]
+        siteName:
+          type: ["string", "null"]
         childId:
           type: ["integer", "null"]
         childName:
@@ -3514,50 +3511,82 @@ components:
           type: ["integer", "null"]
         staffName:
           type: ["string", "null"]
-        status:
+        title:
           type: string
-          enum: [draft, published]
-        publishedAt:
+        date:
           type: ["string", "null"]
-          format: date-time
+          format: date
+        images:
+          type: array
+          items:
+            type: string
+          maxItems: 3
+        description:
+          type: ["string", "null"]
+        learning:
+          type: ["string", "null"]
+        opportunities:
+          type: ["string", "null"]
+        aiSummary:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
 
     PostInput:
       type: object
-      required: [title, content, postType]
+      required: [title]
       properties:
-        title:
-          type: string
-        content:
-          type: string
-        postType:
-          type: string
-          enum: [individual, group]
-          default: group
+        siteId:
+          type: integer
         childId:
           type: integer
         staffId:
           type: integer
-        status:
+        title:
           type: string
-          enum: [draft, published]
-          default: draft
+        date:
+          type: string
+          format: date
+        images:
+          type: array
+          items:
+            type: string
+          maxItems: 3
+        description:
+          type: string
+        learning:
+          type: string
+        opportunities:
+          type: string
 
     PostUpdate:
       type: object
       properties:
+        siteId:
+          type: integer
+        childId:
+          type: integer
+        staffId:
+          type: integer
         title:
           type: string
-        content:
+        date:
           type: string
-        status:
+          format: date
+        images:
+          type: array
+          items:
+            type: string
+          maxItems: 3
+        description:
           type: string
-          enum: [draft, published]
-        publishedAt:
+        learning:
           type: string
-          format: date-time
+        opportunities:
+          type: string
+        aiSummary:
+          type: string
 
     QualificationDocument:
       type: object

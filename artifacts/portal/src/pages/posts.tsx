@@ -1,165 +1,117 @@
-import { useState } from "react";
-import { useListPosts, useCreatePost, useUpdatePost, useDeletePost, useListChildren, useListStaff } from "@workspace/api-client-react";
+import { useListPosts, useDeletePost, getListPostsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Trash2, Plus, Send, Newspaper } from "lucide-react";
+import { Newspaper, Plus, Trash2, User } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
+
+function imageUrl(path: string) {
+  const stripped = path.replace(/^\/objects\//, "");
+  return `/api/storage/objects/${stripped}`;
+}
 
 export default function Posts() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const { data: posts, isLoading } = useListPosts();
-  const { data: children } = useListChildren();
-  const { data: staff } = useListStaff();
-  const createMutation = useCreatePost();
-  const updateMutation = useUpdatePost();
   const deleteMutation = useDeletePost();
 
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", content: "", postType: "group", childId: "none", staffId: "none" });
-
-  function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    const data: Record<string, unknown> = { title: form.title, content: form.content, postType: form.postType };
-    if (form.childId !== "none") data.childId = parseInt(form.childId);
-    if (form.staffId !== "none") data.staffId = parseInt(form.staffId);
-    createMutation.mutate({ data: data as any }, {
-      onSuccess: () => {
-        setOpen(false);
-        setForm({ title: "", content: "", postType: "group", childId: "none", staffId: "none" });
-        queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
-        toast({ title: "Post created" });
-      },
-      onError: () => toast({ title: "Failed to create post", variant: "destructive" }),
-    });
-  }
-
-  function handlePublish(id: number) {
-    updateMutation.mutate({ id, data: { status: "published" } }, {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/posts"] }),
-    });
-  }
-
-  function handleDelete(id: number) {
+  function handleDelete(e: React.MouseEvent, id: number) {
+    e.stopPropagation();
+    if (!confirm("Delete this post?")) return;
     deleteMutation.mutate({ id }, {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/posts"] }),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() });
+        toast({ title: "Post deleted" });
+      },
+      onError: () => toast({ title: "Failed to delete post", variant: "destructive" }),
     });
   }
-
-  const statusBadge = (s: string) => s === "published"
-    ? <Badge className="bg-green-100 text-green-800 border-green-200">Published</Badge>
-    : <Badge variant="secondary">Draft</Badge>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Posts</h1>
-          <p className="text-muted-foreground mt-1">Learning posts for individual children or the whole group.</p>
+          <p className="text-muted-foreground mt-1">Learning stories and observations shared with families.</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" />New Post</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Create Post</DialogTitle></DialogHeader>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div className="space-y-1">
-                <Label>Title</Label>
-                <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-              </div>
-              <div className="space-y-1">
-                <Label>Post Type</Label>
-                <Select value={form.postType} onValueChange={(v) => setForm({ ...form, postType: v, childId: "none" })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="group">Group</SelectItem>
-                    <SelectItem value="individual">Individual Child</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {form.postType === "individual" && (
-                <div className="space-y-1">
-                  <Label>Child</Label>
-                  <Select value={form.childId} onValueChange={(v) => setForm({ ...form, childId: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select child" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Select a child</SelectItem>
-                      {(children ?? []).map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.firstName} {c.lastName}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              <div className="space-y-1">
-                <Label>Author (optional)</Label>
-                <Select value={form.staffId} onValueChange={(v) => setForm({ ...form, staffId: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No author</SelectItem>
-                    {(staff ?? []).map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label>Content</Label>
-                <Textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={5} required />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={createMutation.isPending}>Create Draft</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setLocation("/posts/new")}>
+          <Plus className="h-4 w-4 mr-2" />New Post
+        </Button>
       </div>
 
       {isLoading ? (
-        <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-72 rounded-xl" />)}
+        </div>
       ) : (posts ?? []).length === 0 ? (
-        <Card><CardContent className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
-          <Newspaper className="h-8 w-8 mb-2" />
-          <p>No posts yet. Create your first post to share learning stories.</p>
-        </CardContent></Card>
+        <Card>
+          <CardContent className="py-16 text-center text-muted-foreground flex flex-col items-center gap-2">
+            <Newspaper className="h-10 w-10 mb-2 opacity-40" />
+            <p className="font-medium">No posts yet</p>
+            <p className="text-sm">Create your first learning story to share with families.</p>
+            <Button className="mt-3" onClick={() => setLocation("/posts/new")}>
+              <Plus className="h-4 w-4 mr-2" />New Post
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="space-y-3">
-          {(posts ?? []).map((p) => (
-            <Card key={p.id}>
-              <CardContent className="py-4 flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium">{p.title}</span>
-                    {statusBadge(p.status)}
-                    <Badge variant="outline" className="text-xs">{p.postType === "group" ? "Group" : "Individual"}</Badge>
-                    {p.childName && <span className="text-sm text-muted-foreground">— {p.childName}</span>}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{p.content}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {p.staffName && `By ${p.staffName} • `}{format(new Date(p.createdAt), "MMM d, yyyy")}
-                    {p.publishedAt && ` • Published ${format(new Date(p.publishedAt), "MMM d, yyyy")}`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  {p.status === "draft" && (
-                    <Button size="sm" variant="outline" onClick={() => handlePublish(p.id)} disabled={updateMutation.isPending}>
-                      <Send className="h-3 w-3 mr-1" />Publish
-                    </Button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[...(posts ?? [])].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((post) => {
+            const coverImage = post.images?.[0];
+            return (
+              <Card
+                key={post.id}
+                className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow group"
+                onClick={() => setLocation(`/posts/${post.id}`)}
+              >
+                <div className="relative aspect-video bg-muted overflow-hidden">
+                  {coverImage ? (
+                    <img
+                      src={imageUrl(coverImage)}
+                      alt={post.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Newspaper className="h-10 w-10 text-muted-foreground opacity-30" />
+                    </div>
                   )}
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(p.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <button
+                    onClick={(e) => handleDelete(e, post.id)}
+                    className="absolute top-2 right-2 p-1.5 rounded-md bg-white/80 hover:bg-white text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-semibold leading-snug line-clamp-2">{post.title}</h3>
+                  </div>
+                  {post.childName && (
+                    <Badge variant="secondary" className="text-xs gap-1">
+                      <User className="h-2.5 w-2.5" />{post.childName}
+                    </Badge>
+                  )}
+                  {post.aiSummary ? (
+                    <p className="text-sm text-muted-foreground line-clamp-3">{post.aiSummary}</p>
+                  ) : post.description ? (
+                    <p className="text-sm text-muted-foreground line-clamp-3">{post.description.replace(/<[^>]*>/g, "")}</p>
+                  ) : null}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                    {post.staffName && <span>{post.staffName}</span>}
+                    {post.staffName && post.date && <span>·</span>}
+                    {post.date && <span>{format(new Date(post.date + "T00:00:00"), "d MMM yyyy")}</span>}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

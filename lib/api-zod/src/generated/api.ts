@@ -1520,50 +1520,62 @@ export const GetChecklistCompletionsResponse = zod.array(
   GetChecklistCompletionsResponseItem,
 );
 
+export const listPostsResponseImagesMax = 3;
+
 export const ListPostsResponseItem = zod.object({
   id: zod.number(),
-  title: zod.string(),
-  content: zod.string(),
-  postType: zod.enum(["individual", "group"]),
+  siteId: zod.number().nullish(),
+  siteName: zod.string().nullish(),
   childId: zod.number().nullish(),
   childName: zod.string().nullish(),
   staffId: zod.number().nullish(),
   staffName: zod.string().nullish(),
-  status: zod.enum(["draft", "published"]),
-  publishedAt: zod.coerce.date().nullish(),
+  title: zod.string(),
+  date: zod.coerce.date().nullish(),
+  images: zod.array(zod.string()).max(listPostsResponseImagesMax),
+  description: zod.string().nullish(),
+  learning: zod.string().nullish(),
+  opportunities: zod.string().nullish(),
+  aiSummary: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const ListPostsResponse = zod.array(ListPostsResponseItem);
 
-export const createPostBodyPostTypeDefault = `group`;
-export const createPostBodyStatusDefault = `draft`;
+export const createPostBodyImagesMax = 3;
 
 export const CreatePostBody = zod.object({
-  title: zod.string(),
-  content: zod.string(),
-  postType: zod
-    .enum(["individual", "group"])
-    .default(createPostBodyPostTypeDefault),
+  siteId: zod.number().optional(),
   childId: zod.number().optional(),
   staffId: zod.number().optional(),
-  status: zod.enum(["draft", "published"]).default(createPostBodyStatusDefault),
+  title: zod.string(),
+  date: zod.coerce.date().optional(),
+  images: zod.array(zod.string()).max(createPostBodyImagesMax).optional(),
+  description: zod.string().optional(),
+  learning: zod.string().optional(),
+  opportunities: zod.string().optional(),
 });
 
 export const GetPostParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const getPostResponseImagesMax = 3;
+
 export const GetPostResponse = zod.object({
   id: zod.number(),
-  title: zod.string(),
-  content: zod.string(),
-  postType: zod.enum(["individual", "group"]),
+  siteId: zod.number().nullish(),
+  siteName: zod.string().nullish(),
   childId: zod.number().nullish(),
   childName: zod.string().nullish(),
   staffId: zod.number().nullish(),
   staffName: zod.string().nullish(),
-  status: zod.enum(["draft", "published"]),
-  publishedAt: zod.coerce.date().nullish(),
+  title: zod.string(),
+  date: zod.coerce.date().nullish(),
+  images: zod.array(zod.string()).max(getPostResponseImagesMax),
+  description: zod.string().nullish(),
+  learning: zod.string().nullish(),
+  opportunities: zod.string().nullish(),
+  aiSummary: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 
@@ -1571,24 +1583,38 @@ export const UpdatePostParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const updatePostBodyImagesMax = 3;
+
 export const UpdatePostBody = zod.object({
+  siteId: zod.number().optional(),
+  childId: zod.number().optional(),
+  staffId: zod.number().optional(),
   title: zod.string().optional(),
-  content: zod.string().optional(),
-  status: zod.enum(["draft", "published"]).optional(),
-  publishedAt: zod.coerce.date().optional(),
+  date: zod.coerce.date().optional(),
+  images: zod.array(zod.string()).max(updatePostBodyImagesMax).optional(),
+  description: zod.string().optional(),
+  learning: zod.string().optional(),
+  opportunities: zod.string().optional(),
+  aiSummary: zod.string().optional(),
 });
+
+export const updatePostResponseImagesMax = 3;
 
 export const UpdatePostResponse = zod.object({
   id: zod.number(),
-  title: zod.string(),
-  content: zod.string(),
-  postType: zod.enum(["individual", "group"]),
+  siteId: zod.number().nullish(),
+  siteName: zod.string().nullish(),
   childId: zod.number().nullish(),
   childName: zod.string().nullish(),
   staffId: zod.number().nullish(),
   staffName: zod.string().nullish(),
-  status: zod.enum(["draft", "published"]),
-  publishedAt: zod.coerce.date().nullish(),
+  title: zod.string(),
+  date: zod.coerce.date().nullish(),
+  images: zod.array(zod.string()).max(updatePostResponseImagesMax),
+  description: zod.string().nullish(),
+  learning: zod.string().nullish(),
+  opportunities: zod.string().nullish(),
+  aiSummary: zod.string().nullish(),
   createdAt: zod.coerce.date(),
 });
 

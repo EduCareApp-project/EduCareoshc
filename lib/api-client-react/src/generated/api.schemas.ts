@@ -1104,25 +1104,12 @@ export interface ChecklistCompletionInput {
   notes?: string;
 }
 
-export type PostPostType = (typeof PostPostType)[keyof typeof PostPostType];
-
-export const PostPostType = {
-  individual: "individual",
-  group: "group",
-} as const;
-
-export type PostStatus = (typeof PostStatus)[keyof typeof PostStatus];
-
-export const PostStatus = {
-  draft: "draft",
-  published: "published",
-} as const;
-
 export interface Post {
   id: number;
-  title: string;
-  content: string;
-  postType: PostPostType;
+  /** @nullable */
+  siteId?: number | null;
+  /** @nullable */
+  siteName?: string | null;
   /** @nullable */
   childId?: number | null;
   /** @nullable */
@@ -1131,50 +1118,47 @@ export interface Post {
   staffId?: number | null;
   /** @nullable */
   staffName?: string | null;
-  status: PostStatus;
+  title: string;
   /** @nullable */
-  publishedAt?: string | null;
+  date?: string | null;
+  /** @maxItems 3 */
+  images: string[];
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  learning?: string | null;
+  /** @nullable */
+  opportunities?: string | null;
+  /** @nullable */
+  aiSummary?: string | null;
   createdAt: string;
 }
 
-export type PostInputPostType =
-  (typeof PostInputPostType)[keyof typeof PostInputPostType];
-
-export const PostInputPostType = {
-  individual: "individual",
-  group: "group",
-} as const;
-
-export type PostInputStatus =
-  (typeof PostInputStatus)[keyof typeof PostInputStatus];
-
-export const PostInputStatus = {
-  draft: "draft",
-  published: "published",
-} as const;
-
 export interface PostInput {
-  title: string;
-  content: string;
-  postType: PostInputPostType;
+  siteId?: number;
   childId?: number;
   staffId?: number;
-  status?: PostInputStatus;
+  title: string;
+  date?: string;
+  /** @maxItems 3 */
+  images?: string[];
+  description?: string;
+  learning?: string;
+  opportunities?: string;
 }
 
-export type PostUpdateStatus =
-  (typeof PostUpdateStatus)[keyof typeof PostUpdateStatus];
-
-export const PostUpdateStatus = {
-  draft: "draft",
-  published: "published",
-} as const;
-
 export interface PostUpdate {
+  siteId?: number;
+  childId?: number;
+  staffId?: number;
   title?: string;
-  content?: string;
-  status?: PostUpdateStatus;
-  publishedAt?: string;
+  date?: string;
+  /** @maxItems 3 */
+  images?: string[];
+  description?: string;
+  learning?: string;
+  opportunities?: string;
+  aiSummary?: string;
 }
 
 export interface QualificationDocument {

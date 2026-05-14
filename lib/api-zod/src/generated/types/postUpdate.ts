@@ -5,11 +5,17 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
-import type { PostUpdateStatus } from "./postUpdateStatus";
 
 export interface PostUpdate {
+  siteId?: number;
+  childId?: number;
+  staffId?: number;
   title?: string;
-  content?: string;
-  status?: PostUpdateStatus;
-  publishedAt?: Date;
+  date?: Date;
+  /** @maxItems 3 */
+  images?: string[];
+  description?: string;
+  learning?: string;
+  opportunities?: string;
+  aiSummary?: string;
 }

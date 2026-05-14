@@ -5,14 +5,13 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
-import type { PostPostType } from "./postPostType";
-import type { PostStatus } from "./postStatus";
 
 export interface Post {
   id: number;
-  title: string;
-  content: string;
-  postType: PostPostType;
+  /** @nullable */
+  siteId?: number | null;
+  /** @nullable */
+  siteName?: string | null;
   /** @nullable */
   childId?: number | null;
   /** @nullable */
@@ -21,8 +20,18 @@ export interface Post {
   staffId?: number | null;
   /** @nullable */
   staffName?: string | null;
-  status: PostStatus;
+  title: string;
   /** @nullable */
-  publishedAt?: Date | null;
+  date?: Date | null;
+  /** @maxItems 3 */
+  images: string[];
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  learning?: string | null;
+  /** @nullable */
+  opportunities?: string | null;
+  /** @nullable */
+  aiSummary?: string | null;
   createdAt: Date;
 }

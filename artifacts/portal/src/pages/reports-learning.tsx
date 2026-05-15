@@ -5,6 +5,7 @@ import {
   useListJottings,
   useListObservations,
   useListSites,
+  useListChildren,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -83,6 +84,7 @@ export default function ReportsLearning() {
   const [selectedPeriod, setSelectedPeriod] = useState<string>("month");
 
   const { data: sites } = useListSites();
+  const { data: children } = useListChildren();
   const { data: posts, isLoading: postsLoading } = useListPosts();
   const { data: jottings, isLoading: jottingsLoading } = useListJottings();
   const { data: observations, isLoading: observationsLoading } = useListObservations();
@@ -90,6 +92,14 @@ export default function ReportsLearning() {
 
   const cutoff = useMemo(() => periodCutoff(selectedPeriod), [selectedPeriod]);
   const periodLabel = PERIODS.find((p) => p.value === selectedPeriod)?.label ?? "";
+
+  // Build a Set of childIds that belong to the selected site (for filtering obs/jottings)
+  const childIdsInSite = useMemo(() => {
+    if (selectedSite === "all" || !children) return null;
+    return new Set(
+      children.filter((c) => String(c.siteId) === selectedSite).map((c) => c.id)
+    );
+  }, [children, selectedSite]);
 
   const filteredPosts = useMemo(() => {
     if (!posts) return [];
@@ -102,13 +112,22 @@ export default function ReportsLearning() {
 
   const filteredObservations = useMemo(() => {
     if (!observations) return [];
-    return observations.filter((o) => afterCutoff(o.observationDate ?? o.createdAt, cutoff));
-  }, [observations, cutoff]);
+    return observations.filter((o) => {
+      const inPeriod = afterCutoff(o.observationDate ?? o.createdAt, cutoff);
+      const inSite = childIdsInSite === null || childIdsInSite.has(o.childId);
+      return inPeriod && inSite;
+    });
+  }, [observations, cutoff, childIdsInSite]);
 
   const filteredJottings = useMemo(() => {
     if (!jottings) return [];
-    return jottings.filter((j) => !j.archivedAt && afterCutoff(j.createdAt, cutoff));
-  }, [jottings, cutoff]);
+    return jottings.filter((j) => {
+      if (j.archivedAt) return false;
+      const inPeriod = afterCutoff(j.createdAt, cutoff);
+      const inSite = childIdsInSite === null || (j.childId != null && childIdsInSite.has(j.childId));
+      return inPeriod && inSite;
+    });
+  }, [jottings, cutoff, childIdsInSite]);
 
   const isLoadingCounts = postsLoading || jottingsLoading || observationsLoading;
 

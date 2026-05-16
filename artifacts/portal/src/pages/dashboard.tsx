@@ -14,7 +14,7 @@ import { RichTextEditor, RichTextView } from "@/components/rich-text-editor";
 import {
   Baby, Users, BookOpen, ClipboardList, ShieldCheck, Bell, Trash2, Plus,
   AlertTriangle, CheckCircle2, Clock, FileText, Calendar,
-  Layers, Image, ChevronRight, GraduationCap, Paperclip, X, Upload, Newspaper, Pencil,
+  Layers, Image, ChevronRight, GraduationCap, Paperclip, X, Upload, Newspaper, Pencil, ExternalLink,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO, startOfWeek, addDays } from "date-fns";
@@ -773,6 +773,7 @@ function EducatorDashboard() {
 function GuardianDashboard() {
   const { data: posts, isLoading: loadingPosts } = useListPosts();
   const { data: planning, isLoading: loadingPlanning } = useListPlanningExperiences();
+  const { data: sites } = useListSites();
 
   const thisMonday = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
   const fiveWeeksEnd = format(addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), 34), "yyyy-MM-dd");
@@ -784,6 +785,33 @@ function GuardianDashboard() {
 
   return (
     <div className="space-y-8">
+      {/* Quick-access public links */}
+      <div className="flex justify-end gap-2 flex-wrap">
+        <a
+          href="/service-docs"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:shadow-md transition-shadow"
+        >
+          <FileText className="h-4 w-4 text-primary shrink-0" />
+          Service Documentation
+          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        </a>
+        {(sites ?? []).map((site) => (
+          <a
+            key={site.id}
+            href={`/qip-public?siteId=${site.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:shadow-md transition-shadow"
+          >
+            <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+            {site.name} QIP
+            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          </a>
+        ))}
+      </div>
+
       <NoticeBoard canManage={false} audience="guardian" />
 
       {/* Published weekly plans */}

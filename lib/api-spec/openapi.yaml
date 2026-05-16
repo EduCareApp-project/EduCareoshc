@@ -957,6 +957,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/Evacuation"
 
+  /evacuations/{id}:
+    patch:
+      operationId: updateEvacuation
+      tags: [evacuations]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvacuationInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evacuation"
+        "404":
+          description: Not found
+
   /qip:
     get:
       operationId: listQipItems

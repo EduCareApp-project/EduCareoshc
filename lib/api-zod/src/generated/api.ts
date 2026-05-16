@@ -939,6 +939,52 @@ export const CreateEvacuationBody = zod.object({
   attendanceDocName: zod.string().optional(),
 });
 
+export const UpdateEvacuationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const updateEvacuationBodyDrillTypeDefault = `evacuation`;
+
+export const UpdateEvacuationBody = zod.object({
+  drillType: zod
+    .enum(["evacuation", "lockdown", "shelter_in_place", "other"])
+    .default(updateEvacuationBodyDrillTypeDefault),
+  conductedAt: zod.coerce.date(),
+  validDays: zod
+    .number()
+    .optional()
+    .describe(
+      "How many days this drill record stays valid. Evacuation drills are always 90 days. Other types use this value (defaults to 365 if omitted).",
+    ),
+  participantCount: zod.number().optional(),
+  durationMinutes: zod.number().optional(),
+  notes: zod.string().optional(),
+  conductedBy: zod.string().optional(),
+  siteId: zod.number().optional(),
+  evacuationDocPath: zod.string().optional(),
+  evacuationDocName: zod.string().optional(),
+  attendanceDocPath: zod.string().optional(),
+  attendanceDocName: zod.string().optional(),
+});
+
+export const UpdateEvacuationResponse = zod.object({
+  id: zod.number(),
+  drillType: zod.enum(["evacuation", "lockdown", "shelter_in_place", "other"]),
+  conductedAt: zod.coerce.date(),
+  nextDueAt: zod.coerce.date().nullish(),
+  participantCount: zod.number().nullish(),
+  durationMinutes: zod.number().nullish(),
+  notes: zod.string().nullish(),
+  conductedBy: zod.string().nullish(),
+  siteId: zod.number().nullish(),
+  siteName: zod.string().nullish(),
+  evacuationDocPath: zod.string().nullish(),
+  evacuationDocName: zod.string().nullish(),
+  attendanceDocPath: zod.string().nullish(),
+  attendanceDocName: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
 export const ListQipItemsResponseItem = zod.object({
   id: zod.number(),
   siteId: zod.number().nullish(),

@@ -4370,6 +4370,87 @@ export const useCreateEvacuation = <
   return useMutation(getCreateEvacuationMutationOptions(options));
 };
 
+export const getUpdateEvacuationUrl = (id: number) => {
+  return `/api/evacuations/${id}`;
+};
+
+export const updateEvacuation = async (
+  id: number,
+  evacuationInput: EvacuationInput,
+  options?: RequestInit,
+): Promise<Evacuation> => {
+  return customFetch<Evacuation>(getUpdateEvacuationUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(evacuationInput),
+  });
+};
+
+export const getUpdateEvacuationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateEvacuation>>,
+    TError,
+    { id: number; data: BodyType<EvacuationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateEvacuation>>,
+  TError,
+  { id: number; data: BodyType<EvacuationInput> },
+  TContext
+> => {
+  const mutationKey = ["updateEvacuation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateEvacuation>>,
+    { id: number; data: BodyType<EvacuationInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateEvacuation(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateEvacuationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateEvacuation>>
+>;
+export type UpdateEvacuationMutationBody = BodyType<EvacuationInput>;
+export type UpdateEvacuationMutationError = ErrorType<void>;
+
+export const useUpdateEvacuation = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateEvacuation>>,
+    TError,
+    { id: number; data: BodyType<EvacuationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateEvacuation>>,
+  TError,
+  { id: number; data: BodyType<EvacuationInput> },
+  TContext
+> => {
+  return useMutation(getUpdateEvacuationMutationOptions(options));
+};
+
 export const getListQipItemsUrl = () => {
   return `/api/qip`;
 };

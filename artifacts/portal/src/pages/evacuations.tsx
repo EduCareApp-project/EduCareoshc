@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useListEvacuations, useCreateEvacuation, useListSites, useListStaff } from "@workspace/api-client-react";
+import { useListEvacuations, useCreateEvacuation, useUpdateEvacuation, useListSites, useListStaff } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import {
-  ShieldAlert, Plus, AlertCircle, CheckCircle, Clock, Paperclip, Upload, X, FileText, Users,
+  ShieldAlert, Plus, AlertCircle, CheckCircle, Clock, Paperclip, Upload, X, FileText, Users, Pencil,
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -449,7 +449,7 @@ export default function Evacuations() {
               {expired.length > 0 && (
                 <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Active Drills</h2>
               )}
-              {current.map((evac) => <DrillCard key={evac.id} evac={evac} />)}
+              {current.map((evac) => <DrillCard key={evac.id} evac={evac} sites={sites ?? []} staff={staff ?? []} />)}
             </div>
           )}
           {/* Archived records */}
@@ -460,7 +460,7 @@ export default function Evacuations() {
                 <div className="flex-1 h-px bg-border" />
                 <span className="text-xs text-muted-foreground">{expired.length} record{expired.length !== 1 ? "s" : ""}</span>
               </div>
-              {expired.map((evac) => <DrillCard key={evac.id} evac={evac} />)}
+              {expired.map((evac) => <DrillCard key={evac.id} evac={evac} sites={sites ?? []} staff={staff ?? []} />)}
             </div>
           )}
         </div>
@@ -469,9 +469,88 @@ export default function Evacuations() {
   );
 }
 
-function DrillCard({ evac }: { evac: NonNullable<ReturnType<typeof useListEvacuations>["data"]>[number] }) {
+type EvacRecord = NonNullable<ReturnType<typeof useListEvacuations>["data"]>[number];
+type SiteItem = NonNullable<ReturnType<typeof useListSites>["data"]>[number];
+type StaffItem = NonNullable<ReturnType<typeof useListStaff>["data"]>[number];
+
+function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]; staff: StaffItem[] }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { upload, uploading } = useUpload();
+  const updateMutation = useUpdateEvacuation();
+
+  const [editOpen, setEditOpen] = useState(false);
+
+  const conductedDate = evac.conductedAt ? format(new Date(evac.conductedAt), "yyyy-MM-dd") : melbourneDateStr();
+  const conductedTime = evac.conductedAt ? format(new Date(evac.conductedAt), "HH:mm") : "09:00";
+
+  const [form, setForm] = useState({
+    drillType: evac.drillType ?? "evacuation",
+    conductedDate,
+    conductedTime,
+    siteId: evac.siteId ? String(evac.siteId) : "",
+    conductedBy: evac.conductedBy ?? "",
+    notes: evac.notes ?? "",
+    validDays: 365,
+  });
+
+  const evacFileRef = useRef<HTMLInputElement>(null);
+  const attendFileRef = useRef<HTMLInputElement>(null);
+  const [evacFile, setEvacFile] = useState<File | null>(null);
+  const [attendFile, setAttendFile] = useState<File | null>(null);
+
+  function openEdit() {
+    setForm({
+      drillType: evac.drillType ?? "evacuation",
+      conductedDate,
+      conductedTime,
+      siteId: evac.siteId ? String(evac.siteId) : "",
+      conductedBy: evac.conductedBy ?? "",
+      notes: evac.notes ?? "",
+      validDays: 365,
+    });
+    setEvacFile(null);
+    setAttendFile(null);
+    setEditOpen(true);
+  }
+
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    let evacDocPath = evac.evacuationDocPath ?? "";
+    let evacDocName = evac.evacuationDocName ?? "";
+    let attendDocPath = evac.attendanceDocPath ?? "";
+    let attendDocName = evac.attendanceDocName ?? "";
+
+    try {
+      if (evacFile) { evacDocPath = await upload(evacFile, { prefix: "evacuation-records/" }); evacDocName = evacFile.name; }
+      if (attendFile) { attendDocPath = await upload(attendFile, { prefix: "evacuation-records/" }); attendDocName = attendFile.name; }
+    } catch {
+      toast({ title: "File upload failed", variant: "destructive" }); return;
+    }
+
+    const conductedAt = new Date(`${form.conductedDate}T${form.conductedTime}`).toISOString();
+    const data: Record<string, unknown> = { drillType: form.drillType, conductedAt };
+    if (form.siteId) data.siteId = Number(form.siteId);
+    if (form.notes) data.notes = form.notes;
+    if (form.conductedBy) data.conductedBy = form.conductedBy;
+    if (form.drillType !== "evacuation") data.validDays = form.validDays;
+    if (evacDocPath) { data.evacuationDocPath = evacDocPath; data.evacuationDocName = evacDocName; }
+    if (attendDocPath) { data.attendanceDocPath = attendDocPath; data.attendanceDocName = attendDocName; }
+
+    updateMutation.mutate({ id: evac.id, data: data as any }, {
+      onSuccess: () => {
+        setEditOpen(false);
+        queryClient.invalidateQueries({ queryKey: ["/api/evacuations"] });
+        toast({ title: "Record updated" });
+      },
+      onError: () => toast({ title: "Failed to update record", variant: "destructive" }),
+    });
+  }
+
+  const isSaving = updateMutation.isPending || uploading;
   const hasEvacDoc = !!evac.evacuationDocPath;
   const hasAttendDoc = !!evac.attendanceDocPath;
+
   return (
     <Card className="overflow-hidden">
       <div className="p-4 space-y-3">
@@ -488,7 +567,109 @@ function DrillCard({ evac }: { evac: NonNullable<ReturnType<typeof useListEvacua
               {evac.conductedBy && ` • ${evac.conductedBy}`}
             </p>
           </div>
-          <ExpiryBadge nextDueAt={evac.nextDueAt} />
+          <div className="flex items-center gap-2 shrink-0">
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={openEdit}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader><DialogTitle>Edit Drill Record</DialogTitle></DialogHeader>
+                <form onSubmit={handleUpdate} className="space-y-4 pb-2">
+                  <div className="space-y-1.5">
+                    <Label>Drill Type</Label>
+                    <Select value={form.drillType} onValueChange={(v) => setForm({ ...form, drillType: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="evacuation">Evacuation</SelectItem>
+                        <SelectItem value="lockdown">Lockdown</SelectItem>
+                        <SelectItem value="shelter_in_place">Shelter in Place</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label>Site</Label>
+                    <Select value={form.siteId || "__none__"} onValueChange={(v) => setForm({ ...form, siteId: v === "__none__" ? "" : v })}>
+                      <SelectTrigger><SelectValue placeholder="Select site…" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">— Not specified —</SelectItem>
+                        {sites.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Date Conducted</Label>
+                      <input type="date" value={form.conductedDate} onChange={(e) => setForm({ ...form, conductedDate: e.target.value })} required
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Time</Label>
+                      <input type="time" value={form.conductedTime} onChange={(e) => setForm({ ...form, conductedTime: e.target.value })}
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label>Conducted By</Label>
+                    <Select value={form.conductedBy || "__none__"} onValueChange={(v) => setForm({ ...form, conductedBy: v === "__none__" ? "" : v })}>
+                      <SelectTrigger><SelectValue placeholder="Select staff member…" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">— Not specified —</SelectItem>
+                        {staff.filter((s) => s.status === "active").sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`)).map((s) => (
+                          <SelectItem key={s.id} value={`${s.firstName} ${s.lastName}`}>{s.firstName} {s.lastName}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {form.drillType !== "evacuation" && (
+                    <div className="space-y-1.5">
+                      <Label>Valid for</Label>
+                      <Select value={String(form.validDays)} onValueChange={(v) => setForm({ ...form, validDays: Number(v) })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {VALID_DAYS_OPTIONS.map((o) => <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {form.drillType === "evacuation" && (
+                    <p className="text-xs text-muted-foreground bg-muted/40 rounded px-3 py-2">
+                      Evacuation drills are automatically valid for <strong>90 days</strong>.
+                    </p>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <Label>Notes</Label>
+                    <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium">Upload Records</p>
+                    <FileUploadField label="Record of Evacuation" icon={FileText} file={evacFile} existingName={evac.evacuationDocName ?? undefined}
+                      inputRef={evacFileRef} onSelect={setEvacFile} onRemove={() => { setEvacFile(null); if (evacFileRef.current) evacFileRef.current.value = ""; }} />
+                    <FileUploadField label="Record of Children's Attendance" icon={Users} file={attendFile} existingName={evac.attendanceDocName ?? undefined}
+                      inputRef={attendFileRef} onSelect={setAttendFile} onRemove={() => { setAttendFile(null); if (attendFileRef.current) attendFileRef.current.value = ""; }} />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-1">
+                    <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+                    <Button type="submit" disabled={isSaving}>
+                      {uploading ? "Uploading…" : isSaving ? "Saving…" : "Save Changes"}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <ExpiryBadge nextDueAt={evac.nextDueAt} />
+          </div>
         </div>
 
         {evac.notes && <p className="text-xs text-muted-foreground italic">{evac.notes}</p>}

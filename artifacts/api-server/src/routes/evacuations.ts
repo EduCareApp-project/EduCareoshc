@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, evacuationsTable, sitesTable } from "@workspace/db";
-import { CreateEvacuationBody, ListEvacuationsResponse, ListEvacuationsResponseItem } from "@workspace/api-zod";
+import { CreateEvacuationBody, UpdateEvacuationBody, ListEvacuationsResponse, ListEvacuationsResponseItem } from "@workspace/api-zod";
 import { desc, eq } from "drizzle-orm";
 
 const router: IRouter = Router();
@@ -55,6 +55,35 @@ router.post("/evacuations", async (req, res): Promise<void> => {
   }
 
   res.status(201).json(ListEvacuationsResponseItem.parse({ ...evac, siteName }));
+});
+
+router.patch("/evacuations/:id", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const parsed = UpdateEvacuationBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  const data: Record<string, unknown> = { ...parsed.data };
+
+  // Recompute nextDueAt from conductedAt + validDays
+  if (parsed.data.conductedAt) {
+    const conducted = new Date(parsed.data.conductedAt as string);
+    const nextDue = new Date(conducted);
+    const days = parsed.data.drillType === "evacuation" ? 90 : ((parsed.data as any).validDays ?? 365);
+    nextDue.setDate(nextDue.getDate() + days);
+    data.nextDueAt = nextDue;
+  }
+  delete data.validDays;
+
+  const [evac] = await db.update(evacuationsTable).set(data as any).where(eq(evacuationsTable.id, id)).returning();
+  if (!evac) { res.status(404).json({ error: "Not found" }); return; }
+
+  let siteName: string | null = null;
+  if (evac.siteId) {
+    const [site] = await db.select({ name: sitesTable.name }).from(sitesTable).where(eq(sitesTable.id, evac.siteId));
+    siteName = site?.name ?? null;
+  }
+
+  res.json(ListEvacuationsResponseItem.parse({ ...evac, siteName }));
 });
 
 export default router;

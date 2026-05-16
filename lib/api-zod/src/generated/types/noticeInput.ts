@@ -5,12 +5,14 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+import type { NoticeInputAudience } from "./noticeInputAudience";
 import type { NoticeInputPriority } from "./noticeInputPriority";
 
 export interface NoticeInput {
   title: string;
   content: string;
   priority?: NoticeInputPriority;
+  audience?: NoticeInputAudience;
   documentUrl?: string;
   documentName?: string;
   expiresAt?: Date;

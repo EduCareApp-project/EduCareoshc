@@ -641,11 +641,16 @@ export const GetOutcomeCountsResponseItem = zod.object({
 });
 export const GetOutcomeCountsResponse = zod.array(GetOutcomeCountsResponseItem);
 
+export const ListNoticesQueryParams = zod.object({
+  audience: zod.enum(["leadership", "educator", "guardian"]).optional(),
+});
+
 export const ListNoticesResponseItem = zod.object({
   id: zod.number(),
   title: zod.string(),
   content: zod.string(),
   priority: zod.enum(["low", "normal", "high", "urgent"]),
+  audience: zod.enum(["leadership", "educator", "guardian"]),
   documentUrl: zod.string().nullish(),
   documentName: zod.string().nullish(),
   expiresAt: zod.coerce.date().nullish(),
@@ -654,6 +659,7 @@ export const ListNoticesResponseItem = zod.object({
 export const ListNoticesResponse = zod.array(ListNoticesResponseItem);
 
 export const createNoticeBodyPriorityDefault = `normal`;
+export const createNoticeBodyAudienceDefault = `leadership`;
 
 export const CreateNoticeBody = zod.object({
   title: zod.string(),
@@ -661,6 +667,9 @@ export const CreateNoticeBody = zod.object({
   priority: zod
     .enum(["low", "normal", "high", "urgent"])
     .default(createNoticeBodyPriorityDefault),
+  audience: zod
+    .enum(["leadership", "educator", "guardian"])
+    .default(createNoticeBodyAudienceDefault),
   documentUrl: zod.string().optional(),
   documentName: zod.string().optional(),
   expiresAt: zod.coerce.date().optional(),

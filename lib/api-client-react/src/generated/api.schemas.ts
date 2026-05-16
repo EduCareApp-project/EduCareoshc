@@ -434,11 +434,21 @@ export const NoticePriority = {
   urgent: "urgent",
 } as const;
 
+export type NoticeAudience =
+  (typeof NoticeAudience)[keyof typeof NoticeAudience];
+
+export const NoticeAudience = {
+  leadership: "leadership",
+  educator: "educator",
+  guardian: "guardian",
+} as const;
+
 export interface Notice {
   id: number;
   title: string;
   content: string;
   priority: NoticePriority;
+  audience: NoticeAudience;
   /** @nullable */
   documentUrl?: string | null;
   /** @nullable */
@@ -458,10 +468,20 @@ export const NoticeInputPriority = {
   urgent: "urgent",
 } as const;
 
+export type NoticeInputAudience =
+  (typeof NoticeInputAudience)[keyof typeof NoticeInputAudience];
+
+export const NoticeInputAudience = {
+  leadership: "leadership",
+  educator: "educator",
+  guardian: "guardian",
+} as const;
+
 export interface NoticeInput {
   title: string;
   content: string;
   priority?: NoticeInputPriority;
+  audience?: NoticeInputAudience;
   documentUrl?: string;
   documentName?: string;
   expiresAt?: string;
@@ -1590,6 +1610,19 @@ export type StaffComplianceReportStaffItem = {
 export interface StaffComplianceReport {
   staff: StaffComplianceReportStaffItem[];
 }
+
+export type ListNoticesParams = {
+  audience?: ListNoticesAudience;
+};
+
+export type ListNoticesAudience =
+  (typeof ListNoticesAudience)[keyof typeof ListNoticesAudience];
+
+export const ListNoticesAudience = {
+  leadership: "leadership",
+  educator: "educator",
+  guardian: "guardian",
+} as const;
 
 export type ListJottingsParams = {
   includeArchived?: boolean;

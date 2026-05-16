@@ -671,6 +671,13 @@ paths:
     get:
       operationId: listNotices
       tags: [notices]
+      parameters:
+        - name: audience
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [leadership, educator, guardian]
       responses:
         "200":
           description: OK
@@ -2863,7 +2870,7 @@ components:
 
     Notice:
       type: object
-      required: [id, title, content, priority, createdAt]
+      required: [id, title, content, priority, audience, createdAt]
       properties:
         id:
           type: integer
@@ -2874,6 +2881,9 @@ components:
         priority:
           type: string
           enum: [low, normal, high, urgent]
+        audience:
+          type: string
+          enum: [leadership, educator, guardian]
         documentUrl:
           type: ["string", "null"]
         documentName:
@@ -2897,6 +2907,10 @@ components:
           type: string
           enum: [low, normal, high, urgent]
           default: normal
+        audience:
+          type: string
+          enum: [leadership, educator, guardian]
+          default: leadership
         documentUrl:
           type: string
         documentName:

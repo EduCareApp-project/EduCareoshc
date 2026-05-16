@@ -1,13 +1,16 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db, noticesTable } from "@workspace/db";
 import { CreateNoticeBody, DeleteNoticeParams, ListNoticesResponse, ListNoticesResponseItem } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-router.get("/notices", async (_req, res): Promise<void> => {
-  const notices = await db.select().from(noticesTable).orderBy(noticesTable.createdAt);
-  res.json(ListNoticesResponse.parse(notices));
+router.get("/notices", async (req, res): Promise<void> => {
+  const audience = req.query.audience as string | undefined;
+  const rows = audience
+    ? await db.select().from(noticesTable).where(eq(noticesTable.audience, audience)).orderBy(noticesTable.createdAt)
+    : await db.select().from(noticesTable).orderBy(noticesTable.createdAt);
+  res.json(ListNoticesResponse.parse(rows));
 });
 
 router.post("/notices", async (req, res): Promise<void> => {

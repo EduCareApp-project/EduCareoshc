@@ -7,6 +7,7 @@ export const noticesTable = pgTable("notices", {
   title: text("title").notNull(),
   content: text("content").notNull(),
   priority: text("priority").notNull().default("normal"),
+  audience: text("audience").notNull().default("leadership"),
   documentUrl: text("document_url"),
   documentName: text("document_name"),
   expiresAt: timestamp("expires_at", { withTimezone: true }),

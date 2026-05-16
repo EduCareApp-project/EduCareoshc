@@ -5,6 +5,7 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+import type { NoticeAudience } from "./noticeAudience";
 import type { NoticePriority } from "./noticePriority";
 
 export interface Notice {
@@ -12,6 +13,7 @@ export interface Notice {
   title: string;
   content: string;
   priority: NoticePriority;
+  audience: NoticeAudience;
   /** @nullable */
   documentUrl?: string | null;
   /** @nullable */

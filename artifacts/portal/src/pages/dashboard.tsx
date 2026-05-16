@@ -35,10 +35,13 @@ const PRIORITY_COLORS: Record<string, string> = {
   urgent: "bg-red-100 text-red-800",
 };
 
+type NoticeAudience = "leadership" | "educator" | "guardian";
+
 // ─── Shared Notice Board ─────────────────────────────────────────────────────
-function NoticeBoard({ canManage }: { canManage: boolean }) {
+function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: NoticeAudience }) {
   const queryClient = useQueryClient();
-  const { data: notices, isLoading } = useListNotices();
+  const params = { audience };
+  const { data: notices, isLoading } = useListNotices(params);
   const createNotice = useCreateNotice();
   const deleteNotice = useDeleteNotice();
 
@@ -74,10 +77,10 @@ function NoticeBoard({ canManage }: { canManage: boolean }) {
     }
 
     createNotice.mutate(
-      { data: { title, content, priority: priority as any, postedById: 1, documentUrl, documentName } },
+      { data: { title, content, priority: priority as any, audience: audience as any, documentUrl, documentName } },
       {
         onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getListNoticesQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getListNoticesQueryKey(params) });
           resetForm();
         },
       }
@@ -85,7 +88,7 @@ function NoticeBoard({ canManage }: { canManage: boolean }) {
   };
 
   const handleDelete = (id: number) => {
-    deleteNotice.mutate({ id }, { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListNoticesQueryKey() }) });
+    deleteNotice.mutate({ id }, { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListNoticesQueryKey(params) }) });
   };
 
   const isSaving = createNotice.isPending || isUploading;
@@ -337,7 +340,7 @@ function LeadershipDashboard() {
         <MetricCard title="Active Programs" value={summary?.activePrograms} icon={ClipboardList} loading={loadingSummary} href="/programs" />
       </div>
 
-      <NoticeBoard canManage />
+      <NoticeBoard canManage audience="leadership" />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
@@ -487,7 +490,7 @@ function EducatorDashboard() {
 
   return (
     <div className="space-y-8">
-      <NoticeBoard canManage />
+      <NoticeBoard canManage audience="educator" />
 
       <div className="grid gap-4 md:grid-cols-2">
         {/* Service Compliance */}
@@ -595,7 +598,7 @@ function GuardianDashboard() {
 
   return (
     <div className="space-y-8">
-      <NoticeBoard canManage={false} />
+      <NoticeBoard canManage={false} audience="guardian" />
 
       {/* Published weekly plans */}
       <Card>

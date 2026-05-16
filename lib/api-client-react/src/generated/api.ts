@@ -56,6 +56,7 @@ import type {
   JottingInput,
   LearningStoriesReport,
   ListJottingsParams,
+  ListNoticesParams,
   ListRoutineItemCompletionsParams,
   NewPasswordResult,
   Notice,
@@ -2982,39 +2983,57 @@ export function useGetOutcomeCounts<
   return { ...query, queryKey: queryOptions.queryKey };
 }
 
-export const getListNoticesUrl = () => {
-  return `/api/notices`;
+export const getListNoticesUrl = (params?: ListNoticesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/notices?${stringifiedParams}`
+    : `/api/notices`;
 };
 
-export const listNotices = async (options?: RequestInit): Promise<Notice[]> => {
-  return customFetch<Notice[]>(getListNoticesUrl(), {
+export const listNotices = async (
+  params?: ListNoticesParams,
+  options?: RequestInit,
+): Promise<Notice[]> => {
+  return customFetch<Notice[]>(getListNoticesUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getListNoticesQueryKey = () => {
-  return [`/api/notices`] as const;
+export const getListNoticesQueryKey = (params?: ListNoticesParams) => {
+  return [`/api/notices`, ...(params ? [params] : [])] as const;
 };
 
 export const getListNoticesQueryOptions = <
   TData = Awaited<ReturnType<typeof listNotices>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listNotices>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: ListNoticesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listNotices>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getListNoticesQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getListNoticesQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listNotices>>> = ({
     signal,
-  }) => listNotices({ signal, ...requestOptions });
+  }) => listNotices(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listNotices>>,
@@ -3031,15 +3050,18 @@ export type ListNoticesQueryError = ErrorType<unknown>;
 export function useListNotices<
   TData = Awaited<ReturnType<typeof listNotices>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listNotices>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListNoticesQueryOptions(options);
+>(
+  params?: ListNoticesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listNotices>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListNoticesQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

@@ -3162,6 +3162,9 @@ components:
         conductedAt:
           type: string
           format: date-time
+        validDays:
+          type: integer
+          description: How many days this drill record stays valid. Evacuation drills are always 90 days. Other types use this value (defaults to 365 if omitted).
         participantCount:
           type: integer
         durationMinutes:

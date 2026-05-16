@@ -671,6 +671,8 @@ export const EvacuationInputDrillType = {
 export interface EvacuationInput {
   drillType: EvacuationInputDrillType;
   conductedAt: string;
+  /** How many days this drill record stays valid. Evacuation drills are always 90 days. Other types use this value (defaults to 365 if omitted). */
+  validDays?: number;
   participantCount?: number;
   durationMinutes?: number;
   notes?: string;

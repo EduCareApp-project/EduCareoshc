@@ -37,11 +37,13 @@ router.post("/evacuations", async (req, res): Promise<void> => {
 
   const data: Record<string, unknown> = { ...parsed.data };
 
-  // Always compute nextDueAt as conductedAt + 90 days (record expiry)
+  // Compute nextDueAt: evacuation drills are always 90 days; other types use validDays (default 365)
   const conducted = new Date(parsed.data.conductedAt as string);
   const nextDue = new Date(conducted);
-  nextDue.setDate(nextDue.getDate() + 90);
+  const days = parsed.data.drillType === "evacuation" ? 90 : ((parsed.data as any).validDays ?? 365);
+  nextDue.setDate(nextDue.getDate() + days);
   data.nextDueAt = nextDue;
+  delete data.validDays; // not a DB column
 
   const [evac] = await db.insert(evacuationsTable).values(data as any).returning();
 

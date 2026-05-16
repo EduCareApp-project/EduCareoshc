@@ -922,6 +922,12 @@ export const CreateEvacuationBody = zod.object({
     .enum(["evacuation", "lockdown", "shelter_in_place", "other"])
     .default(createEvacuationBodyDrillTypeDefault),
   conductedAt: zod.coerce.date(),
+  validDays: zod
+    .number()
+    .optional()
+    .describe(
+      "How many days this drill record stays valid. Evacuation drills are always 90 days. Other types use this value (defaults to 365 if omitted).",
+    ),
   participantCount: zod.number().optional(),
   durationMinutes: zod.number().optional(),
   notes: zod.string().optional(),

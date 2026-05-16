@@ -125,6 +125,15 @@ function FileUploadField({
   );
 }
 
+const VALID_DAYS_OPTIONS = [
+  { label: "30 days", value: 30 },
+  { label: "60 days", value: 60 },
+  { label: "90 days", value: 90 },
+  { label: "6 months (180 days)", value: 180 },
+  { label: "12 months (365 days)", value: 365 },
+  { label: "2 years (730 days)", value: 730 },
+];
+
 const EMPTY_FORM = {
   drillType: "evacuation",
   conductedDate: melbourneDateStr(),
@@ -132,6 +141,7 @@ const EMPTY_FORM = {
   notes: "",
   conductedBy: "",
   siteId: "",
+  validDays: 365,
 };
 
 export default function Evacuations() {
@@ -193,6 +203,7 @@ export default function Evacuations() {
     if (form.siteId) data.siteId = Number(form.siteId);
     if (form.notes) data.notes = form.notes;
     if (form.conductedBy) data.conductedBy = form.conductedBy;
+    if (form.drillType !== "evacuation") data.validDays = form.validDays;
     if (evacDocPath) { data.evacuationDocPath = evacDocPath; data.evacuationDocName = evacDocName; }
     if (attendDocPath) { data.attendanceDocPath = attendDocPath; data.attendanceDocName = attendDocName; }
 
@@ -316,6 +327,26 @@ export default function Evacuations() {
                 </Select>
               </div>
 
+              {form.drillType !== "evacuation" && (
+                <div className="space-y-1.5">
+                  <Label>Valid for <span className="text-destructive">*</span></Label>
+                  <Select value={String(form.validDays)} onValueChange={(v) => setForm({ ...form, validDays: Number(v) })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {VALID_DAYS_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">How long this drill record remains active before being archived.</p>
+                </div>
+              )}
+              {form.drillType === "evacuation" && (
+                <p className="text-xs text-muted-foreground bg-muted/40 rounded px-3 py-2">
+                  Evacuation drills are automatically valid for <strong>90 days</strong> per the National Law requirement.
+                </p>
+              )}
+
               <div className="space-y-1.5">
                 <Label>Notes</Label>
                 <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
@@ -405,20 +436,24 @@ export default function Evacuations() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {/* Current records */}
+        <div className="space-y-8">
+          {/* Active records */}
           {current.length > 0 && (
             <div className="space-y-3">
               {expired.length > 0 && (
-                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Current</h2>
+                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Active Drills</h2>
               )}
               {current.map((evac) => <DrillCard key={evac.id} evac={evac} />)}
             </div>
           )}
-          {/* Expired records */}
+          {/* Archived records */}
           {expired.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Expired</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Archived</h2>
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground">{expired.length} record{expired.length !== 1 ? "s" : ""}</span>
+              </div>
               {expired.map((evac) => <DrillCard key={evac.id} evac={evac} />)}
             </div>
           )}

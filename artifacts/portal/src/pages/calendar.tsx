@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useListPlanningExperiences, useCreatePlanningExperience, useListSites } from "@workspace/api-client-react";
+import { useListPlanningExperiences, useCreatePlanningExperience, useUpdatePlanningExperience, useListSites } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -126,19 +126,36 @@ function getWeeksInMonth(month: Date): Date[][] {
 
 const TODAY = format(new Date(), "yyyy-MM-dd");
 
+type ExistingPlan = { id: number; title?: string | null; weeklyPlanData?: any; siteId?: number | null };
+
 interface WeekPlanModalProps {
   weekMonday: Date;
   siteId?: number;
   siteName?: string;
+  existingPlan?: ExistingPlan;
   onClose: () => void;
   onSaved: () => void;
 }
 
-function WeekPlanModal({ weekMonday, siteId, siteName, onClose, onSaved }: WeekPlanModalProps) {
-  const [title, setTitle] = useState(`Week of ${format(weekMonday, "d MMMM yyyy")}`);
-  const [grid, setGrid] = useState<WeeklyPlanGrid>(emptyGrid);
-  const [cellOutcomes, setCellOutcomes] = useState<CellOutcomes>({});
-  const { mutateAsync: create, isPending } = useCreatePlanningExperience();
+function initGridFromPlan(plan: ExistingPlan): WeeklyPlanGrid {
+  const data = plan.weeklyPlanData ?? {};
+  const g = emptyGrid();
+  for (const key of Object.keys(g) as RowKey[]) {
+    if (data[key] && typeof data[key] === "object") {
+      g[key] = { ...g[key], ...data[key] };
+    }
+  }
+  return g;
+}
+
+function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, onSaved }: WeekPlanModalProps) {
+  const defaultTitle = existingPlan?.title ?? `Week of ${format(weekMonday, "d MMMM yyyy")}`;
+  const [title, setTitle] = useState(defaultTitle);
+  const [grid, setGrid] = useState<WeeklyPlanGrid>(() => existingPlan ? initGridFromPlan(existingPlan) : emptyGrid());
+  const [cellOutcomes, setCellOutcomes] = useState<CellOutcomes>(() => existingPlan?.weeklyPlanData?.cellOutcomes ?? {});
+  const { mutateAsync: create, isPending: isCreating } = useCreatePlanningExperience();
+  const { mutateAsync: update, isPending: isUpdating } = useUpdatePlanningExperience();
+  const isPending = isCreating || isUpdating;
   const { data: allPlanning } = useListPlanningExperiences();
 
   const openExperiences = (allPlanning ?? []).filter(
@@ -168,15 +185,20 @@ function WeekPlanModal({ weekMonday, siteId, siteName, onClose, onSaved }: WeekP
   }
 
   async function handleSave() {
-    await create({
-      data: {
-        title,
-        stage: "planned",
-        startDate: format(weekMonday, "yyyy-MM-dd"),
-        weeklyPlanData: { ...grid, cellOutcomes } as any,
-        ...(siteId !== undefined ? { siteId } : {}),
-      },
-    });
+    const weeklyPlanData = { ...grid, cellOutcomes } as any;
+    if (existingPlan) {
+      await update({ id: existingPlan.id, data: { title, weeklyPlanData } });
+    } else {
+      await create({
+        data: {
+          title,
+          stage: "planned",
+          startDate: format(weekMonday, "yyyy-MM-dd"),
+          weeklyPlanData,
+          ...(siteId !== undefined ? { siteId } : {}),
+        },
+      });
+    }
     onSaved();
     onClose();
   }
@@ -337,6 +359,7 @@ function WeekPlanModal({ weekMonday, siteId, siteName, onClose, onSaved }: WeekP
 export default function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [planWeek, setPlanWeek] = useState<Date | null>(null);
+  const [planExisting, setPlanExisting] = useState<ExistingPlan | null>(null);
   const [filterSiteId, setFilterSiteId] = useState<string>("");
   const queryClient = useQueryClient();
 
@@ -461,7 +484,10 @@ export default function Calendar() {
                             size="sm"
                             variant={isPlanned ? "ghost" : "outline"}
                             className="w-full text-xs h-8"
-                            onClick={() => setPlanWeek(monday)}
+                            onClick={() => {
+                              setPlanWeek(monday);
+                              setPlanExisting(planned[0] ?? null);
+                            }}
                           >
                             Plan
                           </Button>
@@ -539,7 +565,8 @@ export default function Calendar() {
           weekMonday={planWeek}
           siteId={siteIdNum}
           siteName={(sites ?? []).find((s) => s.id === siteIdNum)?.name}
-          onClose={() => setPlanWeek(null)}
+          existingPlan={planExisting ?? undefined}
+          onClose={() => { setPlanWeek(null); setPlanExisting(null); }}
           onSaved={handleSaved}
         />
       )}

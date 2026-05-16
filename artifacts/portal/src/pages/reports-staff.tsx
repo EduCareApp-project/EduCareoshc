@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { UserCheck, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function ReportsStaff() {
   const { data: report, isLoading } = useGetStaffComplianceReport();
+  const [, navigate] = useLocation();
 
   const ROLE_LABELS: Record<string, string> = { director: "Director", educator: "Educator", assistant: "Assistant", trainee: "Trainee" };
 
@@ -82,8 +84,12 @@ export default function ReportsStaff() {
                   {staffList.map((s) => {
                     const isCompliant = s.hasWwcc && s.pdHoursThisYear >= 8;
                     return (
-                      <tr key={s.staffId} className="hover:bg-muted/20 transition-colors">
-                        <td className="px-6 py-3 font-medium">{s.staffName}</td>
+                      <tr
+                        key={s.staffId}
+                        className="hover:bg-muted/30 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/staff/${s.staffId}`)}
+                      >
+                        <td className="px-6 py-3 font-medium text-primary hover:underline">{s.staffName}</td>
                         <td className="px-4 py-3 text-muted-foreground">{ROLE_LABELS[s.role] || s.role}</td>
                         <td className="px-4 py-3 text-center">
                           {s.hasWwcc

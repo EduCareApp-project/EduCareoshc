@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { CheckCircle2, Mail, MapPin, Phone } from "lucide-react";
+import { CheckCircle2, Mail, MapPin } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +28,8 @@ const formSchema = z.object({
 
 export default function Contact() {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -41,10 +43,24 @@ export default function Contact() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, this would be an API call
-    console.log(values);
-    setIsSubmitted(true);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      const res = await fetch("/api/contact-enquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      if (!res.ok) {
+        throw new Error("Server error — please try again.");
+      }
+      setIsSubmitted(true);
+    } catch {
+      setSubmitError("Something went wrong. Please email us directly at system@educareoshc.com.au");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -73,7 +89,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg">Email Us</h3>
-                    <p className="text-muted-foreground">hello@educare-software.com.au</p>
+                    <p className="text-muted-foreground">system@educareoshc.com.au</p>
                   </div>
                 </div>
                 
@@ -205,8 +221,11 @@ export default function Contact() {
                         )}
                       />
 
-                      <Button type="submit" className="w-full h-12 text-lg">
-                        Submit Request
+                      {submitError && (
+                        <p className="text-sm text-destructive">{submitError}</p>
+                      )}
+                      <Button type="submit" disabled={isSubmitting} className="w-full h-12 text-lg">
+                        {isSubmitting ? "Sending..." : "Submit Request"}
                       </Button>
                     </form>
                   </Form>

@@ -31,12 +31,14 @@ import storageRouter from "./storage";
 import confidentialNotesRouter from "./confidential-notes";
 import staffQualificationsRouter from "./staff-qualifications";
 import systemAccessRouter from "./system-access";
+import contactEnquiryRouter from "./contact-enquiry";
 
 const router: IRouter = Router();
 
 // ── Public routes (no auth required) ──────────────────────────────────────────
 router.use(healthRouter);
 router.use(authRouter);
+router.use(contactEnquiryRouter);
 
 // Allow unauthenticated access to public pages and storage (for public assets)
 router.use("/qip/public", (req: Request, res: Response, next: NextFunction) => next());
@@ -45,7 +47,7 @@ router.use("/service-docs/public", (req: Request, res: Response, next: NextFunct
 // ── Auth guard ────────────────────────────────────────────────────────────────
 router.use((req: Request, res: Response, next: NextFunction): void => {
   // Skip public paths already handled above
-  if (req.path === "/qip/public" || req.path === "/service-docs/public") {
+  if (req.path === "/qip/public" || req.path === "/service-docs/public" || req.path === "/contact-enquiry") {
     next();
     return;
   }

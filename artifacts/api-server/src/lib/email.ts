@@ -168,6 +168,83 @@ export async function sendLoginInstructionsEmail(
   logger.info({ email, accountType: opts.accountType }, "Login instructions email sent");
 }
 
+export interface ContactEnquiryEmailOptions {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  serviceName: string;
+  message?: string;
+}
+
+export async function sendContactEnquiryEmail(opts: ContactEnquiryEmailOptions): Promise<void> {
+  const to = "system@educareoshc.com.au";
+  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@educare.example.com";
+  const transport = createTransport();
+
+  if (!transport) {
+    logger.warn({ email: opts.email }, "SMTP not configured — contact enquiry email was not sent");
+    return;
+  }
+
+  const fullName = `${opts.firstName} ${opts.lastName}`;
+  const messageBlock = opts.message
+    ? `Message:\n${opts.message}`
+    : "No message provided.";
+
+  await transport.sendMail({
+    from: `"EduCare Website" <${from}>`,
+    to,
+    replyTo: opts.email,
+    subject: `New enquiry from ${fullName} — ${opts.serviceName}`,
+    text: [
+      `New contact enquiry received via the EduCare website.`,
+      "",
+      `Name:         ${fullName}`,
+      `Email:        ${opts.email}`,
+      `Phone:        ${opts.phone}`,
+      `Service:      ${opts.serviceName}`,
+      "",
+      messageBlock,
+    ].join("\n"),
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <body style="font-family: sans-serif; color: #1a1a1a; max-width: 560px; margin: 0 auto; padding: 24px;">
+          <h2 style="margin: 0 0 4px; color: #1b5e20;">New website enquiry</h2>
+          <p style="color: #555; margin: 0 0 20px;">Submitted via the EduCare public website.</p>
+          <table style="width:100%; border-collapse:collapse; background:#f8f9fa; border-radius:8px; padding:4px;">
+            <tr>
+              <td style="padding:8px 12px; color:#888; font-size:13px; white-space:nowrap; vertical-align:top;">Name</td>
+              <td style="padding:8px 12px; font-weight:600; font-size:13px;">${fullName.replace(/</g, "&lt;")}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 12px; color:#888; font-size:13px; white-space:nowrap; vertical-align:top;">Email</td>
+              <td style="padding:8px 12px; font-size:13px;"><a href="mailto:${opts.email.replace(/</g, "&lt;")}" style="color:#1b5e20;">${opts.email.replace(/</g, "&lt;")}</a></td>
+            </tr>
+            <tr>
+              <td style="padding:8px 12px; color:#888; font-size:13px; white-space:nowrap; vertical-align:top;">Phone</td>
+              <td style="padding:8px 12px; font-size:13px;">${opts.phone.replace(/</g, "&lt;")}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 12px; color:#888; font-size:13px; white-space:nowrap; vertical-align:top;">Service</td>
+              <td style="padding:8px 12px; font-size:13px;">${opts.serviceName.replace(/</g, "&lt;")}</td>
+            </tr>
+            ${opts.message ? `
+            <tr>
+              <td style="padding:8px 12px; color:#888; font-size:13px; white-space:nowrap; vertical-align:top;">Message</td>
+              <td style="padding:8px 12px; font-size:13px; white-space:pre-wrap;">${opts.message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</td>
+            </tr>` : ""}
+          </table>
+          <p style="color:#aaa; font-size:12px; margin-top:24px;">Reply directly to this email to respond to ${fullName.replace(/</g, "&lt;")}.</p>
+        </body>
+      </html>
+    `,
+  });
+
+  logger.info({ service: opts.serviceName, email: opts.email }, "Contact enquiry email sent");
+}
+
 export async function sendPostNotificationEmail(
   recipients: string[],
   opts: PostNotificationEmailOptions,

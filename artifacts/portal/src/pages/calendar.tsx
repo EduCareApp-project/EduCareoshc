@@ -15,7 +15,7 @@ import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   addMonths, subMonths, format, parseISO, isBefore, isAfter, addDays,
 } from "date-fns";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListPlanningExperiencesQueryKey } from "@workspace/api-client-react";
 
@@ -434,6 +434,9 @@ function ReadOnlyPlanView({ plan, siteName, onClose }: { plan: ExistingPlan; sit
 }
 
 export default function Calendar() {
+  const search = useSearch();
+  const isGuardianMode = new URLSearchParams(search).get("mode") === "guardian";
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [planWeek, setPlanWeek] = useState<Date | null>(null);
   const [planExisting, setPlanExisting] = useState<ExistingPlan | null>(null);
@@ -496,19 +499,23 @@ export default function Calendar() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
-          <p className="text-muted-foreground mt-1">View planning cycles and programs by week.</p>
+          <h1 className="text-3xl font-bold tracking-tight">{isGuardianMode ? "Learning Calendar" : "Calendar"}</h1>
+          <p className="text-muted-foreground mt-1">
+            {isGuardianMode ? "Published weekly learning programs." : "View planning cycles and programs by week."}
+          </p>
         </div>
-        <Select value={filterSiteId} onValueChange={setFilterSiteId}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Select a site…" />
-          </SelectTrigger>
-          <SelectContent>
-            {(sites ?? []).map((s) => (
-              <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {!isGuardianMode && (
+          <Select value={filterSiteId} onValueChange={setFilterSiteId}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select a site…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(sites ?? []).map((s) => (
+                <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <Card>
@@ -528,12 +535,14 @@ export default function Calendar() {
             <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
           ) : (
             <div className="border rounded-lg overflow-hidden">
-              <div className="grid bg-muted/50" style={{ gridTemplateColumns: "repeat(5, 1fr) 80px 80px" }}>
+              <div className="grid bg-muted/50" style={{ gridTemplateColumns: isGuardianMode ? "repeat(5, 1fr)" : "repeat(5, 1fr) 80px 80px" }}>
                 {weekDayHeaders.map((d) => (
                   <div key={d} className="px-2 py-2 text-xs font-semibold text-muted-foreground text-center border-r">{d}</div>
                 ))}
-                <div className="px-2 py-2 text-xs font-semibold text-muted-foreground text-center border-r" />
-                <div className="px-2 py-2 text-xs font-semibold text-muted-foreground text-center" />
+                {!isGuardianMode && <>
+                  <div className="px-2 py-2 text-xs font-semibold text-muted-foreground text-center border-r" />
+                  <div className="px-2 py-2 text-xs font-semibold text-muted-foreground text-center" />
+                </>}
               </div>
 
               <div className="divide-y">
@@ -544,16 +553,22 @@ export default function Calendar() {
                   const isPlanned = planned.length > 0;
                   const isPublished = published.length > 0;
                   const monday = weekDays[0];
-                  const activePlan = published[0] ?? planned[0] ?? null;
+
+                  // In guardian mode, only show weeks that have a published plan
+                  if (isGuardianMode && !isPublished) return null;
 
                   return (
-                    <div key={wi} className={`relative ${!inMonth ? "opacity-40" : ""}`}>
+                    <div
+                      key={wi}
+                      className={`relative ${!inMonth ? "opacity-40" : ""} ${isGuardianMode ? "cursor-pointer" : ""}`}
+                      onClick={isGuardianMode && isPublished ? () => setViewPlan(published[0]) : undefined}
+                    >
                       {isPublished && (
-                        <div className="absolute inset-0 pointer-events-none z-10" style={{ right: 160 }}>
+                        <div className="absolute inset-0 pointer-events-none z-10" style={{ right: isGuardianMode ? 0 : 160 }}>
                           <div className="h-full bg-green-50/70 border-y border-green-200 flex items-center px-3">
                             <Badge
                               className="bg-green-100 text-green-800 text-xs gap-1 pointer-events-auto cursor-pointer"
-                              onClick={() => setViewPlan(published[0])}
+                              onClick={(e) => { e.stopPropagation(); setViewPlan(published[0]); }}
                             >
                               <Send className="h-3 w-3" />
                               {published.length === 1 ? published[0].title : `${published.length} published`}
@@ -561,7 +576,7 @@ export default function Calendar() {
                           </div>
                         </div>
                       )}
-                      {!isPublished && isPlanned && (
+                      {!isGuardianMode && !isPublished && isPlanned && (
                         <div className="absolute inset-0 pointer-events-none z-10" style={{ right: 160 }}>
                           <div className="h-full bg-blue-50/70 border-y border-blue-200 flex items-center px-3">
                             <Badge className="bg-blue-100 text-blue-800 text-xs gap-1 pointer-events-auto">
@@ -571,7 +586,7 @@ export default function Calendar() {
                           </div>
                         </div>
                       )}
-                      <div className="grid min-h-[80px]" style={{ gridTemplateColumns: "repeat(5, 1fr) 80px 80px" }}>
+                      <div className="grid min-h-[80px]" style={{ gridTemplateColumns: isGuardianMode ? "repeat(5, 1fr)" : "repeat(5, 1fr) 80px 80px" }}>
                         {weekDays.map((day, di) => (
                           <div
                             key={di}
@@ -583,36 +598,38 @@ export default function Calendar() {
                           </div>
                         ))}
 
-                        <div className="border-r flex items-center justify-center px-1">
-                          <Button
-                            size="sm"
-                            variant={isPlanned || isPublished ? "ghost" : "outline"}
-                            className="w-full text-xs h-8"
-                            onClick={() => {
-                              setPlanWeek(monday);
-                              setPlanExisting(isPublished ? published[0] : (planned[0] ?? null));
-                            }}
-                          >
-                            Plan
-                          </Button>
-                        </div>
-                        <div className="flex items-center justify-center px-1">
-                          <Button
-                            size="sm"
-                            variant={isPublished ? "ghost" : "outline"}
-                            disabled={!isPlanned && !isPublished}
-                            className={`w-full text-xs h-8 ${isPublished ? "text-green-700" : ""}`}
-                            onClick={() => {
-                              if (isPublished) {
-                                setViewPlan(published[0]);
-                              } else if (isPlanned) {
-                                handlePublish(planned[0].id);
-                              }
-                            }}
-                          >
-                            {isPublished ? <><Send className="h-3 w-3 mr-1" />Published</> : "Publish"}
-                          </Button>
-                        </div>
+                        {!isGuardianMode && <>
+                          <div className="border-r flex items-center justify-center px-1">
+                            <Button
+                              size="sm"
+                              variant={isPlanned || isPublished ? "ghost" : "outline"}
+                              className="w-full text-xs h-8"
+                              onClick={() => {
+                                setPlanWeek(monday);
+                                setPlanExisting(isPublished ? published[0] : (planned[0] ?? null));
+                              }}
+                            >
+                              Plan
+                            </Button>
+                          </div>
+                          <div className="flex items-center justify-center px-1">
+                            <Button
+                              size="sm"
+                              variant={isPublished ? "ghost" : "outline"}
+                              disabled={!isPlanned && !isPublished}
+                              className={`w-full text-xs h-8 ${isPublished ? "text-green-700" : ""}`}
+                              onClick={() => {
+                                if (isPublished) {
+                                  setViewPlan(published[0]);
+                                } else if (isPlanned) {
+                                  handlePublish(planned[0].id);
+                                }
+                              }}
+                            >
+                              {isPublished ? <><Send className="h-3 w-3 mr-1" />Published</> : "Publish"}
+                            </Button>
+                          </div>
+                        </>}
                       </div>
                     </div>
                   );
@@ -623,7 +640,15 @@ export default function Calendar() {
         </CardContent>
       </Card>
 
-      {!isLoading && (
+      {isGuardianMode && !isLoading && weeks.every((wd) => publishedCyclesForWeek(wd).length === 0) && (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground text-sm">
+            No published learning programs for this month.
+          </CardContent>
+        </Card>
+      )}
+
+      {!isGuardianMode && !isLoading && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">

@@ -16,7 +16,7 @@ import {
   Layers, Image, ChevronRight, GraduationCap, Paperclip, X, Upload, Newspaper, Pencil,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, startOfWeek, addDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -676,10 +676,13 @@ function GuardianDashboard() {
   const { data: posts, isLoading: loadingPosts } = useListPosts();
   const { data: planning, isLoading: loadingPlanning } = useListPlanningExperiences();
 
+  const thisMonday = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const fiveWeeksEnd = format(addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), 34), "yyyy-MM-dd");
+
   const publishedPlans = (planning ?? [])
-    .filter((p) => p.stage === "published")
-    .sort((a, b) => (b.startDate ?? "").localeCompare(a.startDate ?? ""))
-    .slice(0, 3);
+    .filter((p) => p.stage === "published" && p.startDate && p.startDate >= thisMonday && p.startDate <= fiveWeeksEnd)
+    .sort((a, b) => (a.startDate ?? "").localeCompare(b.startDate ?? ""))
+    .slice(0, 5);
 
   return (
     <div className="space-y-8">
@@ -690,7 +693,7 @@ function GuardianDashboard() {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center justify-between text-base">
             <span className="flex items-center gap-2"><Calendar className="h-4 w-4" /> Weekly Learning Programs</span>
-            <Link href="/calendar"><span className="text-xs text-primary cursor-pointer hover:underline flex items-center gap-0.5">View calendar <ChevronRight className="h-3 w-3" /></span></Link>
+            <Link href="/calendar?mode=guardian"><span className="text-xs text-primary cursor-pointer hover:underline flex items-center gap-0.5">View calendar <ChevronRight className="h-3 w-3" /></span></Link>
           </CardTitle>
         </CardHeader>
         <CardContent>

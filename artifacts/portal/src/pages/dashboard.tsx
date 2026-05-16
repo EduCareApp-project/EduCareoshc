@@ -4,7 +4,7 @@ import {
   useGetDashboardSummary, useGetOutcomeCounts, useGetRecentObservations,
   useListNotices, useCreateNotice, useDeleteNotice,
   useGetServiceComplianceReport, useGetLearningStoriesReport,
-  useListPlanningExperiences, useListPosts,
+  useListPlanningExperiences, useListPosts, useListSites,
 } from "@workspace/api-client-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { Link } from "wouter";
@@ -219,6 +219,8 @@ function NoticeBoard({ canManage }: { canManage: boolean }) {
 // ─── Dashboard shell ─────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("leadership");
+  const { data: sites } = useListSites();
+  const siteName = sites?.[0]?.name;
 
   return (
     <div className="space-y-6">
@@ -228,11 +230,18 @@ export default function Dashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-3">
-          <TabsTrigger value="leadership">Leadership</TabsTrigger>
-          <TabsTrigger value="educator">Educator</TabsTrigger>
-          <TabsTrigger value="guardian">Guardian</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center gap-6 flex-wrap">
+          <TabsList className="grid w-full max-w-md grid-cols-3">
+            <TabsTrigger value="leadership">Leadership</TabsTrigger>
+            <TabsTrigger value="educator">Educator</TabsTrigger>
+            <TabsTrigger value="guardian">Guardian</TabsTrigger>
+          </TabsList>
+          {activeTab === "educator" && siteName && (
+            <span className="text-sm text-muted-foreground">
+              Your service is: <span className="font-medium text-foreground">{siteName}</span>
+            </span>
+          )}
+        </div>
 
         <TabsContent value="leadership" className="mt-6">
           <LeadershipDashboard />

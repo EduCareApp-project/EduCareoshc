@@ -13,7 +13,7 @@ import { RichTextEditor, RichTextView } from "@/components/rich-text-editor";
 import {
   Baby, Users, BookOpen, ClipboardList, ShieldCheck, Bell, Trash2, Plus,
   AlertTriangle, CheckCircle2, Clock, FileText, Calendar,
-  Layers, Image, ChevronRight, GraduationCap, Paperclip, X, Upload,
+  Layers, Image, ChevronRight, GraduationCap, Paperclip, X, Upload, Newspaper,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
@@ -635,38 +635,81 @@ function GuardianDashboard() {
       </Card>
 
       {/* Posts */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center justify-between text-base">
-            <span className="flex items-center gap-2"><Image className="h-4 w-4" /> Posts from the Centre</span>
-            <Link href="/posts"><span className="text-xs text-primary cursor-pointer hover:underline flex items-center gap-0.5">View all <ChevronRight className="h-3 w-3" /></span></Link>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loadingPosts ? (
-            <div className="space-y-3"><Skeleton className="h-20 w-full" /><Skeleton className="h-20 w-full" /></div>
-          ) : !posts || posts.length === 0 ? (
-            <div className="text-center py-6 text-muted-foreground text-sm">No posts yet</div>
-          ) : (
-            <div className="space-y-4">
-              {posts.slice(0, 4).map((post) => (
-                <Link key={post.id} href={`/posts/${post.id}`}>
-                  <div className="flex items-start gap-3 border-b pb-4 last:border-0 last:pb-0 cursor-pointer group">
-                    <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-                      <FileText className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-1">{post.title}</p>
-                      {post.content && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{post.content}</p>}
-                      {post.createdAt && <p className="text-xs text-muted-foreground mt-1">{format(new Date(post.createdAt), "MMM d, yyyy")}</p>}
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-semibold flex items-center gap-2">
+            <Image className="h-4 w-4" /> Posts from the Centre
+          </h2>
+          <Link href="/posts">
+            <span className="text-xs text-primary cursor-pointer hover:underline flex items-center gap-0.5">
+              View all <ChevronRight className="h-3 w-3" />
+            </span>
+          </Link>
+        </div>
+
+        {loadingPosts ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-72 rounded-xl" />)}
+          </div>
+        ) : !posts || posts.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
+              <Newspaper className="h-10 w-10 mb-2 opacity-40" />
+              <p className="font-medium">No posts yet</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[...posts]
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              .slice(0, 6)
+              .map((post) => {
+                const coverImage = post.images?.[0];
+                return (
+                  <Link key={post.id} href={`/posts/${post.id}`}>
+                    <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow group h-full">
+                      <div className="relative aspect-video bg-muted overflow-hidden">
+                        {coverImage ? (
+                          <img
+                            src={`/api/storage/objects/${coverImage.replace(/^\/objects\//, "")}`}
+                            alt={post.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Newspaper className="h-10 w-10 text-muted-foreground opacity-30" />
+                          </div>
+                        )}
+                      </div>
+                      <CardContent className="p-4 space-y-2">
+                        <h3 className="font-semibold leading-snug line-clamp-2">{post.title}</h3>
+                        {post.childNames && post.childNames.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {post.childNames.map((name) => (
+                              <Badge key={name} variant="secondary" className="text-xs gap-1">
+                                <Users className="h-2.5 w-2.5" />{name}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        {post.aiSummary ? (
+                          <p className="text-sm text-muted-foreground line-clamp-3">{post.aiSummary}</p>
+                        ) : post.description ? (
+                          <p className="text-sm text-muted-foreground line-clamp-3">{post.description.replace(/<[^>]*>/g, "")}</p>
+                        ) : null}
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                          {post.staffName && <span>{post.staffName}</span>}
+                          {post.staffName && post.date && <span>·</span>}
+                          {post.date && <span>{format(new Date(post.date.slice(0, 10) + "T00:00:00"), "d MMM yyyy")}</span>}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

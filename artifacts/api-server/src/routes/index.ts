@@ -32,6 +32,7 @@ import confidentialNotesRouter from "./confidential-notes";
 import staffQualificationsRouter from "./staff-qualifications";
 import systemAccessRouter from "./system-access";
 import contactEnquiryRouter from "./contact-enquiry";
+import appraisalsRouter from "./appraisals";
 
 const router: IRouter = Router();
 
@@ -89,5 +90,6 @@ router.use(storageRouter);
 router.use(confidentialNotesRouter);
 router.use(staffQualificationsRouter);
 router.use(systemAccessRouter);
+router.use(appraisalsRouter);
 
 export default router;

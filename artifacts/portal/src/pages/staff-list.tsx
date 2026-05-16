@@ -4,9 +4,10 @@ import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, UserCog, Mail, Phone, Award } from "lucide-react";
+import { Plus, UserCog, Mail, Phone, Award, ClipboardList } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { computeQualLevel, QUAL_LEVEL_LABELS, QUAL_LEVEL_STYLES, type QualItem } from "@/lib/qual-level";
+import AppraisalsTab from "./appraisals-tab";
 
 const ROLE_LABELS: Record<string, string> = { admin: "Admin", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
 
@@ -26,13 +27,13 @@ function QualLevelBadge({ staffId }: { staffId: number }) {
   );
 }
 
-type StatusFilter = "active" | "inactive";
+type TopTab = "active" | "inactive" | "appraisals";
 
 export default function StaffList() {
   const { data: staff, isLoading } = useListStaff();
-  const [filter, setFilter] = useState<StatusFilter>("active");
+  const [tab, setTab] = useState<TopTab>("active");
 
-  const filtered = staff?.filter((m) => m.status === filter) ?? [];
+  const filtered = staff?.filter((m) => m.status === tab) ?? [];
 
   const activeCount = staff?.filter((m) => m.status === "active").length ?? 0;
   const inactiveCount = staff?.filter((m) => m.status === "inactive").length ?? 0;
@@ -42,49 +43,58 @@ export default function StaffList() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Staff Team</h1>
-          <p className="text-muted-foreground mt-1">Manage educators and centre staff.</p>
+          <p className="text-muted-foreground mt-1">Manage educators, centre staff, and appraisals.</p>
         </div>
-        <Link href="/staff/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" /> Add Staff Member
-          </Button>
-        </Link>
+        {tab !== "appraisals" && (
+          <Link href="/staff/new">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" /> Add Staff Member
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="flex items-center gap-1 p-1 bg-muted rounded-lg w-fit">
         <button
-          onClick={() => setFilter("active")}
+          onClick={() => setTab("active")}
           className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            filter === "active"
-              ? "bg-background shadow-sm text-foreground"
-              : "text-muted-foreground hover:text-foreground"
+            tab === "active" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Active
           {!isLoading && (
-            <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${filter === "active" ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20"}`}>
+            <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${tab === "active" ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20"}`}>
               {activeCount}
             </span>
           )}
         </button>
         <button
-          onClick={() => setFilter("inactive")}
+          onClick={() => setTab("inactive")}
           className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            filter === "inactive"
-              ? "bg-background shadow-sm text-foreground"
-              : "text-muted-foreground hover:text-foreground"
+            tab === "inactive" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Inactive
           {!isLoading && (
-            <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${filter === "inactive" ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20"}`}>
+            <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${tab === "inactive" ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20"}`}>
               {inactiveCount}
             </span>
           )}
         </button>
+        <button
+          onClick={() => setTab("appraisals")}
+          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            tab === "appraisals" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <ClipboardList className="h-3.5 w-3.5" />
+          Appraisals
+        </button>
       </div>
 
-      {isLoading ? (
+      {tab === "appraisals" ? (
+        <AppraisalsTab />
+      ) : isLoading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1,2,3,4].map(i => (
             <Card key={i} className="animate-pulse">
@@ -95,9 +105,9 @@ export default function StaffList() {
       ) : filtered.length === 0 ? (
         <div className="text-center p-12 bg-card rounded-lg border border-dashed">
           <UserCog className="mx-auto h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-          <h3 className="text-lg font-medium text-foreground mb-1">No {filter} staff</h3>
+          <h3 className="text-lg font-medium text-foreground mb-1">No {tab} staff</h3>
           <p className="text-muted-foreground">
-            {filter === "active" ? "Add your first staff member to get started." : "No inactive staff members on record."}
+            {tab === "active" ? "Add your first staff member to get started." : "No inactive staff members on record."}
           </p>
         </div>
       ) : (

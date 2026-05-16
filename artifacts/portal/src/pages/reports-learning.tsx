@@ -81,7 +81,7 @@ function StatTile({
 
 export default function ReportsLearning() {
   const [selectedSite, setSelectedSite] = useState<string>("all");
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("month");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("7d");
 
   const { data: sites } = useListSites();
   const { data: children } = useListChildren();

@@ -2315,6 +2315,13 @@ export const GetLearningStoriesReportResponse = zod.object({
   ),
 });
 
+export const GetServiceComplianceReportQueryParams = zod.object({
+  siteId: zod.coerce
+    .number()
+    .optional()
+    .describe("Filter all metrics to a specific site"),
+});
+
 export const GetServiceComplianceReportResponse = zod.object({
   evacuationStatus: zod.object({
     lastConducted: zod.coerce.date().nullable(),

@@ -45,6 +45,7 @@ import type {
   FileCategoryUpdate,
   FileLibraryInput,
   FileLibraryItem,
+  GetServiceComplianceReportParams,
   Guardian,
   GuardianUpdate,
   HealthStatus,
@@ -10017,15 +10018,30 @@ export function useGetLearningStoriesReport<
   return { ...query, queryKey: queryOptions.queryKey };
 }
 
-export const getGetServiceComplianceReportUrl = () => {
-  return `/api/reports/service-compliance`;
+export const getGetServiceComplianceReportUrl = (
+  params?: GetServiceComplianceReportParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/reports/service-compliance?${stringifiedParams}`
+    : `/api/reports/service-compliance`;
 };
 
 export const getServiceComplianceReport = async (
+  params?: GetServiceComplianceReportParams,
   options?: RequestInit,
 ): Promise<ServiceComplianceReport> => {
   return customFetch<ServiceComplianceReport>(
-    getGetServiceComplianceReportUrl(),
+    getGetServiceComplianceReportUrl(params),
     {
       ...options,
       method: "GET",
@@ -10033,29 +10049,38 @@ export const getServiceComplianceReport = async (
   );
 };
 
-export const getGetServiceComplianceReportQueryKey = () => {
-  return [`/api/reports/service-compliance`] as const;
+export const getGetServiceComplianceReportQueryKey = (
+  params?: GetServiceComplianceReportParams,
+) => {
+  return [
+    `/api/reports/service-compliance`,
+    ...(params ? [params] : []),
+  ] as const;
 };
 
 export const getGetServiceComplianceReportQueryOptions = <
   TData = Awaited<ReturnType<typeof getServiceComplianceReport>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getServiceComplianceReport>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: GetServiceComplianceReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServiceComplianceReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getGetServiceComplianceReportQueryKey();
+    queryOptions?.queryKey ?? getGetServiceComplianceReportQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof getServiceComplianceReport>>
-  > = ({ signal }) => getServiceComplianceReport({ signal, ...requestOptions });
+  > = ({ signal }) =>
+    getServiceComplianceReport(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof getServiceComplianceReport>>,
@@ -10072,15 +10097,21 @@ export type GetServiceComplianceReportQueryError = ErrorType<unknown>;
 export function useGetServiceComplianceReport<
   TData = Awaited<ReturnType<typeof getServiceComplianceReport>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getServiceComplianceReport>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetServiceComplianceReportQueryOptions(options);
+>(
+  params?: GetServiceComplianceReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServiceComplianceReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetServiceComplianceReportQueryOptions(
+    params,
+    options,
+  );
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

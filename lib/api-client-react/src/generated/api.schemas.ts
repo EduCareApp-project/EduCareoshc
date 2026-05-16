@@ -1568,3 +1568,10 @@ export type ListRoutineItemCompletionsParams = {
   routineId: number;
   periodKey: string;
 };
+
+export type GetServiceComplianceReportParams = {
+  /**
+   * Filter all metrics to a specific site
+   */
+  siteId?: number;
+};

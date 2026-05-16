@@ -54,6 +54,7 @@ export * from "./fileCategoryInput";
 export * from "./fileCategoryUpdate";
 export * from "./fileLibraryInput";
 export * from "./fileLibraryItem";
+export * from "./getServiceComplianceReportParams";
 export * from "./guardian";
 export * from "./guardianUpdate";
 export * from "./healthStatus";

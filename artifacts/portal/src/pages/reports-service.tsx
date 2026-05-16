@@ -1,13 +1,18 @@
-import { useGetServiceComplianceReport } from "@workspace/api-client-react";
+import { useState } from "react";
+import { useGetServiceComplianceReport, useListSites } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ShieldCheck, AlertTriangle, CheckCircle2, Clock, ClipboardX, TrendingUp, CheckSquare } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "wouter";
 
 export default function ReportsService() {
-  const { data: report, isLoading } = useGetServiceComplianceReport();
+  const [filterSiteId, setFilterSiteId] = useState<string>("__all__");
+  const { data: sites } = useListSites();
+  const siteIdParam = filterSiteId === "__all__" ? undefined : Number(filterSiteId);
+  const { data: report, isLoading } = useGetServiceComplianceReport(siteIdParam ? { siteId: siteIdParam } : undefined);
 
   if (isLoading) {
     return (
@@ -45,9 +50,22 @@ export default function ReportsService() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Service Compliance</h1>
-        <p className="text-muted-foreground mt-1">Overview of outstanding compliance items across your service.</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Service Compliance</h1>
+          <p className="text-muted-foreground mt-1">Overview of outstanding compliance items across your service.</p>
+        </div>
+        <Select value={filterSiteId} onValueChange={setFilterSiteId}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="All Sites" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All Sites</SelectItem>
+            {(sites ?? []).map((s) => (
+              <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Card className={`${evacColor} border`}>

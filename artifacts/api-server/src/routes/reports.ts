@@ -30,14 +30,28 @@ router.get("/reports/learning-stories", async (_req, res): Promise<void> => {
   res.json(GetLearningStoriesReportResponse.parse({ byOutcome, byChild, underRepresentedOutcomes: underRepresented }));
 });
 
-router.get("/reports/service-compliance", async (_req, res): Promise<void> => {
-  const evacuations = await db.select().from(evacuationsTable).orderBy(evacuationsTable.conductedAt);
-  const lastEvac = evacuations.filter((e) => e.drillType === "evacuation").pop();
+router.get("/reports/service-compliance", async (req, res): Promise<void> => {
+  const siteId = req.query.siteId ? Number(req.query.siteId) : null;
 
-  const openIncidents = (await db.select().from(incidentsTable)).filter((i) => i.status !== "closed").length;
-  const openConditionReports = (await db.select().from(conditionReportsTable)).filter((r) => r.status !== "resolved").length;
-  const openQipItems = (await db.select().from(qipItemsTable)).length;
-  const activeChecklists = (await db.select().from(checklistsTable)).length;
+  const allEvacuations = await db.select().from(evacuationsTable).orderBy(evacuationsTable.conductedAt);
+  const filteredEvacuations = siteId ? allEvacuations.filter((e) => e.siteId === siteId) : allEvacuations;
+  const lastEvac = filteredEvacuations.filter((e) => e.drillType === "evacuation").pop();
+
+  const allIncidents = await db.select().from(incidentsTable);
+  const filteredIncidents = siteId ? allIncidents.filter((i) => i.siteId === siteId) : allIncidents;
+  const openIncidents = filteredIncidents.filter((i) => i.status !== "closed").length;
+
+  const allConditionReports = await db.select().from(conditionReportsTable);
+  const filteredConditionReports = siteId ? allConditionReports.filter((r) => r.siteId === siteId) : allConditionReports;
+  const openConditionReports = filteredConditionReports.filter((r) => r.status !== "resolved").length;
+
+  const allQipItems = await db.select().from(qipItemsTable);
+  const filteredQipItems = siteId ? allQipItems.filter((q) => q.siteId === siteId) : allQipItems;
+  const openQipItems = filteredQipItems.length;
+
+  const allChecklists = await db.select().from(checklistsTable);
+  const filteredChecklists = siteId ? allChecklists.filter((c) => c.siteId === siteId) : allChecklists;
+  const activeChecklists = filteredChecklists.length;
 
   const now = new Date();
   const nextDue = lastEvac?.nextDueAt ? new Date(lastEvac.nextDueAt) : null;

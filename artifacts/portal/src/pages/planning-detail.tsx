@@ -778,7 +778,7 @@ function PlanningEditContent({ form, set, sites, allChildren, visibleChildren, i
                         <button
                           key={code}
                           type="button"
-                          onClick={() => insertMtopCode(code)}
+                          onClick={() => { insertMtopCode(code); setShowMtopPicker(false); }}
                           className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg border border-transparent hover:border-primary/30 hover:bg-primary/5 transition-colors group"
                         >
                           <span className="shrink-0 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-primary text-primary-foreground min-w-[2rem]">

@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-client-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { Link } from "wouter";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import {
   Baby, Users, BookOpen, ClipboardList, ShieldCheck, Bell, Trash2, Plus,
   AlertTriangle, CheckCircle2, Clock, FileText, Calendar,
@@ -372,6 +373,60 @@ function LeadershipDashboard() {
   );
 }
 
+// ─── Outcome Pie Chart ───────────────────────────────────────────────────────
+const OUTCOME_COLORS = ["#3b82f6", "#22c55e", "#f97316", "#a855f7", "#f43f5e"];
+const OUTCOME_LABELS: Record<number, string> = {
+  1: "Identity", 2: "World", 3: "Wellbeing", 4: "Learners", 5: "Communicators",
+};
+
+type OutcomeItem = { outcomeId: number; outcomeNumber: number; outcomeTitle: string; count: number };
+
+function OutcomePieChart({ outcomes }: { outcomes: OutcomeItem[] }) {
+  const data = outcomes.map((o) => ({
+    name: `Outcome ${o.outcomeNumber}: ${OUTCOME_LABELS[o.outcomeNumber] ?? o.outcomeTitle}`,
+    value: o.count,
+    number: o.outcomeNumber,
+  }));
+
+  const total = data.reduce((s, d) => s + d.value, 0);
+
+  return (
+    <div>
+      <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Outcomes breakdown</p>
+      {total === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-4">No observations recorded yet</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={200}>
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={52}
+              outerRadius={78}
+              paddingAngle={2}
+              dataKey="value"
+            >
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={OUTCOME_COLORS[(entry.number - 1) % OUTCOME_COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip
+              formatter={(value: number, name: string) => [value, name]}
+              contentStyle={{ fontSize: "12px", borderRadius: "6px" }}
+            />
+            <Legend
+              iconType="circle"
+              iconSize={8}
+              formatter={(value) => <span style={{ fontSize: "11px" }}>{value}</span>}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  );
+}
+
 // ─── Educator ────────────────────────────────────────────────────────────────
 function EducatorDashboard() {
   const { data: service, isLoading: loadingService } = useGetServiceComplianceReport();
@@ -449,20 +504,7 @@ function EducatorDashboard() {
                     <CheckCircle2 className="h-4 w-4" /> All MTOP outcomes are well represented
                   </div>
                 )}
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Outcomes breakdown</p>
-                  <div className="space-y-2">
-                    {(learning?.byOutcome ?? []).map((oc) => (
-                      <div key={oc.outcomeId} className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">{oc.outcomeNumber}</div>
-                        <div className="flex-1 h-2 bg-accent rounded-full overflow-hidden">
-                          <div className="h-full bg-primary" style={{ width: `${Math.min(100, (oc.count / Math.max(1, summary?.observationsThisMonth ?? 1)) * 100)}%` }} />
-                        </div>
-                        <span className="text-xs text-muted-foreground w-4 text-right">{oc.count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <OutcomePieChart outcomes={learning?.byOutcome ?? []} />
               </div>
             )}
           </CardContent>

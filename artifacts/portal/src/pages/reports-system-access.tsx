@@ -4,12 +4,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  KeyRound, Mail, ShieldOff, ShieldCheck, Wifi, WifiOff,
-  Users, UserCheck, Search, RefreshCw, Send,
+  KeyRound, ShieldOff, ShieldCheck, Wifi, WifiOff,
+  Users, UserCheck, Search, Send,
 } from "lucide-react";
 
 type StaffRow = {
@@ -64,6 +66,17 @@ async function toggleBlock(type: "staff" | "guardian", id: number) {
   return res.json();
 }
 
+async function setPassword(type: "staff" | "guardian", id: number, password: string) {
+  const res = await fetch(`/api/reports/system-access/${type}/${id}/set-password`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Failed to set password");
+  return data;
+}
+
 function ConnectedBadge({ connected }: { connected: boolean }) {
   return connected ? (
     <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
@@ -85,117 +98,262 @@ function BlockedBadge({ blockedAt }: { blockedAt: string | null }) {
   );
 }
 
-function ComingSoonButton({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
-  const { toast } = useToast();
+function SetPasswordDialog({
+  open,
+  onClose,
+  label,
+  onSave,
+  isPending,
+}: {
+  open: boolean;
+  onClose: () => void;
+  label: string;
+  onSave: (pw: string) => void;
+  isPending: boolean;
+}) {
+  const [pw, setPw] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+
+  function handleSave() {
+    setErr(null);
+    if (pw.length < 8) { setErr("Password must be at least 8 characters."); return; }
+    if (pw !== confirm) { setErr("Passwords do not match."); return; }
+    onSave(pw);
+  }
+
+  function handleClose() {
+    setPw(""); setConfirm(""); setErr(null);
+    onClose();
+  }
+
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 text-xs text-muted-foreground gap-1.5"
-          onClick={() => toast({ title: "Coming in the next stage", description: "User login features will be available soon." })}
-        >
-          <Icon className="h-3.5 w-3.5" />
-          {label}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>Login features coming in the next stage</TooltipContent>
-    </Tooltip>
+    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Set Password — {label}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 pt-1">
+          <div className="space-y-1">
+            <Label>New password</Label>
+            <Input
+              type="password"
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+              placeholder="Min. 8 characters"
+              autoComplete="new-password"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>Confirm password</Label>
+            <Input
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              placeholder="Repeat password"
+              autoComplete="new-password"
+            />
+          </div>
+          {err && <p className="text-sm text-red-600">{err}</p>}
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="outline" onClick={handleClose} disabled={isPending}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isPending}>
+              {isPending ? "Saving…" : "Set Password"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function StaffRow({ row, onBlock }: { row: StaffRow; onBlock: () => void }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [pwDialog, setPwDialog] = useState(false);
   const isBlocked = !!row.blockedAt;
+
+  const pwMutation = useMutation({
+    mutationFn: (pw: string) => setPassword("staff", row.id, pw),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/system-access"] });
+      toast({ title: "Password set", description: `${row.firstName} ${row.lastName} can now log in.` });
+      setPwDialog(false);
+    },
+    onError: (e: Error) => toast({ title: "Failed to set password", description: e.message, variant: "destructive" }),
+  });
+
   return (
-    <tr className="border-b last:border-0 hover:bg-muted/20 transition-colors group">
-      <td className="py-3 px-4">
-        <div className="font-medium text-sm">{row.firstName} {row.lastName}</div>
-        <div className="text-xs text-muted-foreground">{row.email}</div>
-      </td>
-      <td className="py-3 px-4 text-sm text-muted-foreground whitespace-nowrap">
-        {ROLE_LABELS[row.role] ?? row.role}
-      </td>
-      <td className="py-3 px-4">
-        <div className="flex flex-wrap gap-1.5">
-          <ConnectedBadge connected={row.isConnected} />
-          <BlockedBadge blockedAt={row.blockedAt} />
-        </div>
-      </td>
-      <td className="py-3 px-4 text-sm text-muted-foreground whitespace-nowrap">
-        {row.lastLoginAt
-          ? new Date(row.lastLoginAt).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })
-          : <span className="italic text-muted-foreground/60">Never</span>}
-      </td>
-      <td className="py-3 px-2">
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <ComingSoonButton icon={KeyRound} label="Reset password" />
-          <ComingSoonButton icon={Send} label="Send instructions" />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                variant="ghost"
-                className={`h-7 text-xs gap-1.5 ${isBlocked ? "text-emerald-700 hover:text-emerald-900" : "text-red-600 hover:text-red-800"}`}
-                onClick={onBlock}
-              >
-                {isBlocked ? <ShieldCheck className="h-3.5 w-3.5" /> : <ShieldOff className="h-3.5 w-3.5" />}
-                {isBlocked ? "Unblock" : "Block"}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{isBlocked ? "Restore access" : "Block access to the app"}</TooltipContent>
-          </Tooltip>
-        </div>
-      </td>
-    </tr>
+    <>
+      <tr className="border-b last:border-0 hover:bg-muted/20 transition-colors group">
+        <td className="py-3 px-4">
+          <div className="font-medium text-sm">{row.firstName} {row.lastName}</div>
+          <div className="text-xs text-muted-foreground">{row.email}</div>
+        </td>
+        <td className="py-3 px-4 text-sm text-muted-foreground whitespace-nowrap">
+          {ROLE_LABELS[row.role] ?? row.role}
+        </td>
+        <td className="py-3 px-4">
+          <div className="flex flex-wrap gap-1.5">
+            <ConnectedBadge connected={row.isConnected} />
+            <BlockedBadge blockedAt={row.blockedAt} />
+          </div>
+        </td>
+        <td className="py-3 px-4 text-sm text-muted-foreground whitespace-nowrap">
+          {row.lastLoginAt
+            ? new Date(row.lastLoginAt).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })
+            : <span className="italic text-muted-foreground/60">Never</span>}
+        </td>
+        <td className="py-3 px-2">
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs gap-1.5"
+                  onClick={() => setPwDialog(true)}
+                >
+                  <KeyRound className="h-3.5 w-3.5" />
+                  {row.isConnected ? "Reset password" : "Set password"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{row.isConnected ? "Change this staff member's password" : "Create a login password"}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs gap-1.5 text-muted-foreground"
+                  onClick={() => toast({ title: "Coming in the next stage", description: "Automated login emails will be available soon." })}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  Send instructions
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Email login instructions — coming soon</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className={`h-7 text-xs gap-1.5 ${isBlocked ? "text-emerald-700 hover:text-emerald-900" : "text-red-600 hover:text-red-800"}`}
+                  onClick={onBlock}
+                >
+                  {isBlocked ? <ShieldCheck className="h-3.5 w-3.5" /> : <ShieldOff className="h-3.5 w-3.5" />}
+                  {isBlocked ? "Unblock" : "Block"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{isBlocked ? "Restore access" : "Block access to the app"}</TooltipContent>
+            </Tooltip>
+          </div>
+        </td>
+      </tr>
+      <SetPasswordDialog
+        open={pwDialog}
+        onClose={() => setPwDialog(false)}
+        label={`${row.firstName} ${row.lastName}`}
+        onSave={(pw) => pwMutation.mutate(pw)}
+        isPending={pwMutation.isPending}
+      />
+    </>
   );
 }
 
 function GuardianRow({ row, onBlock }: { row: GuardianRow; onBlock: () => void }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [pwDialog, setPwDialog] = useState(false);
   const isBlocked = !!row.blockedAt;
+
+  const pwMutation = useMutation({
+    mutationFn: (pw: string) => setPassword("guardian", row.id, pw),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/system-access"] });
+      toast({ title: "Password set", description: `${row.guardianName} can now log in to the family portal.` });
+      setPwDialog(false);
+    },
+    onError: (e: Error) => toast({ title: "Failed to set password", description: e.message, variant: "destructive" }),
+  });
+
   return (
-    <tr className="border-b last:border-0 hover:bg-muted/20 transition-colors group">
-      <td className="py-3 px-4">
-        <div className="font-medium text-sm">{row.guardianName}</div>
-        <div className="text-xs text-muted-foreground">{row.guardianEmail}</div>
-      </td>
-      <td className="py-3 px-4 text-xs text-muted-foreground">
-        {row.children.length > 0
-          ? row.children.join(", ")
-          : <span className="italic">—</span>}
-      </td>
-      <td className="py-3 px-4">
-        <div className="flex flex-wrap gap-1.5">
-          <ConnectedBadge connected={row.isConnected} />
-          <BlockedBadge blockedAt={row.blockedAt} />
-        </div>
-      </td>
-      <td className="py-3 px-4 text-sm text-muted-foreground whitespace-nowrap">
-        {row.lastLoginAt
-          ? new Date(row.lastLoginAt).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })
-          : <span className="italic text-muted-foreground/60">Never</span>}
-      </td>
-      <td className="py-3 px-2">
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <ComingSoonButton icon={KeyRound} label="Reset password" />
-          <ComingSoonButton icon={Send} label="Send instructions" />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                variant="ghost"
-                className={`h-7 text-xs gap-1.5 ${isBlocked ? "text-emerald-700 hover:text-emerald-900" : "text-red-600 hover:text-red-800"}`}
-                onClick={onBlock}
-              >
-                {isBlocked ? <ShieldCheck className="h-3.5 w-3.5" /> : <ShieldOff className="h-3.5 w-3.5" />}
-                {isBlocked ? "Unblock" : "Block"}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{isBlocked ? "Restore access" : "Block access to the app"}</TooltipContent>
-          </Tooltip>
-        </div>
-      </td>
-    </tr>
+    <>
+      <tr className="border-b last:border-0 hover:bg-muted/20 transition-colors group">
+        <td className="py-3 px-4">
+          <div className="font-medium text-sm">{row.guardianName}</div>
+          <div className="text-xs text-muted-foreground">{row.guardianEmail}</div>
+        </td>
+        <td className="py-3 px-4 text-xs text-muted-foreground">
+          {row.children.length > 0 ? row.children.join(", ") : <span className="italic">—</span>}
+        </td>
+        <td className="py-3 px-4">
+          <div className="flex flex-wrap gap-1.5">
+            <ConnectedBadge connected={row.isConnected} />
+            <BlockedBadge blockedAt={row.blockedAt} />
+          </div>
+        </td>
+        <td className="py-3 px-4 text-sm text-muted-foreground whitespace-nowrap">
+          {row.lastLoginAt
+            ? new Date(row.lastLoginAt).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })
+            : <span className="italic text-muted-foreground/60">Never</span>}
+        </td>
+        <td className="py-3 px-2">
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs gap-1.5"
+                  onClick={() => setPwDialog(true)}
+                >
+                  <KeyRound className="h-3.5 w-3.5" />
+                  {row.isConnected ? "Reset password" : "Set password"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{row.isConnected ? "Change this guardian's password" : "Create a login password"}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs gap-1.5 text-muted-foreground"
+                  onClick={() => toast({ title: "Coming in the next stage", description: "Automated login emails will be available soon." })}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  Send instructions
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Email login instructions — coming soon</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className={`h-7 text-xs gap-1.5 ${isBlocked ? "text-emerald-700 hover:text-emerald-900" : "text-red-600 hover:text-red-800"}`}
+                  onClick={onBlock}
+                >
+                  {isBlocked ? <ShieldCheck className="h-3.5 w-3.5" /> : <ShieldOff className="h-3.5 w-3.5" />}
+                  {isBlocked ? "Unblock" : "Block"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{isBlocked ? "Restore access" : "Block access to the family portal"}</TooltipContent>
+            </Tooltip>
+          </div>
+        </td>
+      </tr>
+      <SetPasswordDialog
+        open={pwDialog}
+        onClose={() => setPwDialog(false)}
+        label={row.guardianName}
+        onSave={(pw) => pwMutation.mutate(pw)}
+        isPending={pwMutation.isPending}
+      />
+    </>
   );
 }
 
@@ -211,7 +369,7 @@ export default function ReportsSystemAccess() {
 
   const blockMutation = useMutation({
     mutationFn: ({ type, id }: { type: "staff" | "guardian"; id: number }) => toggleBlock(type, id),
-    onSuccess: (_, { type, id: _id }) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/reports/system-access"] });
       toast({ title: "Access updated" });
     },
@@ -219,16 +377,17 @@ export default function ReportsSystemAccess() {
   });
 
   const q = search.toLowerCase();
-
-  const filteredStaff = (data?.staff ?? []).filter((s) =>
-    !q || `${s.firstName} ${s.lastName} ${s.email} ${s.role}`.toLowerCase().includes(q)
+  const filteredStaff = (data?.staff ?? []).filter(
+    (s) => !q || `${s.firstName} ${s.lastName} ${s.email} ${s.role}`.toLowerCase().includes(q)
   );
-  const filteredGuardians = (data?.guardians ?? []).filter((g) =>
-    !q || `${g.guardianName} ${g.guardianEmail} ${g.children.join(" ")}`.toLowerCase().includes(q)
+  const filteredGuardians = (data?.guardians ?? []).filter(
+    (g) => !q || `${g.guardianName} ${g.guardianEmail} ${g.children.join(" ")}`.toLowerCase().includes(q)
   );
 
   const totalAccounts = (data?.staff.length ?? 0) + (data?.guardians.length ?? 0);
-  const connectedCount = (data?.guardians ?? []).filter((g) => g.isConnected).length;
+  const connectedCount =
+    (data?.staff ?? []).filter((s) => s.isConnected).length +
+    (data?.guardians ?? []).filter((g) => g.isConnected).length;
   const blockedCount =
     (data?.staff ?? []).filter((s) => s.blockedAt).length +
     (data?.guardians ?? []).filter((g) => g.blockedAt).length;
@@ -246,11 +405,9 @@ export default function ReportsSystemAccess() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">System Access</h1>
-          <p className="text-muted-foreground mt-1">Manage staff and guardian accounts, connection status and access control.</p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">System Access</h1>
+        <p className="text-muted-foreground mt-1">Manage staff and guardian accounts, connection status and access control.</p>
       </div>
 
       {/* Summary cards */}
@@ -319,7 +476,7 @@ export default function ReportsSystemAccess() {
             <thead className="bg-muted/50">
               <tr>
                 <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Name / Email</th>
-                <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">Role</th>
+                <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Role</th>
                 <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</th>
                 <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">Last Access</th>
                 <th className="py-2.5 px-2"></th>
@@ -327,9 +484,7 @@ export default function ReportsSystemAccess() {
             </thead>
             <tbody>
               {filteredStaff.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-10 text-center text-sm text-muted-foreground italic">No staff found</td>
-                </tr>
+                <tr><td colSpan={5} className="py-10 text-center text-sm text-muted-foreground italic">No staff found</td></tr>
               ) : (
                 filteredStaff.map((s) => (
                   <StaffRow
@@ -364,9 +519,7 @@ export default function ReportsSystemAccess() {
             </thead>
             <tbody>
               {filteredGuardians.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-10 text-center text-sm text-muted-foreground italic">No guardians found</td>
-                </tr>
+                <tr><td colSpan={5} className="py-10 text-center text-sm text-muted-foreground italic">No guardians found</td></tr>
               ) : (
                 filteredGuardians.map((g) => (
                   <GuardianRow
@@ -382,7 +535,7 @@ export default function ReportsSystemAccess() {
       </div>
 
       <p className="text-xs text-muted-foreground pb-4">
-        Password reset, login instructions, and app connection will be fully active once user login is configured in the next stage.
+        Automated login email delivery will be available in the next stage.
       </p>
     </div>
   );

@@ -19,6 +19,7 @@ export const staffTable = pgTable("staff", {
   siteId: integer("site_id").references(() => sitesTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   blockedAt: timestamp("blocked_at", { withTimezone: true }),
+  passwordHash: text("password_hash"),
 });
 
 export const insertStaffSchema = createInsertSchema(staffTable).omit({ id: true, createdAt: true });

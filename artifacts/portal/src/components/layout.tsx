@@ -24,10 +24,12 @@ import {
   Building2,
   UserCog,
   Settings2,
+  LogOut,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { ScrollArea } from "./ui/scroll-area";
+import { useAuth } from "@/contexts/auth";
 
 const NAV_GROUPS = [
   {
@@ -52,6 +54,8 @@ const NAV_GROUPS = [
       { href: "/posts", label: "Posts", icon: Newspaper },
       { href: "/jottings", label: "Jottings", icon: StickyNote },
       { href: "/observations", label: "Observations", icon: BookOpen },
+      { href: "/programs", label: "Programs", icon: ClipboardList },
+      { href: "/outcomes", label: "MTOP Outcomes", icon: Award },
     ]
   },
   {
@@ -82,7 +86,20 @@ const NAV_GROUPS = [
   },
 ];
 
-function NavLinks({ location }: { location: string }) {
+const ROLE_LABELS: Record<string, string> = {
+  director: "Director",
+  educator: "Educator",
+  assistant: "Assistant",
+  trainee: "Trainee",
+  admin: "Admin",
+  coordinator: "Coordinator",
+  educational_leader: "Educational Leader",
+  room_leader: "Room Leader",
+};
+
+function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () => void }) {
+  const { user, logout } = useAuth();
+
   return (
     <div className="flex flex-col h-full">
       <div className="px-2 py-4 flex items-center space-x-1 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.2)" }}>
@@ -94,25 +111,23 @@ function NavLinks({ location }: { location: string }) {
           {NAV_GROUPS.map((group, i) => (
             <div key={i} className="space-y-1">
               {group.label && (
-                <div className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.55)" }}>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40 px-2 mb-1">
                   {group.label}
-                </div>
+                </p>
               )}
-              {group.items.map((item) => {
-                const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
-                const Icon = item.icon;
+              {group.items.map(({ href, label, icon: Icon }) => {
+                const isActive = href === "/" ? location === "/" : location.startsWith(href);
                 return (
-                  <Link key={item.href} href={item.href}>
+                  <Link key={href} href={href} onClick={onNavigate}>
                     <div
-                      className="flex items-center space-x-3 rounded-md px-3 py-2 text-sm transition-colors cursor-pointer"
-                      style={isActive
-                        ? { backgroundColor: "rgba(255,255,255,0.2)", color: "#fff", fontWeight: 600 }
-                        : { color: "rgba(255,255,255,0.8)" }}
-                      onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLDivElement).style.backgroundColor = "rgba(255,255,255,0.1)"; }}
-                      onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent"; }}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
+                        isActive
+                          ? "bg-white/20 text-white"
+                          : "text-white/70 hover:bg-white/10 hover:text-white"
+                      }`}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
-                      <span>{item.label}</span>
+                      {label}
                     </div>
                   </Link>
                 );
@@ -121,6 +136,34 @@ function NavLinks({ location }: { location: string }) {
           ))}
         </div>
       </ScrollArea>
+
+      {/* User info + logout */}
+      {user && (
+        <div className="px-3 py-3 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.2)" }}>
+          <div className="flex items-center gap-2 px-2 mb-2">
+            <div className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <span className="text-xs font-bold text-white">
+                {user.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-white truncate leading-tight">{user.name}</p>
+              <p className="text-[10px] text-white/50 leading-tight capitalize">
+                {ROLE_LABELS[user.role] ?? user.role}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start gap-2 text-white/60 hover:text-white hover:bg-white/10 h-7 text-xs"
+            onClick={logout}
+          >
+            <LogOut className="h-3 w-3" />
+            Sign out
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -129,37 +172,41 @@ export function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
 
   return (
-    <div className="flex min-h-[100dvh] w-full bg-background">
-      <aside className="hidden lg:flex print:hidden w-72 flex-col border-r h-[100dvh] sticky top-0" style={{ backgroundColor: "#008848" }}>
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Desktop sidebar */}
+      <aside
+        className="hidden md:flex w-64 shrink-0 flex-col"
+        style={{ backgroundColor: "#1b5e20" }}
+      >
         <NavLinks location={location} />
       </aside>
 
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 shrink-0 items-center gap-4 border-b bg-card px-6 lg:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="shrink-0">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 flex flex-col">
-              <NavLinks location={location} />
-            </SheetContent>
-          </Sheet>
-          <div className="flex-1">
-            <div className="flex items-center space-x-2">
-            <img src="/educare-logo.png" alt="EduCare" className="h-6 w-6 object-contain" />
-            <span className="font-bold text-lg">EduCare</span>
-          </div>
-          </div>
-        </header>
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8">
-          <div className="mx-auto max-w-6xl">
-            {children}
-          </div>
-        </main>
+      {/* Mobile top bar */}
+      <div
+        className="md:hidden fixed top-0 left-0 right-0 z-30 flex items-center h-14 px-4 gap-3"
+        style={{ backgroundColor: "#1b5e20", borderBottom: "1px solid rgba(255,255,255,0.2)" }}
+      >
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8 shrink-0">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-64 border-r-0" style={{ backgroundColor: "#1b5e20" }}>
+            <NavLinks location={location} />
+          </SheetContent>
+        </Sheet>
+        <img src="/educare-logo.png" alt="EduCare" className="h-8 w-8 object-contain" />
+        <span className="text-xl font-bold text-white">EduCare</span>
       </div>
+
+      {/* Page content */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="md:hidden h-14" />
+        <div className="p-4 md:p-6 lg:p-8">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

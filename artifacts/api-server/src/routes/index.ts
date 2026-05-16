@@ -1,5 +1,6 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import healthRouter from "./health";
+import authRouter from "./auth";
 import childrenRouter from "./children";
 import guardiansRouter from "./guardians";
 import staffRouter from "./staff";
@@ -32,7 +33,28 @@ import systemAccessRouter from "./system-access";
 
 const router: IRouter = Router();
 
+// ── Public routes (no auth required) ──────────────────────────────────────────
 router.use(healthRouter);
+router.use(authRouter);
+
+// Allow unauthenticated access to the public QIP page and storage (for public assets)
+router.use("/qip/public", (req: Request, res: Response, next: NextFunction) => next());
+
+// ── Auth guard ────────────────────────────────────────────────────────────────
+router.use((req: Request, res: Response, next: NextFunction): void => {
+  // Skip public paths already handled above
+  if (req.path === "/qip/public") {
+    next();
+    return;
+  }
+  if (!req.session?.user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  next();
+});
+
+// ── Protected routes ──────────────────────────────────────────────────────────
 router.use(childrenRouter);
 router.use(guardiansRouter);
 router.use(staffRouter);

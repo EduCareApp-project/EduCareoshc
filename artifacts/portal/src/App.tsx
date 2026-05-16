@@ -1,10 +1,15 @@
-import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider, useAuth } from "@/contexts/auth";
 import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
+import { GuardianLayout } from "@/components/guardian-layout";
 import QipPublic from "@/pages/qip-public";
+import Login from "@/pages/login";
+import GuardianHome from "@/pages/guardian-home";
+import GuardianNotices from "@/pages/guardian-notices";
 
 import Dashboard from "@/pages/dashboard";
 import ChildrenList from "@/pages/children-list";
@@ -57,13 +62,30 @@ const queryClient = new QueryClient({
   },
 });
 
-function Router() {
-  const [location] = useLocation();
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1a4731 0%, #2d6a4f 50%, #1b5e20 100%)" }}>
+      <div className="text-center">
+        <img src="/educare-logo.png" alt="EduCare" className="h-20 w-20 mx-auto mb-4 animate-pulse object-contain" />
+        <p className="text-white/70 text-sm">Loading…</p>
+      </div>
+    </div>
+  );
+}
 
-  if (location === "/qip-public" || location.startsWith("/qip-public?")) {
-    return <QipPublic />;
-  }
+function GuardianRoutes() {
+  return (
+    <GuardianLayout>
+      <Switch>
+        <Route path="/" component={GuardianHome} />
+        <Route path="/notices" component={GuardianNotices} />
+        <Route component={NotFound} />
+      </Switch>
+    </GuardianLayout>
+  );
+}
 
+function StaffRoutes() {
   return (
     <Layout>
       <Switch>
@@ -126,12 +148,43 @@ function Router() {
   );
 }
 
+function Router() {
+  const [location] = useLocation();
+  const { user, isLoading } = useAuth();
+
+  // Always-public routes
+  if (location === "/qip-public" || location.startsWith("/qip-public?")) {
+    return <QipPublic />;
+  }
+  if (location === "/login") {
+    // If already logged in, redirect away from login
+    if (!isLoading && user) {
+      return <Redirect to="/" />;
+    }
+    return <Login />;
+  }
+
+  // Show loading while checking auth
+  if (isLoading) return <LoadingScreen />;
+
+  // Not logged in → send to login
+  if (!user) return <Redirect to="/login" />;
+
+  // Guardian portal
+  if (user.type === "guardian") return <GuardianRoutes />;
+
+  // Staff portal (all roles)
+  return <StaffRoutes />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
+          <AuthProvider>
+            <Router />
+          </AuthProvider>
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, asc } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 import { db, staffTable, parentAccountsTable, childrenTable } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -47,7 +48,7 @@ router.get("/reports/system-access", async (_req, res): Promise<void> => {
     email: s.email,
     role: s.role,
     status: s.status,
-    isConnected: false,
+    isConnected: !!s.passwordHash,
     blockedAt: s.blockedAt,
     lastLoginAt: null as null,
     createdAt: s.createdAt,
@@ -56,6 +57,7 @@ router.get("/reports/system-access", async (_req, res): Promise<void> => {
   res.json({ staff, guardians });
 });
 
+// Block/unblock staff
 router.patch("/reports/system-access/staff/:id/block", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
   const [current] = await db.select({ blockedAt: staffTable.blockedAt }).from(staffTable).where(eq(staffTable.id, id));
@@ -65,6 +67,7 @@ router.patch("/reports/system-access/staff/:id/block", async (req, res): Promise
   res.json(updated);
 });
 
+// Block/unblock guardian
 router.patch("/reports/system-access/guardian/:id/block", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
   const [current] = await db.select({ blockedAt: parentAccountsTable.blockedAt }).from(parentAccountsTable).where(eq(parentAccountsTable.id, id));
@@ -72,6 +75,34 @@ router.patch("/reports/system-access/guardian/:id/block", async (req, res): Prom
   const newVal = current.blockedAt ? null : new Date();
   const [updated] = await db.update(parentAccountsTable).set({ blockedAt: newVal as any }).where(eq(parentAccountsTable.id, id)).returning();
   res.json(updated);
+});
+
+// Set password for staff
+router.patch("/reports/system-access/staff/:id/set-password", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const { password } = req.body ?? {};
+  if (!password || String(password).length < 8) {
+    res.status(400).json({ error: "Password must be at least 8 characters." });
+    return;
+  }
+  const hash = await bcrypt.hash(String(password), 12);
+  const [updated] = await db.update(staffTable).set({ passwordHash: hash }).where(eq(staffTable.id, id)).returning();
+  if (!updated) { res.status(404).json({ error: "Staff not found" }); return; }
+  res.json({ ok: true });
+});
+
+// Set password for guardian
+router.patch("/reports/system-access/guardian/:id/set-password", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const { password } = req.body ?? {};
+  if (!password || String(password).length < 8) {
+    res.status(400).json({ error: "Password must be at least 8 characters." });
+    return;
+  }
+  const hash = await bcrypt.hash(String(password), 12);
+  const [updated] = await db.update(parentAccountsTable).set({ passwordHash: hash }).where(eq(parentAccountsTable.id, id)).returning();
+  if (!updated) { res.status(404).json({ error: "Guardian not found" }); return; }
+  res.json({ ok: true });
 });
 
 export default router;

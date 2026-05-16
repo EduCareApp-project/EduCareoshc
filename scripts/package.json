@@ -5,10 +5,14 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "seed-admin-password": "tsx ./src/seed-admin-password.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/node": "catalog:",
+    "bcryptjs": "^3.0.3",
+    "pg": "^8.13.3",
     "tsx": "catalog:"
   }
 }

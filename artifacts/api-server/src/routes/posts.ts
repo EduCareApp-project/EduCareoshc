@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
-import { db, postsTable, postCommentsTable, childrenTable, staffTable, sitesTable } from "@workspace/db";
+import { eq, and, isNotNull, isNull } from "drizzle-orm";
+import { db, postsTable, postCommentsTable, childrenTable, staffTable, sitesTable, parentAccountsTable } from "@workspace/db";
 import {
   CreatePostBody, GetPostParams, GetPostResponse,
   UpdatePostParams, UpdatePostBody, UpdatePostResponse,
@@ -10,6 +10,7 @@ import {
   DeletePostCommentParams,
 } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { sendPostNotificationEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -91,11 +92,13 @@ router.post("/posts", async (req, res): Promise<void> => {
     parsed.data.learning,
   );
 
+  const { notifyGuardians: _notifyGuardians, ...postData } = parsed.data as any;
+
   const [post] = await db.insert(postsTable).values({
-    ...parsed.data,
-    date: parsed.data.date as any,
-    images: parsed.data.images ?? [],
-    childIds: parsed.data.childIds ?? [],
+    ...postData,
+    date: postData.date as any,
+    images: postData.images ?? [],
+    childIds: postData.childIds ?? [],
     aiSummary,
   }).returning();
   res.status(201).json(GetPostResponse.parse(await enrichPost(post)));
@@ -114,8 +117,42 @@ router.patch("/posts/:id", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = UpdatePostBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [post] = await db.update(postsTable).set({ ...parsed.data, date: parsed.data.date as any } as any).where(eq(postsTable.id, params.data.id)).returning();
+
+  const { notifyGuardians, ...updateData } = parsed.data as any;
+
+  const [existing] = await db.select().from(postsTable).where(eq(postsTable.id, params.data.id));
+  if (!existing) { res.status(404).json({ error: "Post not found" }); return; }
+
+  const [post] = await db.update(postsTable).set({ ...updateData, date: updateData.date as any } as any).where(eq(postsTable.id, params.data.id)).returning();
   if (!post) { res.status(404).json({ error: "Post not found" }); return; }
+
+  const wasPublished = existing.publishedAt == null && post.publishedAt != null;
+  if (wasPublished && notifyGuardians !== false) {
+    const guardians = await db
+      .select({ guardianEmail: parentAccountsTable.guardianEmail })
+      .from(parentAccountsTable)
+      .where(
+        and(
+          isNotNull(parentAccountsTable.passwordHash),
+          isNull(parentAccountsTable.blockedAt),
+        ),
+      );
+
+    const recipients = guardians.map((g) => g.guardianEmail);
+    const excerpt = ((post.description ?? post.learning ?? "") as string)
+      .replace(/<[^>]*>/g, "")
+      .trim()
+      .slice(0, 200) || null;
+
+    const domains = (process.env.REPLIT_DOMAINS ?? "").split(",").map((d) => d.trim()).filter(Boolean);
+    const portalHost = domains[0] ?? "localhost";
+    const portalUrl = `https://${portalHost}/notices`;
+
+    sendPostNotificationEmail(recipients, { postTitle: post.title, excerpt, portalUrl }).catch((err) => {
+      req.log.error({ err }, "Post notification email dispatch failed");
+    });
+  }
+
   res.json(UpdatePostResponse.parse(await enrichPost(post)));
 });
 

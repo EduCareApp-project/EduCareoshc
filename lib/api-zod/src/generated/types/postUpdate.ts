@@ -18,4 +18,8 @@ export interface PostUpdate {
   learning?: string;
   opportunities?: string;
   aiSummary?: string;
+  /** Setting this transitions the post from draft to published and triggers guardian notifications. */
+  publishedAt?: Date;
+  /** When true (default) and publishedAt is being set for the first time, sends email notifications to all active guardians. */
+  notifyGuardians?: boolean;
 }

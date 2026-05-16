@@ -1,6 +1,12 @@
 import nodemailer from "nodemailer";
 import { logger } from "./logger";
 
+export interface PostNotificationEmailOptions {
+  postTitle: string;
+  excerpt: string | null;
+  portalUrl: string;
+}
+
 function createTransport() {
   const host = process.env.SMTP_HOST;
   const port = parseInt(process.env.SMTP_PORT ?? "587", 10);
@@ -72,4 +78,75 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
   });
 
   logger.info({ email }, "Password reset email sent");
+}
+
+export async function sendPostNotificationEmail(
+  recipients: string[],
+  opts: PostNotificationEmailOptions,
+): Promise<void> {
+  if (recipients.length === 0) return;
+
+  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@educare.example.com";
+  const transport = createTransport();
+
+  if (!transport) {
+    logger.warn({ count: recipients.length }, "SMTP not configured — post notification emails were not sent");
+    return;
+  }
+
+  const excerptHtml = opts.excerpt
+    ? `<p style="color:#555; margin: 0 0 16px;">${opts.excerpt.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`
+    : "";
+  const excerptText = opts.excerpt ? `\n\n${opts.excerpt}` : "";
+
+  const errors: string[] = [];
+  await Promise.all(
+    recipients.map(async (email) => {
+      try {
+        await transport.sendMail({
+          from: `"EduCare Portal" <${from}>`,
+          to: email,
+          subject: `New post: ${opts.postTitle}`,
+          text: [
+            "Hi,",
+            "",
+            `A new post has been published on the Family Portal: "${opts.postTitle}"${excerptText}`,
+            "",
+            "Read it here:",
+            opts.portalUrl,
+            "",
+            "— EduCare Portal",
+          ].join("\n"),
+          html: `
+            <!DOCTYPE html>
+            <html>
+              <body style="font-family: sans-serif; color: #1a1a1a; max-width: 560px; margin: 0 auto; padding: 24px;">
+                <h2 style="margin: 0 0 8px;">New post published</h2>
+                <h3 style="margin: 0 0 12px; color: #2d6a4f;">${opts.postTitle.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</h3>
+                ${excerptHtml}
+                <a href="${opts.portalUrl}" style="
+                  display: inline-block;
+                  margin: 8px 0 16px;
+                  padding: 12px 24px;
+                  background: #2d6a4f;
+                  color: #fff;
+                  text-decoration: none;
+                  border-radius: 8px;
+                  font-weight: 600;
+                ">Read post</a>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+                <p style="color: #aaa; font-size: 12px;">You received this email because you have a Family Portal account. Log in at <a href="${opts.portalUrl}" style="color: #2d6a4f;">${opts.portalUrl}</a>.</p>
+              </body>
+            </html>
+          `,
+        });
+      } catch (err) {
+        errors.push(email);
+        logger.error({ email, err }, "Failed to send post notification email");
+      }
+    }),
+  );
+
+  const sent = recipients.length - errors.length;
+  logger.info({ sent, failed: errors.length }, "Post notification emails dispatched");
 }

@@ -4136,6 +4136,10 @@ components:
           type: ["string", "null"]
         aiSummary:
           type: ["string", "null"]
+        publishedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: When set, the post is visible to guardians. Null means draft.
         createdAt:
           type: string
           format: date-time
@@ -4193,6 +4197,10 @@ components:
           type: string
         opportunities:
           type: string
+        notifyGuardians:
+          type: boolean
+          default: true
+          description: When true, sends an email notification to all guardians with active accounts.
 
     PostUpdate:
       type: object
@@ -4223,6 +4231,14 @@ components:
           type: string
         aiSummary:
           type: string
+        publishedAt:
+          type: string
+          format: date-time
+          description: Setting this transitions the post from draft to published and triggers guardian notifications.
+        notifyGuardians:
+          type: boolean
+          default: true
+          description: When true (default) and publishedAt is being set for the first time, sends email notifications to all active guardians.
 
     QualificationDocument:
       type: object

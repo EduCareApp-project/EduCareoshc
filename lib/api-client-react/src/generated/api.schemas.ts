@@ -1288,6 +1288,11 @@ export interface Post {
   opportunities?: string | null;
   /** @nullable */
   aiSummary?: string | null;
+  /**
+   * When set, the post is visible to guardians. Null means draft.
+   * @nullable
+   */
+  publishedAt?: string | null;
   createdAt: string;
 }
 
@@ -1315,6 +1320,8 @@ export interface PostInput {
   description?: string;
   learning?: string;
   opportunities?: string;
+  /** When true, sends an email notification to all guardians with active accounts. */
+  notifyGuardians?: boolean;
 }
 
 export interface PostUpdate {
@@ -1329,6 +1336,10 @@ export interface PostUpdate {
   learning?: string;
   opportunities?: string;
   aiSummary?: string;
+  /** Setting this transitions the post from draft to published and triggers guardian notifications. */
+  publishedAt?: string;
+  /** When true (default) and publishedAt is being set for the first time, sends email notifications to all active guardians. */
+  notifyGuardians?: boolean;
 }
 
 export interface QualificationDocument {

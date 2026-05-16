@@ -17,6 +17,7 @@ export const postsTable = pgTable("posts", {
   learning: text("learning"),
   opportunities: text("opportunities"),
   aiSummary: text("ai_summary"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

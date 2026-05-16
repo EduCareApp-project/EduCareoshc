@@ -1,13 +1,14 @@
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCreatePost, useListChildren, useListStaff, useListSites, getListPostsQueryKey } from "@workspace/api-client-react";
+import { useCreatePost, useUpdatePost, useListChildren, useListStaff, useListSites, getListPostsQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, ImagePlus, X, Loader2 } from "lucide-react";
 import { useUpload } from "@workspace/object-storage-web";
@@ -22,6 +23,7 @@ const EMPTY_FORM = {
   description: "",
   learning: "",
   opportunities: "",
+  notifyGuardians: true,
 };
 
 export default function NewPost() {
@@ -33,6 +35,7 @@ export default function NewPost() {
   const { data: children } = useListChildren();
   const { data: staff } = useListStaff();
   const createPost = useCreatePost();
+  const updatePost = useUpdatePost();
 
   const [form, setForm] = useState<typeof EMPTY_FORM>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -106,9 +109,32 @@ export default function NewPost() {
 
     createPost.mutate({ data: body as any }, {
       onSuccess: (created) => {
-        queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() });
-        toast({ title: "Post created", description: "AI summary generated automatically." });
-        setLocation(`/posts/${created.id}`);
+        updatePost.mutate(
+          {
+            id: created.id,
+            data: {
+              publishedAt: new Date().toISOString(),
+              notifyGuardians: form.notifyGuardians,
+            } as any,
+          },
+          {
+            onSuccess: () => {
+              queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() });
+              toast({
+                title: "Post published",
+                description: form.notifyGuardians
+                  ? "AI summary generated and guardian notifications sent."
+                  : "AI summary generated automatically.",
+              });
+              setLocation(`/posts/${created.id}`);
+            },
+            onError: () => {
+              queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() });
+              toast({ title: "Post saved but not published", variant: "destructive" });
+              setLocation(`/posts/${created.id}`);
+            },
+          },
+        );
       },
       onError: () => toast({ title: "Failed to create post", variant: "destructive" }),
     });
@@ -290,11 +316,30 @@ export default function NewPost() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardContent className="pt-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium">Notify guardians by email</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Send an email to all guardians with active Family Portal accounts when this post is published.
+                </p>
+              </div>
+              <Switch
+                checked={form.notifyGuardians}
+                onCheckedChange={(checked) => setForm({ ...form, notifyGuardians: checked })}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="flex items-center justify-end gap-3 pb-8">
           <Button type="button" variant="outline" onClick={() => setLocation("/posts")}>Cancel</Button>
-          <Button type="submit" disabled={createPost.isPending || uploadingIndex !== null}>
+          <Button type="submit" disabled={createPost.isPending || updatePost.isPending || uploadingIndex !== null}>
             {createPost.isPending ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving & generating summary…</>
+            ) : updatePost.isPending ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Publishing…</>
             ) : "Publish Post"}
           </Button>
         </div>

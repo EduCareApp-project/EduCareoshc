@@ -17,4 +17,6 @@ export interface PostInput {
   description?: string;
   learning?: string;
   opportunities?: string;
+  /** When true, sends an email notification to all guardians with active accounts. */
+  notifyGuardians?: boolean;
 }

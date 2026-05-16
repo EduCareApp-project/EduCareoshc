@@ -31,5 +31,10 @@ export interface Post {
   opportunities?: string | null;
   /** @nullable */
   aiSummary?: string | null;
+  /**
+   * When set, the post is visible to guardians. Null means draft.
+   * @nullable
+   */
+  publishedAt?: Date | null;
   createdAt: Date;
 }

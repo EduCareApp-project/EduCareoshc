@@ -1857,11 +1857,17 @@ export const ListPostsResponseItem = zod.object({
   learning: zod.string().nullish(),
   opportunities: zod.string().nullish(),
   aiSummary: zod.string().nullish(),
+  publishedAt: zod.coerce
+    .date()
+    .nullish()
+    .describe("When set, the post is visible to guardians. Null means draft."),
   createdAt: zod.coerce.date(),
 });
 export const ListPostsResponse = zod.array(ListPostsResponseItem);
 
 export const createPostBodyImagesMax = 3;
+
+export const createPostBodyNotifyGuardiansDefault = true;
 
 export const CreatePostBody = zod.object({
   siteId: zod.number().optional(),
@@ -1873,6 +1879,12 @@ export const CreatePostBody = zod.object({
   description: zod.string().optional(),
   learning: zod.string().optional(),
   opportunities: zod.string().optional(),
+  notifyGuardians: zod
+    .boolean()
+    .default(createPostBodyNotifyGuardiansDefault)
+    .describe(
+      "When true, sends an email notification to all guardians with active accounts.",
+    ),
 });
 
 export const GetPostParams = zod.object({
@@ -1896,6 +1908,10 @@ export const GetPostResponse = zod.object({
   learning: zod.string().nullish(),
   opportunities: zod.string().nullish(),
   aiSummary: zod.string().nullish(),
+  publishedAt: zod.coerce
+    .date()
+    .nullish()
+    .describe("When set, the post is visible to guardians. Null means draft."),
   createdAt: zod.coerce.date(),
 });
 
@@ -1904,6 +1920,8 @@ export const UpdatePostParams = zod.object({
 });
 
 export const updatePostBodyImagesMax = 3;
+
+export const updatePostBodyNotifyGuardiansDefault = true;
 
 export const UpdatePostBody = zod.object({
   siteId: zod.number().optional(),
@@ -1916,6 +1934,18 @@ export const UpdatePostBody = zod.object({
   learning: zod.string().optional(),
   opportunities: zod.string().optional(),
   aiSummary: zod.string().optional(),
+  publishedAt: zod.coerce
+    .date()
+    .optional()
+    .describe(
+      "Setting this transitions the post from draft to published and triggers guardian notifications.",
+    ),
+  notifyGuardians: zod
+    .boolean()
+    .default(updatePostBodyNotifyGuardiansDefault)
+    .describe(
+      "When true (default) and publishedAt is being set for the first time, sends email notifications to all active guardians.",
+    ),
 });
 
 export const updatePostResponseImagesMax = 3;
@@ -1935,6 +1965,10 @@ export const UpdatePostResponse = zod.object({
   learning: zod.string().nullish(),
   opportunities: zod.string().nullish(),
   aiSummary: zod.string().nullish(),
+  publishedAt: zod.coerce
+    .date()
+    .nullish()
+    .describe("When set, the post is visible to guardians. Null means draft."),
   createdAt: zod.coerce.date(),
 });
 

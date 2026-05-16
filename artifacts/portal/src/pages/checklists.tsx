@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSearch } from "wouter";
 import { melbourneDate, melbourneDateStr } from "@/lib/timezone";
 import {
   useListChecklistTemplates, useCreateChecklistTemplate, useUpdateChecklistTemplate, useDeleteChecklistTemplate,
@@ -974,6 +975,7 @@ function RoutineRow({
 export default function Checklists() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const search = useSearch();
 
   const { data: templates, isLoading: templatesLoading } = useListChecklistTemplates();
   const { data: routines, isLoading: routinesLoading } = useListChecklistRoutines();
@@ -987,6 +989,18 @@ export default function Checklists() {
   const [editRoutine, setEditRoutine] = useState<any | null>(null);
   const [activeRoutine, setActiveRoutine] = useState<any | null>(null);
   const [syncingRoutineId, setSyncingRoutineId] = useState<number | null>(null);
+
+  // Auto-open a routine when navigated here with ?open=<id>
+  const autoOpenedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const openId = new URLSearchParams(search).get("open");
+    if (!openId || !routines || autoOpenedRef.current === openId) return;
+    const target = routines.find((r) => r.id === Number(openId));
+    if (target) {
+      autoOpenedRef.current = openId;
+      setActiveRoutine(target);
+    }
+  }, [routines, search]);
 
   function openCreate() { setEditTemplate(null); setFormOpen(true); }
   function openEdit(t: any) { setEditTemplate(t); setFormOpen(true); }

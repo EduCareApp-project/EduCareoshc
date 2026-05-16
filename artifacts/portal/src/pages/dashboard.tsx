@@ -567,13 +567,21 @@ function OutcomePieChart({ outcomes }: { outcomes: OutcomeItem[] }) {
 }
 
 // ─── Educator ────────────────────────────────────────────────────────────────
-const CHECKLIST_FREQ_ORDER = ["weekly", "monthly", "term"] as const;
+const CHECKLIST_FREQ_ORDER = ["weekly", "monthly", "term", "annual"] as const;
 type ChecklistFreq = typeof CHECKLIST_FREQ_ORDER[number];
 
 const CHECKLIST_FREQ_LABELS: Record<ChecklistFreq, string> = {
   weekly: "Weekly",
   monthly: "Monthly",
   term: "Term",
+  annual: "Yearly",
+};
+
+const CHECKLIST_FREQ_COLORS: Record<ChecklistFreq, string> = {
+  weekly: "bg-blue-100 text-blue-800",
+  monthly: "bg-purple-100 text-purple-800",
+  term: "bg-amber-100 text-amber-800",
+  annual: "bg-rose-100 text-rose-800",
 };
 
 function EducatorDashboard() {
@@ -586,11 +594,19 @@ function EducatorDashboard() {
 
   const childrenWithNoObs = (learning?.byChild ?? []).filter((c) => c.observationCount === 0);
 
-  // Group routines by the three frequencies we care about
-  const routinesByFreq: Record<ChecklistFreq, typeof routines> = {
-    weekly: (routines ?? []).filter((r) => r.frequency === "weekly"),
-    monthly: (routines ?? []).filter((r) => r.frequency === "monthly"),
-    term: (routines ?? []).filter((r) => r.frequency === "term"),
+  const today = format(new Date(), "yyyy-MM-dd");
+
+  // Only show routines that are repeating or upcoming (not historical one-offs)
+  const activeRoutines = (routines ?? []).filter(
+    (r) => r.isRepeating || (r.targetDate && String(r.targetDate).slice(0, 10) >= today)
+  );
+
+  // Group by the four frequencies we show
+  const routinesByFreq: Record<ChecklistFreq, typeof activeRoutines> = {
+    weekly:  activeRoutines.filter((r) => r.frequency === "weekly"),
+    monthly: activeRoutines.filter((r) => r.frequency === "monthly"),
+    term:    activeRoutines.filter((r) => r.frequency === "term"),
+    annual:  activeRoutines.filter((r) => r.frequency === "annual"),
   };
 
   return (
@@ -641,39 +657,42 @@ function EducatorDashboard() {
             ) : (
               <div className="space-y-3">
                 {CHECKLIST_FREQ_ORDER.map((freq) => {
-                  const items = routinesByFreq[freq] ?? [];
+                  const items = [...(routinesByFreq[freq] ?? [])].sort((a, b) =>
+                    String(a.targetDate).localeCompare(String(b.targetDate))
+                  );
                   const label = CHECKLIST_FREQ_LABELS[freq];
-                  // Most recent upcoming routine for this frequency
-                  const next = [...items].sort((a, b) => a.targetDate.localeCompare(b.targetDate)).find((r) => r.targetDate >= format(new Date(), "yyyy-MM-dd")) ?? items[items.length - 1];
+                  const colorClass = CHECKLIST_FREQ_COLORS[freq];
+                  // Primary = soonest upcoming (or last one if all past)
+                  const primary = items.find((r) => String(r.targetDate).slice(0, 10) >= today) ?? items[items.length - 1];
+                  const extras = items.length > 1 ? items.length - 1 : 0;
+
+                  if (!primary) {
+                    return (
+                      <div key={freq} className="rounded-md border px-3 py-2.5 flex items-center gap-2">
+                        <Badge className={`${colorClass} border-none text-xs shrink-0`}>{label}</Badge>
+                        <p className="text-sm text-muted-foreground italic">None scheduled</p>
+                      </div>
+                    );
+                  }
+
                   return (
-                    <div key={freq} className="rounded-md border px-3 py-2.5 flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Badge
-                          className={
-                            freq === "weekly"
-                              ? "bg-blue-100 text-blue-800 border-none text-xs shrink-0"
-                              : freq === "monthly"
-                              ? "bg-purple-100 text-purple-800 border-none text-xs shrink-0"
-                              : "bg-amber-100 text-amber-800 border-none text-xs shrink-0"
-                          }
-                        >
-                          {label}
-                        </Badge>
-                        <div className="min-w-0">
-                          {next ? (
-                            <>
-                              <p className="text-sm font-medium truncate">{next.title}</p>
-                              <p className="text-xs text-muted-foreground">Due {format(parseISO(next.targetDate), "d MMM yyyy")}</p>
-                            </>
-                          ) : (
-                            <p className="text-sm text-muted-foreground italic">None scheduled</p>
+                    <Link key={freq} href={`/checklists?open=${primary.id}`}>
+                      <div className="rounded-md border px-3 py-2.5 flex items-start justify-between gap-2 hover:bg-muted/40 transition-colors cursor-pointer group">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Badge className={`${colorClass} border-none text-xs shrink-0`}>{label}</Badge>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{primary.title}</p>
+                            <p className="text-xs text-muted-foreground">Due {format(parseISO(String(primary.targetDate)), "d MMM yyyy")}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+                          {extras > 0 && (
+                            <span className="text-xs text-muted-foreground">+{extras} more</span>
                           )}
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
                       </div>
-                      {items.length > 0 && (
-                        <span className="text-xs text-muted-foreground shrink-0 pt-0.5">{items.length} total</span>
-                      )}
-                    </div>
+                    </Link>
                   );
                 })}
               </div>

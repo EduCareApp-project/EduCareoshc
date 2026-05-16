@@ -238,12 +238,11 @@ export default function ReportsLearning() {
         </div>
       </div>
 
-      {/* Period label */}
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider -mb-2">
+      {/* Summary tiles */}
+      <div className="space-y-3">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
         {periodLabel}{selectedSite !== "all" && siteName ? ` · ${siteName}` : ""}
       </p>
-
-      {/* Summary tiles */}
       <div className="grid gap-4 sm:grid-cols-3">
         <StatTile
           icon={<FileText className="h-5 w-5" />}
@@ -266,6 +265,7 @@ export default function ReportsLearning() {
           sub="All sites"
           loading={isLoadingCounts}
         />
+      </div>
       </div>
 
       {/* MTOP Outcome row — donut + stat tile */}

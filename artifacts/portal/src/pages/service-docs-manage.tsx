@@ -42,7 +42,7 @@ type SectionProps = {
 
 function Section({ categoryName, categoryId, files, onEnsureCategory, onRefresh }: SectionProps) {
   const { toast } = useToast();
-  const { upload, uploading } = useUpload();
+  const { uploadFile, isUploading } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [label, setLabel] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -64,7 +64,9 @@ function Section({ categoryName, categoryId, files, onEnsureCategory, onRefresh 
     setAdding(true);
     try {
       const catId = categoryId ?? await onEnsureCategory();
-      const docPath = await upload(selectedFile, { prefix: "service-docs/" });
+      const result = await uploadFile(selectedFile);
+      if (!result) throw new Error("Upload failed");
+      const docPath = result.objectPath;
       await createFile.mutateAsync({
         data: {
           name: label.trim() || selectedFile.name,
@@ -124,9 +126,9 @@ function Section({ categoryName, categoryId, files, onEnsureCategory, onRefresh 
             </div>
           </div>
           <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={adding || uploading || !selectedFile}>
+            <Button type="submit" size="sm" disabled={adding || isUploading || !selectedFile}>
               <Upload className="h-4 w-4 mr-1" />
-              {adding || uploading ? "Uploading…" : "Upload"}
+              {adding || isUploading ? "Uploading…" : "Upload"}
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={() => setShowForm(false)}>
               Cancel

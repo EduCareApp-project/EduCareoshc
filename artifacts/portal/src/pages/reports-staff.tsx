@@ -9,7 +9,16 @@ export default function ReportsStaff() {
   const { data: report, isLoading } = useGetStaffComplianceReport();
   const [, navigate] = useLocation();
 
-  const ROLE_LABELS: Record<string, string> = { director: "Director", educator: "Educator", assistant: "Assistant", trainee: "Trainee" };
+  const ROLE_LABELS: Record<string, string> = {
+    director: "Director",
+    educator: "Educator",
+    assistant: "Assistant",
+    trainee: "Trainee",
+    admin: "Admin",
+    coordinator: "Coordinator",
+    educational_leader: "Educational Leader",
+    room_leader: "Room Leader",
+  };
 
   if (isLoading) {
     return (

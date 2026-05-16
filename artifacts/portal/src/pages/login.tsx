@@ -37,17 +37,17 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(135deg, #1a4731 0%, #2d6a4f 50%, #1b5e20 100%)" }}>
-      {/* Header */}
-      <div className="flex items-center gap-3 px-8 py-5">
-        <img src="/educare-logo.png" alt="EduCare" className="h-12 w-12 object-contain" />
-        <span className="text-2xl font-bold text-white tracking-tight">EduCare</span>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ background: "linear-gradient(135deg, #1a4731 0%, #2d6a4f 50%, #1b5e20 100%)" }}>
+      {/* Logo + branding above card */}
+      <div className="flex flex-col items-center gap-3 mb-8">
+        <img src="/educare-logo.png" alt="EduCare" className="h-24 w-24 object-contain drop-shadow-lg" />
+        <span className="text-4xl font-bold text-white tracking-tight drop-shadow">EduCare</span>
+        <span className="text-white/70 text-sm tracking-wide">Education &amp; Care Portal</span>
       </div>
 
       {/* Card */}
-      <div className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
             {/* Card header strip */}
             <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #4CAF50, #2196F3, #F44336, #FF9800)" }} />
 
@@ -115,10 +115,9 @@ export default function Login() {
           </div>
 
           <p className="mt-6 text-center text-xs text-white/60">
-            Education & Care Portal · National Quality Framework
+            National Quality Framework
           </p>
         </div>
-      </div>
     </div>
   );
 }

@@ -32,15 +32,19 @@ type GuardianRow = {
   guardianEmail: string;
   guardianName: string;
   children: string[];
+  siteIds: number[];
   isConnected: boolean;
   blockedAt: string | null;
   lastLoginAt: string | null;
   createdAt: string;
 };
 
+type SiteOption = { id: number; name: string };
+
 type SystemAccessData = {
   staff: StaffRow[];
   guardians: GuardianRow[];
+  sites: SiteOption[];
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -396,6 +400,7 @@ export default function ReportsSystemAccess() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [siteFilter, setSiteFilter] = useState<string>("all");
 
   const { data, isLoading } = useQuery({
     queryKey: ["/api/reports/system-access"],
@@ -415,9 +420,11 @@ export default function ReportsSystemAccess() {
   const filteredStaff = (data?.staff ?? []).filter(
     (s) => !q || `${s.firstName} ${s.lastName} ${s.email} ${s.role}`.toLowerCase().includes(q)
   );
-  const filteredGuardians = (data?.guardians ?? []).filter(
-    (g) => !q || `${g.guardianName} ${g.guardianEmail} ${g.children.join(" ")}`.toLowerCase().includes(q)
-  );
+  const filteredGuardians = (data?.guardians ?? []).filter((g) => {
+    if (q && !`${g.guardianName} ${g.guardianEmail} ${g.children.join(" ")}`.toLowerCase().includes(q)) return false;
+    if (siteFilter !== "all" && !g.siteIds.includes(Number(siteFilter))) return false;
+    return true;
+  });
 
   const totalAccounts = (data?.staff.length ?? 0) + (data?.guardians.length ?? 0);
   const connectedCount =
@@ -536,10 +543,28 @@ export default function ReportsSystemAccess() {
 
       {/* Guardians section */}
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Users className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-base font-semibold">Guardians</h2>
           <Badge variant="secondary" className="text-xs">{filteredGuardians.length}</Badge>
+          {(data?.sites ?? []).length > 0 && (
+            <div className="ml-auto flex items-center gap-2">
+              <label htmlFor="guardian-site-filter" className="text-xs text-muted-foreground whitespace-nowrap">
+                Filter by service:
+              </label>
+              <select
+                id="guardian-site-filter"
+                value={siteFilter}
+                onChange={(e) => setSiteFilter(e.target.value)}
+                className="h-7 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                <option value="all">All services</option>
+                {(data?.sites ?? []).map((s) => (
+                  <option key={s.id} value={String(s.id)}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
         <div className="rounded-md border overflow-x-auto">
           <table className="w-full text-left border-collapse">

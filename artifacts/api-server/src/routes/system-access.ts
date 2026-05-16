@@ -2,13 +2,13 @@ import { Router, type IRouter } from "express";
 import { eq, asc } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable } from "@workspace/db";
+import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, sitesTable } from "@workspace/db";
 import { sendLoginInstructionsEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
 router.get("/reports/system-access", async (_req, res): Promise<void> => {
-  const [staffRows, guardianRows, childRows] = await Promise.all([
+  const [staffRows, guardianRows, childRows, siteRows] = await Promise.all([
     db.select().from(staffTable).orderBy(asc(staffTable.lastName), asc(staffTable.firstName)),
     db.select().from(parentAccountsTable).orderBy(asc(parentAccountsTable.guardianEmail)),
     db.select({
@@ -16,17 +16,23 @@ router.get("/reports/system-access", async (_req, res): Promise<void> => {
       guardianName: childrenTable.guardianName,
       firstName: childrenTable.firstName,
       lastName: childrenTable.lastName,
+      siteId: childrenTable.siteId,
     }).from(childrenTable),
+    db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable).orderBy(asc(sitesTable.name)),
   ]);
 
-  const guardianMeta = new Map<string, { name: string; children: string[] }>();
+  const guardianMeta = new Map<string, { name: string; children: string[]; siteIds: number[] }>();
   for (const child of childRows) {
     const email = (child.guardianEmail ?? "").toLowerCase();
     if (!email) continue;
     if (!guardianMeta.has(email)) {
-      guardianMeta.set(email, { name: child.guardianName ?? email, children: [] });
+      guardianMeta.set(email, { name: child.guardianName ?? email, children: [], siteIds: [] });
     }
-    guardianMeta.get(email)!.children.push(`${child.firstName} ${child.lastName}`);
+    const entry = guardianMeta.get(email)!;
+    entry.children.push(`${child.firstName} ${child.lastName}`);
+    if (child.siteId != null && !entry.siteIds.includes(child.siteId)) {
+      entry.siteIds.push(child.siteId);
+    }
   }
 
   const guardians = guardianRows.map((g) => {
@@ -36,6 +42,7 @@ router.get("/reports/system-access", async (_req, res): Promise<void> => {
       guardianEmail: g.guardianEmail,
       guardianName: meta?.name ?? g.guardianEmail,
       children: meta?.children ?? [],
+      siteIds: meta?.siteIds ?? [],
       isConnected: !!g.passwordHash,
       blockedAt: g.blockedAt,
       lastLoginAt: g.lastLoginAt,
@@ -56,7 +63,7 @@ router.get("/reports/system-access", async (_req, res): Promise<void> => {
     createdAt: s.createdAt,
   }));
 
-  res.json({ staff, guardians });
+  res.json({ staff, guardians, sites: siteRows });
 });
 
 // Block/unblock staff

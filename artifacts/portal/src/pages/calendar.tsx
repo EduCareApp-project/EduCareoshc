@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useListPlanningExperiences, useCreatePlanningExperience, useListSites } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -272,13 +272,19 @@ function WeekPlanModal({ weekMonday, onClose, onSaved }: WeekPlanModalProps) {
 export default function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [planWeek, setPlanWeek] = useState<Date | null>(null);
-  const [filterSiteId, setFilterSiteId] = useState<string>("__all__");
+  const [filterSiteId, setFilterSiteId] = useState<string>("");
   const queryClient = useQueryClient();
 
   const { data: sites } = useListSites();
   const { data: planning, isLoading } = useListPlanningExperiences();
 
-  const siteIdNum = filterSiteId === "__all__" ? undefined : Number(filterSiteId);
+  useEffect(() => {
+    if (sites && sites.length > 0 && !filterSiteId) {
+      setFilterSiteId(String(sites[0].id));
+    }
+  }, [sites]);
+
+  const siteIdNum = filterSiteId ? Number(filterSiteId) : undefined;
 
   function filterBySite<T extends { siteId?: number | null }>(items: T[]): T[] {
     if (siteIdNum === undefined) return items;
@@ -323,10 +329,9 @@ export default function Calendar() {
         </div>
         <Select value={filterSiteId} onValueChange={setFilterSiteId}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="All Sites" />
+            <SelectValue placeholder="Select a site…" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__">All Sites</SelectItem>
             {(sites ?? []).map((s) => (
               <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
             ))}

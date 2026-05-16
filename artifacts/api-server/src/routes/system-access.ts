@@ -35,20 +35,22 @@ router.get("/reports/system-access", async (_req, res): Promise<void> => {
     }
   }
 
-  const guardians = guardianRows.map((g) => {
-    const meta = guardianMeta.get(g.guardianEmail.toLowerCase());
-    return {
-      id: g.id,
-      guardianEmail: g.guardianEmail,
-      guardianName: meta?.name ?? g.guardianEmail,
-      children: meta?.children ?? [],
-      siteIds: meta?.siteIds ?? [],
-      isConnected: !!g.passwordHash,
-      blockedAt: g.blockedAt,
-      lastLoginAt: g.lastLoginAt,
-      createdAt: g.createdAt,
-    };
-  });
+  const guardians = guardianRows
+    .map((g) => {
+      const meta = guardianMeta.get(g.guardianEmail.toLowerCase());
+      return {
+        id: g.id,
+        guardianEmail: g.guardianEmail,
+        guardianName: meta?.name ?? g.guardianEmail,
+        children: meta?.children ?? [],
+        siteIds: meta?.siteIds ?? [],
+        isConnected: !!g.passwordHash,
+        blockedAt: g.blockedAt,
+        lastLoginAt: g.lastLoginAt,
+        createdAt: g.createdAt,
+      };
+    })
+    .sort((a, b) => a.guardianName.localeCompare(b.guardianName, undefined, { sensitivity: "base" }));
 
   const staff = staffRows.map((s) => ({
     id: s.id,

@@ -8,6 +8,7 @@ import { Layout } from "@/components/layout";
 import { GuardianLayout } from "@/components/guardian-layout";
 import QipPublic from "@/pages/qip-public";
 import ServiceDocsPublic from "@/pages/service-docs-public";
+import ServiceDocsManage from "@/pages/service-docs-manage";
 import Login from "@/pages/login";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
@@ -134,6 +135,7 @@ function StaffRoutes() {
         <Route path="/policies/list" component={PoliciesList} />
         <Route path="/policies/procedures" component={Procedures} />
         <Route path="/policies/files" component={FileLibrary} />
+        <Route path="/policies/service-docs" component={ServiceDocsManage} />
         <Route path="/checklists" component={Checklists} />
 
         <Route path="/reports/learning" component={ReportsLearning} />

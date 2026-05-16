@@ -25,12 +25,10 @@ const TILES = [
       "A shared library of documents and files organised under custom category headings. Categories can be managed in settings.",
   },
   {
-    href: "/service-docs",
+    href: "/policies/service-docs",
     icon: FileText,
     title: "Service Documentation",
-    description:
-      "Publicly accessible page for families and community members. Displays files from the 'Prescribed Information' and 'Parent Notices' categories in the File Library.",
-    external: true,
+    description: "",
   },
 ];
 

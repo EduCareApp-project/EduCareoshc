@@ -8,6 +8,8 @@ export const parentAccountsTable = pgTable("parent_accounts", {
   username: text("username"),
   passwordHash: text("password_hash"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  blockedAt: timestamp("blocked_at", { withTimezone: true }),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
 });
 
 export const insertParentAccountSchema = createInsertSchema(parentAccountsTable).omit({ id: true, createdAt: true });

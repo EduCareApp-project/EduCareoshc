@@ -71,6 +71,7 @@ const NAV_GROUPS = [
       { href: "/reports/learning", label: "Learning Stories", icon: BookMarked },
       { href: "/reports/service", label: "Service Compliance", icon: ShieldCheck },
       { href: "/reports/staff", label: "Staff Compliance", icon: UserCheck },
+      { href: "/reports/system-access", label: "System Access", icon: UserCog },
     ]
   },
   {

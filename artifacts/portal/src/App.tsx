@@ -43,6 +43,7 @@ import Checklists from "@/pages/checklists";
 import ReportsLearning from "@/pages/reports-learning";
 import ReportsService from "@/pages/reports-service";
 import ReportsStaff from "@/pages/reports-staff";
+import ReportsSystemAccess from "@/pages/reports-system-access";
 import Sites from "@/pages/sites";
 import Settings from "@/pages/settings";
 import SettingsQip from "@/pages/settings-qip";
@@ -113,6 +114,7 @@ function Router() {
         <Route path="/reports/learning" component={ReportsLearning} />
         <Route path="/reports/service" component={ReportsService} />
         <Route path="/reports/staff" component={ReportsStaff} />
+        <Route path="/reports/system-access" component={ReportsSystemAccess} />
 
         <Route path="/sites" component={Sites} />
         <Route path="/settings" component={Settings} />

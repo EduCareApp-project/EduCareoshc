@@ -28,6 +28,7 @@ import welfareNotesRouter from "./welfare-notes";
 import storageRouter from "./storage";
 import confidentialNotesRouter from "./confidential-notes";
 import staffQualificationsRouter from "./staff-qualifications";
+import systemAccessRouter from "./system-access";
 
 const router: IRouter = Router();
 
@@ -60,5 +61,6 @@ router.use(welfareNotesRouter);
 router.use(storageRouter);
 router.use(confidentialNotesRouter);
 router.use(staffQualificationsRouter);
+router.use(systemAccessRouter);
 
 export default router;

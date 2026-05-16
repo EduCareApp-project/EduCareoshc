@@ -304,7 +304,11 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
                                     <Plus className="h-3 w-3" />
                                   </button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-72 p-2 max-h-[70vh] overflow-y-auto" align="end">
+                                <PopoverContent
+                                  className="w-72 p-2 max-h-[70vh] overflow-y-auto"
+                                  align="end"
+                                  onWheel={(e) => e.stopPropagation()}
+                                >
                                   <p className="text-xs font-semibold text-muted-foreground mb-2 px-1 sticky top-0 bg-white z-10">MTOP Outcomes</p>
                                   <div className="space-y-2">
                                     {MTOP_OUTCOMES.map((o) => (

@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
 import { GuardianLayout } from "@/components/guardian-layout";
 import QipPublic from "@/pages/qip-public";
+import ServiceDocsPublic from "@/pages/service-docs-public";
 import Login from "@/pages/login";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
@@ -157,6 +158,9 @@ function Router() {
   // Always-public routes
   if (location === "/qip-public" || location.startsWith("/qip-public?")) {
     return <QipPublic />;
+  }
+  if (location === "/service-docs") {
+    return <ServiceDocsPublic />;
   }
   if (location === "/login") {
     // If already logged in, redirect away from login

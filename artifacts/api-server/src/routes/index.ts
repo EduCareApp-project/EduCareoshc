@@ -15,6 +15,7 @@ import incidentsRouter from "./incidents";
 import conditionReportsRouter from "./condition-reports";
 import evacuationsRouter from "./evacuations";
 import qipRouter from "./qip";
+import serviceDocsRouter from "./service-docs";
 import wellbeingRouter from "./wellbeing";
 import policiesRouter from "./policies";
 import fileCategoriesRouter from "./file-categories";
@@ -37,13 +38,14 @@ const router: IRouter = Router();
 router.use(healthRouter);
 router.use(authRouter);
 
-// Allow unauthenticated access to the public QIP page and storage (for public assets)
+// Allow unauthenticated access to public pages and storage (for public assets)
 router.use("/qip/public", (req: Request, res: Response, next: NextFunction) => next());
+router.use("/service-docs/public", (req: Request, res: Response, next: NextFunction) => next());
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 router.use((req: Request, res: Response, next: NextFunction): void => {
   // Skip public paths already handled above
-  if (req.path === "/qip/public") {
+  if (req.path === "/qip/public" || req.path === "/service-docs/public") {
     next();
     return;
   }
@@ -69,6 +71,7 @@ router.use(incidentsRouter);
 router.use(conditionReportsRouter);
 router.use(evacuationsRouter);
 router.use(qipRouter);
+router.use(serviceDocsRouter);
 router.use(wellbeingRouter);
 router.use(policiesRouter);
 router.use(fileCategoriesRouter);

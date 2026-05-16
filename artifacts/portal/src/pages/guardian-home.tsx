@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth";
 import { useListSites } from "@workspace/api-client-react";
-import { Baby, Calendar, User, ExternalLink, ShieldCheck } from "lucide-react";
+import { Baby, Calendar, User, ExternalLink, ShieldCheck, FileText } from "lucide-react";
 
 type Child = {
   id: number;
@@ -67,28 +67,36 @@ export default function GuardianHome() {
 
   return (
     <div className="space-y-6">
-      {/* Top-right QIP button(s) */}
-      {childSiteIds.length > 0 && (
-        <div className="flex justify-end gap-2 flex-wrap">
-          {childSiteIds.map((siteId) => {
-            const site = (sites ?? []).find((s) => s.id === siteId);
-            const siteName = site?.name ?? "Our Service";
-            return (
-              <a
-                key={siteId}
-                href={`/qip-public?siteId=${siteId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:shadow-md transition-shadow"
-              >
-                <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-                {siteName} QIP
-                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              </a>
-            );
-          })}
-        </div>
-      )}
+      {/* Top-right buttons */}
+      <div className="flex justify-end gap-2 flex-wrap">
+        <a
+          href="/service-docs"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:shadow-md transition-shadow"
+        >
+          <FileText className="h-4 w-4 text-primary shrink-0" />
+          Service Documentation
+          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        </a>
+        {childSiteIds.map((siteId) => {
+          const site = (sites ?? []).find((s) => s.id === siteId);
+          const siteName = site?.name ?? "Our Service";
+          return (
+            <a
+              key={siteId}
+              href={`/qip-public?siteId=${siteId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:shadow-md transition-shadow"
+            >
+              <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+              {siteName} QIP
+              <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            </a>
+          );
+        })}
+      </div>
 
       {/* Welcome */}
       <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#1b5e20] to-[#2e7d32] p-6 text-white">

@@ -263,17 +263,6 @@ export default function Calendar() {
                             <p className={`text-xs font-medium ${format(day, "yyyy-MM-dd") === TODAY ? "text-primary font-bold" : "text-muted-foreground"}`}>
                               {format(day, "d")}
                             </p>
-                            {!isPlanned && (
-                              <div className="mt-1 space-y-0.5">
-                                {cyclesForWeek(weekDays).filter((c) =>
-                                  c.startDate && format(parseISO(c.startDate), "yyyy-MM-dd") === format(day, "yyyy-MM-dd")
-                                ).map((c) => (
-                                  <Link key={c.id} href={`/planning/${c.id}`}>
-                                    <div className="text-[10px] truncate rounded px-1 py-0.5 bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200 leading-tight">{c.title}</div>
-                                  </Link>
-                                ))}
-                              </div>
-                            )}
                           </div>
                         ))}
 

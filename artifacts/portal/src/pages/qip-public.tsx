@@ -188,64 +188,72 @@ export default function QipPublic() {
                           <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                             Areas for Improvement
                           </h4>
-                          <div className="space-y-3">
-                            {areaItems.map((item) => {
-                              const pc = PRIORITY_COLOURS[item.priority ?? "medium"] ?? PRIORITY_COLOURS.medium;
-                              const priorityLabel = (item.priority ?? "medium").charAt(0).toUpperCase() + (item.priority ?? "medium").slice(1);
-                              return (
-                                <div key={item.id} className="rounded-lg border p-4 space-y-3">
-                                  <div className="flex items-center gap-3 flex-wrap">
-                                    {item.standardElement && (
-                                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                        NQS {item.standardElement}
-                                      </span>
-                                    )}
-                                    <span
-                                      className="inline-block text-xs font-medium px-2 py-0.5 rounded-full border"
-                                      style={{ backgroundColor: pc.bg, color: pc.text, borderColor: pc.border }}
+                          <div className="overflow-x-auto rounded-lg border">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr style={{ backgroundColor: colour.bg }}>
+                                  {[
+                                    "NQS Standard",
+                                    "Priority",
+                                    "Issue Identified",
+                                    "Outcome / Goal",
+                                    "How We'll Achieve This",
+                                    "Success Measure",
+                                    "Progress",
+                                    "Due Date",
+                                  ].map((col) => (
+                                    <th
+                                      key={col}
+                                      className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide whitespace-nowrap"
+                                      style={{ color: colour.text }}
                                     >
-                                      {priorityLabel} Priority
-                                    </span>
-                                    {item.dueDate && (
-                                      <span className="text-xs text-muted-foreground">
-                                        Due: {new Date(item.dueDate).toLocaleDateString("en-AU")}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {item.issueIdentified && (
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Issue Identified</p>
-                                      <p className="text-sm text-gray-700">{item.issueIdentified}</p>
-                                    </div>
-                                  )}
-                                  {item.outcomeGoal && (
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Outcome / Goal</p>
-                                      <p className="text-sm text-gray-700">{item.outcomeGoal}</p>
-                                    </div>
-                                  )}
-                                  {item.howToAchieve && (
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">How We Will Achieve This</p>
-                                      <p className="text-sm text-gray-700">{item.howToAchieve}</p>
-                                    </div>
-                                  )}
-                                  {item.successMeasure && (
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Success Measure</p>
-                                      <p className="text-sm text-gray-700">{item.successMeasure}</p>
-                                    </div>
-                                  )}
-                                  {item.progressNotes && (
-                                    <div>
-                                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Progress</p>
-                                      <p className="text-sm text-gray-700">{item.progressNotes}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
+                                      {col}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {areaItems.map((item) => {
+                                  const pc = PRIORITY_COLOURS[item.priority ?? "medium"] ?? PRIORITY_COLOURS.medium;
+                                  const priorityLabel = (item.priority ?? "medium").charAt(0).toUpperCase() + (item.priority ?? "medium").slice(1);
+                                  return (
+                                    <tr key={item.id} className="border-t align-top">
+                                      <td className="py-3 px-4 text-sm font-medium text-gray-700 whitespace-nowrap">
+                                        {item.standardElement ? `NQS ${item.standardElement}` : <span className="text-gray-400">—</span>}
+                                      </td>
+                                      <td className="py-3 px-4 whitespace-nowrap">
+                                        <span
+                                          className="inline-block text-xs font-medium px-2 py-0.5 rounded-full border"
+                                          style={{ backgroundColor: pc.bg, color: pc.text, borderColor: pc.border }}
+                                        >
+                                          {priorityLabel}
+                                        </span>
+                                      </td>
+                                      <td className="py-3 px-4 text-sm text-gray-700">
+                                        {item.issueIdentified ?? <span className="text-gray-400">—</span>}
+                                      </td>
+                                      <td className="py-3 px-4 text-sm text-gray-700">
+                                        {item.outcomeGoal ?? <span className="text-gray-400">—</span>}
+                                      </td>
+                                      <td className="py-3 px-4 text-sm text-gray-700">
+                                        {item.howToAchieve ?? <span className="text-gray-400">—</span>}
+                                      </td>
+                                      <td className="py-3 px-4 text-sm text-gray-700">
+                                        {item.successMeasure ?? <span className="text-gray-400">—</span>}
+                                      </td>
+                                      <td className="py-3 px-4 text-sm text-gray-700">
+                                        {item.progressNotes ?? <span className="text-gray-400">—</span>}
+                                      </td>
+                                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
+                                        {item.dueDate
+                                          ? new Date(item.dueDate).toLocaleDateString("en-AU")
+                                          : <span className="text-gray-400">—</span>}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
                           </div>
                         </div>
                       )}

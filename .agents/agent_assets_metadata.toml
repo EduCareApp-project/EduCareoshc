@@ -1,5 +1,28 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "TgLtA5JndHokZgMFP_2sH"
+uri = "file://artifacts/website/public/hero-image.png"
+type = "image"
+title = "OSHC children playing hero"
+
+[[generated]]
+id = "Druc6xAXrZIQPPQoVYrGF"
+uri = "file://artifacts/website/public/feature-compliance.png"
+type = "image"
+title = "Compliance dashboard UI abstract"
+
+[[generated]]
+id = "rOHmmbnggblaGkpreIq9T"
+uri = "file://artifacts/website/public/feature-documentation.png"
+type = "image"
+title = "Educator documentation on tablet"
+
+[[generated]]
+id = "OeZqv2SDZe99BErfGsS0k"
+uri = "file://artifacts/website/public/solutions-staff.png"
+type = "image"
+title = "Staff meeting OSHC"
 
 [[outputs]]
 id = "sqQwiVCZs6A_xmbzChjzI"

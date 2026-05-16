@@ -25,6 +25,7 @@ import {
   UserCog,
   Settings2,
   LogOut,
+  Globe,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
@@ -134,6 +135,14 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
               })}
             </div>
           ))}
+          <div className="space-y-1">
+            <a href="/website/" target="_blank" rel="noopener noreferrer">
+              <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors cursor-pointer text-white/70 hover:bg-white/10 hover:text-white">
+                <Globe className="h-4 w-4 shrink-0" />
+                Website
+              </div>
+            </a>
+          </div>
         </div>
       </ScrollArea>
 

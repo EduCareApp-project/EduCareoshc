@@ -30,31 +30,31 @@ function ExpiryBadge({ nextDueAt }: { nextDueAt: string | null | undefined }) {
   const days = differenceInDays(new Date(nextDueAt), new Date());
   if (days < 0) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-full px-2 py-0.5">
-        <AlertCircle className="h-3 w-3" />
+      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded-full px-3 py-1">
+        <AlertCircle className="h-4 w-4" />
         Expired {Math.abs(days)}d ago
       </span>
     );
   }
   if (days === 0) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-full px-2 py-0.5">
-        <AlertCircle className="h-3 w-3" />
+      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded-full px-3 py-1">
+        <AlertCircle className="h-4 w-4" />
         Expires today
       </span>
     );
   }
   if (days <= 14) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
-        <Clock className="h-3 w-3" />
+      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+        <Clock className="h-4 w-4" />
         {days}d remaining
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-0.5">
-      <CheckCircle className="h-3 w-3" />
+    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-green-700 bg-green-50 border border-green-200 rounded-full px-3 py-1">
+      <CheckCircle className="h-4 w-4" />
       {days}d remaining
     </span>
   );

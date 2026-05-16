@@ -67,6 +67,29 @@ export default function GuardianHome() {
 
   return (
     <div className="space-y-6">
+      {/* Top-right QIP button(s) */}
+      {childSiteIds.length > 0 && (
+        <div className="flex justify-end gap-2 flex-wrap">
+          {childSiteIds.map((siteId) => {
+            const site = (sites ?? []).find((s) => s.id === siteId);
+            const siteName = site?.name ?? "Our Service";
+            return (
+              <a
+                key={siteId}
+                href={`/qip-public?siteId=${siteId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:shadow-md transition-shadow"
+              >
+                <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+                {siteName} QIP
+                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              </a>
+            );
+          })}
+        </div>
+      )}
+
       {/* Welcome */}
       <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#1b5e20] to-[#2e7d32] p-6 text-white">
         <p className="text-sm text-white/70 mb-1">Welcome back</p>
@@ -153,42 +176,6 @@ export default function GuardianHome() {
           </div>
         )}
       </div>
-
-      {/* QIP section — only shown when children have a site */}
-      {childSiteIds.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-base font-semibold">Quality Improvement Plan</h2>
-          </div>
-          <div className="flex flex-col gap-2">
-            {childSiteIds.map((siteId) => {
-              const site = (sites ?? []).find((s) => s.id === siteId);
-              const siteName = site?.name ?? "Our Service";
-              return (
-                <a
-                  key={siteId}
-                  href={`/qip-public?siteId=${siteId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between gap-3 rounded-xl border bg-white px-5 py-4 hover:shadow-md transition-shadow group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <ShieldCheck className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm leading-tight">{siteName}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">View our Quality Improvement Plan</p>
-                    </div>
-                  </div>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-                </a>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       <Card className="bg-muted/30">
         <CardContent className="py-4 px-5">

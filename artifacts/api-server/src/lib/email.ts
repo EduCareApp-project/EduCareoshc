@@ -1,3 +1,18 @@
+/**
+ * Transactional email via Resend SMTP relay.
+ *
+ * Required environment variables (set as Replit Secrets):
+ *   SMTP_HOST = smtp.resend.com
+ *   SMTP_PORT = 465
+ *   SMTP_USER = resend
+ *   SMTP_PASS = <Resend API key>          ← secret, never committed
+ *   SMTP_FROM = onboarding@resend.dev     ← update to system@educareoshc.com.au
+ *                                            after verifying the domain at resend.com/domains
+ *
+ * When all five vars are present the server logs:
+ *   "Email: SMTP configured — transactional emails will be delivered"
+ * When any are missing it logs a warning and skips sending.
+ */
 import nodemailer from "nodemailer";
 import { logger } from "./logger";
 
@@ -23,6 +38,22 @@ function createTransport() {
     secure: port === 465,
     auth: { user, pass },
   });
+}
+
+/**
+ * Log SMTP configuration status at startup. Call once from the server entry point.
+ * Confirms whether the SMTP_* env vars are present so missing config is immediately visible in logs.
+ */
+export function logEmailConfig(): void {
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const from = process.env.SMTP_FROM;
+  const configured = !!(host && user && pass);
+  logger.info(
+    { smtp: { host: host ?? "(not set)", user: user ?? "(not set)", from: from ?? "(not set)", configured } },
+    configured ? "Email: SMTP configured — transactional emails will be delivered" : "Email: SMTP not configured — transactional emails will be skipped",
+  );
 }
 
 export async function sendPasswordResetEmail(email: string, resetUrl: string): Promise<void> {
@@ -55,7 +86,6 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
       <!DOCTYPE html>
       <html>
         <body style="font-family: sans-serif; color: #1a1a1a; max-width: 560px; margin: 0 auto; padding: 24px;">
-          <img src="https://via.placeholder.com/48x48.png?text=EC" alt="EduCare" style="margin-bottom: 16px;" />
           <h2 style="margin: 0 0 8px;">Reset your password</h2>
           <p style="color: #555;">We received a request to reset the password for your EduCare Portal account.</p>
           <p style="color: #555;">Click the button below to set a new password. This link expires in <strong>4 hours</strong>.</p>

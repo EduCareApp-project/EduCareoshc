@@ -59,6 +59,18 @@ A compliance and documentation management portal for Education and Care business
 
 _Populate as you build — explicit user instructions worth remembering across sessions._
 
+## Email
+
+Transactional emails (password reset, login instructions, post notifications) are sent via **Resend SMTP relay**. Credentials are stored as Replit Secrets.
+
+- Provider: Resend (resend.com) — free tier, 3,000 emails/month
+- SMTP relay: `smtp.resend.com`, port `465`, SSL/TLS
+- `SMTP_USER` = `resend` (literal), `SMTP_PASS` = Resend API key (starts with `re_`)
+- `SMTP_FROM` = `onboarding@resend.dev` (Resend sandbox sender — pre-authorised for testing)
+- **To send from `system@educareoshc.com.au`**: verify the domain at resend.com/domains, add the DNS records in Crazy Domains, then update the `SMTP_FROM` secret to `system@educareoshc.com.au`
+- Implementation: `artifacts/api-server/src/lib/email.ts` — uses nodemailer; logs a warning and skips if `SMTP_HOST`/`SMTP_USER`/`SMTP_PASS` are absent
+- The `RESEND_API_KEY` secret is also present but not used by the app — it can be removed
+
 ## Gotchas
 
 - After changing `lib/api-spec/openapi.yaml`, always run `pnpm --filter @workspace/api-spec run codegen` before using updated types

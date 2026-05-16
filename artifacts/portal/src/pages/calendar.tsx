@@ -128,18 +128,22 @@ const TODAY = format(new Date(), "yyyy-MM-dd");
 
 interface WeekPlanModalProps {
   weekMonday: Date;
+  siteId?: number;
+  siteName?: string;
   onClose: () => void;
   onSaved: () => void;
 }
 
-function WeekPlanModal({ weekMonday, onClose, onSaved }: WeekPlanModalProps) {
+function WeekPlanModal({ weekMonday, siteId, siteName, onClose, onSaved }: WeekPlanModalProps) {
   const [title, setTitle] = useState(`Week of ${format(weekMonday, "d MMMM yyyy")}`);
   const [grid, setGrid] = useState<WeeklyPlanGrid>(emptyGrid);
   const [cellOutcomes, setCellOutcomes] = useState<CellOutcomes>({});
   const { mutateAsync: create, isPending } = useCreatePlanningExperience();
   const { data: allPlanning } = useListPlanningExperiences();
 
-  const openExperiences = (allPlanning ?? []).filter((p) => p.stage !== "closed" && p.stage !== "planned");
+  const openExperiences = (allPlanning ?? []).filter(
+    (p) => p.stage !== "closed" && (siteId === undefined || p.siteId === siteId),
+  );
 
   function setCell(row: RowKey, day: DayKey, value: string) {
     setGrid((g) => ({ ...g, [row]: { ...g[row], [day]: value } }));
@@ -170,6 +174,7 @@ function WeekPlanModal({ weekMonday, onClose, onSaved }: WeekPlanModalProps) {
         stage: "planned",
         startDate: format(weekMonday, "yyyy-MM-dd"),
         weeklyPlanData: { ...grid, cellOutcomes } as any,
+        ...(siteId !== undefined ? { siteId } : {}),
       },
     });
     onSaved();
@@ -180,7 +185,14 @@ function WeekPlanModal({ weekMonday, onClose, onSaved }: WeekPlanModalProps) {
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Weekly Learning & Planning Template</DialogTitle>
+          <div className="flex items-start justify-between gap-4">
+            <DialogTitle>Weekly Learning & Planning Template</DialogTitle>
+            {siteName && (
+              <span className="shrink-0 inline-flex items-center rounded-full bg-green-100 text-green-800 border border-green-300 px-2.5 py-0.5 text-xs font-medium">
+                {siteName}
+              </span>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -525,6 +537,8 @@ export default function Calendar() {
       {planWeek && (
         <WeekPlanModal
           weekMonday={planWeek}
+          siteId={siteIdNum}
+          siteName={(sites ?? []).find((s) => s.id === siteIdNum)?.name}
           onClose={() => setPlanWeek(null)}
           onSaved={handleSaved}
         />

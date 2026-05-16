@@ -115,7 +115,7 @@ export default function ReportsLearning() {
   const [selectedPeriod, setSelectedPeriod] = useState<string>("7d");
 
   const { data: sites } = useListSites();
-  const { data: children } = useListChildren();
+  const { data: children, isLoading: childrenLoading } = useListChildren();
   const { data: posts, isLoading: postsLoading } = useListPosts();
   const { data: jottings, isLoading: jottingsLoading } = useListJottings();
   const { data: observations, isLoading: observationsLoading } = useListObservations();
@@ -192,7 +192,24 @@ export default function ReportsLearning() {
   const hasWheel = mtopTotal > 0;
 
   const isLoadingCounts = postsLoading || jottingsLoading || observationsLoading;
-  const maxObs = Math.max(...(report?.byChild ?? []).map((c) => c.observationCount), 1);
+
+  // Per-child breakdown: children at the selected site, with counts from filtered data
+  const perChildData = useMemo(() => {
+    const visibleChildren = (children ?? []).filter((c) => {
+      if (c.status !== "active") return false;
+      if (selectedSite === "all") return true;
+      return String(c.siteId) === selectedSite;
+    });
+    return visibleChildren
+      .map((child) => ({
+        id: child.id,
+        name: `${child.firstName} ${child.lastName}`,
+        jottings: filteredJottings.filter((j) => j.childId === child.id).length,
+        learningStories: filteredObservations.filter((o) => o.childId === child.id).length,
+        posts: filteredPosts.filter((p) => (p.childIds ?? []).includes(child.id)).length,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [children, selectedSite, filteredJottings, filteredObservations, filteredPosts]);
 
   const siteName = sites?.find((s) => String(s.id) === selectedSite)?.name;
 
@@ -376,35 +393,54 @@ export default function ReportsLearning() {
         </div>
       )}
 
-      {/* Observations per Child */}
+      {/* Data per Child */}
       <Card>
-        <CardHeader><CardTitle className="text-base">Observations per Child</CardTitle></CardHeader>
-        <CardContent>
-          {reportLoading ? (
-            <Skeleton className="h-52 w-full" />
-          ) : (report?.byChild ?? []).length === 0 ? (
+        <CardHeader>
+          <CardTitle className="text-base">Data per Child</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Activity counts for active children{selectedSite !== "all" && siteName ? ` at ${siteName}` : ""} — {periodLabel.toLowerCase()}
+          </p>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoadingCounts || childrenLoading ? (
+            <Skeleton className="h-52 w-full m-6" />
+          ) : perChildData.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
-              <p>No children enrolled.</p>
+              <p>No active children{selectedSite !== "all" ? " at this site" : ""}.</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {[...(report?.byChild ?? [])]
-                .sort((a, b) => b.observationCount - a.observationCount)
-                .map((c) => (
-                  <div key={c.childId} className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium">{c.childName}</span>
-                      <span className="text-muted-foreground">{c.observationCount}</span>
-                    </div>
-                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary rounded-full transition-all"
-                        style={{ width: `${(c.observationCount / maxObs) * 100}%` }}
-                      />
-                    </div>
-                  </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/40">
+                  <th className="text-left px-6 py-3 font-medium text-muted-foreground">Child</th>
+                  <th className="text-center px-4 py-3 font-medium text-muted-foreground">Jottings</th>
+                  <th className="text-center px-4 py-3 font-medium text-muted-foreground">Learning Stories</th>
+                  <th className="text-center px-4 py-3 font-medium text-muted-foreground">Posts</th>
+                </tr>
+              </thead>
+              <tbody>
+                {perChildData.map((c, i) => (
+                  <tr key={c.id} className={i % 2 === 0 ? "bg-white" : "bg-muted/20"}>
+                    <td className="px-6 py-3 font-medium">{c.name}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full text-xs font-semibold ${c.jottings > 0 ? "bg-blue-100 text-blue-800" : "text-muted-foreground"}`}>
+                        {c.jottings}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full text-xs font-semibold ${c.learningStories > 0 ? "bg-green-100 text-green-800" : "text-muted-foreground"}`}>
+                        {c.learningStories}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full text-xs font-semibold ${c.posts > 0 ? "bg-purple-100 text-purple-800" : "text-muted-foreground"}`}>
+                        {c.posts}
+                      </span>
+                    </td>
+                  </tr>
                 ))}
-            </div>
+              </tbody>
+            </table>
           )}
         </CardContent>
       </Card>

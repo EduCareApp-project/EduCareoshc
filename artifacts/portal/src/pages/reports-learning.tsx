@@ -268,8 +268,28 @@ export default function ReportsLearning() {
         />
       </div>
 
-      {/* MTOP Outcome wheel — from Planning Cycle, period filtered */}
-      <Card>
+      {/* MTOP Outcome row — donut + two stat tiles */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Two stat tiles stacked */}
+        <div className="flex flex-col gap-4">
+          <StatTile
+            icon={<Eye className="h-5 w-5" />}
+            label="Observations"
+            count={filteredObservations.length}
+            sub="In this period"
+            loading={isLoadingCounts}
+          />
+          <StatTile
+            icon={<StickyNote className="h-5 w-5" />}
+            label="Active Jottings"
+            count={filteredJottings.length}
+            sub="In this period"
+            loading={isLoadingCounts}
+          />
+        </div>
+
+        {/* Donut chart */}
+        <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle className="text-base">MTOP Outcome</CardTitle>
           <p className="text-xs text-muted-foreground">Outcome coverage across planning cycles — {periodLabel.toLowerCase()}</p>
@@ -343,7 +363,8 @@ export default function ReportsLearning() {
             </div>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      </div>
 
       {/* Under-represented outcomes alert */}
       {(report?.underRepresentedOutcomes ?? []).length > 0 && (

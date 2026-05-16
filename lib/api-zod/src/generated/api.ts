@@ -1950,7 +1950,13 @@ export const ListPlanningExperiencesResponseItem = zod.object({
   id: zod.number(),
   title: zod.string(),
   description: zod.string().nullish(),
-  stage: zod.enum(["brainstorm", "planned", "assessment", "closed"]),
+  stage: zod.enum([
+    "brainstorm",
+    "planned",
+    "assessment",
+    "closed",
+    "published",
+  ]),
   outcomeIds: zod.array(zod.number()),
   childIds: zod.array(zod.number()),
   ageGroups: zod.array(zod.string()),
@@ -2082,7 +2088,7 @@ export const CreatePlanningExperienceBody = zod.object({
   title: zod.string(),
   description: zod.string().optional(),
   stage: zod
-    .enum(["brainstorm", "planned", "assessment", "closed"])
+    .enum(["brainstorm", "planned", "assessment", "closed", "published"])
     .default(createPlanningExperienceBodyStageDefault),
   outcomeIds: zod.array(zod.number()).optional(),
   childIds: zod.array(zod.number()).optional(),
@@ -2214,7 +2220,13 @@ export const GetPlanningExperienceResponse = zod.object({
   id: zod.number(),
   title: zod.string(),
   description: zod.string().nullish(),
-  stage: zod.enum(["brainstorm", "planned", "assessment", "closed"]),
+  stage: zod.enum([
+    "brainstorm",
+    "planned",
+    "assessment",
+    "closed",
+    "published",
+  ]),
   outcomeIds: zod.array(zod.number()),
   childIds: zod.array(zod.number()),
   ageGroups: zod.array(zod.string()),
@@ -2343,7 +2355,9 @@ export const UpdatePlanningExperienceParams = zod.object({
 export const UpdatePlanningExperienceBody = zod.object({
   title: zod.string().optional(),
   description: zod.string().optional(),
-  stage: zod.enum(["brainstorm", "planned", "assessment", "closed"]).optional(),
+  stage: zod
+    .enum(["brainstorm", "planned", "assessment", "closed", "published"])
+    .optional(),
   outcomeIds: zod.array(zod.number()).optional(),
   childIds: zod.array(zod.number()).optional(),
   ageGroups: zod.array(zod.string()).optional(),
@@ -2468,7 +2482,13 @@ export const UpdatePlanningExperienceResponse = zod.object({
   id: zod.number(),
   title: zod.string(),
   description: zod.string().nullish(),
-  stage: zod.enum(["brainstorm", "planned", "assessment", "closed"]),
+  stage: zod.enum([
+    "brainstorm",
+    "planned",
+    "assessment",
+    "closed",
+    "published",
+  ]),
   outcomeIds: zod.array(zod.number()),
   childIds: zod.array(zod.number()),
   ageGroups: zod.array(zod.string()),

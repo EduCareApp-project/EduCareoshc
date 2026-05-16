@@ -4278,7 +4278,7 @@ components:
           type: ["string", "null"]
         stage:
           type: string
-          enum: [brainstorm, planned, assessment, closed]
+          enum: [brainstorm, planned, assessment, closed, published]
         outcomeIds:
           type: array
           items:
@@ -4363,7 +4363,7 @@ components:
           type: string
         stage:
           type: string
-          enum: [brainstorm, planned, assessment, closed]
+          enum: [brainstorm, planned, assessment, closed, published]
           default: brainstorm
         outcomeIds:
           type: array
@@ -4445,7 +4445,7 @@ components:
           type: string
         stage:
           type: string
-          enum: [brainstorm, planned, assessment, closed]
+          enum: [brainstorm, planned, assessment, closed, published]
         outcomeIds:
           type: array
           items:

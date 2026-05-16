@@ -14,4 +14,5 @@ export const PlanningExperienceUpdateStage = {
   planned: "planned",
   assessment: "assessment",
   closed: "closed",
+  published: "published",
 } as const;

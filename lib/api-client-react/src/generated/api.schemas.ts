@@ -1341,6 +1341,7 @@ export const PlanningExperienceStage = {
   planned: "planned",
   assessment: "assessment",
   closed: "closed",
+  published: "published",
 } as const;
 
 export type AssessmentDataMtopItem = {
@@ -1443,6 +1444,7 @@ export const PlanningExperienceInputStage = {
   planned: "planned",
   assessment: "assessment",
   closed: "closed",
+  published: "published",
 } as const;
 
 export interface PlanningExperienceInput {
@@ -1484,6 +1486,7 @@ export const PlanningExperienceUpdateStage = {
   planned: "planned",
   assessment: "assessment",
   closed: "closed",
+  published: "published",
 } as const;
 
 export interface PlanningExperienceUpdate {

@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronLeft, ChevronRight, Layers, ArrowRight, CheckCircle2, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Layers, ArrowRight, CheckCircle2, Plus, X, Send } from "lucide-react";
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   addMonths, subMonths, format, parseISO, isBefore, isAfter, addDays,
@@ -360,15 +360,83 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
   );
 }
 
+function ReadOnlyPlanView({ plan, siteName, onClose }: { plan: ExistingPlan; siteName?: string; onClose: () => void }) {
+  const grid = initGridFromPlan(plan);
+  const cellOutcomes: CellOutcomes = (plan.weeklyPlanData as any)?.cellOutcomes ?? {};
+
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
+        <DialogHeader>
+          <div className="flex items-start justify-between gap-4">
+            <DialogTitle>{plan.title ?? "Weekly Plan"}</DialogTitle>
+            <div className="flex items-center gap-2 shrink-0">
+              {siteName && (
+                <span className="inline-flex items-center rounded-full bg-green-100 text-green-800 border border-green-300 px-2.5 py-0.5 text-xs font-medium">
+                  {siteName}
+                </span>
+              )}
+              <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 border border-blue-300 px-2.5 py-0.5 text-xs font-medium gap-1">
+                <Send className="h-3 w-3" /> Published
+              </span>
+            </div>
+          </div>
+        </DialogHeader>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="bg-[#1a4d6e] text-white">
+                <th className="border border-blue-900 px-3 py-2 text-left font-semibold w-36" />
+                {DAY_LABELS.map((d) => (
+                  <th key={d} className="border border-blue-900 px-2 py-2 text-center font-semibold">{d}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {ROW_LABELS.map(({ key, label }, ri) => (
+                <tr key={key} className={ri % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                  <td className="border border-slate-200 px-3 py-2 font-semibold text-slate-700 whitespace-nowrap align-top">{label}</td>
+                  {DAY_KEYS.map((day) => {
+                    const ck = `${key}-${day}`;
+                    const outcomes = cellOutcomes[ck] ?? [];
+                    const text = grid[key][day];
+                    return (
+                      <td key={day} className="border border-slate-200 px-2 py-2 align-top min-w-[100px]">
+                        {text && <p className="whitespace-pre-wrap text-slate-800 mb-1 leading-snug">{text}</p>}
+                        {outcomes.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {outcomes.map((subId) => (
+                              <span key={subId} className={`inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${bubbleClassForSub(subId)}`}>
+                                {subId}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {!text && outcomes.length === 0 && <span className="text-slate-300">—</span>}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [planWeek, setPlanWeek] = useState<Date | null>(null);
   const [planExisting, setPlanExisting] = useState<ExistingPlan | null>(null);
+  const [viewPlan, setViewPlan] = useState<ExistingPlan | null>(null);
   const [filterSiteId, setFilterSiteId] = useState<string>("");
   const queryClient = useQueryClient();
 
   const { data: sites } = useListSites();
   const { data: planning, isLoading } = useListPlanningExperiences();
+  const { mutateAsync: updateStage, isPending: isPublishing } = useUpdatePlanningExperience();
 
   useEffect(() => {
     if (sites && sites.length > 0 && !filterSiteId) {
@@ -402,7 +470,16 @@ export default function Calendar() {
     return cyclesForWeek(weekDays).filter((p) => p.stage === "planned");
   }
 
-  const plannedThisMonth = filteredPlanning.filter((p) => p.stage === "planned");
+  function publishedCyclesForWeek(weekDays: Date[]) {
+    return cyclesForWeek(weekDays).filter((p) => p.stage === "published");
+  }
+
+  async function handlePublish(planId: number) {
+    await updateStage({ id: planId, data: { stage: "published" } });
+    queryClient.invalidateQueries({ queryKey: getListPlanningExperiencesQueryKey() });
+  }
+
+  const activeThisMonth = filteredPlanning.filter((p) => p.stage === "planned" || p.stage === "published");
 
   function handleSaved() {
     queryClient.invalidateQueries({ queryKey: getListPlanningExperiencesQueryKey() });
@@ -456,12 +533,28 @@ export default function Calendar() {
                 {weeks.map((weekDays, wi) => {
                   const inMonth = weekDays.some((d) => d.getMonth() === currentMonth.getMonth());
                   const planned = plannedCyclesForWeek(weekDays);
+                  const published = publishedCyclesForWeek(weekDays);
                   const isPlanned = planned.length > 0;
+                  const isPublished = published.length > 0;
                   const monday = weekDays[0];
+                  const activePlan = published[0] ?? planned[0] ?? null;
 
                   return (
                     <div key={wi} className={`relative ${!inMonth ? "opacity-40" : ""}`}>
-                      {isPlanned && (
+                      {isPublished && (
+                        <div className="absolute inset-0 pointer-events-none z-10" style={{ right: 160 }}>
+                          <div className="h-full bg-blue-50/70 border-y border-blue-200 flex items-center px-3">
+                            <Badge
+                              className="bg-blue-100 text-blue-800 text-xs gap-1 pointer-events-auto cursor-pointer"
+                              onClick={() => setViewPlan(published[0])}
+                            >
+                              <Send className="h-3 w-3" />
+                              {published.length === 1 ? published[0].title : `${published.length} published`}
+                            </Badge>
+                          </div>
+                        </div>
+                      )}
+                      {!isPublished && isPlanned && (
                         <div className="absolute inset-0 pointer-events-none z-10" style={{ right: 160 }}>
                           <div className="h-full bg-green-50/70 border-y border-green-200 flex items-center px-3">
                             <Badge className="bg-green-100 text-green-800 text-xs gap-1 pointer-events-auto">
@@ -486,11 +579,15 @@ export default function Calendar() {
                         <div className="border-r flex items-center justify-center px-1">
                           <Button
                             size="sm"
-                            variant={isPlanned ? "ghost" : "outline"}
+                            variant={isPlanned || isPublished ? "ghost" : "outline"}
                             className="w-full text-xs h-8"
                             onClick={() => {
-                              setPlanWeek(monday);
-                              setPlanExisting(planned[0] ?? null);
+                              if (isPublished) {
+                                setViewPlan(published[0]);
+                              } else {
+                                setPlanWeek(monday);
+                                setPlanExisting(planned[0] ?? null);
+                              }
                             }}
                           >
                             Plan
@@ -499,11 +596,18 @@ export default function Calendar() {
                         <div className="flex items-center justify-center px-1">
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="w-full text-xs h-8"
-                            onClick={() => {}}
+                            variant={isPublished ? "ghost" : "outline"}
+                            disabled={!isPlanned && !isPublished}
+                            className={`w-full text-xs h-8 ${isPublished ? "text-blue-600" : ""}`}
+                            onClick={() => {
+                              if (isPublished) {
+                                setViewPlan(published[0]);
+                              } else if (isPlanned) {
+                                handlePublish(planned[0].id);
+                              }
+                            }}
                           >
-                            Publish
+                            {isPublished ? <><Send className="h-3 w-3 mr-1" />Published</> : "Publish"}
                           </Button>
                         </div>
                       </div>
@@ -523,8 +627,11 @@ export default function Calendar() {
               <div className="flex items-center gap-2">
                 <Layers className="h-5 w-5 text-muted-foreground" />
                 <CardTitle className="text-base">Planning Cycles</CardTitle>
-                {plannedThisMonth.length > 0 && (
-                  <Badge className="bg-blue-100 text-blue-800">{plannedThisMonth.length} planned</Badge>
+                {activeThisMonth.filter((p) => p.stage === "planned").length > 0 && (
+                  <Badge className="bg-green-100 text-green-800">{activeThisMonth.filter((p) => p.stage === "planned").length} planned</Badge>
+                )}
+                {activeThisMonth.filter((p) => p.stage === "published").length > 0 && (
+                  <Badge className="bg-blue-100 text-blue-800">{activeThisMonth.filter((p) => p.stage === "published").length} published</Badge>
                 )}
               </div>
               <Link href="/planning">
@@ -535,29 +642,51 @@ export default function Calendar() {
             </div>
           </CardHeader>
           <CardContent>
-            {plannedThisMonth.length === 0 ? (
+            {activeThisMonth.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
                 No planned cycles for this site yet.
               </p>
             ) : (
               <div className="divide-y">
-                {plannedThisMonth.map((p) => (
-                  <Link key={p.id} href={`/planning/${p.id}`}>
-                    <div className="flex items-center justify-between py-3 px-1 hover:bg-muted/50 rounded cursor-pointer transition-colors">
-                      <div>
-                        <p className="text-sm font-medium">{p.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {p.startDate ? `Starts ${format(parseISO(p.startDate), "MMM d, yyyy")}` : ""}
-                          {p.preparedBy ? ` · By ${p.preparedBy}` : ""}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-blue-100 text-blue-800 text-xs">Planned</Badge>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                      </div>
+                {activeThisMonth.map((p) => {
+                  const isPublishedPlan = p.stage === "published";
+                  return (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between py-3 px-1 hover:bg-muted/50 rounded cursor-pointer transition-colors"
+                      onClick={() => isPublishedPlan ? setViewPlan(p) : undefined}
+                    >
+                      {!isPublishedPlan ? (
+                        <Link href={`/planning/${p.id}`} className="contents">
+                          <div>
+                            <p className="text-sm font-medium">{p.title}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {p.startDate ? `Starts ${format(parseISO(p.startDate), "MMM d, yyyy")}` : ""}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-green-100 text-green-800 text-xs">Planned</Badge>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </Link>
+                      ) : (
+                        <>
+                          <div>
+                            <p className="text-sm font-medium">{p.title}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {p.startDate ? `Starts ${format(parseISO(p.startDate), "MMM d, yyyy")}` : ""}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-blue-100 text-blue-800 text-xs gap-1">
+                              <Send className="h-3 w-3" /> Published
+                            </Badge>
+                          </div>
+                        </>
+                      )}
                     </div>
-                  </Link>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -572,6 +701,14 @@ export default function Calendar() {
           existingPlan={planExisting ?? undefined}
           onClose={() => { setPlanWeek(null); setPlanExisting(null); }}
           onSaved={handleSaved}
+        />
+      )}
+
+      {viewPlan && (
+        <ReadOnlyPlanView
+          plan={viewPlan}
+          siteName={(sites ?? []).find((s) => s.id === viewPlan.siteId)?.name}
+          onClose={() => setViewPlan(null)}
         />
       )}
     </div>

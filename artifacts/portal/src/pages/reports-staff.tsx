@@ -114,10 +114,9 @@ export default function ReportsStaff() {
                             : <XCircle className="h-4 w-4 text-red-500 mx-auto" />}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <span className={s.pdHoursThisYear >= 8 ? "text-green-700 font-medium" : s.pdHoursThisYear > 0 ? "text-amber-700 font-medium" : "text-muted-foreground"}>
+                          <span className={s.pdHoursThisYear > 0 ? "font-medium" : "text-muted-foreground"}>
                             {s.pdHoursThisYear}h
                           </span>
-                          <span className="text-muted-foreground text-xs ml-1">/ 8h req.</span>
                         </td>
                         <td className="px-4 py-3 text-center">
                           <Badge className={`border ${config.className}`} variant="outline">{config.label}</Badge>

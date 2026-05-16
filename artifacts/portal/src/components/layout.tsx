@@ -175,7 +175,7 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop sidebar */}
       <aside
-        className="hidden md:flex w-64 shrink-0 flex-col"
+        className="hidden md:flex w-72 shrink-0 flex-col"
         style={{ backgroundColor: "#1b5e20" }}
       >
         <NavLinks location={location} />
@@ -192,7 +192,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-64 border-r-0" style={{ backgroundColor: "#1b5e20" }}>
+          <SheetContent side="left" className="p-0 w-72 border-r-0" style={{ backgroundColor: "#1b5e20" }}>
             <NavLinks location={location} />
           </SheetContent>
         </Sheet>

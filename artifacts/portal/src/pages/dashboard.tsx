@@ -220,7 +220,8 @@ function NoticeBoard({ canManage }: { canManage: boolean }) {
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("leadership");
   const { data: sites } = useListSites();
-  const siteName = sites?.[0]?.name;
+  const [selectedSiteId, setSelectedSiteId] = useState<string>("");
+  const siteName = sites?.find((s) => String(s.id) === selectedSiteId)?.name ?? sites?.[0]?.name;
 
   return (
     <div className="space-y-6">
@@ -236,10 +237,23 @@ export default function Dashboard() {
             <TabsTrigger value="educator">Educator</TabsTrigger>
             <TabsTrigger value="guardian">Guardian</TabsTrigger>
           </TabsList>
-          {activeTab === "educator" && siteName && (
-            <span className="text-sm text-muted-foreground">
-              Your service is: <span className="font-medium text-foreground">{siteName}</span>
-            </span>
+          {activeTab === "educator" && sites && sites.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">Your service is:</span>
+              <Select
+                value={selectedSiteId || String(sites[0].id)}
+                onValueChange={setSelectedSiteId}
+              >
+                <SelectTrigger className="h-8 text-sm w-auto min-w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sites.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
         </div>
 

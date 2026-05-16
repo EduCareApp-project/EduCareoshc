@@ -282,9 +282,9 @@ function WeekPlanModal({ weekMonday, siteId, siteName, onClose, onSaved }: WeekP
                                     <Plus className="h-3 w-3" />
                                   </button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-72 p-2" align="end">
-                                  <p className="text-xs font-semibold text-muted-foreground mb-2 px-1">MTOP Outcomes</p>
-                                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                                <PopoverContent className="w-72 p-2 max-h-[70vh] overflow-y-auto" align="end">
+                                  <p className="text-xs font-semibold text-muted-foreground mb-2 px-1 sticky top-0 bg-white z-10">MTOP Outcomes</p>
+                                  <div className="space-y-2">
                                     {MTOP_OUTCOMES.map((o) => (
                                       <div key={o.id}>
                                         <div className="flex items-center gap-1.5 px-1 mb-1">

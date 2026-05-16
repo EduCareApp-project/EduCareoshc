@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useGetServiceComplianceReport, useListSites } from "@workspace/api-client-react";
+import { useGetServiceComplianceReport, useListSites, useListPlanningExperiences } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShieldCheck, AlertTriangle, CheckCircle2, Clock, ClipboardX, TrendingUp, CheckSquare } from "lucide-react";
+import { ShieldCheck, AlertTriangle, CheckCircle2, Clock, ClipboardX, TrendingUp, CheckSquare, Layers, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "wouter";
 
@@ -13,6 +13,13 @@ export default function ReportsService() {
   const { data: sites } = useListSites();
   const siteIdParam = filterSiteId === "__all__" ? undefined : Number(filterSiteId);
   const { data: report, isLoading } = useGetServiceComplianceReport(siteIdParam ? { siteId: siteIdParam } : undefined);
+  const { data: allPlanning, isLoading: planningLoading } = useListPlanningExperiences();
+
+  const assessmentCycles = (allPlanning ?? []).filter((p) => {
+    if (p.stage !== "assessment") return false;
+    if (siteIdParam !== undefined && p.siteId !== siteIdParam) return false;
+    return true;
+  });
 
   if (isLoading) {
     return (
@@ -113,6 +120,57 @@ export default function ReportsService() {
           </Card>
         </Link>
       </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Layers className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-base">Planning Cycles in Assessment</CardTitle>
+              {assessmentCycles.length > 0 && (
+                <Badge className="bg-amber-100 text-amber-800">{assessmentCycles.length} awaiting review</Badge>
+              )}
+            </div>
+            <Link href="/planning">
+              <span className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer">View all <ArrowRight className="h-3.5 w-3.5" /></span>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {planningLoading ? (
+            <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+          ) : assessmentCycles.length === 0 ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4 justify-center">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              No planning cycles currently in the assessment stage{filterSiteId !== "__all__" ? " for this site" : ""}.
+            </div>
+          ) : (
+            <div className="divide-y">
+              {assessmentCycles.map((cycle) => {
+                const site = (sites ?? []).find((s) => s.id === cycle.siteId);
+                return (
+                  <Link key={cycle.id} href={`/planning/${cycle.id}`}>
+                    <div className="flex items-center justify-between py-3 px-1 hover:bg-muted/50 rounded cursor-pointer transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{cycle.title}</p>
+                        <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
+                          {site && <span>{site.name}</span>}
+                          {cycle.startDate && <span>Started {format(new Date(cycle.startDate), "MMM d, yyyy")}</span>}
+                          {cycle.preparedBy && <span>By {cycle.preparedBy}</span>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-4">
+                        <Badge className="bg-amber-100 text-amber-800 text-xs">Assessment</Badge>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -191,7 +191,7 @@ export default function QipPublic() {
                           <div className="overflow-x-auto rounded-lg border">
                             <table className="w-full text-left border-collapse">
                               <thead>
-                                <tr style={{ backgroundColor: colour.bg }}>
+                                <tr className="bg-muted/50">
                                   {[
                                     "NQS Standard/Element",
                                     "Priority",
@@ -204,8 +204,7 @@ export default function QipPublic() {
                                   ].map((col) => (
                                     <th
                                       key={col}
-                                      className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide whitespace-nowrap"
-                                      style={{ color: colour.text }}
+                                      className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide whitespace-nowrap text-muted-foreground"
                                     >
                                       {col}
                                     </th>

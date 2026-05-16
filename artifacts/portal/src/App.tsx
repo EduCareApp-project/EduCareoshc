@@ -8,6 +8,8 @@ import { Layout } from "@/components/layout";
 import { GuardianLayout } from "@/components/guardian-layout";
 import QipPublic from "@/pages/qip-public";
 import Login from "@/pages/login";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import GuardianHome from "@/pages/guardian-home";
 import GuardianNotices from "@/pages/guardian-notices";
 
@@ -162,6 +164,12 @@ function Router() {
       return <Redirect to="/" />;
     }
     return <Login />;
+  }
+  if (location === "/forgot-password") {
+    return <ForgotPassword />;
+  }
+  if (location === "/reset-password" || location.startsWith("/reset-password?")) {
+    return <ResetPassword />;
   }
 
   // Show loading while checking auth

@@ -91,6 +91,9 @@ function WeekPlanModal({ weekMonday, onClose, onSaved }: WeekPlanModalProps) {
   const [grid, setGrid] = useState<WeeklyPlanGrid>(emptyGrid);
   const [cellOutcomes, setCellOutcomes] = useState<CellOutcomes>({});
   const { mutateAsync: create, isPending } = useCreatePlanningExperience();
+  const { data: allPlanning } = useListPlanningExperiences();
+
+  const openExperiences = (allPlanning ?? []).filter((p) => p.stage !== "closed" && p.stage !== "planned");
 
   function setCell(row: RowKey, day: DayKey, value: string) {
     setGrid((g) => ({ ...g, [row]: { ...g[row], [day]: value } }));
@@ -183,7 +186,41 @@ function WeekPlanModal({ weekMonday, onClose, onSaved }: WeekPlanModalProps) {
                               })}
                             </div>
                           )}
-                          <div className="flex justify-end mt-1">
+                          <div className="flex justify-between items-center mt-1">
+                            {key === "experiencesThemes" ? (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button className="text-[10px] text-blue-600 hover:text-blue-800 hover:underline font-medium transition-colors">
+                                    add
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-60 p-2" align="start">
+                                  <p className="text-xs font-semibold text-muted-foreground mb-2 px-1">Open Experiences</p>
+                                  {openExperiences.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground px-1 py-2">No open experiences found.</p>
+                                  ) : (
+                                    <div className="space-y-0.5 max-h-48 overflow-y-auto">
+                                      {openExperiences.map((exp) => (
+                                        <button
+                                          key={exp.id}
+                                          onClick={() => {
+                                            const existing = grid[key][day];
+                                            const appended = existing ? `${existing}\n${exp.title}` : exp.title;
+                                            setCell(key, day, appended);
+                                          }}
+                                          className="w-full flex items-start gap-2 px-2 py-1.5 rounded text-left text-xs hover:bg-muted transition-colors"
+                                        >
+                                          <span className="font-medium truncate">{exp.title}</span>
+                                          <Badge className="ml-auto shrink-0 text-[9px] bg-slate-100 text-slate-600 capitalize">{exp.stage}</Badge>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </PopoverContent>
+                              </Popover>
+                            ) : (
+                              <span />
+                            )}
                             <Popover>
                               <PopoverTrigger asChild>
                                 <button className="h-5 w-5 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-700 flex items-center justify-center transition-colors">

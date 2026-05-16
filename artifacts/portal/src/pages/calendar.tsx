@@ -35,7 +35,7 @@ const DAY_KEYS: DayKey[] = ["mon", "tue", "wed", "thu", "fri"];
 const DAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
 type WeeklyPlanGrid = Record<RowKey, Record<DayKey, string>>;
-type CellOutcomes = Record<string, number[]>;
+type CellOutcomes = Record<string, string[]>;
 
 function emptyGrid(): WeeklyPlanGrid {
   const grid: Partial<WeeklyPlanGrid> = {};
@@ -46,20 +46,66 @@ function emptyGrid(): WeeklyPlanGrid {
 }
 
 const MTOP_OUTCOMES = [
-  { id: 1, label: "Outcome 1", description: "Strong sense of identity", color: "bg-blue-500" },
-  { id: 2, label: "Outcome 2", description: "Connected to their world", color: "bg-green-500" },
-  { id: 3, label: "Outcome 3", description: "Strong sense of wellbeing", color: "bg-orange-500" },
-  { id: 4, label: "Outcome 4", description: "Confident & involved learners", color: "bg-purple-500" },
-  { id: 5, label: "Outcome 5", description: "Effective communicators", color: "bg-rose-500" },
+  {
+    id: 1, label: "Outcome 1", title: "Children have a strong sense of identity",
+    dot: "bg-blue-500", bubble: "bg-blue-100 text-blue-800 border-blue-300",
+    sub: [
+      { id: "1.1", desc: "Children feel safe, secure and supported" },
+      { id: "1.2", desc: "Children develop their autonomy, inter-dependence, resilience and sense of agency" },
+      { id: "1.3", desc: "Children develop knowledgeable and confident self-identities" },
+      { id: "1.4", desc: "Children learn to interact in relation to others with care, empathy and respect" },
+    ],
+  },
+  {
+    id: 2, label: "Outcome 2", title: "Children are connected with and contribute to their world",
+    dot: "bg-green-500", bubble: "bg-green-100 text-green-800 border-green-300",
+    sub: [
+      { id: "2.1", desc: "Children develop a sense of belonging to groups and communities and an understanding of reciprocal rights and responsibilities" },
+      { id: "2.2", desc: "Children respond to diversity with respect" },
+      { id: "2.3", desc: "Children become aware of fairness" },
+      { id: "2.4", desc: "Children become socially responsible and show respect for the environment" },
+    ],
+  },
+  {
+    id: 3, label: "Outcome 3", title: "Children have a strong sense of wellbeing",
+    dot: "bg-orange-500", bubble: "bg-orange-100 text-orange-800 border-orange-300",
+    sub: [
+      { id: "3.1", desc: "Children become strong in their social, emotional and mental health" },
+      { id: "3.2", desc: "Children take increasing responsibility for their own health and physical wellbeing" },
+    ],
+  },
+  {
+    id: 4, label: "Outcome 4", title: "Children are confident and involved learners",
+    dot: "bg-purple-500", bubble: "bg-purple-100 text-purple-800 border-purple-300",
+    sub: [
+      { id: "4.1", desc: "Children develop dispositions for learning such as curiosity, cooperation, confidence, creativity, commitment, enthusiasm, persistence, imagination and reflexivity" },
+      { id: "4.2", desc: "Children use a range of skills and processes such as problem solving, inquiry, experimentation, hypothesising, researching and investigating" },
+      { id: "4.3", desc: "Children transfer and adapt what they have learned from one context to another" },
+      { id: "4.4", desc: "Children resource their own learning through connecting with people, place, technologies and natural and processed materials" },
+    ],
+  },
+  {
+    id: 5, label: "Outcome 5", title: "Children are effective communicators",
+    dot: "bg-rose-500", bubble: "bg-rose-100 text-rose-800 border-rose-300",
+    sub: [
+      { id: "5.1", desc: "Children interact verbally and non-verbally with others for a range of purposes" },
+      { id: "5.2", desc: "Children engage with a range of texts and make meaning from these texts" },
+      { id: "5.3", desc: "Children express ideas and make meaning using a range of media" },
+      { id: "5.4", desc: "Children begin to understand how symbols and pattern systems work" },
+      { id: "5.5", desc: "Children use information and communication technologies to access information, investigate ideas and represent their thinking" },
+    ],
+  },
 ];
 
-const OUTCOME_BUBBLE: Record<number, string> = {
-  1: "bg-blue-100 text-blue-800 border-blue-300",
-  2: "bg-green-100 text-green-800 border-green-300",
-  3: "bg-orange-100 text-orange-800 border-orange-300",
-  4: "bg-purple-100 text-purple-800 border-purple-300",
-  5: "bg-rose-100 text-rose-800 border-rose-300",
-};
+function bubbleClassForSub(subId: string) {
+  const parentId = parseInt(subId.split(".")[0]);
+  return MTOP_OUTCOMES.find((o) => o.id === parentId)?.bubble ?? "bg-slate-100 text-slate-700 border-slate-300";
+}
+
+function dotClassForSub(subId: string) {
+  const parentId = parseInt(subId.split(".")[0]);
+  return MTOP_OUTCOMES.find((o) => o.id === parentId)?.dot ?? "bg-slate-400";
+}
 
 function getWeeksInMonth(month: Date): Date[][] {
   const start = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
@@ -103,18 +149,18 @@ function WeekPlanModal({ weekMonday, onClose, onSaved }: WeekPlanModalProps) {
     return `${row}-${day}`;
   }
 
-  function toggleOutcome(row: RowKey, day: DayKey, outcomeId: number) {
+  function toggleOutcome(row: RowKey, day: DayKey, subId: string) {
     const key = cellKey(row, day);
     setCellOutcomes((prev) => {
       const current = prev[key] ?? [];
-      const exists = current.includes(outcomeId);
-      return { ...prev, [key]: exists ? current.filter((id) => id !== outcomeId) : [...current, outcomeId] };
+      const exists = current.includes(subId);
+      return { ...prev, [key]: exists ? current.filter((id) => id !== subId) : [...current, subId] };
     });
   }
 
-  function removeOutcome(row: RowKey, day: DayKey, outcomeId: number) {
+  function removeOutcome(row: RowKey, day: DayKey, subId: string) {
     const key = cellKey(row, day);
-    setCellOutcomes((prev) => ({ ...prev, [key]: (prev[key] ?? []).filter((id) => id !== outcomeId) }));
+    setCellOutcomes((prev) => ({ ...prev, [key]: (prev[key] ?? []).filter((id) => id !== subId) }));
   }
 
   async function handleSave() {
@@ -170,20 +216,16 @@ function WeekPlanModal({ weekMonday, onClose, onSaved }: WeekPlanModalProps) {
                           />
                           {selected.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
-                              {selected.map((id) => {
-                                const o = MTOP_OUTCOMES.find((o) => o.id === id)!;
-                                return (
-                                  <span
-                                    key={id}
-                                    className={`inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${OUTCOME_BUBBLE[id]} cursor-pointer`}
-                                    onClick={() => removeOutcome(key, day, id)}
-                                    title={o.description}
-                                  >
-                                    {o.label}
-                                    <X className="h-2.5 w-2.5 opacity-60" />
-                                  </span>
-                                );
-                              })}
+                              {selected.map((subId) => (
+                                <span
+                                  key={subId}
+                                  className={`inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${bubbleClassForSub(subId)} cursor-pointer`}
+                                  onClick={() => removeOutcome(key, day, subId)}
+                                >
+                                  {subId}
+                                  <X className="h-2.5 w-2.5 opacity-60" />
+                                </span>
+                              ))}
                             </div>
                           )}
                           <div className="flex justify-between items-center mt-1">
@@ -221,32 +263,43 @@ function WeekPlanModal({ weekMonday, onClose, onSaved }: WeekPlanModalProps) {
                             ) : (
                               <span />
                             )}
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <button className="h-5 w-5 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-700 flex items-center justify-center transition-colors">
-                                  <Plus className="h-3 w-3" />
-                                </button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-56 p-2" align="end">
-                                <p className="text-xs font-semibold text-muted-foreground mb-2 px-1">MTOP Outcomes</p>
-                                <div className="space-y-1">
-                                  {MTOP_OUTCOMES.map((o) => {
-                                    const isSelected = selected.includes(o.id);
-                                    return (
-                                      <button
-                                        key={o.id}
-                                        onClick={() => toggleOutcome(key, day, o.id)}
-                                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-xs transition-colors ${isSelected ? `${OUTCOME_BUBBLE[o.id]} border` : "hover:bg-muted"}`}
-                                      >
-                                        <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${o.color}`} />
-                                        <span className="font-medium">{o.label}</span>
-                                        <span className="text-muted-foreground truncate">{o.description}</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </PopoverContent>
-                            </Popover>
+                            {key !== "experiencesThemes" && (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button className="h-5 w-5 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-700 flex items-center justify-center transition-colors">
+                                    <Plus className="h-3 w-3" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-72 p-2" align="end">
+                                  <p className="text-xs font-semibold text-muted-foreground mb-2 px-1">MTOP Outcomes</p>
+                                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                                    {MTOP_OUTCOMES.map((o) => (
+                                      <div key={o.id}>
+                                        <div className="flex items-center gap-1.5 px-1 mb-1">
+                                          <span className={`h-2 w-2 rounded-full shrink-0 ${o.dot}`} />
+                                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{o.label} — {o.title}</span>
+                                        </div>
+                                        <div className="space-y-0.5 pl-1">
+                                          {o.sub.map((s) => {
+                                            const isSelected = selected.includes(s.id);
+                                            return (
+                                              <button
+                                                key={s.id}
+                                                onClick={() => toggleOutcome(key, day, s.id)}
+                                                className={`w-full flex items-start gap-2 px-2 py-1 rounded text-left text-xs transition-colors ${isSelected ? `${o.bubble} border` : "hover:bg-muted"}`}
+                                              >
+                                                <span className="font-semibold shrink-0 w-6">{s.id}</span>
+                                                <span className="text-muted-foreground leading-snug">{s.desc}</span>
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            )}
                           </div>
                         </td>
                       );

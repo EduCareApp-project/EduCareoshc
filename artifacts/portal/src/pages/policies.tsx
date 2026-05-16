@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
-import { FolderOpen, ChevronRight, ShieldCheck, ClipboardList } from "lucide-react";
+import { FolderOpen, ChevronRight, ShieldCheck, ClipboardList, FileText, ExternalLink } from "lucide-react";
 
 const TILES = [
   {
@@ -24,6 +24,14 @@ const TILES = [
     description:
       "A shared library of documents and files organised under custom category headings. Categories can be managed in settings.",
   },
+  {
+    href: "/service-docs",
+    icon: FileText,
+    title: "Service Documentation",
+    description:
+      "Publicly accessible page for families and community members. Displays files from the 'Prescribed Information' and 'Parent Notices' categories in the File Library.",
+    external: true,
+  },
 ];
 
 export default function PoliciesFiles() {
@@ -39,11 +47,11 @@ export default function PoliciesFiles() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {TILES.map(({ href, icon: Icon, title, description }) => (
+        {TILES.map(({ href, icon: Icon, title, description, external }) => (
           <Card
             key={href}
             className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group"
-            onClick={() => navigate(href)}
+            onClick={() => external ? window.open(href, "_blank") : navigate(href)}
           >
             <CardContent className="p-6 flex items-start gap-4">
               <div className="p-3 rounded-xl bg-primary/10 shrink-0 group-hover:bg-primary/15 transition-colors">
@@ -52,8 +60,12 @@ export default function PoliciesFiles() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="text-lg font-semibold">{title}</h2>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  {external
+                    ? <ExternalLink className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    : <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  }
                 </div>
+                <p className="text-sm text-muted-foreground mt-1 leading-snug">{description}</p>
               </div>
             </CardContent>
           </Card>

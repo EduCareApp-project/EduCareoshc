@@ -14,7 +14,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Pencil, Trash2, ClipboardList, CalendarDays, User, Star } from "lucide-react";
+import { Plus, Pencil, Trash2, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 
@@ -64,8 +64,9 @@ const RATING_STYLES: Record<string, string> = {
   needs_improvement: "text-amber-700",
 };
 
-async function fetchAppraisals(): Promise<Appraisal[]> {
-  const res = await fetch("/api/appraisals");
+async function fetchAppraisals(staffId?: number): Promise<Appraisal[]> {
+  const url = staffId ? `/api/appraisals?staffId=${staffId}` : "/api/appraisals";
+  const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to load appraisals");
   return res.json();
 }
@@ -133,15 +134,27 @@ type FormState = {
 };
 
 function CreateDialog({
-  open, onClose, staffList,
+  open, onClose, staffList, fixedStaffId,
 }: {
   open: boolean;
   onClose: () => void;
   staffList: { id: number; firstName: string; lastName: string }[];
+  fixedStaffId?: number;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<FormState>({ staffId: "", reviewerId: "", period: "", scheduledDate: "" });
+  const [form, setForm] = useState<FormState>({
+    staffId: fixedStaffId ? String(fixedStaffId) : "",
+    reviewerId: "",
+    period: "",
+    scheduledDate: "",
+  });
+
+  useEffect(() => {
+    if (open) {
+      setForm({ staffId: fixedStaffId ? String(fixedStaffId) : "", reviewerId: "", period: "", scheduledDate: "" });
+    }
+  }, [open, fixedStaffId]);
 
   const mutation = useMutation({
     mutationFn: () => createAppraisal({
@@ -153,14 +166,13 @@ function CreateDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appraisals"] });
       toast({ title: "Appraisal created" });
-      setForm({ staffId: "", reviewerId: "", period: "", scheduledDate: "" });
       onClose();
     },
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   function handleClose() {
-    setForm({ staffId: "", reviewerId: "", period: "", scheduledDate: "" });
+    setForm({ staffId: fixedStaffId ? String(fixedStaffId) : "", reviewerId: "", period: "", scheduledDate: "" });
     onClose();
   }
 
@@ -171,19 +183,21 @@ function CreateDialog({
           <DialogTitle>New Appraisal</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-1">
-          <div className="space-y-1.5">
-            <Label>Staff Member <span className="text-destructive">*</span></Label>
-            <Select value={form.staffId} onValueChange={(v) => setForm((f) => ({ ...f, staffId: v }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select staff member" />
-              </SelectTrigger>
-              <SelectContent>
-                {staffList.map((s) => (
-                  <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {!fixedStaffId && (
+            <div className="space-y-1.5">
+              <Label>Staff Member <span className="text-destructive">*</span></Label>
+              <Select value={form.staffId} onValueChange={(v) => setForm((f) => ({ ...f, staffId: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select staff member" />
+                </SelectTrigger>
+                <SelectContent>
+                  {staffList.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label>Reviewer / Appraiser</Label>
             <Select value={form.reviewerId || "__none__"} onValueChange={(v) => setForm((f) => ({ ...f, reviewerId: v === "__none__" ? "" : v }))}>
@@ -311,8 +325,8 @@ function EditDialog({
         <DialogHeader>
           <div className="flex items-start justify-between gap-3 pr-6">
             <div>
-              <DialogTitle className="text-lg">{appraisal.staffName}</DialogTitle>
-              <p className="text-sm text-muted-foreground mt-0.5">{appraisal.period}</p>
+              <DialogTitle className="text-lg">{appraisal.period}</DialogTitle>
+              <p className="text-sm text-muted-foreground mt-0.5">{appraisal.staffName}</p>
             </div>
             <StatusBadge status={form.status} />
           </div>
@@ -497,15 +511,17 @@ function EditDialog({
   );
 }
 
-export default function AppraisalsTab() {
+export default function AppraisalsTab({ staffId }: { staffId?: number }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Appraisal | null>(null);
 
+  const queryKey = staffId ? ["/api/appraisals", staffId] : ["/api/appraisals"];
+
   const { data, isLoading } = useQuery({
-    queryKey: ["/api/appraisals"],
-    queryFn: fetchAppraisals,
+    queryKey,
+    queryFn: () => fetchAppraisals(staffId),
   });
 
   const { data: staffList } = useListStaff();
@@ -560,7 +576,7 @@ export default function AppraisalsTab() {
         <div className="flex flex-col items-center justify-center py-20 text-center rounded-lg border border-dashed">
           <ClipboardList className="h-12 w-12 text-muted-foreground/30 mb-3" />
           <p className="text-sm font-medium text-muted-foreground">No appraisals yet</p>
-          <p className="text-xs text-muted-foreground/70 mt-1">Create your first staff appraisal to get started.</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">Create the first appraisal for this staff member.</p>
           <Button className="mt-4" size="sm" onClick={() => setCreateOpen(true)}>
             <Plus className="h-3.5 w-3.5 mr-1" /> New Appraisal
           </Button>
@@ -570,7 +586,6 @@ export default function AppraisalsTab() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-muted/50">
               <tr>
-                <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Staff Member</th>
                 <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Period</th>
                 <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reviewer</th>
                 <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rating</th>
@@ -586,15 +601,7 @@ export default function AppraisalsTab() {
                   className="border-t hover:bg-muted/20 transition-colors group cursor-pointer"
                   onClick={() => setEditing(a)}
                 >
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-xs font-bold shrink-0">
-                        {a.staffName.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-                      </div>
-                      <span className="text-sm font-medium">{a.staffName}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-sm">{a.period}</td>
+                  <td className="py-3 px-4 text-sm font-medium">{a.period}</td>
                   <td className="py-3 px-4 text-sm text-muted-foreground">
                     {a.reviewerName ?? <span className="italic">Unassigned</span>}
                   </td>
@@ -635,7 +642,7 @@ export default function AppraisalsTab() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete appraisal?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will permanently delete the appraisal for <strong>{a.staffName}</strong> — {a.period}. All assessment data will be lost.
+                              This will permanently delete the <strong>{a.period}</strong> appraisal. All assessment data will be lost.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -658,7 +665,12 @@ export default function AppraisalsTab() {
         </div>
       )}
 
-      <CreateDialog open={createOpen} onClose={() => setCreateOpen(false)} staffList={activeStaff} />
+      <CreateDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        staffList={activeStaff}
+        fixedStaffId={staffId}
+      />
       {editing && (
         <EditDialog
           appraisal={editing}

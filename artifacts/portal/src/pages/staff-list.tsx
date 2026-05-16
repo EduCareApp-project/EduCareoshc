@@ -4,10 +4,9 @@ import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, UserCog, Mail, Phone, Award, ClipboardList } from "lucide-react";
+import { Plus, UserCog, Mail, Phone, Award } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { computeQualLevel, QUAL_LEVEL_LABELS, QUAL_LEVEL_STYLES, type QualItem } from "@/lib/qual-level";
-import AppraisalsTab from "./appraisals-tab";
 
 const ROLE_LABELS: Record<string, string> = { admin: "Admin", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
 
@@ -27,7 +26,7 @@ function QualLevelBadge({ staffId }: { staffId: number }) {
   );
 }
 
-type TopTab = "active" | "inactive" | "appraisals";
+type TopTab = "active" | "inactive";
 
 export default function StaffList() {
   const { data: staff, isLoading } = useListStaff();
@@ -43,15 +42,13 @@ export default function StaffList() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Staff Team</h1>
-          <p className="text-muted-foreground mt-1">Manage educators, centre staff, and appraisals.</p>
+          <p className="text-muted-foreground mt-1">Manage educators and centre staff.</p>
         </div>
-        {tab !== "appraisals" && (
-          <Link href="/staff/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Add Staff Member
-            </Button>
-          </Link>
-        )}
+        <Link href="/staff/new">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" /> Add Staff Member
+          </Button>
+        </Link>
       </div>
 
       <div className="flex items-center gap-1 p-1 bg-muted rounded-lg w-fit">
@@ -81,20 +78,9 @@ export default function StaffList() {
             </span>
           )}
         </button>
-        <button
-          onClick={() => setTab("appraisals")}
-          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-            tab === "appraisals" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <ClipboardList className="h-3.5 w-3.5" />
-          Appraisals
-        </button>
       </div>
 
-      {tab === "appraisals" ? (
-        <AppraisalsTab />
-      ) : isLoading ? (
+      {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1,2,3,4].map(i => (
             <Card key={i} className="animate-pulse">

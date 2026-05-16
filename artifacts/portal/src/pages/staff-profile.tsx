@@ -31,7 +31,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Plus, Trash2, GraduationCap, User, Award, Paperclip, X, Pencil, FileText, AlertTriangle, Camera, Check } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, GraduationCap, User, Award, Paperclip, X, Pencil, FileText, AlertTriangle, Camera, Check, ClipboardList } from "lucide-react";
+import AppraisalsTab from "./appraisals-tab";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -439,6 +440,9 @@ export default function StaffProfile() {
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="qualifications">Qualifications</TabsTrigger>
           <TabsTrigger value="pd">Professional Development</TabsTrigger>
+          <TabsTrigger value="appraisals" className="flex items-center gap-1.5">
+            <ClipboardList className="h-3.5 w-3.5" />Appraisals
+          </TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -891,6 +895,11 @@ export default function StaffProfile() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* Appraisals Tab */}
+        <TabsContent value="appraisals" className="mt-4">
+          <AppraisalsTab staffId={staffId} />
         </TabsContent>
       </Tabs>
 

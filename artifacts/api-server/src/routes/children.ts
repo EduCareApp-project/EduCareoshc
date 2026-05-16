@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { db, childrenTable, observationsTable, staffTable, outcomesTable, programsTable, childDocumentsTable } from "@workspace/db";
 import {
   CreateChildBody,
@@ -23,7 +23,7 @@ import {
 const router: IRouter = Router();
 
 router.get("/children", async (_req, res): Promise<void> => {
-  const children = await db.select().from(childrenTable).orderBy(childrenTable.lastName);
+  const children = await db.select().from(childrenTable).orderBy(asc(childrenTable.lastName), asc(childrenTable.firstName));
   res.json(ListChildrenResponse.parse(children));
 });
 

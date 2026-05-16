@@ -99,7 +99,7 @@ export default function QipPublic() {
       <div className="bg-white border-b shadow-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-3 flex items-center gap-4">
           <div className="flex items-center gap-2 shrink-0">
-            <img src="/educare-logo.png" alt="EduCare" className="h-8 w-8 object-contain" />
+            <img src="/educare-logo-dark.png" alt="EduCare" className="h-8 w-8 object-contain" />
             <span className="text-base font-bold text-foreground tracking-tight">EduCare</span>
           </div>
           <div className="w-px h-6 bg-border shrink-0" />

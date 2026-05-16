@@ -5,6 +5,7 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+import type { WeeklyPlanDataCellOutcomes } from "./weeklyPlanDataCellOutcomes";
 import type { WeeklyPlanDayEntry } from "./weeklyPlanDayEntry";
 
 export interface WeeklyPlanData {
@@ -14,4 +15,5 @@ export interface WeeklyPlanData {
   wellbeing?: WeeklyPlanDayEntry;
   imaginative?: WeeklyPlanDayEntry;
   spontaneousChoice?: WeeklyPlanDayEntry;
+  cellOutcomes?: WeeklyPlanDataCellOutcomes;
 }

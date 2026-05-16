@@ -1434,6 +1434,8 @@ export interface WeeklyPlanDayEntry {
   fri?: string;
 }
 
+export type WeeklyPlanDataCellOutcomes = { [key: string]: string[] };
+
 export interface WeeklyPlanData {
   experiencesThemes?: WeeklyPlanDayEntry;
   active?: WeeklyPlanDayEntry;
@@ -1441,6 +1443,7 @@ export interface WeeklyPlanData {
   wellbeing?: WeeklyPlanDayEntry;
   imaginative?: WeeklyPlanDayEntry;
   spontaneousChoice?: WeeklyPlanDayEntry;
+  cellOutcomes?: WeeklyPlanDataCellOutcomes;
 }
 
 export interface PlanningExperience {

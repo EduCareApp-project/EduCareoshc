@@ -149,6 +149,7 @@ export * from "./staffUpdateStatus";
 export * from "./uploadUrlRequest";
 export * from "./uploadUrlResponse";
 export * from "./weeklyPlanData";
+export * from "./weeklyPlanDataCellOutcomes";
 export * from "./weeklyPlanDayEntry";
 export * from "./welfareNote";
 export * from "./welfareNoteInput";

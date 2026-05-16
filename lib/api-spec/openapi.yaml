@@ -4646,6 +4646,12 @@ components:
           $ref: "#/components/schemas/WeeklyPlanDayEntry"
         spontaneousChoice:
           $ref: "#/components/schemas/WeeklyPlanDayEntry"
+        cellOutcomes:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
 
     LearningStoriesReport:
       type: object

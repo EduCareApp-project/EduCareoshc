@@ -2109,6 +2109,9 @@ export const ListPlanningExperiencesResponseItem = zod.object({
             fri: zod.string().optional(),
           })
           .optional(),
+        cellOutcomes: zod
+          .record(zod.string(), zod.array(zod.string()))
+          .optional(),
       }),
       zod.null(),
     ])
@@ -2241,6 +2244,9 @@ export const CreatePlanningExperienceBody = zod.object({
             thu: zod.string().optional(),
             fri: zod.string().optional(),
           })
+          .optional(),
+        cellOutcomes: zod
+          .record(zod.string(), zod.array(zod.string()))
           .optional(),
       }),
       zod.null(),
@@ -2379,6 +2385,9 @@ export const GetPlanningExperienceResponse = zod.object({
             fri: zod.string().optional(),
           })
           .optional(),
+        cellOutcomes: zod
+          .record(zod.string(), zod.array(zod.string()))
+          .optional(),
       }),
       zod.null(),
     ])
@@ -2507,6 +2516,9 @@ export const UpdatePlanningExperienceBody = zod.object({
             thu: zod.string().optional(),
             fri: zod.string().optional(),
           })
+          .optional(),
+        cellOutcomes: zod
+          .record(zod.string(), zod.array(zod.string()))
           .optional(),
       }),
       zod.null(),
@@ -2640,6 +2652,9 @@ export const UpdatePlanningExperienceResponse = zod.object({
             thu: zod.string().optional(),
             fri: zod.string().optional(),
           })
+          .optional(),
+        cellOutcomes: zod
+          .record(zod.string(), zod.array(zod.string()))
           .optional(),
       }),
       zod.null(),

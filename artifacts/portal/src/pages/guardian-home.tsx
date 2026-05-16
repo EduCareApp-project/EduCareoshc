@@ -3,7 +3,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth";
-import { Baby, Calendar, User } from "lucide-react";
+import { useListSites } from "@workspace/api-client-react";
+import { Baby, Calendar, User, ExternalLink, ShieldCheck } from "lucide-react";
 
 type Child = {
   id: number;
@@ -15,6 +16,7 @@ type Child = {
   enrollmentDate: string | null;
   guardianName: string | null;
   guardianPhone: string | null;
+  siteId: number | null;
 };
 
 function ageFromDob(dob: string | null): string {
@@ -55,6 +57,11 @@ export default function GuardianHome() {
       return res.json();
     },
   });
+
+  const { data: sites } = useListSites();
+
+  // Derive unique site IDs from this guardian's children
+  const childSiteIds = [...new Set((children ?? []).map((c) => c.siteId).filter((id): id is number => id != null))];
 
   const firstName = user?.name?.split(" ")[0] ?? "there";
 
@@ -146,6 +153,42 @@ export default function GuardianHome() {
           </div>
         )}
       </div>
+
+      {/* QIP section — only shown when children have a site */}
+      {childSiteIds.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-base font-semibold">Quality Improvement Plan</h2>
+          </div>
+          <div className="flex flex-col gap-2">
+            {childSiteIds.map((siteId) => {
+              const site = (sites ?? []).find((s) => s.id === siteId);
+              const siteName = site?.name ?? "Our Service";
+              return (
+                <a
+                  key={siteId}
+                  href={`/qip-public?siteId=${siteId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between gap-3 rounded-xl border bg-white px-5 py-4 hover:shadow-md transition-shadow group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <ShieldCheck className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm leading-tight">{siteName}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">View our Quality Improvement Plan</p>
+                    </div>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <Card className="bg-muted/30">
         <CardContent className="py-4 px-5">

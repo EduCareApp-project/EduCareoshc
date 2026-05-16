@@ -1,6 +1,10 @@
 import { Router, type IRouter } from "express";
 import { eq, inArray, asc } from "drizzle-orm";
+import { Readable } from "stream";
 import { db, fileLibraryTable, fileCategoriesTable, sitesTable } from "@workspace/db";
+import { ObjectStorageService } from "../lib/objectStorage";
+
+const objectStorageService = new ObjectStorageService();
 
 const router: IRouter = Router();
 
@@ -78,6 +82,50 @@ router.get("/service-docs/public", async (req, res): Promise<void> => {
     sites: siteRows.sort((a, b) => a.name.localeCompare(b.name)),
     siteName,
   });
+});
+
+// Public file serving — streams a file_library item without requiring auth.
+// Only files in the PUBLIC_CATEGORIES are accessible this way.
+router.get("/service-docs/public/file/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [file] = await db
+    .select({
+      documentPath: fileLibraryTable.documentPath,
+      categoryId: fileLibraryTable.categoryId,
+    })
+    .from(fileLibraryTable)
+    .where(eq(fileLibraryTable.id, id))
+    .limit(1);
+
+  if (!file) { res.status(404).json({ error: "Not found" }); return; }
+
+  const cats = await db
+    .select({ id: fileCategoriesTable.id })
+    .from(fileCategoriesTable)
+    .where(inArray(fileCategoriesTable.name, PUBLIC_CATEGORIES));
+
+  const publicCatIds = cats.map((c) => c.id);
+  if (!publicCatIds.includes(file.categoryId!)) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  try {
+    const objectFile = await objectStorageService.getObjectEntityFile(file.documentPath);
+    const response = await objectStorageService.downloadObject(objectFile);
+    res.status(response.status);
+    response.headers.forEach((value, key) => res.setHeader(key, value));
+    if (response.body) {
+      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
+      nodeStream.pipe(res);
+    } else {
+      res.end();
+    }
+  } catch {
+    res.status(404).json({ error: "File not found in storage" });
+  }
 });
 
 export default router;

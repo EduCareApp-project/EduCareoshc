@@ -48,7 +48,7 @@ router.use("/service-docs/public", (req: Request, res: Response, next: NextFunct
 // ── Auth guard ────────────────────────────────────────────────────────────────
 router.use((req: Request, res: Response, next: NextFunction): void => {
   // Skip public paths already handled above
-  if (req.path === "/qip/public" || req.path === "/service-docs/public" || req.path === "/contact-enquiry") {
+  if (req.path.startsWith("/qip/public") || req.path.startsWith("/service-docs/public") || req.path === "/contact-enquiry") {
     next();
     return;
   }

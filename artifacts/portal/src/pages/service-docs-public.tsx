@@ -97,7 +97,7 @@ function PdfThumbnail({ url }: { url: string }) {
 }
 
 function DocCard({ item }: { item: DocItem }) {
-  const href = `/api/storage/objects${item.documentPath}`;
+  const href = `/api/service-docs/public/file/${item.id}`;
   const img = isImage(item.documentName);
   const pdf = isPdf(item.documentName);
 

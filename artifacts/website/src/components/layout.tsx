@@ -38,6 +38,12 @@ export function Layout({ children }: { children: ReactNode }) {
               </Link>
             ))}
             <div className="flex items-center gap-4">
+              <a
+                href="/login"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              >
+                Login
+              </a>
               <Link href="/contact">
                 <Button className="font-medium bg-primary text-primary-foreground hover:bg-primary/90">
                   Get Early Access
@@ -72,6 +78,13 @@ export function Layout({ children }: { children: ReactNode }) {
                 </Link>
               ))}
               <div className="h-px bg-border my-2" />
+              <a
+                href="/login"
+                className="text-lg font-medium p-2 rounded-md text-foreground hover:text-primary"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Login
+              </a>
               <Link href="/contact" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full justify-center">Get Early Access</Button>
               </Link>

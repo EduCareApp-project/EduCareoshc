@@ -189,22 +189,32 @@ export default function QipPublic() {
                             Areas for Improvement
                           </h4>
                           <div className="overflow-x-auto rounded-lg border">
-                            <table className="w-full text-left border-collapse">
+                            <table className="w-full text-left border-collapse text-[11px]">
+                              <colgroup>
+                                <col className="w-20" />
+                                <col className="w-20" />
+                                <col className="w-36" />
+                                <col className="w-36" />
+                                <col className="w-36" />
+                                <col className="w-32" />
+                                <col className="min-w-[220px]" />
+                                <col className="w-20" />
+                              </colgroup>
                               <thead>
                                 <tr className="bg-muted/50">
                                   {[
-                                    "NQS Standard/Element",
+                                    "Element",
                                     "Priority",
                                     "Issue Identified",
                                     "Outcome / Goal",
                                     "How We'll Achieve This",
                                     "Success Measure",
-                                    "Progress",
+                                    "Progress Notes",
                                     "Due Date",
                                   ].map((col) => (
                                     <th
                                       key={col}
-                                      className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide whitespace-nowrap text-muted-foreground"
+                                      className="py-2 px-2 font-semibold uppercase tracking-wide whitespace-nowrap text-muted-foreground"
                                     >
                                       {col}
                                     </th>
@@ -217,33 +227,33 @@ export default function QipPublic() {
                                   const priorityLabel = (item.priority ?? "medium").charAt(0).toUpperCase() + (item.priority ?? "medium").slice(1);
                                   return (
                                     <tr key={item.id} className="border-t">
-                                      <td className="py-2 px-3 align-top text-xs font-medium text-gray-700 whitespace-nowrap">
-                                        {item.standardElement?.trim() ? `NQS ${item.standardElement}` : <span className="text-gray-400">—</span>}
+                                      <td className="py-1.5 px-2 align-top font-medium text-gray-700 whitespace-nowrap">
+                                        {item.standardElement?.trim() ? item.standardElement : <span className="text-gray-400">—</span>}
                                       </td>
-                                      <td className="py-2 px-3 align-top whitespace-nowrap">
+                                      <td className="py-1.5 px-2 align-top whitespace-nowrap">
                                         <span
-                                          className="inline-block text-xs font-medium px-2 py-0.5 rounded-full border"
+                                          className="inline-block font-medium px-1.5 py-0.5 rounded-full border"
                                           style={{ backgroundColor: pc.bg, color: pc.text, borderColor: pc.border }}
                                         >
                                           {priorityLabel}
                                         </span>
                                       </td>
-                                      <td className="py-2 px-3 align-top text-xs text-gray-700">
+                                      <td className="py-1.5 px-2 align-top text-gray-700">
                                         {item.issueIdentified?.trim() ? item.issueIdentified : <span className="text-gray-400">—</span>}
                                       </td>
-                                      <td className="py-2 px-3 align-top text-xs text-gray-700">
+                                      <td className="py-1.5 px-2 align-top text-gray-700">
                                         {item.outcomeGoal?.trim() ? item.outcomeGoal : <span className="text-gray-400">—</span>}
                                       </td>
-                                      <td className="py-2 px-3 align-top text-xs text-gray-700">
+                                      <td className="py-1.5 px-2 align-top text-gray-700">
                                         {item.howToAchieve?.trim() ? item.howToAchieve : <span className="text-gray-400">—</span>}
                                       </td>
-                                      <td className="py-2 px-3 align-top text-xs text-gray-700">
+                                      <td className="py-1.5 px-2 align-top text-gray-700">
                                         {item.successMeasure?.trim() ? item.successMeasure : <span className="text-gray-400">—</span>}
                                       </td>
-                                      <td className="py-2 px-3 align-top text-xs text-gray-700">
+                                      <td className="py-1.5 px-2 align-top text-gray-700">
                                         {item.progressNotes?.trim() ? item.progressNotes : <span className="text-gray-400">—</span>}
                                       </td>
-                                      <td className="py-2 px-3 align-top text-xs text-gray-700 whitespace-nowrap">
+                                      <td className="py-1.5 px-2 align-top text-gray-700 whitespace-nowrap">
                                         {item.dueDate?.trim()
                                           ? new Date(item.dueDate).toLocaleDateString("en-AU")
                                           : <span className="text-gray-400">—</span>}

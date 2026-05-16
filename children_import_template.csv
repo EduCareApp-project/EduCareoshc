@@ -1,11 +1,10 @@
-first_name,last_name,date_of_birth,enrollment_date,status,site_name,guardian_name,guardian_email,guardian_phone,guardian_2_name,guardian_2_email,guardian_2_phone,medical_notes
+first_name,last_name,date_of_birth,enrollment_date,status,site_name,guardian_name,guardian_email,guardian_phone,medical_notes
 # INSTRUCTIONS — delete this row before importing
 # date_of_birth / enrollment_date: YYYY-MM-DD format
 # status: active | inactive | waitlist
 # site_name: must match a site name already set up in the portal (leave blank if only one site)
-# guardian_2_* columns are optional — leave blank if there is only one guardian
 # medical_notes is optional free-text
-Amelia,Thompson,2021-03-15,2023-01-30,active,Main Campus,Sarah Thompson,sarah.thompson@email.com,0412 345 678,James Thompson,james.thompson@email.com,0413 456 789,Allergy to peanuts — carry EpiPen at all times
-Luca,Nguyen,2020-08-22,2022-07-01,active,Main Campus,Minh Nguyen,minh.nguyen@email.com,0421 987 654,,,,,
-Harper,Williams,2022-11-05,2024-02-01,active,Hillside Branch,Claire Williams,claire.williams@email.com,0434 111 222,,,,
-Oliver,Patel,2019-06-10,2023-09-15,waitlist,Main Campus,Anita Patel,anita.patel@email.com,0456 222 333,Raj Patel,raj.patel@email.com,0457 333 444,Mild lactose intolerance
+Amelia,Thompson,2021-03-15,2023-01-30,active,Main Campus,Sarah Thompson,sarah.thompson@email.com,0412 345 678,Allergy to peanuts — carry EpiPen at all times
+Luca,Nguyen,2020-08-22,2022-07-01,active,Main Campus,Minh Nguyen,minh.nguyen@email.com,0421 987 654,
+Harper,Williams,2022-11-05,2024-02-01,active,Hillside Branch,Claire Williams,claire.williams@email.com,0434 111 222,
+Oliver,Patel,2019-06-10,2023-09-15,waitlist,Main Campus,Anita Patel,anita.patel@email.com,0456 222 333,Mild lactose intolerance

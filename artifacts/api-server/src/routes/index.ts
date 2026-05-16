@@ -33,6 +33,7 @@ import staffQualificationsRouter from "./staff-qualifications";
 import systemAccessRouter from "./system-access";
 import contactEnquiryRouter from "./contact-enquiry";
 import appraisalsRouter from "./appraisals";
+import emailSettingsRouter from "./email-settings";
 
 const router: IRouter = Router();
 
@@ -44,11 +45,12 @@ router.use(contactEnquiryRouter);
 // Allow unauthenticated access to public pages and storage (for public assets)
 router.use("/qip/public", (req: Request, res: Response, next: NextFunction) => next());
 router.use("/service-docs/public", (req: Request, res: Response, next: NextFunction) => next());
+router.use("/email-settings/logo", (req: Request, res: Response, next: NextFunction) => next());
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 router.use((req: Request, res: Response, next: NextFunction): void => {
   // Skip public paths already handled above
-  if (req.path.startsWith("/qip/public") || req.path.startsWith("/service-docs/public") || req.path === "/contact-enquiry") {
+  if (req.path.startsWith("/qip/public") || req.path.startsWith("/service-docs/public") || req.path === "/email-settings/logo" || req.path === "/contact-enquiry") {
     next();
     return;
   }
@@ -91,5 +93,6 @@ router.use(confidentialNotesRouter);
 router.use(staffQualificationsRouter);
 router.use(systemAccessRouter);
 router.use(appraisalsRouter);
+router.use(emailSettingsRouter);
 
 export default router;

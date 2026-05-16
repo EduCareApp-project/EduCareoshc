@@ -56,6 +56,7 @@ import ReportsSystemAccess from "@/pages/reports-system-access";
 import Sites from "@/pages/sites";
 import Settings from "@/pages/settings";
 import SettingsQip from "@/pages/settings-qip";
+import SettingsEmailNotifications from "@/pages/settings-email-notifications";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -146,6 +147,7 @@ function StaffRoutes() {
         <Route path="/sites" component={Sites} />
         <Route path="/settings" component={Settings} />
         <Route path="/settings/qip" component={SettingsQip} />
+        <Route path="/settings/email-notifications" component={SettingsEmailNotifications} />
 
         <Route component={NotFound} />
       </Switch>

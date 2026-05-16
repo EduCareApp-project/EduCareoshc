@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { sendContactEnquiryEmail } from "../lib/email";
+import { getEmailBranding } from "../lib/emailBranding";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -19,6 +20,7 @@ router.post("/contact-enquiry", async (req, res) => {
   }
 
   try {
+    const branding = await getEmailBranding();
     await sendContactEnquiryEmail({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -26,7 +28,7 @@ router.post("/contact-enquiry", async (req, res) => {
       phone: phone.trim(),
       serviceName: serviceName.trim(),
       message: typeof message === "string" ? message.trim() : undefined,
-    });
+    }, branding);
     res.status(200).json({ ok: true });
   } catch (err) {
     logger.error({ err }, "Failed to send contact enquiry email");

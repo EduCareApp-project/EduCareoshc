@@ -11,6 +11,7 @@ import {
 } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { sendPostNotificationEmail } from "../lib/email";
+import { getEmailBranding } from "../lib/emailBranding";
 
 const router: IRouter = Router();
 
@@ -148,7 +149,9 @@ router.patch("/posts/:id", async (req, res): Promise<void> => {
     const portalHost = domains[0] ?? "localhost";
     const portalUrl = `https://${portalHost}/notices`;
 
-    sendPostNotificationEmail(recipients, { postTitle: post.title, excerpt, portalUrl }).catch((err) => {
+    getEmailBranding().then((branding) =>
+      sendPostNotificationEmail(recipients, { postTitle: post.title, excerpt, portalUrl }, branding)
+    ).catch((err) => {
       req.log.error({ err }, "Post notification email dispatch failed");
     });
   }

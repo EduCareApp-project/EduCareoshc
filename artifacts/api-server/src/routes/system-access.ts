@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, sitesTable } from "@workspace/db";
 import { sendLoginInstructionsEmail } from "../lib/email";
+import { getEmailBranding } from "../lib/emailBranding";
 
 const router: IRouter = Router();
 
@@ -177,6 +178,7 @@ router.post("/reports/system-access/staff/:id/send-instructions", async (req, re
   const loginUrl = `${baseUrl}/login`;
 
   try {
+    const branding = await getEmailBranding();
     await sendLoginInstructionsEmail(staff.email, {
       recipientName: `${staff.firstName} ${staff.lastName}`,
       loginEmail: staff.email,
@@ -184,7 +186,7 @@ router.post("/reports/system-access/staff/:id/send-instructions", async (req, re
       setPasswordUrl,
       isAlreadyConnected: !!staff.passwordHash,
       accountType: "staff",
-    });
+    }, branding);
   } catch (err) {
     req.log.error({ err, staffId: id }, "Failed to send login instructions email");
     res.status(500).json({ error: "Failed to send email. Please try again later." });
@@ -237,6 +239,7 @@ router.post("/reports/system-access/guardian/:id/send-instructions", async (req,
   const loginUrl = `${baseUrl}/login`;
 
   try {
+    const branding = await getEmailBranding();
     await sendLoginInstructionsEmail(guardian.guardianEmail, {
       recipientName,
       loginEmail: guardian.guardianEmail,
@@ -244,7 +247,7 @@ router.post("/reports/system-access/guardian/:id/send-instructions", async (req,
       setPasswordUrl,
       isAlreadyConnected: !!guardian.passwordHash,
       accountType: "guardian",
-    });
+    }, branding);
   } catch (err) {
     req.log.error({ err, guardianId: id }, "Failed to send login instructions email");
     res.status(500).json({ error: "Failed to send email. Please try again later." });

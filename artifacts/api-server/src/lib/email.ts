@@ -22,6 +22,46 @@ export interface PostNotificationEmailOptions {
   portalUrl: string;
 }
 
+export interface LoginInstructionsEmailOptions {
+  recipientName: string;
+  loginEmail: string;
+  loginUrl: string;
+  setPasswordUrl: string;
+  isAlreadyConnected: boolean;
+  accountType: "staff" | "guardian";
+}
+
+export interface ContactEnquiryEmailOptions {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  serviceName: string;
+  message?: string;
+}
+
+export interface EmailBranding {
+  senderName: string;
+  logoUrl: string | null;
+  templates?: {
+    passwordReset?: { subject?: string; intro?: string };
+    loginInvite?: { subject?: string; intro?: string };
+    loginResend?: { subject?: string; intro?: string };
+    postNotification?: { subject?: string; intro?: string };
+    contactEnquiry?: { subject?: string; intro?: string };
+  };
+}
+
+function buildLogoHtml(branding?: EmailBranding): string {
+  if (!branding?.logoUrl) return "";
+  const name = (branding.senderName ?? "EduCare Portal").replace(/"/g, "&quot;");
+  return `<img src="${branding.logoUrl}" alt="${name}" style="height:52px;display:block;margin-bottom:20px;max-width:220px;object-fit:contain;" />`;
+}
+
+function fromName(branding?: EmailBranding): string {
+  return branding?.senderName ?? "EduCare Portal";
+}
+
 function createTransport() {
   const host = process.env.SMTP_HOST;
   const port = parseInt(process.env.SMTP_PORT ?? "587", 10);
@@ -56,7 +96,7 @@ export function logEmailConfig(): void {
   );
 }
 
-export async function sendPasswordResetEmail(email: string, resetUrl: string): Promise<void> {
+export async function sendPasswordResetEmail(email: string, resetUrl: string, branding?: EmailBranding): Promise<void> {
   const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@educare.example.com";
   const transport = createTransport();
 
@@ -65,14 +105,17 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
     return;
   }
 
+  const subject = branding?.templates?.passwordReset?.subject ?? "Reset your EduCare password";
+  const intro = branding?.templates?.passwordReset?.intro ?? "We received a request to reset the password for your EduCare Portal account.";
+
   await transport.sendMail({
-    from: `"EduCare Portal" <${from}>`,
+    from: `"${fromName(branding)}" <${from}>`,
     to: email,
-    subject: "Reset your EduCare password",
+    subject,
     text: [
       "Hi,",
       "",
-      "We received a request to reset the password for your EduCare Portal account.",
+      intro,
       "",
       "Click the link below to set a new password. The link expires in 4 hours.",
       "",
@@ -80,14 +123,15 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
       "",
       "If you didn't request a password reset, you can safely ignore this email.",
       "",
-      "— EduCare Portal",
+      `— ${fromName(branding)}`,
     ].join("\n"),
     html: `
       <!DOCTYPE html>
       <html>
         <body style="font-family: sans-serif; color: #1a1a1a; max-width: 560px; margin: 0 auto; padding: 24px;">
-          <h2 style="margin: 0 0 8px;">Reset your password</h2>
-          <p style="color: #555;">We received a request to reset the password for your EduCare Portal account.</p>
+          ${buildLogoHtml(branding)}
+          <h2 style="margin: 0 0 8px;">${subject}</h2>
+          <p style="color: #555;">${intro}</p>
           <p style="color: #555;">Click the button below to set a new password. This link expires in <strong>4 hours</strong>.</p>
           <a href="${resetUrl}" style="
             display: inline-block;
@@ -110,18 +154,10 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string): P
   logger.info({ email }, "Password reset email sent");
 }
 
-export interface LoginInstructionsEmailOptions {
-  recipientName: string;
-  loginEmail: string;
-  loginUrl: string;
-  setPasswordUrl: string;
-  isAlreadyConnected: boolean;
-  accountType: "staff" | "guardian";
-}
-
 export async function sendLoginInstructionsEmail(
   email: string,
   opts: LoginInstructionsEmailOptions,
+  branding?: EmailBranding,
 ): Promise<void> {
   const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@educare.example.com";
   const transport = createTransport();
@@ -132,23 +168,27 @@ export async function sendLoginInstructionsEmail(
   }
 
   const portalLabel = opts.accountType === "guardian" ? "Family Portal" : "EduCare Portal";
+  const templateKey = opts.isAlreadyConnected ? "loginResend" : "loginInvite";
   const actionLabel = opts.isAlreadyConnected ? "Reset your password" : "Set your password";
-  const actionDesc = opts.isAlreadyConnected
+
+  const defaultSubject = opts.isAlreadyConnected
+    ? `Your ${portalLabel} login details`
+    : `You've been invited to ${portalLabel}`;
+  const defaultIntro = opts.isAlreadyConnected
     ? "Your account already has a password. Use the link below to set a new one."
     : "Your account has been set up. Click the link below to choose a password and get started.";
 
-  const subject = opts.isAlreadyConnected
-    ? `Your ${portalLabel} login details`
-    : `You've been invited to ${portalLabel}`;
+  const subject = branding?.templates?.[templateKey]?.subject ?? defaultSubject;
+  const intro = branding?.templates?.[templateKey]?.intro ?? defaultIntro;
 
   await transport.sendMail({
-    from: `"EduCare Portal" <${from}>`,
+    from: `"${fromName(branding)}" <${from}>`,
     to: email,
     subject,
     text: [
       `Hi ${opts.recipientName},`,
       "",
-      actionDesc,
+      intro,
       "",
       `Login email: ${opts.loginEmail}`,
       "",
@@ -158,15 +198,16 @@ export async function sendLoginInstructionsEmail(
       "",
       "This link expires in 4 hours.",
       "",
-      "— EduCare Portal",
+      `— ${fromName(branding)}`,
     ].join("\n"),
     html: `
       <!DOCTYPE html>
       <html>
         <body style="font-family: sans-serif; color: #1a1a1a; max-width: 560px; margin: 0 auto; padding: 24px;">
+          ${buildLogoHtml(branding)}
           <h2 style="margin: 0 0 8px;">${subject}</h2>
           <p style="color: #555;">Hi ${opts.recipientName.replace(/</g, "&lt;").replace(/>/g, "&gt;")},</p>
-          <p style="color: #555;">${actionDesc}</p>
+          <p style="color: #555;">${intro}</p>
           <table style="background: #f8f9fa; border-radius: 8px; padding: 16px; margin: 16px 0; width: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 4px 8px; color: #888; font-size: 13px; white-space: nowrap;">Login email</td>
@@ -189,7 +230,7 @@ export async function sendLoginInstructionsEmail(
           ">${actionLabel}</a>
           <p style="color: #888; font-size: 13px;">This link expires in <strong>4 hours</strong>. If you didn't expect this email, you can safely ignore it.</p>
           <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-          <p style="color: #aaa; font-size: 12px;">EduCare Portal — sent by your centre administrator.</p>
+          <p style="color: #aaa; font-size: 12px;">${fromName(branding)} — sent by your centre administrator.</p>
         </body>
       </html>
     `,
@@ -198,16 +239,7 @@ export async function sendLoginInstructionsEmail(
   logger.info({ email, accountType: opts.accountType }, "Login instructions email sent");
 }
 
-export interface ContactEnquiryEmailOptions {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  serviceName: string;
-  message?: string;
-}
-
-export async function sendContactEnquiryEmail(opts: ContactEnquiryEmailOptions): Promise<void> {
+export async function sendContactEnquiryEmail(opts: ContactEnquiryEmailOptions, branding?: EmailBranding): Promise<void> {
   const to = "system@educareoshc.com.au";
   const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@educare.example.com";
   const transport = createTransport();
@@ -218,12 +250,13 @@ export async function sendContactEnquiryEmail(opts: ContactEnquiryEmailOptions):
   }
 
   const fullName = `${opts.firstName} ${opts.lastName}`;
+  const intro = branding?.templates?.contactEnquiry?.intro ?? "Submitted via the EduCare public website.";
   const messageBlock = opts.message
     ? `Message:\n${opts.message}`
     : "No message provided.";
 
   await transport.sendMail({
-    from: `"EduCare Website" <${from}>`,
+    from: `"${fromName(branding)} Website" <${from}>`,
     to,
     replyTo: opts.email,
     subject: `New enquiry from ${fullName} — ${opts.serviceName}`,
@@ -241,8 +274,9 @@ export async function sendContactEnquiryEmail(opts: ContactEnquiryEmailOptions):
       <!DOCTYPE html>
       <html>
         <body style="font-family: sans-serif; color: #1a1a1a; max-width: 560px; margin: 0 auto; padding: 24px;">
+          ${buildLogoHtml(branding)}
           <h2 style="margin: 0 0 4px; color: #1b5e20;">New website enquiry</h2>
-          <p style="color: #555; margin: 0 0 20px;">Submitted via the EduCare public website.</p>
+          <p style="color: #555; margin: 0 0 20px;">${intro}</p>
           <table style="width:100%; border-collapse:collapse; background:#f8f9fa; border-radius:8px; padding:4px;">
             <tr>
               <td style="padding:8px 12px; color:#888; font-size:13px; white-space:nowrap; vertical-align:top;">Name</td>
@@ -278,6 +312,7 @@ export async function sendContactEnquiryEmail(opts: ContactEnquiryEmailOptions):
 export async function sendPostNotificationEmail(
   recipients: string[],
   opts: PostNotificationEmailOptions,
+  branding?: EmailBranding,
 ): Promise<void> {
   if (recipients.length === 0) return;
 
@@ -289,6 +324,7 @@ export async function sendPostNotificationEmail(
     return;
   }
 
+  const intro = branding?.templates?.postNotification?.intro ?? "A new post has been published on the Family Portal.";
   const excerptHtml = opts.excerpt
     ? `<p style="color:#555; margin: 0 0 16px;">${opts.excerpt.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`
     : "";
@@ -299,23 +335,24 @@ export async function sendPostNotificationEmail(
     recipients.map(async (email) => {
       try {
         await transport.sendMail({
-          from: `"EduCare Portal" <${from}>`,
+          from: `"${fromName(branding)}" <${from}>`,
           to: email,
           subject: `New post: ${opts.postTitle}`,
           text: [
             "Hi,",
             "",
-            `A new post has been published on the Family Portal: "${opts.postTitle}"${excerptText}`,
+            `${intro} "${opts.postTitle}"${excerptText}`,
             "",
             "Read it here:",
             opts.portalUrl,
             "",
-            "— EduCare Portal",
+            `— ${fromName(branding)}`,
           ].join("\n"),
           html: `
             <!DOCTYPE html>
             <html>
               <body style="font-family: sans-serif; color: #1a1a1a; max-width: 560px; margin: 0 auto; padding: 24px;">
+                ${buildLogoHtml(branding)}
                 <h2 style="margin: 0 0 8px;">New post published</h2>
                 <h3 style="margin: 0 0 12px; color: #2d6a4f;">${opts.postTitle.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</h3>
                 ${excerptHtml}

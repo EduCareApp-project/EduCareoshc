@@ -4,6 +4,7 @@ import { randomBytes } from "crypto";
 import { eq, asc, and, gt, isNull } from "drizzle-orm";
 import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable } from "@workspace/db";
 import { sendPasswordResetEmail } from "../lib/email";
+import { getEmailBranding } from "../lib/emailBranding";
 
 const router: IRouter = Router();
 
@@ -156,7 +157,8 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
     const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
     try {
-      await sendPasswordResetEmail(normalised, resetUrl);
+      const branding = await getEmailBranding();
+      await sendPasswordResetEmail(normalised, resetUrl, branding);
     } catch (err) {
       req.log.error({ err, email: normalised }, "Failed to send password reset email");
     }

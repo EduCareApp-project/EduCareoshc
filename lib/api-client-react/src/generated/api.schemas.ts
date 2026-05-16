@@ -1533,12 +1533,27 @@ export interface ServiceComplianceReport {
   activeChecklists: number;
 }
 
+/**
+ * Derived from qualifications: cannot_work if WWCC/CPR/First Aid expired; responsible_person if all required quals current; educator if core three current; incomplete otherwise.
+ */
+export type StaffComplianceReportStaffItemComplianceStatus =
+  (typeof StaffComplianceReportStaffItemComplianceStatus)[keyof typeof StaffComplianceReportStaffItemComplianceStatus];
+
+export const StaffComplianceReportStaffItemComplianceStatus = {
+  cannot_work: "cannot_work",
+  responsible_person: "responsible_person",
+  educator: "educator",
+  incomplete: "incomplete",
+} as const;
+
 export type StaffComplianceReportStaffItem = {
   staffId: number;
   staffName: string;
   role: string;
   hasWwcc: boolean;
   pdHoursThisYear: number;
+  /** Derived from qualifications: cannot_work if WWCC/CPR/First Aid expired; responsible_person if all required quals current; educator if core three current; incomplete otherwise. */
+  complianceStatus: StaffComplianceReportStaffItemComplianceStatus;
 };
 
 export interface StaffComplianceReport {

@@ -2335,6 +2335,11 @@ export const GetStaffComplianceReportResponse = zod.object({
       role: zod.string(),
       hasWwcc: zod.boolean(),
       pdHoursThisYear: zod.number(),
+      complianceStatus: zod
+        .enum(["cannot_work", "responsible_person", "educator", "incomplete"])
+        .describe(
+          "Derived from qualifications: cannot_work if WWCC\/CPR\/First Aid expired; responsible_person if all required quals current; educator if core three current; incomplete otherwise.",
+        ),
     }),
   ),
 });

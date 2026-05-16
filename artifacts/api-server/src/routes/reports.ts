@@ -56,6 +56,68 @@ router.get("/reports/service-compliance", async (_req, res): Promise<void> => {
   }));
 });
 
+// Returns true if a qualification name contains every part (case-insensitive)
+function qualMatches(name: string, ...parts: string[]) {
+  const lower = name.toLowerCase();
+  return parts.every((p) => lower.includes(p.toLowerCase()));
+}
+
+// Returns true if a qualification is expired (status flag or date has passed)
+function qualIsExpired(q: { status: string; expiryDate: string | null }) {
+  if (q.status === "expired") return true;
+  if (q.expiryDate) {
+    const d = new Date(q.expiryDate);
+    if (!isNaN(d.getTime()) && d < new Date()) return true;
+  }
+  return false;
+}
+
+type StaffQual = { staffId: number; name: string; status: string; expiryDate: string | null };
+
+// True if the staff member has this qual recorded AND it is not expired
+function hasCurrent(quals: StaffQual[], ...nameParts: string[]) {
+  return quals.some((q) => qualMatches(q.name, ...nameParts) && !qualIsExpired(q));
+}
+
+// True if the staff member has this qual recorded AND it IS expired
+function hasExpired(quals: StaffQual[], ...nameParts: string[]) {
+  return quals.some((q) => qualMatches(q.name, ...nameParts) && qualIsExpired(q));
+}
+
+function deriveComplianceStatus(quals: StaffQual[], wwccOnRecord: boolean): "cannot_work" | "responsible_person" | "educator" | "incomplete" {
+  // Cannot Work: any critical qual is explicitly expired
+  const criticalExpired =
+    hasExpired(quals, "wwcc") ||
+    hasExpired(quals, "cpr") ||
+    hasExpired(quals, "first aid");
+  if (criticalExpired) return "cannot_work";
+
+  // WWCC is current via staff record or qualification
+  const wwccCurrent = wwccOnRecord || hasCurrent(quals, "wwcc");
+
+  // Core three required for Educator tier
+  const coreThreeCurrent =
+    wwccCurrent &&
+    hasCurrent(quals, "staff details") &&
+    hasCurrent(quals, "child safety") &&
+    hasCurrent(quals, "mandatory reporting");
+
+  if (!coreThreeCurrent) return "incomplete";
+
+  // Responsible Person: all required quals present and current
+  const responsiblePersonQuals =
+    coreThreeCurrent &&
+    hasCurrent(quals, "first aid") &&
+    hasCurrent(quals, "cpr") &&
+    hasCurrent(quals, "food safety") &&
+    hasCurrent(quals, "responsible person") &&
+    hasCurrent(quals, "education qualifications") &&
+    hasCurrent(quals, "history");
+  if (responsiblePersonQuals) return "responsible_person";
+
+  return "educator";
+}
+
 router.get("/reports/staff-compliance", async (_req, res): Promise<void> => {
   const allStaff = await db.select().from(staffTable).where(eq(staffTable.status, "active"));
   const allPd = await db.select().from(professionalDevelopmentTable);
@@ -69,18 +131,18 @@ router.get("/reports/staff-compliance", async (_req, res): Promise<void> => {
     });
     const pdHours = pdThisYear.reduce((sum, p) => sum + (p.hoursEarned ?? 0), 0);
 
-    // Check WWCC: either the staff record's wwccNumber field, or a qualification
-    // named "WWCC" (case-insensitive) with status "current"
-    const hasWwccQual = allQuals.some(
-      (q) => q.staffId === s.id && q.name.toLowerCase().includes("wwcc") && q.status === "current",
-    );
+    const myQuals = allQuals.filter((q) => q.staffId === s.id);
+    const hasWwccQual = hasCurrent(myQuals, "wwcc");
+    const hasWwcc = !!s.wwccNumber || hasWwccQual;
+    const complianceStatus = deriveComplianceStatus(myQuals, !!s.wwccNumber);
 
     return {
       staffId: s.id,
       staffName: `${s.firstName} ${s.lastName}`,
       role: s.role,
-      hasWwcc: !!s.wwccNumber || hasWwccQual,
+      hasWwcc,
       pdHoursThisYear: pdHours,
+      complianceStatus,
     };
   });
 

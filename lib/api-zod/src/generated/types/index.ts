@@ -127,6 +127,7 @@ export * from "./siteUpdate";
 export * from "./staff";
 export * from "./staffComplianceReport";
 export * from "./staffComplianceReportStaffItem";
+export * from "./staffComplianceReportStaffItemComplianceStatus";
 export * from "./staffInput";
 export * from "./staffInputRole";
 export * from "./staffInputStatus";

@@ -2,8 +2,15 @@ import { useGetStaffComplianceReport } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { UserCheck, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { UserCheck, CheckCircle2, XCircle, AlertCircle, ShieldX } from "lucide-react";
 import { useLocation } from "wouter";
+
+const COMPLIANCE_CONFIG: Record<string, { label: string; className: string }> = {
+  cannot_work:       { label: "Cannot Work",       className: "bg-red-100 text-red-800 border-red-200" },
+  responsible_person:{ label: "Responsible Person", className: "bg-green-100 text-green-800 border-green-200" },
+  educator:          { label: "Educator",           className: "bg-blue-100 text-blue-800 border-blue-200" },
+  incomplete:        { label: "Incomplete",         className: "bg-amber-100 text-amber-800 border-amber-200" },
+};
 
 export default function ReportsStaff() {
   const { data: report, isLoading } = useGetStaffComplianceReport();
@@ -30,13 +37,14 @@ export default function ReportsStaff() {
   }
 
   const staffList = report?.staff ?? [];
-  const compliantCount = staffList.filter((s) => s.hasWwcc && s.pdHoursThisYear >= 8).length;
+  const cannotWorkCount = staffList.filter((s) => s.complianceStatus === "cannot_work").length;
+  const fullyCompliantCount = staffList.filter((s) => s.complianceStatus === "responsible_person" || s.complianceStatus === "educator").length;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Staff Compliance</h1>
-        <p className="text-muted-foreground mt-1">Working With Children Check status and professional development hours for active staff.</p>
+        <p className="text-muted-foreground mt-1">Qualification compliance status for all active staff based on recorded certifications.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -44,17 +52,17 @@ export default function ReportsStaff() {
           <CardContent className="p-5 flex items-center gap-4">
             <CheckCircle2 className="h-8 w-8 text-green-500" />
             <div>
-              <p className="text-sm text-muted-foreground">Compliant Staff</p>
-              <p className="text-3xl font-bold text-green-600">{compliantCount}</p>
+              <p className="text-sm text-muted-foreground">Educator or Above</p>
+              <p className="text-3xl font-bold text-green-600">{fullyCompliantCount}</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-5 flex items-center gap-4">
-            <AlertCircle className="h-8 w-8 text-amber-500" />
+            <ShieldX className="h-8 w-8 text-red-500" />
             <div>
-              <p className="text-sm text-muted-foreground">Needs Attention</p>
-              <p className="text-3xl font-bold text-amber-600">{staffList.length - compliantCount}</p>
+              <p className="text-sm text-muted-foreground">Cannot Work</p>
+              <p className="text-3xl font-bold text-red-600">{cannotWorkCount}</p>
             </div>
           </CardContent>
         </Card>
@@ -91,7 +99,7 @@ export default function ReportsStaff() {
                 </thead>
                 <tbody className="divide-y">
                   {staffList.map((s) => {
-                    const isCompliant = s.hasWwcc && s.pdHoursThisYear >= 8;
+                    const config = COMPLIANCE_CONFIG[s.complianceStatus] ?? COMPLIANCE_CONFIG.incomplete;
                     return (
                       <tr
                         key={s.staffId}
@@ -112,9 +120,7 @@ export default function ReportsStaff() {
                           <span className="text-muted-foreground text-xs ml-1">/ 8h req.</span>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          {isCompliant
-                            ? <Badge className="bg-green-100 text-green-800">Compliant</Badge>
-                            : <Badge className="bg-amber-100 text-amber-800">Incomplete</Badge>}
+                          <Badge className={`border ${config.className}`} variant="outline">{config.label}</Badge>
                         </td>
                       </tr>
                     );
@@ -126,7 +132,12 @@ export default function ReportsStaff() {
         </Card>
       )}
 
-      <p className="text-xs text-muted-foreground">Compliance criteria: Valid WWCC number on file + minimum 8 professional development hours for the current year.</p>
+      <div className="text-xs text-muted-foreground space-y-1">
+        <p><span className="font-medium text-foreground">Cannot Work</span> — WWCC, CPR Renewal, or First Aid is expired.</p>
+        <p><span className="font-medium text-foreground">Responsible Person</span> — All required qualifications current (WWCC, First Aid, CPR, Food Safety, Responsible Person Declaration, Staff Details, Education Qualifications, Child Safety modules, History &amp; Compliance).</p>
+        <p><span className="font-medium text-foreground">Educator</span> — Core three current: WWCC, Staff Details (DET), and Child Safety — Mandatory Reporting.</p>
+        <p><span className="font-medium text-foreground">Incomplete</span> — One or more core qualifications missing or not yet recorded.</p>
+      </div>
     </div>
   );
 }

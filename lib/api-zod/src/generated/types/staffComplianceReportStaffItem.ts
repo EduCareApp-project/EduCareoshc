@@ -5,6 +5,7 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+import type { StaffComplianceReportStaffItemComplianceStatus } from "./staffComplianceReportStaffItemComplianceStatus";
 
 export type StaffComplianceReportStaffItem = {
   staffId: number;
@@ -12,4 +13,6 @@ export type StaffComplianceReportStaffItem = {
   role: string;
   hasWwcc: boolean;
   pdHoursThisYear: number;
+  /** Derived from qualifications: cannot_work if WWCC/CPR/First Aid expired; responsible_person if all required quals current; educator if core three current; incomplete otherwise. */
+  complianceStatus: StaffComplianceReportStaffItemComplianceStatus;
 };

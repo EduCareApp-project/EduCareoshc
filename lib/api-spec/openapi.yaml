@@ -4602,7 +4602,7 @@ components:
           type: array
           items:
             type: object
-            required: [staffId, staffName, role, hasWwcc, pdHoursThisYear]
+            required: [staffId, staffName, role, hasWwcc, pdHoursThisYear, complianceStatus]
             properties:
               staffId:
                 type: integer
@@ -4614,3 +4614,7 @@ components:
                 type: boolean
               pdHoursThisYear:
                 type: integer
+              complianceStatus:
+                type: string
+                enum: [cannot_work, responsible_person, educator, incomplete]
+                description: "Derived from qualifications: cannot_work if WWCC/CPR/First Aid expired; responsible_person if all required quals current; educator if core three current; incomplete otherwise."

@@ -19,14 +19,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, Plus, Trash2, Pencil, X, Archive, ArchiveRestore, ChevronDown, ChevronUp, ExternalLink, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const QA_COLOURS: Record<string, { bg: string; text: string; badgeBg: string; badgeText: string }> = {
-  "1": { bg: "#7DC242", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff" },
-  "2": { bg: "#EC008C", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff" },
-  "3": { bg: "#F49AC2", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff" },
-  "4": { bg: "#FFF200", text: "#444", badgeBg: "rgba(0,0,0,0.15)", badgeText: "#444" },
-  "5": { bg: "#F7941D", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff" },
-  "6": { bg: "#BE2180", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff" },
-  "7": { bg: "#00AEEF", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff" },
+const QA_COLOURS: Record<string, { bg: string; text: string; badgeBg: string; badgeText: string; light: string; strengthsText: string }> = {
+  "1": { bg: "#7DC242", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff", light: "#edf7dc", strengthsText: "#3a6b17" },
+  "2": { bg: "#FFD100", text: "#333", badgeBg: "rgba(0,0,0,0.15)", badgeText: "#333", light: "#fffbe0", strengthsText: "#6b5000" },
+  "3": { bg: "#F49AC2", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff", light: "#fef0f7", strengthsText: "#7a2a55" },
+  "4": { bg: "#A8CC44", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff", light: "#f1f8df", strengthsText: "#446618" },
+  "5": { bg: "#F7941D", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff", light: "#fff4e0", strengthsText: "#7a4200" },
+  "6": { bg: "#BE2180", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff", light: "#fce8f4", strengthsText: "#6d0f48" },
+  "7": { bg: "#00AEEF", text: "#fff", badgeBg: "rgba(0,0,0,0.2)", badgeText: "#fff", light: "#e0f5fd", strengthsText: "#005878" },
 };
 
 const QA_AREAS = [
@@ -269,7 +269,7 @@ function ItemForm({
   );
 }
 
-function StrengthsEditor({ qualityArea }: { qualityArea: string }) {
+function StrengthsEditor({ qualityArea, colour }: { qualityArea: string; colour: { light: string; strengthsText: string; bg: string } }) {
   const queryClient = useQueryClient();
   const { data: strengths } = useListQipStrengths();
   const upsertMutation = useUpsertQipStrength();
@@ -303,11 +303,15 @@ function StrengthsEditor({ qualityArea }: { qualityArea: string }) {
   }
 
   return (
-    <div className="rounded-lg border bg-green-50/60 p-4 mb-6">
+    <div className="rounded-lg border p-4 mb-6" style={{ backgroundColor: colour.light, borderColor: `${colour.bg}40` }}>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold text-sm text-green-800">Strengths of the Service</h3>
+        <h3 className="font-semibold text-sm" style={{ color: colour.strengthsText }}>Strengths of the Service</h3>
         {!editing && (
-          <Button size="sm" variant="ghost" className="h-7 text-green-700 hover:text-green-900" onClick={startEdit}>
+          <Button
+            size="sm" variant="ghost" className="h-7"
+            style={{ color: colour.strengthsText }}
+            onClick={startEdit}
+          >
             <Pencil className="h-3.5 w-3.5 mr-1" />Edit
           </Button>
         )}
@@ -327,8 +331,8 @@ function StrengthsEditor({ qualityArea }: { qualityArea: string }) {
           </div>
         </div>
       ) : (
-        <p className="text-sm text-green-900 whitespace-pre-wrap min-h-[2rem]">
-          {existing?.content || <span className="italic text-green-600 opacity-70">No strengths recorded yet. Click Edit to add.</span>}
+        <p className="text-sm whitespace-pre-wrap min-h-[2rem]" style={{ color: colour.strengthsText }}>
+          {existing?.content || <span className="italic opacity-60">No strengths recorded yet. Click Edit to add.</span>}
         </p>
       )}
     </div>
@@ -795,7 +799,7 @@ export default function Qip() {
                   <h2 className="text-lg font-semibold">{a.label}</h2>
                 </div>
 
-                <StrengthsEditor qualityArea={a.key} />
+                <StrengthsEditor qualityArea={a.key} colour={QA_COLOURS[a.key]} />
 
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Improvement Items ({activeItems.length})</h3>

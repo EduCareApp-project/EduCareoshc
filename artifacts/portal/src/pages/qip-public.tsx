@@ -13,14 +13,14 @@ const QA_AREAS = [
   { key: "7", label: "Quality Area 7: Governance and Leadership" },
 ];
 
-const QA_COLOURS: Record<string, { bg: string; text: string; light: string; border: string }> = {
-  "1": { bg: "#7DC242", text: "#fff", light: "#f0f9e8", border: "#7DC242" },
-  "2": { bg: "#EC008C", text: "#fff", light: "#fdf0f8", border: "#EC008C" },
-  "3": { bg: "#F49AC2", text: "#fff", light: "#fdf4f8", border: "#F49AC2" },
-  "4": { bg: "#D4B800", text: "#fff", light: "#fdfbf0", border: "#D4B800" },
-  "5": { bg: "#F7941D", text: "#fff", light: "#fdf5eb", border: "#F7941D" },
-  "6": { bg: "#BE2180", text: "#fff", light: "#fdf0f8", border: "#BE2180" },
-  "7": { bg: "#00AEEF", text: "#fff", light: "#f0f8ff", border: "#00AEEF" },
+const QA_COLOURS: Record<string, { bg: string; text: string; light: string; border: string; strengthsText: string }> = {
+  "1": { bg: "#7DC242", text: "#fff", light: "#edf7dc", border: "#7DC242", strengthsText: "#3a6b17" },
+  "2": { bg: "#FFD100", text: "#333", light: "#fffbe0", border: "#FFD100", strengthsText: "#6b5000" },
+  "3": { bg: "#F49AC2", text: "#fff", light: "#fef0f7", border: "#F49AC2", strengthsText: "#7a2a55" },
+  "4": { bg: "#A8CC44", text: "#fff", light: "#f1f8df", border: "#A8CC44", strengthsText: "#446618" },
+  "5": { bg: "#F7941D", text: "#fff", light: "#fff4e0", border: "#F7941D", strengthsText: "#7a4200" },
+  "6": { bg: "#BE2180", text: "#fff", light: "#fce8f4", border: "#BE2180", strengthsText: "#6d0f48" },
+  "7": { bg: "#00AEEF", text: "#fff", light: "#e0f5fd", border: "#00AEEF", strengthsText: "#005878" },
 };
 
 const PRIORITY_COLOURS: Record<string, { bg: string; text: string; border: string }> = {
@@ -173,12 +173,12 @@ export default function QipPublic() {
                     <div className="p-6 space-y-5">
                       {/* Strengths */}
                       {strength?.content?.trim() && (
-                        <div className="rounded-lg p-4" style={{ backgroundColor: colour.light, border: `1px solid ${colour.border}30` }}>
+                        <div className="rounded-lg p-4" style={{ backgroundColor: colour.light, border: `1px solid ${colour.border}40` }}>
                           <div className="flex items-center gap-2 mb-2">
-                            <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: colour.bg }} />
-                            <h4 className="text-sm font-semibold" style={{ color: colour.bg }}>Strengths of the Service</h4>
+                            <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: colour.strengthsText }} />
+                            <h4 className="text-sm font-semibold" style={{ color: colour.strengthsText }}>Strengths of the Service</h4>
                           </div>
-                          <p className="text-sm whitespace-pre-wrap text-gray-700 leading-relaxed">{strength.content}</p>
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: colour.strengthsText }}>{strength.content}</p>
                         </div>
                       )}
 

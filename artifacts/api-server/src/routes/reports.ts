@@ -53,6 +53,14 @@ router.get("/reports/service-compliance", async (req, res): Promise<void> => {
   const filteredChecklists = siteId ? allChecklists.filter((c) => c.siteId === siteId) : allChecklists;
   const activeChecklists = filteredChecklists.length;
 
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const overdueChecklists = filteredChecklists.filter((c) => {
+    if (!c.targetDate) return false;
+    const target = new Date(c.targetDate);
+    return !isNaN(target.getTime()) && target < sevenDaysAgo;
+  }).length;
+
   const now = new Date();
   const nextDue = lastEvac?.nextDueAt ? new Date(lastEvac.nextDueAt) : null;
   const isOverdue = nextDue ? now > nextDue : lastEvac === undefined ? false : true;
@@ -67,6 +75,7 @@ router.get("/reports/service-compliance", async (req, res): Promise<void> => {
     openConditionReports,
     openQipItems,
     activeChecklists,
+    overdueChecklists,
   }));
 });
 

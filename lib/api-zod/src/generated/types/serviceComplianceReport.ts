@@ -13,4 +13,6 @@ export interface ServiceComplianceReport {
   openConditionReports: number;
   openQipItems: number;
   activeChecklists: number;
+  /** Active checklists whose target date was more than 7 days ago */
+  overdueChecklists: number;
 }

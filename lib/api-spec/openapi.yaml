@@ -4578,7 +4578,7 @@ components:
 
     ServiceComplianceReport:
       type: object
-      required: [evacuationStatus, openIncidents, openConditionReports, openQipItems, activeChecklists]
+      required: [evacuationStatus, openIncidents, openConditionReports, openQipItems, activeChecklists, overdueChecklists]
       properties:
         evacuationStatus:
           type: object
@@ -4600,6 +4600,9 @@ components:
           type: integer
         activeChecklists:
           type: integer
+        overdueChecklists:
+          type: integer
+          description: Active checklists whose target date was more than 7 days ago
 
     StaffComplianceReport:
       type: object

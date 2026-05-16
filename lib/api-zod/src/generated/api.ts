@@ -2332,6 +2332,9 @@ export const GetServiceComplianceReportResponse = zod.object({
   openConditionReports: zod.number(),
   openQipItems: zod.number(),
   activeChecklists: zod.number(),
+  overdueChecklists: zod
+    .number()
+    .describe("Active checklists whose target date was more than 7 days ago"),
 });
 
 export const GetStaffComplianceReportResponse = zod.object({

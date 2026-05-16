@@ -94,7 +94,24 @@ export default function ReportsService() {
         <MetricCard title="Open Incidents" value={report?.openIncidents ?? 0} icon={AlertTriangle} href="/incidents" color={report?.openIncidents ? "border-amber-200" : ""} />
         <MetricCard title="Open Condition Reports" value={report?.openConditionReports ?? 0} icon={ClipboardX} href="/condition-reports" color={report?.openConditionReports ? "border-amber-200" : ""} />
         <MetricCard title="In-Progress QIP Items" value={report?.openQipItems ?? 0} icon={TrendingUp} href="/qip" />
-        <MetricCard title="Active Checklists" value={report?.activeChecklists ?? 0} icon={CheckSquare} href="/checklists" color="" />
+        <Link href="/checklists">
+          <Card className={`cursor-pointer hover:shadow-md transition-shadow ${(report?.overdueChecklists ?? 0) > 0 ? "border-red-200" : "border-border"}`}>
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground font-medium">Active Checklists</p>
+                  <p className="text-3xl font-bold mt-1">{report?.activeChecklists ?? 0}</p>
+                </div>
+                <CheckSquare className={`h-6 w-6 mt-1 ${(report?.overdueChecklists ?? 0) > 0 ? "text-red-400" : "text-green-400"}`} />
+              </div>
+              {(report?.overdueChecklists ?? 0) > 0 ? (
+                <Badge className="mt-2 bg-red-100 text-red-800">{report?.overdueChecklists} overdue &gt;7 days</Badge>
+              ) : (
+                <Badge className="mt-2 bg-green-100 text-green-800">None overdue</Badge>
+              )}
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   );

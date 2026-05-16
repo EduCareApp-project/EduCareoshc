@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronLeft, ChevronRight, Layers, ArrowRight, CheckCircle2, Plus, X, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Layers, ArrowRight, CheckCircle2, Plus, X, Send, AlertTriangle } from "lucide-react";
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   addMonths, subMonths, format, parseISO, isBefore, isAfter, addDays,
@@ -126,7 +126,7 @@ function getWeeksInMonth(month: Date): Date[][] {
 
 const TODAY = format(new Date(), "yyyy-MM-dd");
 
-type ExistingPlan = { id: number; title?: string | null; weeklyPlanData?: any; siteId?: number | null };
+type ExistingPlan = { id: number; title?: string | null; weeklyPlanData?: any; siteId?: number | null; stage?: string | null };
 
 interface WeekPlanModalProps {
   weekMonday: Date;
@@ -187,7 +187,7 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
   async function handleSave() {
     const weeklyPlanData = { ...grid, cellOutcomes } as any;
     if (existingPlan) {
-      await update({ id: existingPlan.id, data: { title, weeklyPlanData } });
+      await update({ id: existingPlan.id, data: { title, weeklyPlanData, stage: "planned" } });
     } else {
       await create({
         data: {
@@ -216,6 +216,13 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
             )}
           </div>
         </DialogHeader>
+
+        {existingPlan?.stage === "published" && (
+          <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>This plan is currently published. Saving changes will revert it to draft — guardians won't see updates until you re-publish.</span>
+          </div>
+        )}
 
         <div className="space-y-4">
           <div className="space-y-1.5">
@@ -582,12 +589,8 @@ export default function Calendar() {
                             variant={isPlanned || isPublished ? "ghost" : "outline"}
                             className="w-full text-xs h-8"
                             onClick={() => {
-                              if (isPublished) {
-                                setViewPlan(published[0]);
-                              } else {
-                                setPlanWeek(monday);
-                                setPlanExisting(planned[0] ?? null);
-                              }
+                              setPlanWeek(monday);
+                              setPlanExisting(isPublished ? published[0] : (planned[0] ?? null));
                             }}
                           >
                             Plan

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, childrenTable, staffTable, observationsTable, outcomesTable, evacuationsTable, incidentsTable, conditionReportsTable, qipItemsTable, checklistsTable, professionalDevelopmentTable } from "@workspace/db";
+import { db, childrenTable, staffTable, observationsTable, outcomesTable, evacuationsTable, incidentsTable, conditionReportsTable, qipItemsTable, checklistsTable, professionalDevelopmentTable, staffQualificationsTable } from "@workspace/db";
 import { GetLearningStoriesReportResponse, GetServiceComplianceReportResponse, GetStaffComplianceReportResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -59,6 +59,7 @@ router.get("/reports/service-compliance", async (_req, res): Promise<void> => {
 router.get("/reports/staff-compliance", async (_req, res): Promise<void> => {
   const allStaff = await db.select().from(staffTable).where(eq(staffTable.status, "active"));
   const allPd = await db.select().from(professionalDevelopmentTable);
+  const allQuals = await db.select().from(staffQualificationsTable);
   const currentYear = new Date().getFullYear();
 
   const staffData = allStaff.map((s) => {
@@ -67,11 +68,18 @@ router.get("/reports/staff-compliance", async (_req, res): Promise<void> => {
       return p.staffId === s.id && year === currentYear;
     });
     const pdHours = pdThisYear.reduce((sum, p) => sum + (p.hoursEarned ?? 0), 0);
+
+    // Check WWCC: either the staff record's wwccNumber field, or a qualification
+    // named "WWCC" (case-insensitive) with status "current"
+    const hasWwccQual = allQuals.some(
+      (q) => q.staffId === s.id && q.name.toLowerCase().includes("wwcc") && q.status === "current",
+    );
+
     return {
       staffId: s.id,
       staffName: `${s.firstName} ${s.lastName}`,
       role: s.role,
-      hasWwcc: !!s.wwccNumber,
+      hasWwcc: !!s.wwccNumber || hasWwccQual,
       pdHoursThisYear: pdHours,
     };
   });

@@ -97,13 +97,20 @@ export default function QipPublic() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b shadow-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-3">
-          <ShieldCheck className="h-6 w-6 text-primary shrink-0" />
-          <div className="min-w-0">
-            <h1 className="text-lg font-bold text-foreground leading-tight">Quality Improvement Plan</h1>
-            {data?.siteName && (
-              <p className="text-sm text-muted-foreground">{data.siteName}</p>
-            )}
+        <div className="max-w-4xl mx-auto px-6 py-3 flex items-center gap-4">
+          <div className="flex items-center gap-2 shrink-0">
+            <img src="/educare-logo.png" alt="EduCare" className="h-8 w-8 object-contain" />
+            <span className="text-base font-bold text-foreground tracking-tight">EduCare</span>
+          </div>
+          <div className="w-px h-6 bg-border shrink-0" />
+          <div className="min-w-0 flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
+            <div>
+              <h1 className="text-sm font-semibold text-foreground leading-tight">Quality Improvement Plan</h1>
+              {data?.siteName && (
+                <p className="text-xs text-muted-foreground">{data.siteName}</p>
+              )}
+            </div>
           </div>
         </div>
       </div>

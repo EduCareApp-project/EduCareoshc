@@ -28,35 +28,48 @@ const DRILL_LABELS: Record<string, string> = {
 function ExpiryBadge({ nextDueAt }: { nextDueAt: string | null | undefined }) {
   if (!nextDueAt) return null;
   const days = differenceInDays(new Date(nextDueAt), new Date());
+
   if (days < 0) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded-full px-3 py-1">
-        <AlertCircle className="h-4 w-4" />
-        Expired {Math.abs(days)}d ago
-      </span>
+      <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 min-w-[110px]">
+        <span className="text-4xl font-bold leading-none text-red-700">{Math.abs(days)}</span>
+        <div className="flex flex-col leading-tight text-red-600">
+          <span className="text-xs font-semibold">days</span>
+          <span className="text-xs font-semibold">overdue</span>
+        </div>
+      </div>
     );
   }
   if (days === 0) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded-full px-3 py-1">
-        <AlertCircle className="h-4 w-4" />
-        Expires today
-      </span>
+      <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 min-w-[110px]">
+        <AlertCircle className="h-7 w-7 text-red-600 shrink-0" />
+        <div className="flex flex-col leading-tight text-red-600">
+          <span className="text-xs font-semibold">expires</span>
+          <span className="text-xs font-semibold">today</span>
+        </div>
+      </div>
     );
   }
   if (days <= 14) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
-        <Clock className="h-4 w-4" />
-        {days}d remaining
-      </span>
+      <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 min-w-[110px]">
+        <span className="text-4xl font-bold leading-none text-amber-700">{days}</span>
+        <div className="flex flex-col leading-tight text-amber-600">
+          <span className="text-xs font-semibold">days</span>
+          <span className="text-xs font-semibold">remaining</span>
+        </div>
+      </div>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-green-700 bg-green-50 border border-green-200 rounded-full px-3 py-1">
-      <CheckCircle className="h-4 w-4" />
-      {days}d remaining
-    </span>
+    <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2 min-w-[110px]">
+      <span className="text-4xl font-bold leading-none text-green-700">{days}</span>
+      <div className="flex flex-col leading-tight text-green-600">
+        <span className="text-xs font-semibold">days</span>
+        <span className="text-xs font-semibold">remaining</span>
+      </div>
+    </div>
   );
 }
 

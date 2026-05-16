@@ -2008,6 +2008,67 @@ export const ListPlanningExperiencesResponseItem = zod.object({
       zod.null(),
     ])
     .optional(),
+  weeklyPlanData: zod
+    .union([
+      zod.object({
+        experiencesThemes: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        active: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        creative: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        wellbeing: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        imaginative: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        spontaneousChoice: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
   createdAt: zod.coerce.date(),
 });
 export const ListPlanningExperiencesResponse = zod.array(
@@ -2074,6 +2135,67 @@ export const CreatePlanningExperienceBody = zod.object({
             enjoyment: zod.string().optional(),
             learning: zod.string().optional(),
             improvements: zod.string().optional(),
+          })
+          .optional(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
+  weeklyPlanData: zod
+    .union([
+      zod.object({
+        experiencesThemes: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        active: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        creative: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        wellbeing: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        imaginative: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        spontaneousChoice: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
           })
           .optional(),
       }),
@@ -2150,6 +2272,67 @@ export const GetPlanningExperienceResponse = zod.object({
       zod.null(),
     ])
     .optional(),
+  weeklyPlanData: zod
+    .union([
+      zod.object({
+        experiencesThemes: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        active: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        creative: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        wellbeing: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        imaginative: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        spontaneousChoice: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
   createdAt: zod.coerce.date(),
 });
 
@@ -2216,6 +2399,67 @@ export const UpdatePlanningExperienceBody = zod.object({
       zod.null(),
     ])
     .optional(),
+  weeklyPlanData: zod
+    .union([
+      zod.object({
+        experiencesThemes: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        active: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        creative: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        wellbeing: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        imaginative: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        spontaneousChoice: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
 });
 
 export const updatePlanningExperienceResponseIsTemplateDefault = false;
@@ -2276,6 +2520,67 @@ export const UpdatePlanningExperienceResponse = zod.object({
             enjoyment: zod.string().optional(),
             learning: zod.string().optional(),
             improvements: zod.string().optional(),
+          })
+          .optional(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
+  weeklyPlanData: zod
+    .union([
+      zod.object({
+        experiencesThemes: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        active: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        creative: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        wellbeing: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        imaginative: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        spontaneousChoice: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
           })
           .optional(),
       }),

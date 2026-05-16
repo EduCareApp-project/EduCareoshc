@@ -1369,6 +1369,23 @@ export interface AssessmentData {
   askTheChildren?: AssessmentDataAskTheChildren;
 }
 
+export interface WeeklyPlanDayEntry {
+  mon?: string;
+  tue?: string;
+  wed?: string;
+  thu?: string;
+  fri?: string;
+}
+
+export interface WeeklyPlanData {
+  experiencesThemes?: WeeklyPlanDayEntry;
+  active?: WeeklyPlanDayEntry;
+  creative?: WeeklyPlanDayEntry;
+  wellbeing?: WeeklyPlanDayEntry;
+  imaginative?: WeeklyPlanDayEntry;
+  spontaneousChoice?: WeeklyPlanDayEntry;
+}
+
 export interface PlanningExperience {
   id: number;
   title: string;
@@ -1414,6 +1431,7 @@ export interface PlanningExperience {
   assessmentDocumentNames?: string[];
   isTemplate: boolean;
   assessmentData?: AssessmentData | null;
+  weeklyPlanData?: WeeklyPlanData | null;
   createdAt: string;
 }
 
@@ -1455,6 +1473,7 @@ export interface PlanningExperienceInput {
   assessmentDocumentNames?: string[];
   isTemplate?: boolean;
   assessmentData?: AssessmentData | null;
+  weeklyPlanData?: WeeklyPlanData | null;
 }
 
 export type PlanningExperienceUpdateStage =
@@ -1496,6 +1515,7 @@ export interface PlanningExperienceUpdate {
   assessmentDocumentNames?: string[];
   isTemplate?: boolean;
   assessmentData?: AssessmentData | null;
+  weeklyPlanData?: WeeklyPlanData | null;
 }
 
 export type LearningStoriesReportByChildItem = {

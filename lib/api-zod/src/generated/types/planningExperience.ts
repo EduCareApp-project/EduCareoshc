@@ -7,6 +7,7 @@
  */
 import type { AssessmentData } from "./assessmentData";
 import type { PlanningExperienceStage } from "./planningExperienceStage";
+import type { WeeklyPlanData } from "./weeklyPlanData";
 
 export interface PlanningExperience {
   id: number;
@@ -53,5 +54,6 @@ export interface PlanningExperience {
   assessmentDocumentNames?: string[];
   isTemplate: boolean;
   assessmentData?: AssessmentData | null;
+  weeklyPlanData?: WeeklyPlanData | null;
   createdAt: Date;
 }

@@ -4345,6 +4345,10 @@ components:
           anyOf:
             - $ref: "#/components/schemas/AssessmentData"
             - type: "null"
+        weeklyPlanData:
+          anyOf:
+            - $ref: "#/components/schemas/WeeklyPlanData"
+            - type: "null"
         createdAt:
           type: string
           format: date-time
@@ -4427,6 +4431,10 @@ components:
           anyOf:
             - $ref: "#/components/schemas/AssessmentData"
             - type: "null"
+        weeklyPlanData:
+          anyOf:
+            - $ref: "#/components/schemas/WeeklyPlanData"
+            - type: "null"
 
     PlanningExperienceUpdate:
       type: object
@@ -4503,6 +4511,10 @@ components:
           anyOf:
             - $ref: "#/components/schemas/AssessmentData"
             - type: "null"
+        weeklyPlanData:
+          anyOf:
+            - $ref: "#/components/schemas/WeeklyPlanData"
+            - type: "null"
 
     AssessmentData:
       type: object
@@ -4540,6 +4552,36 @@ components:
               type: string
             improvements:
               type: string
+
+    WeeklyPlanDayEntry:
+      type: object
+      properties:
+        mon:
+          type: string
+        tue:
+          type: string
+        wed:
+          type: string
+        thu:
+          type: string
+        fri:
+          type: string
+
+    WeeklyPlanData:
+      type: object
+      properties:
+        experiencesThemes:
+          $ref: "#/components/schemas/WeeklyPlanDayEntry"
+        active:
+          $ref: "#/components/schemas/WeeklyPlanDayEntry"
+        creative:
+          $ref: "#/components/schemas/WeeklyPlanDayEntry"
+        wellbeing:
+          $ref: "#/components/schemas/WeeklyPlanDayEntry"
+        imaginative:
+          $ref: "#/components/schemas/WeeklyPlanDayEntry"
+        spontaneousChoice:
+          $ref: "#/components/schemas/WeeklyPlanDayEntry"
 
     LearningStoriesReport:
       type: object

@@ -361,6 +361,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("leadership");
   const { data: sites } = useListSites();
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
+  const [guardianSiteId, setGuardianSiteId] = useState<string>("__all__");
   const siteName = sites?.find((s) => String(s.id) === selectedSiteId)?.name ?? sites?.[0]?.name;
 
   return (
@@ -407,6 +408,22 @@ export default function Dashboard() {
               </Select>
             </div>
           )}
+          {activeTab === "guardian" && sites && sites.length > 1 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">Site:</span>
+              <Select value={guardianSiteId} onValueChange={setGuardianSiteId}>
+                <SelectTrigger className="h-8 text-sm w-auto min-w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All sites</SelectItem>
+                  {sites.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <TabsContent value="leadership" className="mt-6">
@@ -416,7 +433,7 @@ export default function Dashboard() {
           <EducatorDashboard />
         </TabsContent>
         <TabsContent value="guardian" className="mt-6">
-          <GuardianDashboard />
+          <GuardianDashboard siteFilter={guardianSiteId} />
         </TabsContent>
       </Tabs>
     </div>
@@ -782,10 +799,14 @@ function EducatorDashboard() {
 }
 
 // ─── Guardian ────────────────────────────────────────────────────────────────
-function GuardianDashboard() {
+function GuardianDashboard({ siteFilter = "__all__" }: { siteFilter?: string }) {
   const { data: posts, isLoading: loadingPosts } = useListPosts();
   const { data: planning, isLoading: loadingPlanning } = useListPlanningExperiences();
   const { data: sites } = useListSites();
+
+  const visibleSites = (sites ?? []).filter(
+    (s) => siteFilter === "__all__" || String(s.id) === siteFilter
+  );
 
   const thisMonday = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
   const fiveWeeksEnd = format(addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), 34), "yyyy-MM-dd");
@@ -809,7 +830,7 @@ function GuardianDashboard() {
           Service Documentation
           <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         </a>
-        {(sites ?? []).map((site) => (
+        {visibleSites.map((site) => (
           <a
             key={site.id}
             href={`/qip-public?siteId=${site.id}`}

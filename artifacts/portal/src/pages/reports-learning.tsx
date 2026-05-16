@@ -268,19 +268,8 @@ export default function ReportsLearning() {
         />
       </div>
 
-      {/* MTOP Outcome row — donut + two stat tiles */}
+      {/* MTOP Outcome row — donut + stat tile */}
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Active Jottings tile */}
-        <div className="flex flex-col">
-          <StatTile
-            icon={<StickyNote className="h-5 w-5" />}
-            label="Active Jottings"
-            count={filteredJottings.length}
-            sub="In this period"
-            loading={isLoadingCounts}
-          />
-        </div>
-
         {/* Donut chart */}
         <Card className="lg:col-span-2">
         <CardHeader>
@@ -357,6 +346,17 @@ export default function ReportsLearning() {
           )}
         </CardContent>
         </Card>
+
+        {/* Active Jottings tile */}
+        <div className="flex flex-col">
+          <StatTile
+            icon={<StickyNote className="h-5 w-5" />}
+            label="Active Jottings"
+            count={filteredJottings.length}
+            sub="In this period"
+            loading={isLoadingCounts}
+          />
+        </div>
       </div>
 
       {/* Under-represented outcomes alert */}

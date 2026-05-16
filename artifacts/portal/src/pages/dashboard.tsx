@@ -171,7 +171,8 @@ function NoticeBoard({ canManage }: { canManage: boolean }) {
             {notices.map((notice) => (
               <div
                 key={notice.id}
-                className="min-w-[280px] max-w-[320px] p-4 rounded-lg border bg-card shrink-0 snap-start flex flex-col justify-between"
+                className="min-w-[280px] max-w-[320px] p-4 rounded-lg border shrink-0 snap-start flex flex-col justify-between text-white"
+                style={{ backgroundColor: "#29BCD4", borderColor: "#1fa8be" }}
               >
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-start">
@@ -181,15 +182,15 @@ function NoticeBoard({ canManage }: { canManage: boolean }) {
                     {canManage && (
                       <Button
                         variant="ghost" size="icon"
-                        className="h-6 w-6 -mt-1 -mr-1 text-muted-foreground hover:text-destructive"
+                        className="h-6 w-6 -mt-1 -mr-1 text-white/70 hover:text-white hover:bg-white/20"
                         onClick={() => handleDelete(notice.id)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
                   </div>
-                  <h4 className="font-semibold text-sm">{notice.title}</h4>
-                  <RichTextView html={notice.content} className="text-muted-foreground line-clamp-3" />
+                  <h4 className="font-semibold text-sm text-white">{notice.title}</h4>
+                  <RichTextView html={notice.content} className="text-white/85 line-clamp-3" />
 
                   {/* Document attachment */}
                   {notice.documentUrl && (
@@ -197,14 +198,14 @@ function NoticeBoard({ canManage }: { canManage: boolean }) {
                       href={notice.documentUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-1 flex items-center gap-1.5 text-xs text-primary hover:underline"
+                      className="mt-1 flex items-center gap-1.5 text-xs text-white/90 hover:text-white underline underline-offset-2"
                     >
                       <Paperclip className="h-3 w-3 shrink-0" />
                       <span className="truncate">{notice.documentName ?? "Attached document"}</span>
                     </a>
                   )}
                 </div>
-                <div className="text-xs text-muted-foreground mt-4 pt-2 border-t">
+                <div className="text-xs text-white/60 mt-4 pt-2 border-t border-white/25">
                   {format(new Date(notice.createdAt), "MMM d, h:mm a")}
                 </div>
               </div>

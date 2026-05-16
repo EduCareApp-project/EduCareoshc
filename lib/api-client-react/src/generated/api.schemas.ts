@@ -487,6 +487,36 @@ export interface NoticeInput {
   expiresAt?: string;
 }
 
+export type PatchNoticeBodyPriority =
+  (typeof PatchNoticeBodyPriority)[keyof typeof PatchNoticeBodyPriority];
+
+export const PatchNoticeBodyPriority = {
+  low: "low",
+  normal: "normal",
+  high: "high",
+  urgent: "urgent",
+} as const;
+
+export type PatchNoticeBodyAudience =
+  (typeof PatchNoticeBodyAudience)[keyof typeof PatchNoticeBodyAudience];
+
+export const PatchNoticeBodyAudience = {
+  leadership: "leadership",
+  educator: "educator",
+  guardian: "guardian",
+} as const;
+
+export interface PatchNoticeBody {
+  title?: string;
+  content?: string;
+  priority?: PatchNoticeBodyPriority;
+  audience?: PatchNoticeBodyAudience;
+  /** @nullable */
+  documentUrl?: string | null;
+  /** @nullable */
+  documentName?: string | null;
+}
+
 export interface Jotting {
   id: number;
   content: string;

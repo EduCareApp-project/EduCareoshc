@@ -705,6 +705,30 @@ paths:
                 $ref: "#/components/schemas/Notice"
 
   /notices/{id}:
+    patch:
+      operationId: updateNotice
+      tags: [notices]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchNoticeBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notice"
+        "404":
+          description: Not found
     delete:
       operationId: deleteNotice
       tags: [notices]
@@ -2918,6 +2942,24 @@ components:
         expiresAt:
           type: string
           format: date-time
+
+    PatchNoticeBody:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+        audience:
+          type: string
+          enum: [leadership, educator, guardian]
+        documentUrl:
+          type: ["string", "null"]
+        documentName:
+          type: ["string", "null"]
 
     Jotting:
       type: object

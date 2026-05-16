@@ -68,6 +68,7 @@ import type {
   ObservationUpdate,
   Outcome,
   OutcomeCount,
+  PatchNoticeBody,
   PlanningExperience,
   PlanningExperienceInput,
   PlanningExperienceUpdate,
@@ -3148,6 +3149,87 @@ export const useCreateNotice = <
   TContext
 > => {
   return useMutation(getCreateNoticeMutationOptions(options));
+};
+
+export const getUpdateNoticeUrl = (id: number) => {
+  return `/api/notices/${id}`;
+};
+
+export const updateNotice = async (
+  id: number,
+  patchNoticeBody: PatchNoticeBody,
+  options?: RequestInit,
+): Promise<Notice> => {
+  return customFetch<Notice>(getUpdateNoticeUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(patchNoticeBody),
+  });
+};
+
+export const getUpdateNoticeMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateNotice>>,
+    TError,
+    { id: number; data: BodyType<PatchNoticeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateNotice>>,
+  TError,
+  { id: number; data: BodyType<PatchNoticeBody> },
+  TContext
+> => {
+  const mutationKey = ["updateNotice"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateNotice>>,
+    { id: number; data: BodyType<PatchNoticeBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateNotice(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateNoticeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateNotice>>
+>;
+export type UpdateNoticeMutationBody = BodyType<PatchNoticeBody>;
+export type UpdateNoticeMutationError = ErrorType<void>;
+
+export const useUpdateNotice = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateNotice>>,
+    TError,
+    { id: number; data: BodyType<PatchNoticeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateNotice>>,
+  TError,
+  { id: number; data: BodyType<PatchNoticeBody> },
+  TContext
+> => {
+  return useMutation(getUpdateNoticeMutationOptions(options));
 };
 
 export const getDeleteNoticeUrl = (id: number) => {

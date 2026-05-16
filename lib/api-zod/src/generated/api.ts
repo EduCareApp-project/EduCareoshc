@@ -675,6 +675,31 @@ export const CreateNoticeBody = zod.object({
   expiresAt: zod.coerce.date().optional(),
 });
 
+export const UpdateNoticeParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateNoticeBody = zod.object({
+  title: zod.string().optional(),
+  content: zod.string().optional(),
+  priority: zod.enum(["low", "normal", "high", "urgent"]).optional(),
+  audience: zod.enum(["leadership", "educator", "guardian"]).optional(),
+  documentUrl: zod.string().nullish(),
+  documentName: zod.string().nullish(),
+});
+
+export const UpdateNoticeResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  content: zod.string(),
+  priority: zod.enum(["low", "normal", "high", "urgent"]),
+  audience: zod.enum(["leadership", "educator", "guardian"]),
+  documentUrl: zod.string().nullish(),
+  documentName: zod.string().nullish(),
+  expiresAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
 export const DeleteNoticeParams = zod.object({
   id: zod.coerce.number(),
 });

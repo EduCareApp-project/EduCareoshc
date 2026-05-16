@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useGetDashboardSummary, useGetOutcomeCounts, useGetRecentObservations,
-  useListNotices, useCreateNotice, useDeleteNotice,
+  useListNotices, useCreateNotice, useDeleteNotice, useUpdateNotice,
   useGetServiceComplianceReport, useGetLearningStoriesReport,
   useListPlanningExperiences, useListPosts, useListSites,
 } from "@workspace/api-client-react";
@@ -13,7 +13,7 @@ import { RichTextEditor, RichTextView } from "@/components/rich-text-editor";
 import {
   Baby, Users, BookOpen, ClipboardList, ShieldCheck, Bell, Trash2, Plus,
   AlertTriangle, CheckCircle2, Clock, FileText, Calendar,
-  Layers, Image, ChevronRight, GraduationCap, Paperclip, X, Upload, Newspaper,
+  Layers, Image, ChevronRight, GraduationCap, Paperclip, X, Upload, Newspaper, Pencil,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
@@ -38,12 +38,15 @@ const PRIORITY_COLORS: Record<string, string> = {
 type NoticeAudience = "leadership" | "educator" | "guardian";
 
 // ─── Shared Notice Board ─────────────────────────────────────────────────────
+type NoticeItem = { id: number; title: string; content: string; priority: string; audience: string; createdAt: string; documentUrl?: string | null; documentName?: string | null };
+
 function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: NoticeAudience }) {
   const queryClient = useQueryClient();
   const params = { audience };
   const { data: notices, isLoading } = useListNotices(params);
   const createNotice = useCreateNotice();
   const deleteNotice = useDeleteNotice();
+  const updateNotice = useUpdateNotice();
 
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
@@ -51,7 +54,36 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
   const [priority, setPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
   const [docFile, setDocFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [selectedNotice, setSelectedNotice] = useState<(typeof notices extends (infer T)[] | undefined ? T : never) | null>(null);
+  const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
+
+  // Edit state
+  const [editingNotice, setEditingNotice] = useState<NoticeItem | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [editPriority, setEditPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
+  const [editAudience, setEditAudience] = useState<NoticeAudience>("leadership");
+
+  const openEdit = (notice: NoticeItem) => {
+    setEditingNotice(notice);
+    setEditTitle(notice.title);
+    setEditContent(notice.content);
+    setEditPriority(notice.priority as any);
+    setEditAudience(notice.audience as any);
+  };
+
+  const handleUpdate = () => {
+    if (!editingNotice || !editTitle || !editContent) return;
+    updateNotice.mutate(
+      { id: editingNotice.id, data: { title: editTitle, content: editContent, priority: editPriority as any, audience: editAudience as any } },
+      {
+        onSuccess: () => {
+          // Invalidate all audience tabs since audience may have changed
+          queryClient.invalidateQueries({ queryKey: ["listNotices"] });
+          setEditingNotice(null);
+        },
+      }
+    );
+  };
 
   const { uploadFile, isUploading } = useUpload({
     onError: () => alert("Document upload failed — please try again."),
@@ -186,13 +218,22 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
                       {notice.priority}
                     </Badge>
                     {canManage && (
-                      <Button
-                        variant="ghost" size="icon"
-                        className="h-6 w-6 -mt-1 -mr-1 text-white/70 hover:text-white hover:bg-white/20"
-                        onClick={(e) => { e.stopPropagation(); handleDelete(notice.id); }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      <div className="flex items-center gap-0.5 -mt-1 -mr-1">
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-6 w-6 text-white/70 hover:text-white hover:bg-white/20"
+                          onClick={(e) => { e.stopPropagation(); openEdit(notice); }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-6 w-6 text-white/70 hover:text-white hover:bg-white/20"
+                          onClick={(e) => { e.stopPropagation(); handleDelete(notice.id); }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                   <h4 className="font-semibold text-sm text-white">{notice.title}</h4>
@@ -215,6 +256,50 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
           <div className="text-center py-6 text-muted-foreground text-sm">No active notices</div>
         )}
       </CardContent>
+
+      {/* Edit notice dialog */}
+      <Dialog open={!!editingNotice} onOpenChange={(open) => { if (!open) setEditingNotice(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Notice</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <Input placeholder="Notice title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Priority</label>
+                <Select value={editPriority} onValueChange={(v: any) => setEditPriority(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Distribute to</label>
+                <Select value={editAudience} onValueChange={(v: any) => setEditAudience(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="leadership">Leadership</SelectItem>
+                    <SelectItem value="educator">Educators</SelectItem>
+                    <SelectItem value="guardian">Guardians</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <RichTextEditor value={editContent} onChange={setEditContent} placeholder="Notice content…" />
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setEditingNotice(null)}>Cancel</Button>
+              <Button onClick={handleUpdate} disabled={updateNotice.isPending || !editTitle || !editContent}>
+                {updateNotice.isPending ? "Saving…" : "Save changes"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Full notice detail dialog */}
       <Dialog open={!!selectedNotice} onOpenChange={(open) => { if (!open) setSelectedNotice(null); }}>

@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db, noticesTable } from "@workspace/db";
-import { CreateNoticeBody, DeleteNoticeParams, ListNoticesResponse, ListNoticesResponseItem } from "@workspace/api-zod";
+import { CreateNoticeBody, DeleteNoticeParams, ListNoticesResponse, ListNoticesResponseItem, UpdateNoticeBody, UpdateNoticeParams } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -18,6 +18,20 @@ router.post("/notices", async (req, res): Promise<void> => {
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
   const [notice] = await db.insert(noticesTable).values(parsed.data as any).returning();
   res.status(201).json(ListNoticesResponseItem.parse(notice));
+});
+
+router.patch("/notices/:id", async (req, res): Promise<void> => {
+  const params = UpdateNoticeParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const body = UpdateNoticeBody.safeParse(req.body);
+  if (!body.success) { res.status(400).json({ error: body.error.message }); return; }
+  const [notice] = await db
+    .update(noticesTable)
+    .set(body.data as any)
+    .where(eq(noticesTable.id, params.data.id))
+    .returning();
+  if (!notice) { res.status(404).json({ error: "Notice not found" }); return; }
+  res.json(ListNoticesResponseItem.parse(notice));
 });
 
 router.delete("/notices/:id", async (req, res): Promise<void> => {

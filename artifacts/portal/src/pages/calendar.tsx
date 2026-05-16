@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListPlanningExperiences, useCreatePlanningExperience } from "@workspace/api-client-react";
+import { useListPlanningExperiences, useCreatePlanningExperience, useListSites } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Layers, ArrowRight, CheckCircle2 } from "lucide-react";
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -147,17 +148,28 @@ function WeekPlanModal({ weekMonday, onClose, onSaved }: WeekPlanModalProps) {
 export default function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [planWeek, setPlanWeek] = useState<Date | null>(null);
+  const [filterSiteId, setFilterSiteId] = useState<string>("__all__");
   const queryClient = useQueryClient();
 
+  const { data: sites } = useListSites();
   const { data: planning, isLoading } = useListPlanningExperiences();
+
+  const siteIdNum = filterSiteId === "__all__" ? undefined : Number(filterSiteId);
+
+  function filterBySite<T extends { siteId?: number | null }>(items: T[]): T[] {
+    if (siteIdNum === undefined) return items;
+    return items.filter((i) => i.siteId === siteIdNum);
+  }
 
   const weeks = getWeeksInMonth(currentMonth);
   const weekDayHeaders = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
+  const filteredPlanning = filterBySite(planning ?? []);
+
   function cyclesForWeek(weekDays: Date[]) {
     const weekStart = format(weekDays[0], "yyyy-MM-dd");
     const weekEnd = format(weekDays[4], "yyyy-MM-dd");
-    return (planning ?? []).filter((p) => {
+    return filteredPlanning.filter((p) => {
       if (!p.startDate) return false;
       const d = p.startDate.slice(0, 10);
       return d >= weekStart && d <= weekEnd;
@@ -168,7 +180,7 @@ export default function Calendar() {
     return cyclesForWeek(weekDays).filter((p) => p.stage === "planned");
   }
 
-  const plannedThisMonth = (planning ?? []).filter((p) => {
+  const plannedThisMonth = filteredPlanning.filter((p) => {
     if (p.stage !== "planned" || !p.startDate) return false;
     const d = parseISO(p.startDate);
     return !isAfter(d, endOfMonth(currentMonth)) && !isBefore(d, startOfMonth(currentMonth));
@@ -180,14 +192,22 @@ export default function Calendar() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
           <p className="text-muted-foreground mt-1">View planning cycles and programs by week.</p>
         </div>
-        <Link href="/planning/new">
-          <Button variant="outline">New Planning Cycle</Button>
-        </Link>
+        <Select value={filterSiteId} onValueChange={setFilterSiteId}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="All Sites" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All Sites</SelectItem>
+            {(sites ?? []).map((s) => (
+              <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>

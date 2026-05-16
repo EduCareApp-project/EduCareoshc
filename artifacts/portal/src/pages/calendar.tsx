@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Layers, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ChevronLeft, ChevronRight, Layers, ArrowRight, CheckCircle2, Plus, X } from "lucide-react";
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   addMonths, subMonths, format, parseISO, isBefore, isAfter, addDays,
@@ -34,6 +35,7 @@ const DAY_KEYS: DayKey[] = ["mon", "tue", "wed", "thu", "fri"];
 const DAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
 type WeeklyPlanGrid = Record<RowKey, Record<DayKey, string>>;
+type CellOutcomes = Record<string, number[]>;
 
 function emptyGrid(): WeeklyPlanGrid {
   const grid: Partial<WeeklyPlanGrid> = {};
@@ -42,6 +44,22 @@ function emptyGrid(): WeeklyPlanGrid {
   }
   return grid as WeeklyPlanGrid;
 }
+
+const MTOP_OUTCOMES = [
+  { id: 1, label: "Outcome 1", description: "Strong sense of identity", color: "bg-blue-500" },
+  { id: 2, label: "Outcome 2", description: "Connected to their world", color: "bg-green-500" },
+  { id: 3, label: "Outcome 3", description: "Strong sense of wellbeing", color: "bg-orange-500" },
+  { id: 4, label: "Outcome 4", description: "Confident & involved learners", color: "bg-purple-500" },
+  { id: 5, label: "Outcome 5", description: "Effective communicators", color: "bg-rose-500" },
+];
+
+const OUTCOME_BUBBLE: Record<number, string> = {
+  1: "bg-blue-100 text-blue-800 border-blue-300",
+  2: "bg-green-100 text-green-800 border-green-300",
+  3: "bg-orange-100 text-orange-800 border-orange-300",
+  4: "bg-purple-100 text-purple-800 border-purple-300",
+  5: "bg-rose-100 text-rose-800 border-rose-300",
+};
 
 function getWeeksInMonth(month: Date): Date[][] {
   const start = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
@@ -71,10 +89,29 @@ interface WeekPlanModalProps {
 function WeekPlanModal({ weekMonday, onClose, onSaved }: WeekPlanModalProps) {
   const [title, setTitle] = useState(`Week of ${format(weekMonday, "d MMMM yyyy")}`);
   const [grid, setGrid] = useState<WeeklyPlanGrid>(emptyGrid);
+  const [cellOutcomes, setCellOutcomes] = useState<CellOutcomes>({});
   const { mutateAsync: create, isPending } = useCreatePlanningExperience();
 
   function setCell(row: RowKey, day: DayKey, value: string) {
     setGrid((g) => ({ ...g, [row]: { ...g[row], [day]: value } }));
+  }
+
+  function cellKey(row: RowKey, day: DayKey) {
+    return `${row}-${day}`;
+  }
+
+  function toggleOutcome(row: RowKey, day: DayKey, outcomeId: number) {
+    const key = cellKey(row, day);
+    setCellOutcomes((prev) => {
+      const current = prev[key] ?? [];
+      const exists = current.includes(outcomeId);
+      return { ...prev, [key]: exists ? current.filter((id) => id !== outcomeId) : [...current, outcomeId] };
+    });
+  }
+
+  function removeOutcome(row: RowKey, day: DayKey, outcomeId: number) {
+    const key = cellKey(row, day);
+    setCellOutcomes((prev) => ({ ...prev, [key]: (prev[key] ?? []).filter((id) => id !== outcomeId) }));
   }
 
   async function handleSave() {
@@ -83,7 +120,7 @@ function WeekPlanModal({ weekMonday, onClose, onSaved }: WeekPlanModalProps) {
         title,
         stage: "planned",
         startDate: format(weekMonday, "yyyy-MM-dd"),
-        weeklyPlanData: grid as any,
+        weeklyPlanData: { ...grid, cellOutcomes } as any,
       },
     });
     onSaved();
@@ -106,27 +143,77 @@ function WeekPlanModal({ weekMonday, onClose, onSaved }: WeekPlanModalProps) {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="bg-muted/60">
-                  <th className="border px-3 py-2 text-left font-semibold w-40 text-muted-foreground">Category</th>
+                <tr>
+                  <th className="border border-blue-300 px-3 py-2.5 text-left font-semibold w-44 bg-blue-600 text-white">Category</th>
                   {DAY_LABELS.map((d) => (
-                    <th key={d} className="border px-3 py-2 text-center font-semibold text-muted-foreground">{d}</th>
+                    <th key={d} className="border border-blue-300 px-3 py-2.5 text-center font-semibold bg-blue-600 text-white">{d}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {ROW_LABELS.map(({ key, label }) => (
-                  <tr key={key} className="even:bg-muted/20">
-                    <td className="border px-3 py-2 font-medium text-sm align-top whitespace-nowrap">{label}</td>
-                    {DAY_KEYS.map((day) => (
-                      <td key={day} className="border px-2 py-1 align-top">
-                        <Textarea
-                          value={grid[key][day]}
-                          onChange={(e) => setCell(key, day, e.target.value)}
-                          className="min-h-[72px] text-xs resize-none border-0 shadow-none focus-visible:ring-0 bg-transparent p-0"
-                          placeholder="Add notes…"
-                        />
-                      </td>
-                    ))}
+                  <tr key={key}>
+                    <td className="border border-blue-200 px-3 py-2 font-semibold text-sm align-middle bg-blue-50 text-blue-900 whitespace-nowrap">{label}</td>
+                    {DAY_KEYS.map((day) => {
+                      const ck = cellKey(key, day);
+                      const selected = cellOutcomes[ck] ?? [];
+                      return (
+                        <td key={day} className="border border-gray-200 px-2 py-1.5 align-top min-w-[140px]">
+                          <Textarea
+                            value={grid[key][day]}
+                            onChange={(e) => setCell(key, day, e.target.value)}
+                            className="min-h-[60px] text-xs resize-none border-0 shadow-none focus-visible:ring-0 bg-transparent p-0 w-full"
+                            placeholder="Add notes…"
+                          />
+                          {selected.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {selected.map((id) => {
+                                const o = MTOP_OUTCOMES.find((o) => o.id === id)!;
+                                return (
+                                  <span
+                                    key={id}
+                                    className={`inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${OUTCOME_BUBBLE[id]} cursor-pointer`}
+                                    onClick={() => removeOutcome(key, day, id)}
+                                    title={o.description}
+                                  >
+                                    {o.label}
+                                    <X className="h-2.5 w-2.5 opacity-60" />
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                          <div className="flex justify-end mt-1">
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button className="h-5 w-5 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-700 flex items-center justify-center transition-colors">
+                                  <Plus className="h-3 w-3" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-56 p-2" align="end">
+                                <p className="text-xs font-semibold text-muted-foreground mb-2 px-1">MTOP Outcomes</p>
+                                <div className="space-y-1">
+                                  {MTOP_OUTCOMES.map((o) => {
+                                    const isSelected = selected.includes(o.id);
+                                    return (
+                                      <button
+                                        key={o.id}
+                                        onClick={() => toggleOutcome(key, day, o.id)}
+                                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-xs transition-colors ${isSelected ? `${OUTCOME_BUBBLE[o.id]} border` : "hover:bg-muted"}`}
+                                      >
+                                        <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${o.color}`} />
+                                        <span className="font-medium">{o.label}</span>
+                                        <span className="text-muted-foreground truncate">{o.description}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>

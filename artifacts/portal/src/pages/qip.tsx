@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, Plus, Trash2, Pencil, X, Archive, ArchiveRestore, ChevronDown, ChevronUp } from "lucide-react";
+import { TrendingUp, Plus, Trash2, Pencil, X, Archive, ArchiveRestore, ChevronDown, ChevronUp, ExternalLink, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const QA_COLOURS: Record<string, { bg: string; text: string; badgeBg: string; badgeText: string }> = {
@@ -647,12 +647,24 @@ export default function Qip() {
 
   const [activeTab, setActiveTab] = useState("1");
   const [addOpen, setAddOpen] = useState(false);
-  const itemsByQA = (items ?? []).reduce<Record<string, typeof items>>((acc, item) => {
+  const [siteFilter, setSiteFilter] = useState("__all__");
+
+  const filteredItems = (items ?? []).filter((item) =>
+    siteFilter === "__all__" ? true : String(item.siteId ?? "") === siteFilter
+  );
+
+  const itemsByQA = filteredItems.reduce<Record<string, typeof items>>((acc, item) => {
     const qa = item.qualityArea ?? "1";
     if (!acc[qa]) acc[qa] = [];
     acc[qa]!.push(item);
     return acc;
   }, {});
+
+  const publicPageUrl = (() => {
+    const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+    const siteParam = siteFilter !== "__all__" ? `?siteId=${siteFilter}` : "";
+    return `${window.location.origin}${base}/qip-public${siteParam}`;
+  })();
 
   function handleCreate(data: FormState) {
     const payload: Record<string, any> = {
@@ -681,12 +693,20 @@ export default function Qip() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Quality Improvement Plan</h1>
           <p className="text-muted-foreground mt-1">Continuous improvement goals across all seven quality areas.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            onClick={() => window.open(publicPageUrl, "_blank")}
+          >
+            <Globe className="h-4 w-4 mr-2" />
+            View Public Page
+            <ExternalLink className="h-3.5 w-3.5 ml-1.5 opacity-60" />
+          </Button>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -706,6 +726,27 @@ export default function Qip() {
             </DialogContent>
           </Dialog>
         </div>
+      </div>
+
+      {/* Site filter */}
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-muted-foreground font-medium whitespace-nowrap">Filter by site:</span>
+        <Select value={siteFilter} onValueChange={setSiteFilter}>
+          <SelectTrigger className="w-52">
+            <SelectValue placeholder="All sites" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All sites</SelectItem>
+            {sites.map((s) => (
+              <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {siteFilter !== "__all__" && (
+          <span className="text-xs text-muted-foreground italic">
+            Public page will show QIP for {sites.find(s => String(s.id) === siteFilter)?.name ?? "selected site"} only
+          </span>
+        )}
       </div>
 
       {isLoading ? (

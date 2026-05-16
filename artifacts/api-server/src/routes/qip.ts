@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
-import { db, qipItemsTable, qipSourcesTable, qipStrengthsTable } from "@workspace/db";
+import { eq, isNull } from "drizzle-orm";
+import { db, qipItemsTable, qipSourcesTable, qipStrengthsTable, childrenTable, sitesTable } from "@workspace/db";
 import {
   CreateQipItemBody, UpdateQipItemParams, UpdateQipItemBody, UpdateQipItemResponse,
   DeleteQipItemParams, ListQipItemsResponse,
@@ -11,6 +11,51 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+
+// ── Public view endpoint (no auth, names redacted) ─────────────────────────────
+
+router.get("/qip/public", async (req, res): Promise<void> => {
+  const siteId = req.query.siteId ? Number(req.query.siteId) : null;
+
+  const [children, strengths, sitesRows] = await Promise.all([
+    db.select({ firstName: childrenTable.firstName, lastName: childrenTable.lastName }).from(childrenTable),
+    db.select().from(qipStrengthsTable).orderBy(qipStrengthsTable.qualityArea),
+    db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable),
+  ]);
+
+  const allItems = siteId
+    ? await db.select().from(qipItemsTable).where(eq(qipItemsTable.siteId, siteId))
+    : await db.select().from(qipItemsTable);
+
+  const activeItems = allItems.filter((i) => !i.archivedAt);
+
+  const names: string[] = children
+    .flatMap((c) => [c.firstName, c.lastName])
+    .filter((n): n is string => !!n && n.length > 2);
+
+  function redact(text: string | null | undefined): string | null {
+    if (!text) return null;
+    let result = text;
+    for (const name of names) {
+      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      result = result.replace(new RegExp(`\\b${escaped}\\b`, "gi"), "child");
+    }
+    return result;
+  }
+
+  const redactedItems = activeItems.map((item) => ({
+    ...item,
+    issueIdentified: redact(item.issueIdentified),
+    outcomeGoal: redact(item.outcomeGoal),
+    howToAchieve: redact(item.howToAchieve),
+    successMeasure: redact(item.successMeasure),
+    progressNotes: redact(item.progressNotes),
+  }));
+
+  const siteName = siteId ? (sitesRows.find((s) => s.id === siteId)?.name ?? null) : null;
+
+  res.json({ strengths, items: redactedItems, siteName, sites: sitesRows });
+});
 
 // ── QIP Items ──────────────────────────────────────────────────────────────────
 

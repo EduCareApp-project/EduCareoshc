@@ -543,9 +543,9 @@ export default function Calendar() {
                     <div key={wi} className={`relative ${!inMonth ? "opacity-40" : ""}`}>
                       {isPublished && (
                         <div className="absolute inset-0 pointer-events-none z-10" style={{ right: 160 }}>
-                          <div className="h-full bg-blue-50/70 border-y border-blue-200 flex items-center px-3">
+                          <div className="h-full bg-green-50/70 border-y border-green-200 flex items-center px-3">
                             <Badge
-                              className="bg-blue-100 text-blue-800 text-xs gap-1 pointer-events-auto cursor-pointer"
+                              className="bg-green-100 text-green-800 text-xs gap-1 pointer-events-auto cursor-pointer"
                               onClick={() => setViewPlan(published[0])}
                             >
                               <Send className="h-3 w-3" />
@@ -556,8 +556,8 @@ export default function Calendar() {
                       )}
                       {!isPublished && isPlanned && (
                         <div className="absolute inset-0 pointer-events-none z-10" style={{ right: 160 }}>
-                          <div className="h-full bg-green-50/70 border-y border-green-200 flex items-center px-3">
-                            <Badge className="bg-green-100 text-green-800 text-xs gap-1 pointer-events-auto">
+                          <div className="h-full bg-blue-50/70 border-y border-blue-200 flex items-center px-3">
+                            <Badge className="bg-blue-100 text-blue-800 text-xs gap-1 pointer-events-auto">
                               <CheckCircle2 className="h-3 w-3" />
                               {planned.length === 1 ? planned[0].title : `${planned.length} planned`}
                             </Badge>
@@ -598,7 +598,7 @@ export default function Calendar() {
                             size="sm"
                             variant={isPublished ? "ghost" : "outline"}
                             disabled={!isPlanned && !isPublished}
-                            className={`w-full text-xs h-8 ${isPublished ? "text-blue-600" : ""}`}
+                            className={`w-full text-xs h-8 ${isPublished ? "text-green-700" : ""}`}
                             onClick={() => {
                               if (isPublished) {
                                 setViewPlan(published[0]);
@@ -628,10 +628,10 @@ export default function Calendar() {
                 <Layers className="h-5 w-5 text-muted-foreground" />
                 <CardTitle className="text-base">Planning Cycles</CardTitle>
                 {activeThisMonth.filter((p) => p.stage === "planned").length > 0 && (
-                  <Badge className="bg-green-100 text-green-800">{activeThisMonth.filter((p) => p.stage === "planned").length} planned</Badge>
+                  <Badge className="bg-blue-100 text-blue-800">{activeThisMonth.filter((p) => p.stage === "planned").length} planned</Badge>
                 )}
                 {activeThisMonth.filter((p) => p.stage === "published").length > 0 && (
-                  <Badge className="bg-blue-100 text-blue-800">{activeThisMonth.filter((p) => p.stage === "published").length} published</Badge>
+                  <Badge className="bg-green-100 text-green-800">{activeThisMonth.filter((p) => p.stage === "published").length} published</Badge>
                 )}
               </div>
               <Link href="/planning">
@@ -665,7 +665,7 @@ export default function Calendar() {
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge className="bg-green-100 text-green-800 text-xs">Planned</Badge>
+                            <Badge className="bg-blue-100 text-blue-800 text-xs">Planned</Badge>
                             <ArrowRight className="h-4 w-4 text-muted-foreground" />
                           </div>
                         </Link>
@@ -678,7 +678,7 @@ export default function Calendar() {
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge className="bg-blue-100 text-blue-800 text-xs gap-1">
+                            <Badge className="bg-green-100 text-green-800 text-xs gap-1">
                               <Send className="h-3 w-3" /> Published
                             </Badge>
                           </div>

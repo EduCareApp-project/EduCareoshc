@@ -223,11 +223,17 @@ export default function Evacuations() {
     filterSiteId === "__all__" || String(e.siteId) === filterSiteId
   );
 
-  // Split into current (nextDueAt in future or null) and expired, each newest-first
+  // Split into current (nextDueAt in future or null) and expired
+  // Evacuation drills always sort to the top; within same type, newest-first
   const now = new Date();
   const current = filtered
     .filter((e) => !e.nextDueAt || new Date(e.nextDueAt) >= now)
-    .sort((a, b) => new Date(b.conductedAt).getTime() - new Date(a.conductedAt).getTime());
+    .sort((a, b) => {
+      const aIsEvac = a.drillType === "evacuation" ? 0 : 1;
+      const bIsEvac = b.drillType === "evacuation" ? 0 : 1;
+      if (aIsEvac !== bIsEvac) return aIsEvac - bIsEvac;
+      return new Date(b.conductedAt).getTime() - new Date(a.conductedAt).getTime();
+    });
   const expired = filtered
     .filter((e) => e.nextDueAt && new Date(e.nextDueAt) < now)
     .sort((a, b) => new Date(b.conductedAt).getTime() - new Date(a.conductedAt).getTime());

@@ -365,9 +365,21 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Select a view based on your role.</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Select a view based on your role.</p>
+        </div>
+        <a
+          href="/service-docs"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:shadow-md transition-shadow"
+        >
+          <FileText className="h-4 w-4 text-primary shrink-0" />
+          Service Documentation
+          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        </a>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>

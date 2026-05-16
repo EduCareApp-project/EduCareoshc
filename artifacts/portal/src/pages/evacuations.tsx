@@ -1,9 +1,8 @@
 import { useRef, useState } from "react";
-import { useListEvacuations, useCreateEvacuation, useListSites } from "@workspace/api-client-react";
+import { useListEvacuations, useCreateEvacuation, useListSites, useListStaff } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -129,6 +128,7 @@ export default function Evacuations() {
 
   const { data: evacuations, isLoading } = useListEvacuations();
   const { data: sites } = useListSites();
+  const { data: staff } = useListStaff();
   const createMutation = useCreateEvacuation();
 
   const [open, setOpen] = useState(false);
@@ -287,7 +287,20 @@ export default function Evacuations() {
 
               <div className="space-y-1.5">
                 <Label>Conducted By</Label>
-                <Input value={form.conductedBy} onChange={(e) => setForm({ ...form, conductedBy: e.target.value })} />
+                <Select value={form.conductedBy || "__none__"} onValueChange={(v) => setForm({ ...form, conductedBy: v === "__none__" ? "" : v })}>
+                  <SelectTrigger><SelectValue placeholder="Select staff member…" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Not specified —</SelectItem>
+                    {(staff ?? [])
+                      .filter((s) => s.status === "active")
+                      .sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`))
+                      .map((s) => (
+                        <SelectItem key={s.id} value={`${s.firstName} ${s.lastName}`}>
+                          {s.firstName} {s.lastName}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1.5">

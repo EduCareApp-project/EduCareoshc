@@ -39,10 +39,9 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ background: "linear-gradient(135deg, #1a4731 0%, #2d6a4f 50%, #1b5e20 100%)" }}>
       {/* Logo + branding above card */}
-      <div className="flex flex-col items-center gap-3 mb-8">
-        <img src="/educare-logo.png" alt="EduCare" className="h-24 w-24 object-contain drop-shadow-lg" />
+      <div className="flex items-center gap-4 mb-8">
+        <img src="/educare-logo.png" alt="EduCare" className="h-16 w-16 object-contain drop-shadow-lg" />
         <span className="text-4xl font-bold text-white tracking-tight drop-shadow">EduCare</span>
-        <span className="text-white/70 text-sm tracking-wide">Education &amp; Care Portal</span>
       </div>
 
       {/* Card */}

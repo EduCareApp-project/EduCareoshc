@@ -147,7 +147,7 @@ const EMPTY_FORM = {
 export default function Evacuations() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { upload, uploading } = useUpload();
+  const { uploadFile, isUploading: uploading } = useUpload();
 
   const { data: evacuations, isLoading } = useListEvacuations();
   const { data: sites } = useListSites();
@@ -182,11 +182,15 @@ export default function Evacuations() {
 
     try {
       if (evacFile) {
-        evacDocPath = await upload(evacFile, { prefix: "evacuation-records/" });
+        const res = await uploadFile(evacFile);
+        if (!res) throw new Error("Upload returned null");
+        evacDocPath = res.objectPath;
         evacDocName = evacFile.name;
       }
       if (attendFile) {
-        attendDocPath = await upload(attendFile, { prefix: "evacuation-records/" });
+        const res = await uploadFile(attendFile);
+        if (!res) throw new Error("Upload returned null");
+        attendDocPath = res.objectPath;
         attendDocName = attendFile.name;
       }
     } catch {
@@ -476,7 +480,7 @@ type StaffItem = NonNullable<ReturnType<typeof useListStaff>["data"]>[number];
 function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]; staff: StaffItem[] }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { upload, uploading } = useUpload();
+  const { uploadFile, isUploading: uploading } = useUpload();
   const updateMutation = useUpdateEvacuation();
 
   const [editOpen, setEditOpen] = useState(false);
@@ -522,8 +526,16 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
     let attendDocName = evac.attendanceDocName ?? "";
 
     try {
-      if (evacFile) { evacDocPath = await upload(evacFile, { prefix: "evacuation-records/" }); evacDocName = evacFile.name; }
-      if (attendFile) { attendDocPath = await upload(attendFile, { prefix: "evacuation-records/" }); attendDocName = attendFile.name; }
+      if (evacFile) {
+        const res = await uploadFile(evacFile);
+        if (!res) throw new Error("Upload returned null");
+        evacDocPath = res.objectPath; evacDocName = evacFile.name;
+      }
+      if (attendFile) {
+        const res = await uploadFile(attendFile);
+        if (!res) throw new Error("Upload returned null");
+        attendDocPath = res.objectPath; attendDocName = attendFile.name;
+      }
     } catch {
       toast({ title: "File upload failed", variant: "destructive" }); return;
     }

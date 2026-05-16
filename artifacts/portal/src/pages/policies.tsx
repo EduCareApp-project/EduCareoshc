@@ -65,7 +65,6 @@ export default function PoliciesFiles() {
                     : <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   }
                 </div>
-                <p className="text-sm text-muted-foreground mt-1 leading-snug">{description}</p>
               </div>
             </CardContent>
           </Card>

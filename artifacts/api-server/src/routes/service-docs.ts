@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, inArray, and, isNull } from "drizzle-orm";
+import { eq, inArray, asc } from "drizzle-orm";
 import { db, fileLibraryTable, fileCategoriesTable, sitesTable } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -21,7 +21,6 @@ router.get("/service-docs/public", async (req, res): Promise<void> => {
 
   const catIds = cats.map((c) => c.id);
 
-  // Fetch all files in these categories
   const allFiles = await db
     .select({
       id: fileLibraryTable.id,
@@ -30,21 +29,19 @@ router.get("/service-docs/public", async (req, res): Promise<void> => {
       name: fileLibraryTable.name,
       documentPath: fileLibraryTable.documentPath,
       documentName: fileLibraryTable.documentName,
+      position: fileLibraryTable.position,
       createdAt: fileLibraryTable.createdAt,
     })
     .from(fileLibraryTable)
     .where(inArray(fileLibraryTable.categoryId, catIds))
-    .orderBy(fileLibraryTable.name);
+    .orderBy(asc(fileLibraryTable.position), asc(fileLibraryTable.name));
 
-  // Collect distinct siteIds that have docs (null = "all sites / unscoped")
   const siteIdsWithDocs = [...new Set(allFiles.map((f) => f.siteId).filter((id): id is number => id != null))];
 
-  // Fetch site names for the selector
   const siteRows = siteIdsWithDocs.length > 0
     ? await db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable).where(inArray(sitesTable.id, siteIdsWithDocs))
     : [];
 
-  // Resolve the name of the requested site
   let siteName: string | null = null;
   if (siteIdParam) {
     siteName = siteRows.find((s) => s.id === siteIdParam)?.name ?? null;
@@ -54,7 +51,6 @@ router.get("/service-docs/public", async (req, res): Promise<void> => {
     }
   }
 
-  // Filter files by site if requested
   const files = siteIdParam
     ? allFiles.filter((f) => f.siteId === siteIdParam)
     : allFiles;
@@ -70,6 +66,7 @@ router.get("/service-docs/public", async (req, res): Promise<void> => {
           name: f.name,
           documentPath: f.documentPath,
           documentName: f.documentName,
+          position: f.position,
           createdAt: f.createdAt,
         })),
       };

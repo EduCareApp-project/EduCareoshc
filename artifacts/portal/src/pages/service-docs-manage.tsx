@@ -14,7 +14,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Upload, Trash2, FileText, FileImage, File, ExternalLink, Plus } from "lucide-react";
+import { ArrowLeft, Upload, Trash2, FileText, FileImage, File, ExternalLink, Plus, ChevronUp, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@workspace/object-storage-web";
 
@@ -33,7 +33,22 @@ function FileIcon({ name }: { name: string }) {
   return <File className="h-5 w-5 text-muted-foreground shrink-0" />;
 }
 
-type FileItem = { id: number; name: string; documentPath: string; documentName: string; siteId?: number | null };
+type FileItem = {
+  id: number;
+  name: string;
+  documentPath: string;
+  documentName: string;
+  siteId?: number | null;
+  position?: number | null;
+};
+
+async function patchFilePosition(id: number, position: number) {
+  await fetch(`/api/file-library/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ position }),
+  });
+}
 
 type SectionProps = {
   categoryName: string;
@@ -52,6 +67,7 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [adding, setAdding] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [reordering, setReordering] = useState(false);
 
   const createFile = useCreateFileLibraryItem();
   const deleteFile = useDeleteFileLibraryItem();
@@ -98,6 +114,30 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
     });
   }
 
+  async function move(index: number, direction: "up" | "down") {
+    const sorted = [...files].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= sorted.length) return;
+    setReordering(true);
+    try {
+      const a = sorted[index];
+      const b = sorted[swapIndex];
+      const posA = a.position ?? index;
+      const posB = b.position ?? swapIndex;
+      await Promise.all([
+        patchFilePosition(a.id, posB),
+        patchFilePosition(b.id, posA),
+      ]);
+      onRefresh();
+    } catch {
+      toast({ title: "Failed to reorder", variant: "destructive" });
+    } finally {
+      setReordering(false);
+    }
+  }
+
+  const sorted = [...files].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
   return (
     <div className="rounded-xl border bg-white">
       <div className="flex items-center justify-between px-5 py-4 border-b">
@@ -136,13 +176,31 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
       )}
 
       <div className="divide-y">
-        {files.length === 0 ? (
+        {sorted.length === 0 ? (
           <p className="px-5 py-6 text-sm text-muted-foreground text-center">
             No documents yet — add one above.
           </p>
         ) : (
-          files.map((f) => (
+          sorted.map((f, idx) => (
             <div key={f.id} className="flex items-center gap-3 px-5 py-3">
+              <div className="flex flex-col gap-0.5 shrink-0">
+                <button
+                  onClick={() => move(idx, "up")}
+                  disabled={idx === 0 || reordering}
+                  className="rounded p-0.5 hover:bg-muted disabled:opacity-20 disabled:cursor-default transition-colors"
+                  title="Move up"
+                >
+                  <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+                <button
+                  onClick={() => move(idx, "down")}
+                  disabled={idx === sorted.length - 1 || reordering}
+                  className="rounded p-0.5 hover:bg-muted disabled:opacity-20 disabled:cursor-default transition-colors"
+                  title="Move down"
+                >
+                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+              </div>
               <FileIcon name={f.documentName} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{f.name}</p>

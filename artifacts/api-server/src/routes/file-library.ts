@@ -18,26 +18,56 @@ router.get("/file-library", async (_req, res): Promise<void> => {
       name: fileLibraryTable.name,
       documentPath: fileLibraryTable.documentPath,
       documentName: fileLibraryTable.documentName,
+      position: fileLibraryTable.position,
       createdAt: fileLibraryTable.createdAt,
     })
     .from(fileLibraryTable)
     .leftJoin(fileCategoriesTable, eq(fileLibraryTable.categoryId, fileCategoriesTable.id))
-    .orderBy(fileCategoriesTable.sortOrder, fileCategoriesTable.name, fileLibraryTable.name);
+    .orderBy(fileCategoriesTable.sortOrder, fileCategoriesTable.name, fileLibraryTable.position, fileLibraryTable.name);
   res.json(ListFileLibraryResponse.parse(rows));
 });
 
 router.post("/file-library", async (req, res): Promise<void> => {
   const parsed = CreateFileLibraryItemBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [item] = await db.insert(fileLibraryTable).values(parsed.data as any).returning();
 
-  // Fetch category name for response
+  // Assign next position within this category+site group
+  const { categoryId, siteId } = parsed.data as any;
+  let nextPosition = 0;
+  if (categoryId) {
+    const existing = await db
+      .select({ position: fileLibraryTable.position })
+      .from(fileLibraryTable)
+      .where(eq(fileLibraryTable.categoryId, categoryId));
+    if (existing.length > 0) {
+      nextPosition = Math.max(...existing.map((r) => r.position)) + 1;
+    }
+  }
+
+  const [item] = await db.insert(fileLibraryTable).values({ ...parsed.data as any, position: nextPosition }).returning();
+
   let categoryName: string | null = null;
   if (item.categoryId) {
     const [cat] = await db.select({ name: fileCategoriesTable.name }).from(fileCategoriesTable).where(eq(fileCategoriesTable.id, item.categoryId));
     categoryName = cat?.name ?? null;
   }
   res.status(201).json(ListFileLibraryResponseItem.parse({ ...item, categoryName }));
+});
+
+router.patch("/file-library/:id", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const allowed = ["name", "position"] as const;
+  const update: Record<string, unknown> = {};
+  for (const f of allowed) {
+    if (req.body?.[f] !== undefined) update[f] = req.body[f];
+  }
+  if (Object.keys(update).length === 0) { res.status(400).json({ error: "Nothing to update" }); return; }
+
+  const [row] = await db.update(fileLibraryTable).set(update as any).where(eq(fileLibraryTable.id, id)).returning();
+  if (!row) { res.status(404).json({ error: "Not found" }); return; }
+  res.json(row);
 });
 
 router.delete("/file-library/:id", async (req, res): Promise<void> => {

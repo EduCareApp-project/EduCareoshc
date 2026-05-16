@@ -9,6 +9,7 @@ export const fileLibraryTable = pgTable("file_library", {
   name: text("name").notNull(),
   documentPath: text("document_path").notNull(),
   documentName: text("document_name").notNull(),
+  position: integer("position").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -1093,6 +1093,8 @@ export interface FileLibraryItem {
   categoryId?: number | null;
   /** @nullable */
   categoryName?: string | null;
+  /** @nullable */
+  siteId?: number | null;
   name: string;
   documentPath: string;
   documentName: string;
@@ -1102,6 +1104,7 @@ export interface FileLibraryItem {
 export interface FileLibraryInput {
   name: string;
   categoryId?: number;
+  siteId?: number;
   documentPath: string;
   documentName: string;
 }

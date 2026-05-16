@@ -12,6 +12,8 @@ export interface FileLibraryItem {
   categoryId?: number | null;
   /** @nullable */
   categoryName?: string | null;
+  /** @nullable */
+  siteId?: number | null;
   name: string;
   documentPath: string;
   documentName: string;

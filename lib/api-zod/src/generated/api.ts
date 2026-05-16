@@ -1541,6 +1541,7 @@ export const ListFileLibraryResponseItem = zod.object({
   id: zod.number(),
   categoryId: zod.number().nullish(),
   categoryName: zod.string().nullish(),
+  siteId: zod.number().nullish(),
   name: zod.string(),
   documentPath: zod.string(),
   documentName: zod.string(),
@@ -1551,6 +1552,7 @@ export const ListFileLibraryResponse = zod.array(ListFileLibraryResponseItem);
 export const CreateFileLibraryItemBody = zod.object({
   name: zod.string(),
   categoryId: zod.number().optional(),
+  siteId: zod.number().optional(),
   documentPath: zod.string(),
   documentName: zod.string(),
 });

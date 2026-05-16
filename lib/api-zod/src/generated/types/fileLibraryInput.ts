@@ -9,6 +9,7 @@
 export interface FileLibraryInput {
   name: string;
   categoryId?: number;
+  siteId?: number;
   documentPath: string;
   documentName: string;
 }

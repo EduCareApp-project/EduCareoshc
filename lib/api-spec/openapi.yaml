@@ -3819,6 +3819,8 @@ components:
           type: ["integer", "null"]
         categoryName:
           type: ["string", "null"]
+        siteId:
+          type: ["integer", "null"]
         name:
           type: string
         documentPath:
@@ -3836,6 +3838,8 @@ components:
         name:
           type: string
         categoryId:
+          type: integer
+        siteId:
           type: integer
         documentPath:
           type: string

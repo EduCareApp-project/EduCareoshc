@@ -14,6 +14,7 @@ router.get("/file-library", async (_req, res): Promise<void> => {
       id: fileLibraryTable.id,
       categoryId: fileLibraryTable.categoryId,
       categoryName: fileCategoriesTable.name,
+      siteId: fileLibraryTable.siteId,
       name: fileLibraryTable.name,
       documentPath: fileLibraryTable.documentPath,
       documentName: fileLibraryTable.documentName,

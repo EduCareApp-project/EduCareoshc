@@ -2,12 +2,13 @@ import { useRef, useState } from "react";
 import { useLocation } from "wouter";
 import {
   useListFileLibrary, useCreateFileLibraryItem, useDeleteFileLibraryItem,
-  useListFileCategories, useCreateFileCategory,
+  useListFileCategories, useCreateFileCategory, useListSites,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -32,15 +33,18 @@ function FileIcon({ name }: { name: string }) {
   return <File className="h-5 w-5 text-muted-foreground shrink-0" />;
 }
 
+type FileItem = { id: number; name: string; documentPath: string; documentName: string; siteId?: number | null };
+
 type SectionProps = {
   categoryName: string;
   categoryId: number | undefined;
-  files: { id: number; name: string; documentPath: string; documentName: string }[];
+  files: FileItem[];
+  siteId: number | null;
   onEnsureCategory: () => Promise<number>;
   onRefresh: () => void;
 };
 
-function Section({ categoryName, categoryId, files, onEnsureCategory, onRefresh }: SectionProps) {
+function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, onRefresh }: SectionProps) {
   const { toast } = useToast();
   const { uploadFile, isUploading } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,15 +70,14 @@ function Section({ categoryName, categoryId, files, onEnsureCategory, onRefresh 
       const catId = categoryId ?? await onEnsureCategory();
       const result = await uploadFile(selectedFile);
       if (!result) throw new Error("Upload failed");
-      const docPath = result.objectPath;
-      await createFile.mutateAsync({
-        data: {
-          name: label.trim() || selectedFile.name,
-          documentPath: docPath,
-          documentName: selectedFile.name,
-          categoryId: catId,
-        } as any,
-      });
+      const payload: Record<string, unknown> = {
+        name: label.trim() || selectedFile.name,
+        documentPath: result.objectPath,
+        documentName: selectedFile.name,
+        categoryId: catId,
+      };
+      if (siteId) payload.siteId = siteId;
+      await createFile.mutateAsync({ data: payload as any });
       toast({ title: "Document uploaded" });
       setLabel("");
       setSelectedFile(null);
@@ -117,12 +120,7 @@ function Section({ categoryName, categoryId, files, onEnsureCategory, onRefresh 
             </div>
             <div className="space-y-1">
               <Label>File</Label>
-              <Input
-                ref={fileInputRef}
-                type="file"
-                onChange={handleFileChange}
-                className="cursor-pointer"
-              />
+              <Input ref={fileInputRef} type="file" onChange={handleFileChange} className="cursor-pointer" />
             </div>
           </div>
           <div className="flex gap-2">
@@ -130,7 +128,7 @@ function Section({ categoryName, categoryId, files, onEnsureCategory, onRefresh 
               <Upload className="h-4 w-4 mr-1" />
               {adding || isUploading ? "Uploading…" : "Upload"}
             </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => setShowForm(false)}>
+            <Button type="button" size="sm" variant="ghost" onClick={() => { setShowForm(false); setLabel(""); setSelectedFile(null); }}>
               Cancel
             </Button>
           </div>
@@ -194,16 +192,26 @@ export default function ServiceDocsManage() {
 
   const { data: files, isLoading: filesLoading } = useListFileLibrary();
   const { data: categories, isLoading: catsLoading } = useListFileCategories();
+  const { data: sites } = useListSites();
+
+  const [selectedSiteId, setSelectedSiteId] = useState<string>("__all__");
 
   const loading = filesLoading || catsLoading;
+
+  const activeSiteId: number | null =
+    selectedSiteId === "__all__" ? null : parseInt(selectedSiteId);
 
   function getCatId(name: string) {
     return categories?.find((c) => c.name === name)?.id;
   }
 
-  function getFiles(catId: number | undefined) {
+  function getFiles(catId: number | undefined): FileItem[] {
     if (!catId) return [];
-    return (files ?? []).filter((f) => f.categoryId === catId);
+    return (files ?? [])
+      .filter((f) => f.categoryId === catId)
+      .filter((f) =>
+        selectedSiteId === "__all__" || f.siteId === activeSiteId
+      );
   }
 
   async function ensureCategory(name: string): Promise<number> {
@@ -221,6 +229,8 @@ export default function ServiceDocsManage() {
     queryClient.invalidateQueries({ queryKey: ["/api/file-categories"] });
   }
 
+  const previewUrl = activeSiteId ? `/service-docs?siteId=${activeSiteId}` : "/service-docs";
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -235,15 +245,30 @@ export default function ServiceDocsManage() {
             </p>
           </div>
         </div>
-        <a
-          href="/service-docs"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:shadow-md transition-shadow shrink-0"
-        >
-          <ExternalLink className="h-4 w-4 text-primary" />
-          Preview public page
-        </a>
+        <div className="flex items-center gap-3 flex-wrap">
+          {sites && sites.length > 1 && (
+            <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
+              <SelectTrigger className="h-9 text-sm w-auto min-w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All sites</SelectItem>
+                {sites.map((s) => (
+                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <a
+            href={previewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:shadow-md transition-shadow shrink-0"
+          >
+            <ExternalLink className="h-4 w-4 text-primary" />
+            Preview public page
+          </a>
+        </div>
       </div>
 
       {loading ? (
@@ -261,6 +286,7 @@ export default function ServiceDocsManage() {
                 categoryName={catName}
                 categoryId={catId}
                 files={getFiles(catId)}
+                siteId={activeSiteId}
                 onEnsureCategory={() => ensureCategory(catName)}
                 onRefresh={refresh}
               />

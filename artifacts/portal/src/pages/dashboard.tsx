@@ -9,6 +9,7 @@ import {
 import { useUpload } from "@workspace/object-storage-web";
 import { Link } from "wouter";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { RichTextEditor, RichTextView } from "@/components/rich-text-editor";
 import {
   Baby, Users, BookOpen, ClipboardList, ShieldCheck, Bell, Trash2, Plus,
   AlertTriangle, CheckCircle2, Clock, FileText, Calendar,
@@ -119,7 +120,7 @@ function NoticeBoard({ canManage }: { canManage: boolean }) {
               </Select>
             </div>
 
-            <Textarea placeholder="Notice content…" value={content} onChange={(e) => setContent(e.target.value)} rows={2} />
+            <RichTextEditor value={content} onChange={setContent} placeholder="Notice content…" />
 
             {/* Document upload */}
             <div>
@@ -188,7 +189,7 @@ function NoticeBoard({ canManage }: { canManage: boolean }) {
                     )}
                   </div>
                   <h4 className="font-semibold text-sm">{notice.title}</h4>
-                  <p className="text-sm text-muted-foreground line-clamp-3">{notice.content}</p>
+                  <RichTextView html={notice.content} className="text-muted-foreground line-clamp-3" />
 
                   {/* Document attachment */}
                   {notice.documentUrl && (

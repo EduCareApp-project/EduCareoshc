@@ -8,6 +8,7 @@ import {
   useListChildren,
   useListSites,
   useListStaff,
+  useListOutcomes,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpload } from "@workspace/object-storage-web";
@@ -19,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, Save, Trash2, Users, Upload, FileText, X, Loader2, Copy, Pencil, Link, ExternalLink, Plus, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -645,6 +647,31 @@ function PlanningEditContent({ form, set, sites, allChildren, visibleChildren, i
   setLinkName: (v: string) => void;
   handleAddLink: () => void;
 }) {
+  const frameworkLinksRef = useRef<HTMLTextAreaElement>(null);
+  const savedCursorPos = useRef<{ start: number; end: number } | null>(null);
+  const [showMtopPicker, setShowMtopPicker] = useState(false);
+  const { data: outcomes } = useListOutcomes();
+
+  function openMtopPicker() {
+    const ta = frameworkLinksRef.current;
+    if (ta) savedCursorPos.current = { start: ta.selectionStart, end: ta.selectionEnd };
+    setShowMtopPicker(true);
+  }
+
+  function insertMtopCode(code: string) {
+    const pos = savedCursorPos.current;
+    const text = form.frameworkLinks;
+    const start = pos?.start ?? text.length;
+    const end = pos?.end ?? start;
+    const before = text.slice(0, start);
+    const after = text.slice(end);
+    const sep = before.length > 0 && !before.endsWith(" ") ? " " : "";
+    const newVal = before + sep + code + " " + after;
+    set("frameworkLinks", newVal);
+    const newPos = start + sep.length + code.length + 1;
+    savedCursorPos.current = { start: newPos, end: newPos };
+  }
+
   return (
     <>
       <div className="bg-white border rounded-xl p-6 space-y-6">
@@ -718,7 +745,55 @@ function PlanningEditContent({ form, set, sites, allChildren, visibleChildren, i
       <div className="bg-white border rounded-xl p-6 space-y-4">
         <SectionHeader title="Framework Links" />
         <p className="text-xs text-muted-foreground leading-relaxed">Take a look at documents such as the National Quality Standards, My Time Our Place and the outcomes for school aged children and match elements with the activities you have planned.</p>
-        <Textarea value={form.frameworkLinks} onChange={(e) => set("frameworkLinks", e.target.value)} rows={5} placeholder="Type here..." className="resize-y" />
+        <Textarea
+          ref={frameworkLinksRef}
+          value={form.frameworkLinks}
+          onChange={(e) => set("frameworkLinks", e.target.value)}
+          rows={5}
+          placeholder="Type here…"
+          className="resize-y"
+        />
+        <div>
+          <Button type="button" variant="outline" size="sm" onClick={openMtopPicker}>
+            <Plus className="h-4 w-4 mr-1.5" />Add MTOP Link
+          </Button>
+        </div>
+
+        <Dialog open={showMtopPicker} onOpenChange={setShowMtopPicker}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>MTOP Outcome Links</DialogTitle>
+            </DialogHeader>
+            <p className="text-xs text-muted-foreground -mt-1">Click any sub-outcome to insert its code into your framework links text.</p>
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+              {(outcomes ?? []).map((outcome) => (
+                <div key={outcome.id} className="space-y-2">
+                  <p className="text-sm font-semibold text-foreground">
+                    {outcome.number}. {outcome.title}
+                  </p>
+                  <div className="flex flex-col gap-1.5 pl-3">
+                    {outcome.subOutcomes.map((sub, idx) => {
+                      const code = `${outcome.number}.${idx + 1}`;
+                      return (
+                        <button
+                          key={code}
+                          type="button"
+                          onClick={() => insertMtopCode(code)}
+                          className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg border border-transparent hover:border-primary/30 hover:bg-primary/5 transition-colors group"
+                        >
+                          <span className="shrink-0 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-primary text-primary-foreground min-w-[2rem]">
+                            {code}
+                          </span>
+                          <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">{sub}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="bg-white border rounded-xl p-6 space-y-4">
@@ -836,6 +911,29 @@ function PlanningEditContent({ form, set, sites, allChildren, visibleChildren, i
   );
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function renderWithMtopBadges(text: string) {
+  // Split on MTOP codes like 1.1, 2.3, 4.2 and render them as inline badges
+  const parts = text.split(/(\d+\.\d+)/g);
+  return (
+    <span className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+      {parts.map((part, i) =>
+        /^\d+\.\d+$/.test(part) ? (
+          <span
+            key={i}
+            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-primary text-primary-foreground mx-0.5 align-middle"
+          >
+            {part}
+          </span>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </span>
+  );
+}
+
 // ─── Planning tab: view ────────────────────────────────────────────────────────
 
 function PlanningViewContent({ form, siteName, focusChildrenNames }: { form: FormState; siteName: string; focusChildrenNames: string[] }) {
@@ -877,7 +975,12 @@ function PlanningViewContent({ form, siteName, focusChildrenNames }: { form: For
         </div>
       )}
       {form.researchIdeas && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Research Ideas" /><ViewField label="" value={form.researchIdeas} /></div>}
-      {form.frameworkLinks && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Framework Links" /><ViewField label="" value={form.frameworkLinks} /></div>}
+      {form.frameworkLinks && (
+        <div className="bg-white border rounded-xl p-6 space-y-3">
+          <SectionHeader title="Framework Links" />
+          <div>{renderWithMtopBadges(form.frameworkLinks)}</div>
+        </div>
+      )}
       {form.qualityAreas && <div className="bg-white border rounded-xl p-6 space-y-3"><SectionHeader title="Quality Areas" /><ViewField label="" value={form.qualityAreas} /></div>}
       {(form.additionalResources || form.assessAndReview) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

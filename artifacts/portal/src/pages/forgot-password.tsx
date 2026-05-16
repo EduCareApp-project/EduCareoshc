@@ -64,7 +64,7 @@ export default function ForgotPassword() {
                   </div>
                   <h2 className="text-base font-semibold text-foreground mb-2">Check your email</h2>
                   <p className="text-sm text-muted-foreground mb-6">
-                    If an account exists for <strong>{email}</strong>, you'll receive a password reset link shortly. The link expires after 1 hour.
+                    If an account exists for <strong>{email}</strong>, you'll receive a password reset link shortly. The link expires after 4 hours.
                   </p>
                   <Link href="/login">
                     <Button variant="outline" className="w-full">

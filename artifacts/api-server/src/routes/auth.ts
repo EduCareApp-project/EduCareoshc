@@ -142,7 +142,7 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
 
   if (userType) {
     const token = randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000); // 4 hours
 
     await db.insert(passwordResetTokensTable).values({
       token,

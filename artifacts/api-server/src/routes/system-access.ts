@@ -1,7 +1,9 @@
 import { Router, type IRouter } from "express";
 import { eq, asc } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { db, staffTable, parentAccountsTable, childrenTable } from "@workspace/db";
+import { randomBytes } from "crypto";
+import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable } from "@workspace/db";
+import { sendLoginInstructionsEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -102,6 +104,144 @@ router.patch("/reports/system-access/guardian/:id/set-password", async (req, res
   const hash = await bcrypt.hash(String(password), 12);
   const [updated] = await db.update(parentAccountsTable).set({ passwordHash: hash }).where(eq(parentAccountsTable.id, id)).returning();
   if (!updated) { res.status(404).json({ error: "Guardian not found" }); return; }
+  res.json({ ok: true });
+});
+
+const ADMIN_ROLES = new Set(["director", "admin", "coordinator", "educational_leader"]);
+
+function requireAdminStaff(req: any, res: any): boolean {
+  const user = req.session?.user;
+  if (!user || user.type !== "staff" || !ADMIN_ROLES.has(user.role)) {
+    res.status(403).json({ error: "Only centre administrators can send login instructions." });
+    return false;
+  }
+  return true;
+}
+
+function isSmtpConfigured(): boolean {
+  return !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+}
+
+function getBaseUrl(): string {
+  const domains = (process.env.REPLIT_DOMAINS ?? process.env.REPLIT_DEV_DOMAIN ?? "localhost").split(",");
+  return `https://${domains[0]}`;
+}
+
+async function createResetToken(email: string, userType: "staff" | "guardian"): Promise<string> {
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
+  await db.insert(passwordResetTokensTable).values({ token, email, userType, expiresAt });
+  return token;
+}
+
+// Send login instructions to a staff member
+router.post("/reports/system-access/staff/:id/send-instructions", async (req, res): Promise<void> => {
+  if (!requireAdminStaff(req, res)) return;
+
+  if (!isSmtpConfigured()) {
+    res.status(503).json({ error: "Email delivery is not configured. Ask your administrator to set up SMTP." });
+    return;
+  }
+
+  const id = Number(req.params.id);
+  const [staff] = await db
+    .select({ id: staffTable.id, firstName: staffTable.firstName, lastName: staffTable.lastName, email: staffTable.email, blockedAt: staffTable.blockedAt, passwordHash: staffTable.passwordHash })
+    .from(staffTable)
+    .where(eq(staffTable.id, id));
+
+  if (!staff) {
+    res.status(404).json({ error: "Staff member not found." });
+    return;
+  }
+  if (!staff.email) {
+    res.status(400).json({ error: "This staff member has no email address on record." });
+    return;
+  }
+  if (staff.blockedAt) {
+    res.status(400).json({ error: "This account is blocked. Unblock it before sending login instructions." });
+    return;
+  }
+
+  const baseUrl = getBaseUrl();
+  const token = await createResetToken(staff.email.toLowerCase(), "staff");
+  const setPasswordUrl = `${baseUrl}/reset-password?token=${token}`;
+  const loginUrl = `${baseUrl}/login`;
+
+  try {
+    await sendLoginInstructionsEmail(staff.email, {
+      recipientName: `${staff.firstName} ${staff.lastName}`,
+      loginEmail: staff.email,
+      loginUrl,
+      setPasswordUrl,
+      isAlreadyConnected: !!staff.passwordHash,
+      accountType: "staff",
+    });
+  } catch (err) {
+    req.log.error({ err, staffId: id }, "Failed to send login instructions email");
+    res.status(500).json({ error: "Failed to send email. Please try again later." });
+    return;
+  }
+
+  res.json({ ok: true });
+});
+
+// Send login instructions to a guardian
+router.post("/reports/system-access/guardian/:id/send-instructions", async (req, res): Promise<void> => {
+  if (!requireAdminStaff(req, res)) return;
+
+  if (!isSmtpConfigured()) {
+    res.status(503).json({ error: "Email delivery is not configured. Ask your administrator to set up SMTP." });
+    return;
+  }
+
+  const id = Number(req.params.id);
+  const [guardian] = await db
+    .select({ id: parentAccountsTable.id, guardianEmail: parentAccountsTable.guardianEmail, blockedAt: parentAccountsTable.blockedAt, passwordHash: parentAccountsTable.passwordHash })
+    .from(parentAccountsTable)
+    .where(eq(parentAccountsTable.id, id));
+
+  if (!guardian) {
+    res.status(404).json({ error: "Guardian account not found." });
+    return;
+  }
+  if (!guardian.guardianEmail) {
+    res.status(400).json({ error: "This guardian has no email address on record." });
+    return;
+  }
+  if (guardian.blockedAt) {
+    res.status(400).json({ error: "This account is blocked. Unblock it before sending login instructions." });
+    return;
+  }
+
+  // Look up guardian name from children table
+  const [childRow] = await db
+    .select({ guardianName: childrenTable.guardianName })
+    .from(childrenTable)
+    .where(eq(childrenTable.guardianEmail, guardian.guardianEmail.toLowerCase()))
+    .limit(1);
+
+  const recipientName = childRow?.guardianName ?? guardian.guardianEmail;
+
+  const baseUrl = getBaseUrl();
+  const token = await createResetToken(guardian.guardianEmail.toLowerCase(), "guardian");
+  const setPasswordUrl = `${baseUrl}/reset-password?token=${token}`;
+  const loginUrl = `${baseUrl}/login`;
+
+  try {
+    await sendLoginInstructionsEmail(guardian.guardianEmail, {
+      recipientName,
+      loginEmail: guardian.guardianEmail,
+      loginUrl,
+      setPasswordUrl,
+      isAlreadyConnected: !!guardian.passwordHash,
+      accountType: "guardian",
+    });
+  } catch (err) {
+    req.log.error({ err, guardianId: id }, "Failed to send login instructions email");
+    res.status(500).json({ error: "Failed to send email. Please try again later." });
+    return;
+  }
+
   res.json({ ok: true });
 });
 

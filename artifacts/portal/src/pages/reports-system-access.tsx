@@ -66,6 +66,13 @@ async function toggleBlock(type: "staff" | "guardian", id: number) {
   return res.json();
 }
 
+async function sendInstructions(type: "staff" | "guardian", id: number) {
+  const res = await fetch(`/api/reports/system-access/${type}/${id}/send-instructions`, { method: "POST" });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Failed to send instructions");
+  return data;
+}
+
 async function setPassword(type: "staff" | "guardian", id: number, password: string) {
   const res = await fetch(`/api/reports/system-access/${type}/${id}/set-password`, {
     method: "PATCH",
@@ -172,6 +179,7 @@ function StaffRow({ row, onBlock }: { row: StaffRow; onBlock: () => void }) {
   const queryClient = useQueryClient();
   const [pwDialog, setPwDialog] = useState(false);
   const isBlocked = !!row.blockedAt;
+  const canSendInstructions = !!row.email && !isBlocked;
 
   const pwMutation = useMutation({
     mutationFn: (pw: string) => setPassword("staff", row.id, pw),
@@ -181,6 +189,12 @@ function StaffRow({ row, onBlock }: { row: StaffRow; onBlock: () => void }) {
       setPwDialog(false);
     },
     onError: (e: Error) => toast({ title: "Failed to set password", description: e.message, variant: "destructive" }),
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: () => sendInstructions("staff", row.id),
+    onSuccess: () => toast({ title: "Instructions sent", description: `Login instructions emailed to ${row.email}.` }),
+    onError: (e: Error) => toast({ title: "Failed to send instructions", description: e.message, variant: "destructive" }),
   });
 
   return (
@@ -226,13 +240,20 @@ function StaffRow({ row, onBlock }: { row: StaffRow; onBlock: () => void }) {
                   size="sm"
                   variant="ghost"
                   className="h-7 text-xs gap-1.5 text-muted-foreground"
-                  onClick={() => toast({ title: "Coming in the next stage", description: "Automated login emails will be available soon." })}
+                  disabled={!canSendInstructions || sendMutation.isPending}
+                  onClick={() => sendMutation.mutate()}
                 >
                   <Send className="h-3.5 w-3.5" />
-                  Send instructions
+                  {sendMutation.isPending ? "Sending…" : "Send instructions"}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Email login instructions — coming soon</TooltipContent>
+              <TooltipContent>
+                {!row.email
+                  ? "No email address on record"
+                  : isBlocked
+                  ? "Unblock this account before sending instructions"
+                  : "Email login instructions to this staff member"}
+              </TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -267,6 +288,7 @@ function GuardianRow({ row, onBlock }: { row: GuardianRow; onBlock: () => void }
   const queryClient = useQueryClient();
   const [pwDialog, setPwDialog] = useState(false);
   const isBlocked = !!row.blockedAt;
+  const canSendInstructions = !!row.guardianEmail && !isBlocked;
 
   const pwMutation = useMutation({
     mutationFn: (pw: string) => setPassword("guardian", row.id, pw),
@@ -276,6 +298,12 @@ function GuardianRow({ row, onBlock }: { row: GuardianRow; onBlock: () => void }
       setPwDialog(false);
     },
     onError: (e: Error) => toast({ title: "Failed to set password", description: e.message, variant: "destructive" }),
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: () => sendInstructions("guardian", row.id),
+    onSuccess: () => toast({ title: "Instructions sent", description: `Login instructions emailed to ${row.guardianEmail}.` }),
+    onError: (e: Error) => toast({ title: "Failed to send instructions", description: e.message, variant: "destructive" }),
   });
 
   return (
@@ -321,13 +349,20 @@ function GuardianRow({ row, onBlock }: { row: GuardianRow; onBlock: () => void }
                   size="sm"
                   variant="ghost"
                   className="h-7 text-xs gap-1.5 text-muted-foreground"
-                  onClick={() => toast({ title: "Coming in the next stage", description: "Automated login emails will be available soon." })}
+                  disabled={!canSendInstructions || sendMutation.isPending}
+                  onClick={() => sendMutation.mutate()}
                 >
                   <Send className="h-3.5 w-3.5" />
-                  Send instructions
+                  {sendMutation.isPending ? "Sending…" : "Send instructions"}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Email login instructions — coming soon</TooltipContent>
+              <TooltipContent>
+                {!row.guardianEmail
+                  ? "No email address on record"
+                  : isBlocked
+                  ? "Unblock this account before sending instructions"
+                  : "Email login instructions to this guardian"}
+              </TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -534,9 +569,6 @@ export default function ReportsSystemAccess() {
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground pb-4">
-        Automated login email delivery will be available in the next stage.
-      </p>
     </div>
   );
 }

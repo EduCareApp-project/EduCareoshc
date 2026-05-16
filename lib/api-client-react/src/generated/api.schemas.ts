@@ -440,6 +440,10 @@ export interface Notice {
   content: string;
   priority: NoticePriority;
   /** @nullable */
+  documentUrl?: string | null;
+  /** @nullable */
+  documentName?: string | null;
+  /** @nullable */
   expiresAt?: string | null;
   createdAt: string;
 }
@@ -458,6 +462,8 @@ export interface NoticeInput {
   title: string;
   content: string;
   priority?: NoticeInputPriority;
+  documentUrl?: string;
+  documentName?: string;
   expiresAt?: string;
 }
 

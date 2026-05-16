@@ -646,6 +646,8 @@ export const ListNoticesResponseItem = zod.object({
   title: zod.string(),
   content: zod.string(),
   priority: zod.enum(["low", "normal", "high", "urgent"]),
+  documentUrl: zod.string().nullish(),
+  documentName: zod.string().nullish(),
   expiresAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
 });
@@ -659,6 +661,8 @@ export const CreateNoticeBody = zod.object({
   priority: zod
     .enum(["low", "normal", "high", "urgent"])
     .default(createNoticeBodyPriorityDefault),
+  documentUrl: zod.string().optional(),
+  documentName: zod.string().optional(),
   expiresAt: zod.coerce.date().optional(),
 });
 

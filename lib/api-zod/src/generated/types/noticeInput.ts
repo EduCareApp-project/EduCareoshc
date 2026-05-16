@@ -11,5 +11,7 @@ export interface NoticeInput {
   title: string;
   content: string;
   priority?: NoticeInputPriority;
+  documentUrl?: string;
+  documentName?: string;
   expiresAt?: Date;
 }

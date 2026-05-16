@@ -6,11 +6,12 @@ import {
   useGetServiceComplianceReport, useGetLearningStoriesReport,
   useListPlanningExperiences, useListPosts,
 } from "@workspace/api-client-react";
+import { useUpload } from "@workspace/object-storage-web";
 import { Link } from "wouter";
 import {
   Baby, Users, BookOpen, ClipboardList, ShieldCheck, Bell, Trash2, Plus,
-  AlertTriangle, CheckCircle2, Clock, XCircle, FileText, Calendar,
-  Layers, Image, ChevronRight, TrendingUp, GraduationCap,
+  AlertTriangle, CheckCircle2, Clock, FileText, Calendar,
+  Layers, Image, ChevronRight, GraduationCap, Paperclip, X, Upload,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
@@ -19,9 +20,203 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { getListNoticesQueryKey } from "@workspace/api-client-react";
 
+// ─── Shared priority colours ────────────────────────────────────────────────
+const PRIORITY_COLORS: Record<string, string> = {
+  low: "bg-slate-100 text-slate-800",
+  normal: "bg-blue-100 text-blue-800",
+  high: "bg-amber-100 text-amber-800",
+  urgent: "bg-red-100 text-red-800",
+};
+
+// ─── Shared Notice Board ─────────────────────────────────────────────────────
+function NoticeBoard({ canManage }: { canManage: boolean }) {
+  const queryClient = useQueryClient();
+  const { data: notices, isLoading } = useListNotices();
+  const createNotice = useCreateNotice();
+  const deleteNotice = useDeleteNotice();
+
+  const [showForm, setShowForm] = useState(false);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [priority, setPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const { uploadFile, isUploading } = useUpload({
+    onError: () => alert("Document upload failed — please try again."),
+  });
+
+  const resetForm = () => {
+    setTitle(""); setContent(""); setPriority("normal"); setDocFile(null);
+    setShowForm(false);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const handlePost = async () => {
+    if (!title || !content) return;
+
+    let documentUrl: string | undefined;
+    let documentName: string | undefined;
+
+    if (docFile) {
+      const result = await uploadFile(docFile);
+      if (!result) return; // upload failed
+      documentUrl = `/api/storage/objects/${result.objectPath.replace(/^\/?(objects\/)?/, "")}`;
+      documentName = docFile.name;
+    }
+
+    createNotice.mutate(
+      { data: { title, content, priority: priority as any, postedById: 1, documentUrl, documentName } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListNoticesQueryKey() });
+          resetForm();
+        },
+      }
+    );
+  };
+
+  const handleDelete = (id: number) => {
+    deleteNotice.mutate({ id }, { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListNoticesQueryKey() }) });
+  };
+
+  const isSaving = createNotice.isPending || isUploading;
+
+  return (
+    <Card className="border-l-4 border-l-primary">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Bell className="w-5 h-5" /> Notice Board
+        </CardTitle>
+        {canManage && (
+          <Button variant="ghost" size="sm" onClick={() => setShowForm((v) => !v)}>
+            {showForm ? <X className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
+            {showForm ? "Cancel" : "Add Notice"}
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Create form — staff only */}
+        {canManage && showForm && (
+          <div className="p-4 border rounded-md bg-muted/30 space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="md:col-span-2">
+                <Input placeholder="Notice title" value={title} onChange={(e) => setTitle(e.target.value)} />
+              </div>
+              <Select value={priority} onValueChange={(v: any) => setPriority(v)}>
+                <SelectTrigger><SelectValue placeholder="Priority" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="normal">Normal</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Textarea placeholder="Notice content…" value={content} onChange={(e) => setContent(e.target.value)} rows={2} />
+
+            {/* Document upload */}
+            <div>
+              {docFile ? (
+                <div className="flex items-center gap-2 text-sm bg-muted rounded-md px-3 py-2">
+                  <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="flex-1 truncate">{docFile.name}</span>
+                  <button
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={() => { setDocFile(null); if (fileRef.current) fileRef.current.value = ""; }}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="flex items-center gap-2 text-sm text-muted-foreground border border-dashed rounded-md px-3 py-2 w-full hover:bg-muted/40 transition-colors"
+                  onClick={() => fileRef.current?.click()}
+                >
+                  <Upload className="h-4 w-4" />
+                  Attach a document (optional)
+                </button>
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                className="hidden"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
+              />
+            </div>
+
+            <Button className="w-full" onClick={handlePost} disabled={isSaving || !title || !content}>
+              {isUploading ? "Uploading document…" : isSaving ? "Posting…" : "Post Notice"}
+            </Button>
+          </div>
+        )}
+
+        {/* Notice cards */}
+        {isLoading ? (
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            <Skeleton className="h-36 w-64 shrink-0" />
+            <Skeleton className="h-36 w-64 shrink-0" />
+          </div>
+        ) : notices && notices.length > 0 ? (
+          <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
+            {notices.map((notice) => (
+              <div
+                key={notice.id}
+                className="min-w-[280px] max-w-[320px] p-4 rounded-lg border bg-card shrink-0 snap-start flex flex-col justify-between"
+              >
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-start">
+                    <Badge className={`${PRIORITY_COLORS[notice.priority] ?? PRIORITY_COLORS.normal} border-none capitalize`}>
+                      {notice.priority}
+                    </Badge>
+                    {canManage && (
+                      <Button
+                        variant="ghost" size="icon"
+                        className="h-6 w-6 -mt-1 -mr-1 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDelete(notice.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                  <h4 className="font-semibold text-sm">{notice.title}</h4>
+                  <p className="text-sm text-muted-foreground line-clamp-3">{notice.content}</p>
+
+                  {/* Document attachment */}
+                  {notice.documentUrl && (
+                    <a
+                      href={notice.documentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 flex items-center gap-1.5 text-xs text-primary hover:underline"
+                    >
+                      <Paperclip className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{notice.documentName ?? "Attached document"}</span>
+                    </a>
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground mt-4 pt-2 border-t">
+                  {format(new Date(notice.createdAt), "MMM d, h:mm a")}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6 text-muted-foreground text-sm">No active notices</div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Dashboard shell ─────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("leadership");
 
@@ -42,11 +237,9 @@ export default function Dashboard() {
         <TabsContent value="leadership" className="mt-6">
           <LeadershipDashboard />
         </TabsContent>
-
         <TabsContent value="educator" className="mt-6">
           <EducatorDashboard />
         </TabsContent>
-
         <TabsContent value="guardian" className="mt-6">
           <GuardianDashboard />
         </TabsContent>
@@ -55,43 +248,11 @@ export default function Dashboard() {
   );
 }
 
+// ─── Leadership ───────────────────────────────────────────────────────────────
 function LeadershipDashboard() {
   const { data: summary, isLoading: loadingSummary } = useGetDashboardSummary();
   const { data: outcomes, isLoading: loadingOutcomes } = useGetOutcomeCounts();
   const { data: observations, isLoading: loadingObservations } = useGetRecentObservations();
-  const { data: notices, isLoading: loadingNotices } = useListNotices();
-  const queryClient = useQueryClient();
-  const createNotice = useCreateNotice();
-  const deleteNotice = useDeleteNotice();
-
-  const [noticeTitle, setNoticeTitle] = useState("");
-  const [noticeContent, setNoticeContent] = useState("");
-  const [noticePriority, setNoticePriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
-  const [showNoticeForm, setShowNoticeForm] = useState(false);
-
-  const handleCreateNotice = () => {
-    if (!noticeTitle || !noticeContent) return;
-    createNotice.mutate(
-      { data: { title: noticeTitle, content: noticeContent, priority: noticePriority as any, postedById: 1 } },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ["/api/notices"] });
-          setNoticeTitle(""); setNoticeContent(""); setNoticePriority("normal"); setShowNoticeForm(false);
-        },
-      }
-    );
-  };
-
-  const handleDeleteNotice = (id: number) => {
-    deleteNotice.mutate({ id }, { onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/notices"] }) });
-  };
-
-  const priorityColors = {
-    low: "bg-slate-100 text-slate-800",
-    normal: "bg-blue-100 text-blue-800",
-    high: "bg-amber-100 text-amber-800",
-    urgent: "bg-red-100 text-red-800",
-  };
 
   return (
     <div className="space-y-8">
@@ -102,70 +263,7 @@ function LeadershipDashboard() {
         <MetricCard title="Active Programs" value={summary?.activePrograms} icon={ClipboardList} loading={loadingSummary} href="/programs" />
       </div>
 
-      <Card className="border-l-4 border-l-primary">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg flex items-center">
-            <Bell className="w-5 h-5 mr-2" /> Notice Board
-          </CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => setShowNoticeForm(!showNoticeForm)}>
-            <Plus className="w-4 h-4 mr-1" /> Add Notice
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {showNoticeForm && (
-            <div className="mb-6 p-4 border rounded-md bg-muted/30 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="md:col-span-2">
-                  <Input placeholder="Notice Title" value={noticeTitle} onChange={(e) => setNoticeTitle(e.target.value)} />
-                </div>
-                <div>
-                  <Select value={noticePriority} onValueChange={(v: any) => setNoticePriority(v)}>
-                    <SelectTrigger><SelectValue placeholder="Priority" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Button className="w-full" onClick={handleCreateNotice} disabled={createNotice.isPending}>
-                    {createNotice.isPending ? "Posting..." : "Post Notice"}
-                  </Button>
-                </div>
-              </div>
-              <Textarea placeholder="Notice Content..." value={noticeContent} onChange={(e) => setNoticeContent(e.target.value)} rows={2} />
-            </div>
-          )}
-          {loadingNotices ? (
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              <Skeleton className="h-32 w-64 shrink-0" />
-              <Skeleton className="h-32 w-64 shrink-0" />
-            </div>
-          ) : notices && notices.length > 0 ? (
-            <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
-              {notices.map((notice) => (
-                <div key={notice.id} className="min-w-[280px] max-w-[320px] p-4 rounded-lg border bg-card shrink-0 snap-start flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start mb-2">
-                      <Badge className={`${priorityColors[notice.priority as keyof typeof priorityColors]} border-none capitalize`}>{notice.priority}</Badge>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteNotice(notice.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <h4 className="font-semibold text-sm mb-1">{notice.title}</h4>
-                    <p className="text-sm text-muted-foreground line-clamp-3">{notice.content}</p>
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-4 pt-2 border-t">{format(new Date(notice.createdAt), "MMM d, h:mm a")}</div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-6 text-muted-foreground text-sm">No active notices</div>
-          )}
-        </CardContent>
-      </Card>
+      <NoticeBoard canManage />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
@@ -199,9 +297,7 @@ function LeadershipDashboard() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">MTOP Outcomes Focus</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-lg">MTOP Outcomes Focus</CardTitle></CardHeader>
           <CardContent>
             {loadingOutcomes ? (
               <div className="space-y-4"><Skeleton className="h-8 w-full" /><Skeleton className="h-8 w-full" /></div>
@@ -211,9 +307,7 @@ function LeadershipDashboard() {
               <div className="space-y-4">
                 {outcomes.map((oc) => (
                   <div key={oc.outcomeId} className="flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm mr-3 shrink-0">
-                      {oc.outcomeNumber}
-                    </div>
+                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm mr-3 shrink-0">{oc.outcomeNumber}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between mb-1">
                         <span className="text-sm font-medium line-clamp-1 pr-2">{oc.outcomeTitle}</span>
@@ -255,6 +349,7 @@ function LeadershipDashboard() {
   );
 }
 
+// ─── Educator ────────────────────────────────────────────────────────────────
 function EducatorDashboard() {
   const { data: service, isLoading: loadingService } = useGetServiceComplianceReport();
   const { data: learning, isLoading: loadingLearning } = useGetLearningStoriesReport();
@@ -264,6 +359,8 @@ function EducatorDashboard() {
 
   return (
     <div className="space-y-8">
+      <NoticeBoard canManage />
+
       <div className="grid gap-4 md:grid-cols-2">
         {/* Service Compliance */}
         <Card>
@@ -278,37 +375,12 @@ function EducatorDashboard() {
               <div className="space-y-3"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
             ) : (
               <div className="space-y-3">
+                <ComplianceRow icon={service?.openIncidents === 0 ? CheckCircle2 : AlertTriangle} ok={service?.openIncidents === 0} label="Open Incidents" value={service?.openIncidents ?? 0} suffix="open" />
+                <ComplianceRow icon={service?.openConditionReports === 0 ? CheckCircle2 : AlertTriangle} ok={service?.openConditionReports === 0} label="Condition Reports" value={service?.openConditionReports ?? 0} suffix="open" />
+                <ComplianceRow icon={service?.overdueChecklists === 0 ? CheckCircle2 : AlertTriangle} ok={service?.overdueChecklists === 0} label="Overdue Checklists" value={service?.overdueChecklists ?? 0} suffix="overdue" />
+                <ComplianceRow icon={service?.openQipItems === 0 ? CheckCircle2 : Clock} ok={service?.openQipItems === 0} label="Open QIP Items" value={service?.openQipItems ?? 0} suffix="open" />
                 <ComplianceRow
-                  icon={service?.openIncidents === 0 ? CheckCircle2 : AlertTriangle}
-                  ok={service?.openIncidents === 0}
-                  label="Open Incidents"
-                  value={service?.openIncidents ?? 0}
-                  suffix="open"
-                />
-                <ComplianceRow
-                  icon={service?.openConditionReports === 0 ? CheckCircle2 : AlertTriangle}
-                  ok={service?.openConditionReports === 0}
-                  label="Condition Reports"
-                  value={service?.openConditionReports ?? 0}
-                  suffix="open"
-                />
-                <ComplianceRow
-                  icon={service?.overdueChecklists === 0 ? CheckCircle2 : AlertTriangle}
-                  ok={service?.overdueChecklists === 0}
-                  label="Overdue Checklists"
-                  value={service?.overdueChecklists ?? 0}
-                  suffix="overdue"
-                />
-                <ComplianceRow
-                  icon={service?.openQipItems === 0 ? CheckCircle2 : Clock}
-                  ok={service?.openQipItems === 0}
-                  label="Open QIP Items"
-                  value={service?.openQipItems ?? 0}
-                  suffix="open"
-                />
-                <ComplianceRow
-                  icon={evacOk ? CheckCircle2 : AlertTriangle}
-                  ok={!!evacOk}
+                  icon={evacOk ? CheckCircle2 : AlertTriangle} ok={!!evacOk}
                   label="Evacuation Drill"
                   value={service?.evacuationStatus?.lastConducted ? format(parseISO(service.evacuationStatus.lastConducted), "d MMM yyyy") : "Never conducted"}
                   isText
@@ -328,14 +400,13 @@ function EducatorDashboard() {
           </CardHeader>
           <CardContent>
             {loadingLearning || loadingSummary ? (
-              <div className="space-y-3"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
+              <div className="space-y-3"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2.5">
                   <span className="text-sm font-medium">Observations this month</span>
                   <span className="text-lg font-bold text-primary">{summary?.observationsThisMonth ?? 0}</span>
                 </div>
-
                 {learning?.underRepresentedOutcomes && learning.underRepresentedOutcomes.length > 0 ? (
                   <div>
                     <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Under-represented MTOP outcomes</p>
@@ -343,7 +414,7 @@ function EducatorDashboard() {
                       {learning.underRepresentedOutcomes.map((o) => (
                         <div key={o.outcomeId} className="flex items-center gap-2 text-sm">
                           <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                          <span className="text-foreground font-medium">Outcome {o.outcomeNumber}</span>
+                          <span className="font-medium">Outcome {o.outcomeNumber}</span>
                           <span className="text-muted-foreground">{o.outcomeTitle}</span>
                           <Badge className="ml-auto bg-amber-100 text-amber-800 text-xs border-none">{o.count}</Badge>
                         </div>
@@ -352,11 +423,9 @@ function EducatorDashboard() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-sm text-green-700">
-                    <CheckCircle2 className="h-4 w-4" />
-                    All MTOP outcomes are well represented
+                    <CheckCircle2 className="h-4 w-4" /> All MTOP outcomes are well represented
                   </div>
                 )}
-
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Outcomes breakdown</p>
                   <div className="space-y-2">
@@ -377,7 +446,6 @@ function EducatorDashboard() {
         </Card>
       </div>
 
-      {/* Children without recent obs */}
       {(learning?.byChild ?? []).filter((c) => c.observationCount === 0).length > 0 && (
         <Card className="border-amber-200 bg-amber-50/50">
           <CardHeader className="pb-2">
@@ -400,8 +468,8 @@ function EducatorDashboard() {
   );
 }
 
+// ─── Guardian ────────────────────────────────────────────────────────────────
 function GuardianDashboard() {
-  const { data: notices, isLoading: loadingNotices } = useListNotices();
   const { data: posts, isLoading: loadingPosts } = useListPosts();
   const { data: planning, isLoading: loadingPlanning } = useListPlanningExperiences();
 
@@ -410,41 +478,9 @@ function GuardianDashboard() {
     .sort((a, b) => (b.startDate ?? "").localeCompare(a.startDate ?? ""))
     .slice(0, 3);
 
-  const priorityColors: Record<string, string> = {
-    low: "bg-slate-100 text-slate-800",
-    normal: "bg-blue-100 text-blue-800",
-    high: "bg-amber-100 text-amber-800",
-    urgent: "bg-red-100 text-red-800",
-  };
-
   return (
     <div className="space-y-8">
-      {/* Notices */}
-      <Card className="border-l-4 border-l-primary">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Bell className="h-4 w-4" /> Messages from the Service
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loadingNotices ? (
-            <div className="flex gap-4"><Skeleton className="h-32 w-64 shrink-0" /><Skeleton className="h-32 w-64 shrink-0" /></div>
-          ) : notices && notices.length > 0 ? (
-            <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
-              {notices.map((notice) => (
-                <div key={notice.id} className="min-w-[260px] max-w-[300px] p-4 rounded-lg border bg-card shrink-0 snap-start">
-                  <Badge className={`${priorityColors[notice.priority] ?? priorityColors.normal} border-none capitalize mb-2`}>{notice.priority}</Badge>
-                  <h4 className="font-semibold text-sm mb-1">{notice.title}</h4>
-                  <p className="text-sm text-muted-foreground line-clamp-3">{notice.content}</p>
-                  <div className="text-xs text-muted-foreground mt-3 pt-2 border-t">{format(new Date(notice.createdAt), "MMM d, h:mm a")}</div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-6 text-muted-foreground text-sm">No messages at this time</div>
-          )}
-        </CardContent>
-      </Card>
+      <NoticeBoard canManage={false} />
 
       {/* Published weekly plans */}
       <Card>
@@ -517,10 +553,9 @@ function GuardianDashboard() {
   );
 }
 
-function ComplianceRow({
-  icon: Icon, ok, label, value, suffix, isText,
-}: {
-  icon: any; ok: boolean; label: string; value: number | string; suffix?: string; isText?: boolean;
+// ─── Shared sub-components ───────────────────────────────────────────────────
+function ComplianceRow({ icon: Icon, ok, label, value, suffix, isText }: {
+  icon: any; ok: boolean | undefined; label: string; value: number | string; suffix?: string; isText?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between rounded-md px-3 py-2 bg-muted/30">

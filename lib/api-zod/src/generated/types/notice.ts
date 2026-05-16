@@ -13,6 +13,10 @@ export interface Notice {
   content: string;
   priority: NoticePriority;
   /** @nullable */
+  documentUrl?: string | null;
+  /** @nullable */
+  documentName?: string | null;
+  /** @nullable */
   expiresAt?: Date | null;
   createdAt: Date;
 }

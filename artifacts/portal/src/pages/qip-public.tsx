@@ -193,7 +193,7 @@ export default function QipPublic() {
                               <thead>
                                 <tr style={{ backgroundColor: colour.bg }}>
                                   {[
-                                    "NQS Standard",
+                                    "NQS Standard/Element",
                                     "Priority",
                                     "Issue Identified",
                                     "Outcome / Goal",
@@ -217,11 +217,11 @@ export default function QipPublic() {
                                   const pc = PRIORITY_COLOURS[item.priority ?? "medium"] ?? PRIORITY_COLOURS.medium;
                                   const priorityLabel = (item.priority ?? "medium").charAt(0).toUpperCase() + (item.priority ?? "medium").slice(1);
                                   return (
-                                    <tr key={item.id} className="border-t align-top">
-                                      <td className="py-3 px-4 text-sm font-medium text-gray-700 whitespace-nowrap">
-                                        {item.standardElement ? `NQS ${item.standardElement}` : <span className="text-gray-400">—</span>}
+                                    <tr key={item.id} className="border-t">
+                                      <td className="py-3 px-4 align-top text-sm font-medium text-gray-700 whitespace-nowrap">
+                                        {item.standardElement?.trim() ? `NQS ${item.standardElement}` : <span className="text-gray-400">—</span>}
                                       </td>
-                                      <td className="py-3 px-4 whitespace-nowrap">
+                                      <td className="py-3 px-4 align-top whitespace-nowrap">
                                         <span
                                           className="inline-block text-xs font-medium px-2 py-0.5 rounded-full border"
                                           style={{ backgroundColor: pc.bg, color: pc.text, borderColor: pc.border }}
@@ -229,23 +229,23 @@ export default function QipPublic() {
                                           {priorityLabel}
                                         </span>
                                       </td>
-                                      <td className="py-3 px-4 text-sm text-gray-700">
-                                        {item.issueIdentified ?? <span className="text-gray-400">—</span>}
+                                      <td className="py-3 px-4 align-top text-sm text-gray-700">
+                                        {item.issueIdentified?.trim() ? item.issueIdentified : <span className="text-gray-400">—</span>}
                                       </td>
-                                      <td className="py-3 px-4 text-sm text-gray-700">
-                                        {item.outcomeGoal ?? <span className="text-gray-400">—</span>}
+                                      <td className="py-3 px-4 align-top text-sm text-gray-700">
+                                        {item.outcomeGoal?.trim() ? item.outcomeGoal : <span className="text-gray-400">—</span>}
                                       </td>
-                                      <td className="py-3 px-4 text-sm text-gray-700">
-                                        {item.howToAchieve ?? <span className="text-gray-400">—</span>}
+                                      <td className="py-3 px-4 align-top text-sm text-gray-700">
+                                        {item.howToAchieve?.trim() ? item.howToAchieve : <span className="text-gray-400">—</span>}
                                       </td>
-                                      <td className="py-3 px-4 text-sm text-gray-700">
-                                        {item.successMeasure ?? <span className="text-gray-400">—</span>}
+                                      <td className="py-3 px-4 align-top text-sm text-gray-700">
+                                        {item.successMeasure?.trim() ? item.successMeasure : <span className="text-gray-400">—</span>}
                                       </td>
-                                      <td className="py-3 px-4 text-sm text-gray-700">
-                                        {item.progressNotes ?? <span className="text-gray-400">—</span>}
+                                      <td className="py-3 px-4 align-top text-sm text-gray-700">
+                                        {item.progressNotes?.trim() ? item.progressNotes : <span className="text-gray-400">—</span>}
                                       </td>
-                                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
-                                        {item.dueDate
+                                      <td className="py-3 px-4 align-top text-sm text-gray-700 whitespace-nowrap">
+                                        {item.dueDate?.trim()
                                           ? new Date(item.dueDate).toLocaleDateString("en-AU")
                                           : <span className="text-gray-400">—</span>}
                                       </td>

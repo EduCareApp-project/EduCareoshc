@@ -270,15 +270,8 @@ export default function ReportsLearning() {
 
       {/* MTOP Outcome row — donut + two stat tiles */}
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Two stat tiles stacked */}
-        <div className="flex flex-col gap-4">
-          <StatTile
-            icon={<Eye className="h-5 w-5" />}
-            label="Observations"
-            count={filteredObservations.length}
-            sub="In this period"
-            loading={isLoadingCounts}
-          />
+        {/* Active Jottings tile */}
+        <div className="flex flex-col">
           <StatTile
             icon={<StickyNote className="h-5 w-5" />}
             label="Active Jottings"

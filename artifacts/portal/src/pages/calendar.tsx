@@ -310,11 +310,7 @@ export default function Calendar() {
     return cyclesForWeek(weekDays).filter((p) => p.stage === "planned");
   }
 
-  const plannedThisMonth = filteredPlanning.filter((p) => {
-    if (p.stage !== "planned" || !p.startDate) return false;
-    const d = parseISO(p.startDate);
-    return !isAfter(d, endOfMonth(currentMonth)) && !isBefore(d, startOfMonth(currentMonth));
-  });
+  const plannedThisMonth = filteredPlanning.filter((p) => p.stage === "planned");
 
   function handleSaved() {
     queryClient.invalidateQueries({ queryKey: getListPlanningExperiencesQueryKey() });
@@ -431,7 +427,7 @@ export default function Calendar() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Layers className="h-5 w-5 text-muted-foreground" />
-                <CardTitle className="text-base">Planning Cycles This Month</CardTitle>
+                <CardTitle className="text-base">Planning Cycles</CardTitle>
                 {plannedThisMonth.length > 0 && (
                   <Badge className="bg-blue-100 text-blue-800">{plannedThisMonth.length} planned</Badge>
                 )}
@@ -446,7 +442,7 @@ export default function Calendar() {
           <CardContent>
             {plannedThisMonth.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
-                No planned cycles starting in {format(currentMonth, "MMMM yyyy")}.
+                No planned cycles for this site yet.
               </p>
             ) : (
               <div className="divide-y">

@@ -5,6 +5,7 @@ import {
   useListNotices, useCreateNotice, useDeleteNotice, useUpdateNotice,
   useGetServiceComplianceReport, useGetLearningStoriesReport,
   useListPlanningExperiences, useListPosts, useListSites,
+  useListChecklistRoutines,
 } from "@workspace/api-client-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { Link } from "wouter";
@@ -566,17 +567,37 @@ function OutcomePieChart({ outcomes }: { outcomes: OutcomeItem[] }) {
 }
 
 // ─── Educator ────────────────────────────────────────────────────────────────
+const CHECKLIST_FREQ_ORDER = ["weekly", "monthly", "term"] as const;
+type ChecklistFreq = typeof CHECKLIST_FREQ_ORDER[number];
+
+const CHECKLIST_FREQ_LABELS: Record<ChecklistFreq, string> = {
+  weekly: "Weekly",
+  monthly: "Monthly",
+  term: "Term",
+};
+
 function EducatorDashboard() {
   const { data: service, isLoading: loadingService } = useGetServiceComplianceReport();
   const { data: learning, isLoading: loadingLearning } = useGetLearningStoriesReport();
   const { data: summary, isLoading: loadingSummary } = useGetDashboardSummary();
+  const { data: routines, isLoading: loadingRoutines } = useListChecklistRoutines();
 
   const evacOk = service?.evacuationStatus?.lastConducted && !service?.evacuationStatus?.isOverdue;
+
+  const childrenWithNoObs = (learning?.byChild ?? []).filter((c) => c.observationCount === 0);
+
+  // Group routines by the three frequencies we care about
+  const routinesByFreq: Record<ChecklistFreq, typeof routines> = {
+    weekly: (routines ?? []).filter((r) => r.frequency === "weekly"),
+    monthly: (routines ?? []).filter((r) => r.frequency === "monthly"),
+    term: (routines ?? []).filter((r) => r.frequency === "term"),
+  };
 
   return (
     <div className="space-y-8">
       <NoticeBoard canManage audience="educator" />
 
+      {/* Row 1: Service Compliance + Checklists */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Service Compliance */}
         <Card>
@@ -606,6 +627,63 @@ function EducatorDashboard() {
           </CardContent>
         </Card>
 
+        {/* Checklists */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between text-base">
+              <span className="flex items-center gap-2"><ClipboardList className="h-4 w-4 text-primary" /> Checklists</span>
+              <Link href="/checklists"><span className="text-xs text-primary font-normal cursor-pointer hover:underline flex items-center gap-0.5">View all <ChevronRight className="h-3 w-3" /></span></Link>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingRoutines ? (
+              <div className="space-y-3"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></div>
+            ) : (
+              <div className="space-y-3">
+                {CHECKLIST_FREQ_ORDER.map((freq) => {
+                  const items = routinesByFreq[freq] ?? [];
+                  const label = CHECKLIST_FREQ_LABELS[freq];
+                  // Most recent upcoming routine for this frequency
+                  const next = [...items].sort((a, b) => a.targetDate.localeCompare(b.targetDate)).find((r) => r.targetDate >= format(new Date(), "yyyy-MM-dd")) ?? items[items.length - 1];
+                  return (
+                    <div key={freq} className="rounded-md border px-3 py-2.5 flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Badge
+                          className={
+                            freq === "weekly"
+                              ? "bg-blue-100 text-blue-800 border-none text-xs shrink-0"
+                              : freq === "monthly"
+                              ? "bg-purple-100 text-purple-800 border-none text-xs shrink-0"
+                              : "bg-amber-100 text-amber-800 border-none text-xs shrink-0"
+                          }
+                        >
+                          {label}
+                        </Badge>
+                        <div className="min-w-0">
+                          {next ? (
+                            <>
+                              <p className="text-sm font-medium truncate">{next.title}</p>
+                              <p className="text-xs text-muted-foreground">Due {format(parseISO(next.targetDate), "d MMM yyyy")}</p>
+                            </>
+                          ) : (
+                            <p className="text-sm text-muted-foreground italic">None scheduled</p>
+                          )}
+                        </div>
+                      </div>
+                      {items.length > 0 && (
+                        <span className="text-xs text-muted-foreground shrink-0 pt-0.5">{items.length} total</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Row 2: Learning Story Compliance + Children with no observations */}
+      <div className="grid gap-4 md:grid-cols-2">
         {/* Learning Story Compliance */}
         <Card>
           <CardHeader className="pb-3">
@@ -647,26 +725,27 @@ function EducatorDashboard() {
             )}
           </CardContent>
         </Card>
-      </div>
 
-      {(learning?.byChild ?? []).filter((c) => c.observationCount === 0).length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2 text-amber-800">
-              <AlertTriangle className="h-4 w-4" /> Children with no observations this month
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {learning!.byChild.filter((c) => c.observationCount === 0).map((c) => (
-                <Link key={c.childId} href={`/children/${c.childId}`}>
-                  <Badge className="bg-amber-100 text-amber-800 border-amber-300 cursor-pointer hover:bg-amber-200">{c.childName}</Badge>
-                </Link>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {/* Children with no observations — right column only */}
+        {childrenWithNoObs.length > 0 && (
+          <Card className="border-amber-200 bg-amber-50/50 self-start">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2 text-amber-800">
+                <AlertTriangle className="h-4 w-4" /> Children with no observations this month
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {childrenWithNoObs.map((c) => (
+                  <Link key={c.childId} href={`/children/${c.childId}`}>
+                    <Badge className="bg-amber-100 text-amber-800 border-amber-300 cursor-pointer hover:bg-amber-200">{c.childName}</Badge>
+                  </Link>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

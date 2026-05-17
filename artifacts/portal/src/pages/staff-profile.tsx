@@ -1032,12 +1032,27 @@ export default function StaffProfile() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Expiry Date</Label>
-                <Input
-                  type="date"
-                  value={qualForm.expiryDate}
-                  onChange={(e) => setQualForm((f) => ({ ...f, expiryDate: e.target.value }))}
-                />
+                <Label>Expiry Date <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
+                <div className="flex gap-1.5">
+                  <Input
+                    type="date"
+                    value={qualForm.expiryDate}
+                    autoComplete="off"
+                    onChange={(e) => setQualForm((f) => ({ ...f, expiryDate: e.target.value }))}
+                  />
+                  {qualForm.expiryDate && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                      onClick={() => setQualForm((f) => ({ ...f, expiryDate: "" }))}
+                      title="Clear expiry date"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 

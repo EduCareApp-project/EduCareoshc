@@ -102,8 +102,8 @@ async function computeDeadlineNotifications(): Promise<void> {
   }
 
   // ── 2. Staff compliance (qualifying expiry) ──────────────────────────────────
-  if (await isEnabled("staff_compliance_due")) {
-    const advanceDays = await getAdvanceDays("staff_compliance_due");
+  if (await isEnabled("staff_qualification_expiry")) {
+    const advanceDays = await getAdvanceDays("staff_qualification_expiry");
     const windowEnd = new Date(today);
     windowEnd.setDate(today.getDate() + advanceDays);
     const windowEndStr = windowEnd.toISOString().split("T")[0];
@@ -113,7 +113,7 @@ async function computeDeadlineNotifications(): Promise<void> {
     const quals = await db.select({
       id: staffQualificationsTable.id,
       staffId: staffQualificationsTable.staffId,
-      type: staffQualificationsTable.type,
+      name: staffQualificationsTable.name,
       expiryDate: staffQualificationsTable.expiryDate,
     }).from(staffQualificationsTable);
 
@@ -136,19 +136,19 @@ async function computeDeadlineNotifications(): Promise<void> {
       for (const r of recipients) {
         await createNotification({
           staffId: r.id,
-          type: "staff_compliance_due",
-          title: `${name} — ${qual.type ?? "qualification"} expires ${expiryStr}`,
+          type: "staff_qualification_expiry",
+          title: `${name} — ${qual.name ?? "qualification"} expires ${expiryStr}`,
           href: `/staff/${qual.staffId}`,
           referenceId: qual.staffId,
           referenceType: "staff",
-          dedupeKey: `staff_compliance_due:${qual.id}:${monthKey}:${r.id}`,
+          dedupeKey: `staff_qualification_expiry:${qual.id}:${monthKey}:${r.id}`,
         });
       }
     }
   }
 
   // ── 3. No published plan for current week ────────────────────────────────────
-  if (await isEnabled("no_published_plan")) {
+  if (await isEnabled("weekly_plan_missing")) {
     const sites = await db.select({ id: sitesTable.id }).from(sitesTable);
     for (const site of sites) {
       // A "published" plan is one with weeklyPlanData set for this week's window
@@ -172,10 +172,10 @@ async function computeDeadlineNotifications(): Promise<void> {
         for (const c of coordinators) {
           await createNotification({
             staffId: c.id,
-            type: "no_published_plan",
+            type: "weekly_plan_missing",
             title: "No published plan for the current week",
             href: "/planning",
-            dedupeKey: `no_published_plan:${site.id}:${weekKey}:${c.id}`,
+            dedupeKey: `weekly_plan_missing:${site.id}:${weekKey}:${c.id}`,
           });
         }
       }
@@ -183,8 +183,8 @@ async function computeDeadlineNotifications(): Promise<void> {
   }
 
   // ── 4. Checklist deadlines ───────────────────────────────────────────────────
-  if (await isEnabled("checklist_deadline")) {
-    const advanceDays = await getAdvanceDays("checklist_deadline");
+  if (await isEnabled("checklist_overdue")) {
+    const advanceDays = await getAdvanceDays("checklist_overdue");
     const windowEnd = new Date(today);
     windowEnd.setDate(today.getDate() + advanceDays);
     const windowEndStr = windowEnd.toISOString().split("T")[0];
@@ -197,12 +197,12 @@ async function computeDeadlineNotifications(): Promise<void> {
         : (routine.targetDate as Date).toISOString().split("T")[0];
       if (targetStr < todayStr || targetStr > windowEndStr) continue;
 
-      const dedupeBase = `checklist_deadline:${routine.id}:${targetStr}`;
+      const dedupeBase = `checklist_overdue:${routine.id}:${targetStr}`;
 
       if (routine.staffId) {
         await createNotification({
           staffId: routine.staffId,
-          type: "checklist_deadline",
+          type: "checklist_overdue",
           title: `Checklist due ${targetStr}: ${routine.title}`,
           href: "/checklists",
           referenceId: routine.id,
@@ -220,7 +220,7 @@ async function computeDeadlineNotifications(): Promise<void> {
         for (const c of coordinators) {
           await createNotification({
             staffId: c.id,
-            type: "checklist_deadline",
+            type: "checklist_overdue",
             title: `Checklist due ${targetStr}: ${routine.title}`,
             href: "/checklists",
             referenceId: routine.id,

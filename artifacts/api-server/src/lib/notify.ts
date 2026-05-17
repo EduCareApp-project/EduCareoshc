@@ -12,9 +12,9 @@ export type NotificationType =
   | "policy_updated"
   | "qip_deadline"
   | "qip_deadline_expired"
-  | "no_published_plan"
-  | "staff_compliance_due"
-  | "checklist_deadline";
+  | "weekly_plan_missing"
+  | "staff_qualification_expiry"
+  | "checklist_overdue";
 
 async function isTypeEnabled(type: NotificationType): Promise<boolean> {
   const [setting] = await db.select({ enabled: notificationSettingsTable.enabled })

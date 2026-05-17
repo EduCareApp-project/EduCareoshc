@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/auth";
 import { useListSites } from "@workspace/api-client-react";
-import { Baby, Calendar, User, ExternalLink, ShieldCheck, FileText, BookOpen } from "lucide-react";
+import { Baby, Calendar, User, ExternalLink, ShieldCheck, FileText, BookOpen, MessageCircle, Send } from "lucide-react";
 
 type Child = {
   id: number;
@@ -32,6 +34,14 @@ type Post = {
   childNames: string[];
   staffName: string | null;
   siteName: string | null;
+};
+
+type Comment = {
+  id: number;
+  postId: number;
+  authorName: string;
+  body: string;
+  createdAt: string;
 };
 
 function ageFromDob(dob: string | null): string {
@@ -68,11 +78,48 @@ function stripHtml(html: string | null | undefined): string {
 
 function PostCard({ post }: { post: Post }) {
   const [open, setOpen] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
   const summary = post.aiSummary || stripHtml(post.description) || stripHtml(post.learning);
   const hasImage = post.images && post.images.length > 0;
   const publishDate = post.publishedAt
     ? new Date(post.publishedAt).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })
     : null;
+
+  const { data: comments = [], isLoading: commentsLoading } = useQuery<Comment[]>({
+    queryKey: ["/api/posts", post.id, "comments"],
+    queryFn: async () => {
+      const res = await fetch(`/api/posts/${post.id}/comments`);
+      if (!res.ok) throw new Error("Failed to load comments");
+      return res.json();
+    },
+    enabled: open,
+  });
+
+  const addComment = useMutation({
+    mutationFn: async (body: string) => {
+      const res = await fetch(`/api/posts/${post.id}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ authorName: user?.name ?? "Guardian", body }),
+      });
+      if (!res.ok) throw new Error("Failed to post comment");
+      return res.json();
+    },
+    onSuccess: () => {
+      setCommentText("");
+      queryClient.invalidateQueries({ queryKey: ["/api/posts", post.id, "comments"] });
+    },
+  });
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = commentText.trim();
+    if (!trimmed) return;
+    addComment.mutate(trimmed);
+  }
 
   return (
     <>
@@ -101,15 +148,19 @@ function PostCard({ post }: { post: Post }) {
           {summary && (
             <p className="text-sm text-muted-foreground line-clamp-3">{summary.slice(0, 200)}</p>
           )}
-          {post.childNames.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
+          <div className="mt-2 flex items-center justify-between flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1">
               {post.childNames.map((name) => (
                 <span key={name} className="text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium">
                   {name}
                 </span>
               ))}
             </div>
-          )}
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <MessageCircle className="h-3 w-3" />
+              {comments.length > 0 ? comments.length : ""}
+            </span>
+          </div>
         </CardContent>
       </Card>
 
@@ -162,7 +213,7 @@ function PostCard({ post }: { post: Post }) {
 
           {/* Children tagged */}
           {post.childNames.length > 0 && (
-            <div className="flex flex-wrap gap-1 pt-1 border-t">
+            <div className="flex flex-wrap gap-1 pb-2 border-b">
               {post.childNames.map((name) => (
                 <span key={name} className="text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium">
                   {name}
@@ -170,6 +221,58 @@ function PostCard({ post }: { post: Post }) {
               ))}
             </div>
           )}
+
+          {/* Comments */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4 text-muted-foreground" />
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Comments {comments.length > 0 && `(${comments.length})`}
+              </p>
+            </div>
+
+            {commentsLoading ? (
+              <Skeleton className="h-10 w-full rounded-lg" />
+            ) : comments.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No comments yet — be the first to share a thought.</p>
+            ) : (
+              <div className="space-y-2">
+                {comments.map((c) => (
+                  <div key={c.id} className="bg-muted/50 rounded-lg px-3 py-2">
+                    <div className="flex items-center justify-between gap-2 mb-0.5">
+                      <span className="text-xs font-semibold">{c.authorName}</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {new Date(c.createdAt).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                    </div>
+                    <p className="text-sm">{c.body}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add comment form */}
+            <form onSubmit={handleSubmit} className="flex gap-2 items-end pt-1">
+              <Textarea
+                placeholder="Add a comment…"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                rows={2}
+                className="flex-1 resize-none text-sm"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(e as any); }
+                }}
+              />
+              <Button
+                type="submit"
+                size="sm"
+                disabled={!commentText.trim() || addComment.isPending}
+                className="shrink-0"
+              >
+                <Send className="h-3.5 w-3.5" />
+              </Button>
+            </form>
+          </div>
         </DialogContent>
       </Dialog>
     </>

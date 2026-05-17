@@ -22,15 +22,78 @@ import {
 
 const router: IRouter = Router();
 
+// Normalise an incoming child payload from external systems.
+// Handles snake_case keys, AU spelling variants ("enrolment"), and loose
+// ageGroup values (e.g. "OSHC", "school age") before Zod validation runs.
+function normalizeChildPayload(body: unknown): unknown {
+  if (typeof body !== "object" || body === null) return body;
+  const raw = body as Record<string, unknown>;
+
+  const keyMap: Record<string, string> = {
+    first_name: "firstName",
+    last_name: "lastName",
+    date_of_birth: "dateOfBirth",
+    dob: "dateOfBirth",
+    birth_date: "dateOfBirth",
+    enrollment_date: "enrollmentDate",
+    enrolment_date: "enrollmentDate",
+    start_date: "enrollmentDate",
+    age_group: "ageGroup",
+    guardian_name: "guardianName",
+    guardian_email: "guardianEmail",
+    guardian_phone: "guardianPhone",
+    medical_notes: "medicalNotes",
+    site_id: "siteId",
+    profile_picture_path: "profilePicturePath",
+  };
+
+  const ageGroupMap: Record<string, string> = {
+    infant: "infant",
+    toddler: "toddler",
+    preschool: "preschool",
+    "pre-school": "preschool",
+    "pre school": "preschool",
+    kindergarten: "preschool",
+    kinder: "preschool",
+    prep: "preschool",
+    school_age: "school_age",
+    schoolage: "school_age",
+    "school age": "school_age",
+    "school-age": "school_age",
+    school: "school_age",
+    oshc: "school_age",
+    "before school care": "school_age",
+    "after school care": "school_age",
+    asc: "school_age",
+    bsc: "school_age",
+    "primary school": "school_age",
+  };
+
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(raw)) {
+    const mapped = keyMap[k.toLowerCase()] ?? k;
+    out[mapped] = v;
+  }
+
+  if (typeof out.ageGroup === "string") {
+    const normalized = ageGroupMap[out.ageGroup.toLowerCase().trim()];
+    if (normalized) out.ageGroup = normalized;
+  }
+
+  return out;
+}
+
 router.get("/children", async (_req, res): Promise<void> => {
   const children = await db.select().from(childrenTable).orderBy(asc(childrenTable.lastName), asc(childrenTable.firstName));
   res.json(ListChildrenResponse.parse(children));
 });
 
 router.post("/children", async (req, res): Promise<void> => {
-  const parsed = CreateChildBody.safeParse(req.body);
+  const normalized = normalizeChildPayload(req.body);
+  const parsed = CreateChildBody.safeParse(normalized);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    req.log.warn({ body: req.body, normalized, issues: parsed.error.issues }, "POST /children validation failed");
+    res.status(400).json({ error: parsed.error.message, issues: parsed.error.issues });
     return;
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

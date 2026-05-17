@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { eq, asc, and, gt, isNull } from "drizzle-orm";
-import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable } from "@workspace/db";
+import { eq, asc, and, gt, isNull, isNotNull, sql } from "drizzle-orm";
+import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, postsTable, sitesTable } from "@workspace/db";
 import { sendPasswordResetEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 
@@ -229,6 +229,53 @@ router.get("/auth/my-children", async (req, res): Promise<void> => {
     .where(eq(childrenTable.guardianEmail, req.session.user.email))
     .orderBy(asc(childrenTable.lastName), asc(childrenTable.firstName));
   res.json(children);
+});
+
+router.get("/auth/my-posts", async (req, res): Promise<void> => {
+  if (!req.session.user || req.session.user.type !== "guardian") {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const children = await db
+    .select({ id: childrenTable.id, firstName: childrenTable.firstName, lastName: childrenTable.lastName })
+    .from(childrenTable)
+    .where(eq(childrenTable.guardianEmail, req.session.user.email));
+
+  if (children.length === 0) {
+    res.json([]);
+    return;
+  }
+
+  const childIds = children.map((c) => c.id);
+
+  const [posts, siteList] = await Promise.all([
+    db.select().from(postsTable)
+      .where(
+        and(
+          isNotNull(postsTable.publishedAt),
+          sql`${postsTable.childIds} && ARRAY[${sql.join(childIds.map((id) => sql`${id}`), sql`, `)}]::integer[]`,
+        )
+      )
+      .orderBy(postsTable.publishedAt),
+    db.select().from(sitesTable),
+  ]);
+
+  const enriched = posts.map((p) => {
+    const site = siteList.find((s) => s.id === p.siteId);
+    const postChildNames = (p.childIds ?? []).map((cid) => {
+      const c = children.find((ch) => ch.id === cid);
+      return c ? `${c.firstName} ${c.lastName}` : null;
+    }).filter(Boolean) as string[];
+    return {
+      ...p,
+      childNames: postChildNames,
+      staffName: null as string | null,
+      siteName: site ? site.name : null,
+    };
+  });
+
+  res.json(enriched);
 });
 
 export default router;

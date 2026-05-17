@@ -1098,6 +1098,7 @@ export interface FileLibraryItem {
   name: string;
   documentPath: string;
   documentName: string;
+  position?: number;
   createdAt: string;
 }
 
@@ -1107,6 +1108,7 @@ export interface FileLibraryInput {
   siteId?: number;
   documentPath: string;
   documentName: string;
+  position?: number;
 }
 
 export type ChecklistType = (typeof ChecklistType)[keyof typeof ChecklistType];

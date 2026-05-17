@@ -31,20 +31,22 @@ router.post("/file-library", async (req, res): Promise<void> => {
   const parsed = CreateFileLibraryItemBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
-  // Assign next position within this category+site group
-  const { categoryId, siteId } = parsed.data as any;
-  let nextPosition = 0;
-  if (categoryId) {
-    const existing = await db
-      .select({ position: fileLibraryTable.position })
-      .from(fileLibraryTable)
-      .where(eq(fileLibraryTable.categoryId, categoryId));
-    if (existing.length > 0) {
-      nextPosition = Math.max(...existing.map((r) => r.position)) + 1;
+  // Use provided position, or auto-assign next position within this category group
+  const { categoryId, position: requestedPosition } = parsed.data as any;
+  let resolvedPosition: number = requestedPosition ?? 0;
+  if (requestedPosition === undefined || requestedPosition === null) {
+    if (categoryId) {
+      const existing = await db
+        .select({ position: fileLibraryTable.position })
+        .from(fileLibraryTable)
+        .where(eq(fileLibraryTable.categoryId, categoryId));
+      if (existing.length > 0) {
+        resolvedPosition = Math.max(...existing.map((r) => r.position)) + 1;
+      }
     }
   }
 
-  const [item] = await db.insert(fileLibraryTable).values({ ...parsed.data as any, position: nextPosition }).returning();
+  const [item] = await db.insert(fileLibraryTable).values({ ...parsed.data as any, position: resolvedPosition }).returning();
 
   let categoryName: string | null = null;
   if (item.categoryId) {

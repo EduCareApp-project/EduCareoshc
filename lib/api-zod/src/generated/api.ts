@@ -1545,6 +1545,7 @@ export const ListFileLibraryResponseItem = zod.object({
   name: zod.string(),
   documentPath: zod.string(),
   documentName: zod.string(),
+  position: zod.number().optional(),
   createdAt: zod.coerce.date(),
 });
 export const ListFileLibraryResponse = zod.array(ListFileLibraryResponseItem);
@@ -1555,6 +1556,7 @@ export const CreateFileLibraryItemBody = zod.object({
   siteId: zod.number().optional(),
   documentPath: zod.string(),
   documentName: zod.string(),
+  position: zod.number().optional(),
 });
 
 export const DeleteFileLibraryItemParams = zod.object({

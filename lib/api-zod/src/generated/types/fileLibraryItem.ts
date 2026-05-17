@@ -17,5 +17,6 @@ export interface FileLibraryItem {
   name: string;
   documentPath: string;
   documentName: string;
+  position?: number;
   createdAt: Date;
 }

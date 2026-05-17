@@ -3827,6 +3827,8 @@ components:
           type: string
         documentName:
           type: string
+        position:
+          type: integer
         createdAt:
           type: string
           format: date-time
@@ -3845,6 +3847,8 @@ components:
           type: string
         documentName:
           type: string
+        position:
+          type: integer
 
     Checklist:
       type: object

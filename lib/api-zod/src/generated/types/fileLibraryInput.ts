@@ -12,4 +12,5 @@ export interface FileLibraryInput {
   siteId?: number;
   documentPath: string;
   documentName: string;
+  position?: number;
 }

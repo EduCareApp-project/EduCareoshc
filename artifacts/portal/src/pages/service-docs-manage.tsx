@@ -64,6 +64,7 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
   const { uploadFile, isUploading } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [label, setLabel] = useState("");
+  const [position, setPosition] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [adding, setAdding] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -93,9 +94,11 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
         categoryId: catId,
       };
       if (siteId) payload.siteId = siteId;
+      if (position.trim() !== "") payload.position = parseInt(position, 10);
       await createFile.mutateAsync({ data: payload as any });
       toast({ title: "Document uploaded" });
       setLabel("");
+      setPosition("");
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setShowForm(false);
@@ -163,12 +166,25 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
               <Input ref={fileInputRef} type="file" onChange={handleFileChange} className="cursor-pointer" />
             </div>
           </div>
+          <div className="space-y-1 max-w-[160px]">
+            <Label>
+              Position <span className="text-muted-foreground font-normal">(optional)</span>
+            </Label>
+            <Input
+              type="number"
+              min={0}
+              placeholder="Auto"
+              value={position}
+              onChange={(e) => setPosition(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Lower = shown first. Leave blank to add at the end.</p>
+          </div>
           <div className="flex gap-2">
             <Button type="submit" size="sm" disabled={adding || isUploading || !selectedFile}>
               <Upload className="h-4 w-4 mr-1" />
               {adding || isUploading ? "Uploading…" : "Upload"}
             </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => { setShowForm(false); setLabel(""); setSelectedFile(null); }}>
+            <Button type="button" size="sm" variant="ghost" onClick={() => { setShowForm(false); setLabel(""); setPosition(""); setSelectedFile(null); }}>
               Cancel
             </Button>
           </div>

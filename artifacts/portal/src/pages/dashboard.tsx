@@ -14,7 +14,7 @@ import { RichTextEditor, RichTextView } from "@/components/rich-text-editor";
 import {
   Baby, Users, BookOpen, ClipboardList, ShieldCheck, Bell, Trash2, Plus,
   AlertTriangle, CheckCircle2, Clock, FileText, Calendar,
-  Layers, Image, ChevronRight, GraduationCap, Paperclip, X, Upload, Newspaper, Pencil, ExternalLink, ClipboardCheck,
+  Layers, Image, ChevronLeft, ChevronRight, GraduationCap, Paperclip, X, XCircle, Upload, Newspaper, Pencil, ExternalLink, ClipboardCheck,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO, startOfWeek, addDays } from "date-fns";
@@ -429,156 +429,195 @@ export default function Dashboard() {
 }
 
 // ─── Roll Submission Checklist ────────────────────────────────────────────────
-type RollWeek = {
+type SiteStatus = {
+  siteId: number;
+  siteName: string;
   id: number | null;
-  weekStart: string;
   submitted: boolean;
   accurate: boolean;
   notes: string | null;
 };
 
-function getCurrentWeekStart(): string {
+type WeekData = {
+  weekStart: string;
+  sites: SiteStatus[];
+};
+
+function getWeekStartForOffset(offset: number): string {
   const today = new Date();
   const d = today.getDay();
   const diff = d === 0 ? -6 : 1 - d;
   const mon = new Date(today);
-  mon.setDate(today.getDate() + diff);
+  mon.setDate(today.getDate() + diff + offset * 7);
   return mon.toISOString().slice(0, 10);
 }
 
 function RollSubmissionChecklist() {
   const queryClient = useQueryClient();
-  const [saving, setSaving] = useState<string | null>(null);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [saving, setSaving] = useState<number | null>(null);
 
-  const { data: weeks, isLoading } = useQuery<RollWeek[]>({
-    queryKey: ["/api/roll-submissions"],
+  const weekStart = getWeekStartForOffset(weekOffset);
+  const isCurrentWeek = weekOffset === 0;
+
+  const { data, isLoading } = useQuery<WeekData>({
+    queryKey: ["/api/roll-submissions", weekStart],
     queryFn: async () => {
-      const res = await fetch("/api/roll-submissions?weeks=8");
+      const res = await fetch(`/api/roll-submissions?weekStart=${weekStart}`);
       if (!res.ok) throw new Error("Failed to load roll submissions");
       return res.json();
     },
   });
 
-  const currentWeekStart = getCurrentWeekStart();
+  const monday = new Date(weekStart + "T00:00:00");
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
 
-  // Accuracy score from the last 4 completed weeks (older than current week)
-  const completeWeeks = (weeks ?? []).filter((w) => w.weekStart < currentWeekStart).slice(0, 4);
-  const accurateCount = completeWeeks.filter((w) => w.accurate).length;
-  const denominator = Math.min(completeWeeks.length, 4);
-  const accuracyPct = denominator > 0 ? Math.round((accurateCount / denominator) * 100) : null;
+  const sites = data?.sites ?? [];
+  const compliant = sites.filter((s) => s.submitted && s.accurate).length;
+  const errors = sites.filter((s) => s.submitted && !s.accurate).length;
+  const pending = sites.filter((s) => !s.submitted).length;
 
-  const scoreColor =
-    accuracyPct === null ? "text-muted-foreground" :
-    accuracyPct === 100 ? "text-emerald-600" :
-    accuracyPct >= 75 ? "text-amber-600" : "text-red-600";
-
-  const scoreBg =
-    accuracyPct === null ? "bg-muted/50 border-border" :
-    accuracyPct === 100 ? "bg-emerald-50 border-emerald-200" :
-    accuracyPct >= 75 ? "bg-amber-50 border-amber-200" : "bg-red-50 border-red-200";
-
-  const toggleAccurate = async (week: RollWeek) => {
-    setSaving(week.weekStart);
+  async function setStatus(siteId: number, status: "compliant" | "error" | "pending") {
+    setSaving(siteId);
     try {
-      const res = await fetch(`/api/roll-submissions/${week.weekStart}`, {
+      const body =
+        status === "compliant" ? { submitted: true, accurate: true } :
+        status === "error"     ? { submitted: true, accurate: false } :
+                                 { submitted: false, accurate: false };
+      const r = await fetch(`/api/roll-submissions/${weekStart}/${siteId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ submitted: true, accurate: !week.accurate }),
+        body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error();
-      await queryClient.invalidateQueries({ queryKey: ["/api/roll-submissions"] });
+      if (!r.ok) throw new Error();
+      await queryClient.invalidateQueries({ queryKey: ["/api/roll-submissions", weekStart] });
     } finally {
       setSaving(null);
     }
-  };
+  }
 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
-              Roll Submission Tracker
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Mark each week the service submitted an accurate attendance roll.
-            </p>
-          </div>
-          <div className={`border rounded-xl px-5 py-2.5 text-center shrink-0 ${scoreBg}`}>
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">4-Week Accuracy</p>
-            <p className={`text-3xl font-bold leading-none ${scoreColor}`}>
-              {accuracyPct !== null ? `${accuracyPct}%` : "—"}
-            </p>
-            <p className="text-[11px] text-muted-foreground mt-1">
-              {accuracyPct !== null ? `${accurateCount} of ${denominator} weeks` : "No data yet"}
-            </p>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
+            Roll Submission Tracker
+          </CardTitle>
+
+          {/* Week navigator */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setWeekOffset((o) => o - 1)}
+              className="rounded-lg p-1.5 hover:bg-accent transition-colors"
+              title="Previous week"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <div className="text-sm font-medium px-2 text-center min-w-[180px]">
+              {format(monday, "d MMM")}–{format(friday, "d MMM yyyy")}
+              {isCurrentWeek && (
+                <Badge variant="outline" className="ml-2 text-[10px] text-primary border-primary/30 py-0 align-middle">
+                  This week
+                </Badge>
+              )}
+            </div>
+            <button
+              onClick={() => setWeekOffset((o) => o + 1)}
+              disabled={weekOffset >= 0}
+              className="rounded-lg p-1.5 hover:bg-accent disabled:opacity-30 disabled:cursor-default transition-colors"
+              title="Next week"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+
+      <CardContent className="pt-0">
         {isLoading ? (
           <div className="space-y-2">
-            {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-11 w-full rounded-lg" />)}
+            {[...Array(7)].map((_, i) => <Skeleton key={i} className="h-11 w-full rounded-lg" />)}
           </div>
         ) : (
-          <div className="space-y-1.5">
-            {(weeks ?? []).map((week) => {
-              const monday = new Date(week.weekStart + "T00:00:00");
-              const friday = new Date(monday);
-              friday.setDate(monday.getDate() + 4);
-              const isCurrent = week.weekStart === currentWeekStart;
-              const isSaving = saving === week.weekStart;
-              const isComplete = week.weekStart < currentWeekStart;
+          <>
+            <div className="divide-y rounded-lg border overflow-hidden">
+              {sites.map((site) => {
+                const isCompliant = site.submitted && site.accurate;
+                const isError = site.submitted && !site.accurate;
+                const isSaving = saving === site.siteId;
 
-              return (
-                <div
-                  key={week.weekStart}
-                  className={`flex items-center justify-between rounded-lg px-3.5 py-2.5 transition-colors ${
-                    isCurrent
-                      ? "bg-primary/5 border border-primary/20"
-                      : "hover:bg-accent/40 border border-transparent"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${
-                      !isComplete ? "bg-blue-400" :
-                      week.accurate ? "bg-emerald-500" : "bg-muted-foreground/40"
-                    }`} />
-                    <div>
-                      <span className="text-sm font-medium">
-                        {format(monday, "d MMM")} – {format(friday, "d MMM yyyy")}
-                      </span>
-                      {isCurrent && (
-                        <Badge variant="outline" className="ml-2 text-[10px] text-primary border-primary/30 py-0 align-middle">
-                          This week
-                        </Badge>
-                      )}
+                return (
+                  <div key={site.siteId} className="flex items-center justify-between px-4 py-2.5 bg-white hover:bg-accent/30 transition-colors">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`w-2 h-2 rounded-full shrink-0 ${
+                        isCompliant ? "bg-emerald-500" :
+                        isError     ? "bg-red-500" :
+                                      "bg-muted-foreground/30"
+                      }`} />
+                      <span className="text-sm font-medium truncate">{site.siteName}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Compliant button */}
+                      <button
+                        onClick={() => setStatus(site.siteId, isCompliant ? "pending" : "compliant")}
+                        disabled={isSaving}
+                        title={isCompliant ? "Click to clear" : "Mark compliant"}
+                        className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-all disabled:opacity-50 ${
+                          isCompliant
+                            ? "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300"
+                            : "bg-muted text-muted-foreground hover:bg-emerald-50 hover:text-emerald-700"
+                        }`}
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Compliant
+                      </button>
+
+                      {/* Error button */}
+                      <button
+                        onClick={() => setStatus(site.siteId, isError ? "pending" : "error")}
+                        disabled={isSaving}
+                        title={isError ? "Click to clear" : "Mark as error"}
+                        className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-all disabled:opacity-50 ${
+                          isError
+                            ? "bg-red-100 text-red-700 ring-1 ring-red-300"
+                            : "bg-muted text-muted-foreground hover:bg-red-50 hover:text-red-700"
+                        }`}
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                        Error
+                      </button>
                     </div>
                   </div>
+                );
+              })}
+            </div>
 
-                  <button
-                    onClick={() => toggleAccurate(week)}
-                    disabled={isSaving}
-                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-50 ${
-                      week.accurate
-                        ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                        : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
-                    }`}
-                  >
-                    {week.accurate
-                      ? <><CheckCircle2 className="h-3.5 w-3.5" /> Accurate</>
-                      : <><Clock className="h-3.5 w-3.5" /> Pending</>
-                    }
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+            {/* Summary footer */}
+            {sites.length > 0 && (
+              <div className="flex items-center gap-4 mt-3 pt-3 border-t text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                  {compliant} compliant
+                </span>
+                {errors > 0 && (
+                  <span className="flex items-center gap-1 text-red-600">
+                    <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                    {errors} error{errors !== 1 ? "s" : ""}
+                  </span>
+                )}
+                {pending > 0 && (
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-muted-foreground/30 inline-block" />
+                    {pending} pending
+                  </span>
+                )}
+              </div>
+            )}
+          </>
         )}
-        <p className="text-xs text-muted-foreground mt-3 pt-3 border-t">
-          Score uses the last 4 completed service weeks. Click a week to toggle its status.
-        </p>
       </CardContent>
     </Card>
   );

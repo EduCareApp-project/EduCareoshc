@@ -857,9 +857,6 @@ export default function StaffProfile() {
                 <p className="text-2xl font-bold text-primary">{totalHoursThisYear}h</p>
                 <p className="text-xs text-muted-foreground">PD hours in {currentYear}</p>
               </div>
-              {totalHoursThisYear >= 8
-                ? <Badge className="bg-green-100 text-green-800">Meeting requirements</Badge>
-                : <Badge className="bg-amber-100 text-amber-800">{8 - totalHoursThisYear}h remaining</Badge>}
             </div>
             <Button size="sm" onClick={() => setPdOpen(true)}>
               <Plus className="h-4 w-4 mr-1" />Add PD

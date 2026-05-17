@@ -57,6 +57,11 @@ import Sites from "@/pages/sites";
 import Settings from "@/pages/settings";
 import SettingsQip from "@/pages/settings-qip";
 import SettingsEmailNotifications from "@/pages/settings-email-notifications";
+import Appraisals from "@/pages/appraisals";
+import AppraisalDetail from "@/pages/appraisal-detail";
+import AppraisalStage1 from "@/pages/appraisal-stage1";
+import AppraisalStage2 from "@/pages/appraisal-stage2";
+import AppraisalStage3 from "@/pages/appraisal-stage3";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -143,6 +148,12 @@ function StaffRoutes() {
         <Route path="/reports/service" component={ReportsService} />
         <Route path="/reports/staff" component={ReportsStaff} />
         <Route path="/reports/system-access" component={ReportsSystemAccess} />
+
+        <Route path="/appraisals" component={Appraisals} />
+        <Route path="/appraisals/:id/stage1" component={AppraisalStage1} />
+        <Route path="/appraisals/:id/stage2" component={AppraisalStage2} />
+        <Route path="/appraisals/:id/stage3" component={AppraisalStage3} />
+        <Route path="/appraisals/:id" component={AppraisalDetail} />
 
         <Route path="/sites" component={Sites} />
         <Route path="/settings" component={Settings} />

@@ -1,29 +1,40 @@
-import { pgTable, serial, text, timestamp, integer, date } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, date, jsonb } from "drizzle-orm/pg-core";
 import { staffTable } from "./staff";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod/v4";
 
 export const staffAppraisalsTable = pgTable("staff_appraisals", {
   id: serial("id").primaryKey(),
+  type: text("type").notNull().default("educator_appraisal"),
   staffId: integer("staff_id").notNull().references(() => staffTable.id, { onDelete: "cascade" }),
   reviewerId: integer("reviewer_id").references(() => staffTable.id, { onDelete: "set null" }),
-  period: text("period").notNull(),
-  status: text("status").notNull().default("draft"),
-  scheduledDate: date("scheduled_date"),
+  createdBy: integer("created_by").references(() => staffTable.id, { onDelete: "set null" }),
+  dueDate: date("due_date").notNull(),
+  absencesCount: integer("absences_count"),
+  // Status: stage1 → stage2 → stage3 → completed
+  status: text("status").notNull().default("stage1"),
+  // Stage 1: employee and reviewer fill independently
+  employeeStage1: jsonb("employee_stage1"),
+  employeeStage1SubmittedAt: timestamp("employee_stage1_submitted_at", { withTimezone: true }),
+  reviewerStage1: jsonb("reviewer_stage1"),
+  reviewerStage1SubmittedAt: timestamp("reviewer_stage1_submitted_at", { withTimezone: true }),
+  // Stage 2: employee fills upward appraisal alone
+  stage2Data: jsonb("stage2_data"),
+  stage2SubmittedAt: timestamp("stage2_submitted_at", { withTimezone: true }),
+  // Stage 3: joint meeting, submitted by EL/admin
+  stage3Data: jsonb("stage3_data"),
   completedAt: timestamp("completed_at", { withTimezone: true }),
-  managerRating: text("manager_rating"),
-  managerStrengths: text("manager_strengths"),
-  managerDevelopment: text("manager_development"),
-  managerComments: text("manager_comments"),
-  selfRating: text("self_rating"),
-  selfStrengths: text("self_strengths"),
-  selfDevelopment: text("self_development"),
-  selfComments: text("self_comments"),
-  agreedGoals: text("agreed_goals"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const insertStaffAppraisalSchema = createInsertSchema(staffAppraisalsTable).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertStaffAppraisal = z.infer<typeof insertStaffAppraisalSchema>;
+export const appraisalGoalNotesTable = pgTable("appraisal_goal_notes", {
+  id: serial("id").primaryKey(),
+  appraisalId: integer("appraisal_id").notNull().references(() => staffAppraisalsTable.id, { onDelete: "cascade" }),
+  goalId: text("goal_id").notNull(),
+  note: text("note").notNull(),
+  createdBy: integer("created_by").references(() => staffTable.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type StaffAppraisal = typeof staffAppraisalsTable.$inferSelect;
+export type InsertStaffAppraisal = typeof staffAppraisalsTable.$inferInsert;
+export type AppraisalGoalNote = typeof appraisalGoalNotesTable.$inferSelect;

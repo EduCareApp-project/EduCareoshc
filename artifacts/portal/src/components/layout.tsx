@@ -26,6 +26,7 @@ import {
   Settings2,
   LogOut,
   Globe,
+  Star,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
@@ -77,6 +78,7 @@ const NAV_GROUPS = [
       { href: "/reports/service", label: "Service Compliance", icon: ShieldCheck },
       { href: "/reports/staff", label: "Staff Compliance", icon: UserCheck },
       { href: "/reports/system-access", label: "System Access", icon: UserCog },
+      { href: "/appraisals", label: "Appraisals", icon: Star },
     ]
   },
   {

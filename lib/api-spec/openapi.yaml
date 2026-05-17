@@ -30,6 +30,8 @@ tags:
   - name: planning
   - name: reports
   - name: sites
+  - name: notifications
+  - name: notification-settings
 paths:
   /healthz:
     get:
@@ -2373,6 +2375,116 @@ paths:
       responses:
         "204":
           description: Deleted
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications for the current user
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/count:
+    get:
+      operationId: getNotificationCount
+      tags: [notifications]
+      summary: Get unread notification count for the current user
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [count]
+                properties:
+                  count:
+                    type: integer
+
+  /notifications/mark-all-read:
+    put:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+
+  /notifications/{id}/read:
+    put:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a notification as read
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+
+  /notification-settings:
+    get:
+      operationId: listNotificationSettings
+      tags: [notification-settings]
+      summary: Get notification settings
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotificationSetting"
+    put:
+      operationId: updateNotificationSettings
+      tags: [notification-settings]
+      summary: Update notification settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/UpdateNotificationSettingItem"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
 
 components:
   schemas:
@@ -4739,6 +4851,62 @@ components:
         overdueChecklists:
           type: integer
           description: Active checklists whose target date was more than 7 days ago
+
+    UpdateNotificationSettingItem:
+      type: object
+      required: [type, enabled]
+      properties:
+        type:
+          type: string
+        enabled:
+          type: boolean
+        advanceDays:
+          type: ["integer", "null"]
+
+    Notification:
+      type: object
+      required: [id, staffId, type, title, read, createdAt]
+      properties:
+        id:
+          type: integer
+        staffId:
+          type: integer
+        type:
+          type: string
+        title:
+          type: string
+        body:
+          type: ["string", "null"]
+        href:
+          type: ["string", "null"]
+        read:
+          type: boolean
+        referenceId:
+          type: ["integer", "null"]
+        referenceType:
+          type: ["string", "null"]
+        dedupeKey:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    NotificationSetting:
+      type: object
+      required: [id, type, label, enabled]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        label:
+          type: string
+        description:
+          type: ["string", "null"]
+        enabled:
+          type: boolean
+        advanceDays:
+          type: ["integer", "null"]
 
     StaffComplianceReport:
       type: object

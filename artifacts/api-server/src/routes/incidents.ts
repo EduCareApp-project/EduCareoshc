@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { createNotificationsForRoles } from "../lib/notify";
 import { eq } from "drizzle-orm";
 import { db, incidentsTable, childrenTable, staffTable, sitesTable } from "@workspace/db";
 import {
@@ -61,6 +62,16 @@ router.post("/incidents", async (req, res): Promise<void> => {
     firstAidProvided: parsed.data.firstAidProvided ?? null,
     attachmentPath: parsed.data.attachmentPath ?? null,
   }).returning();
+  createNotificationsForRoles({
+    roles: ["educational_leader", "admin"],
+    type: "incident_submitted",
+    title: "New incident log submitted",
+    body: parsed.data.description,
+    href: `/incidents`,
+    referenceId: inc.id,
+    referenceType: "incident",
+  }).catch(() => {});
+
   res.status(201).json(GetIncidentResponse.parse(await enrichIncident(inc)));
 });
 
@@ -89,8 +100,24 @@ router.patch("/incidents/:id", async (req, res): Promise<void> => {
   if (parsed.data.incidentDatetime) updateData.incidentDatetime = new Date(parsed.data.incidentDatetime);
   if (parsed.data.reportMadeAt) updateData.reportMadeAt = new Date(parsed.data.reportMadeAt);
 
+  const [prevInc] = await db.select({ status: incidentsTable.status, siteId: incidentsTable.siteId })
+    .from(incidentsTable).where(eq(incidentsTable.id, params.data.id));
+
   const [inc] = await db.update(incidentsTable).set(updateData as any).where(eq(incidentsTable.id, params.data.id)).returning();
   if (!inc) { res.status(404).json({ error: "Incident not found" }); return; }
+
+  if (prevInc?.status === "open" && parsed.data.status && parsed.data.status !== "open") {
+    createNotificationsForRoles({
+      roles: ["coordinator"],
+      siteId: inc.siteId,
+      type: "incident_closed",
+      title: "Incident log closed",
+      href: `/incidents`,
+      referenceId: inc.id,
+      referenceType: "incident",
+    }).catch(() => {});
+  }
+
   res.json(UpdateIncidentResponse.parse(await enrichIncident(inc)));
 });
 

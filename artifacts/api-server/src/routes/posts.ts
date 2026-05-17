@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { createNotification } from "../lib/notify";
 import { eq, and, isNotNull, isNull } from "drizzle-orm";
 import { db, postsTable, postCommentsTable, childrenTable, staffTable, sitesTable, parentAccountsTable } from "@workspace/db";
 import {
@@ -186,6 +187,21 @@ router.post("/posts/:id/comments", async (req, res): Promise<void> => {
     authorName: body.data.authorName,
     body: body.data.body,
   }).returning();
+
+  const [post] = await db.select({ staffId: postsTable.staffId, title: postsTable.title })
+    .from(postsTable).where(eq(postsTable.id, params.data.id));
+  if (post?.staffId) {
+    createNotification({
+      staffId: post.staffId,
+      type: "post_comment",
+      title: `New comment on "${post.title}"`,
+      body: body.data.authorName ? `${body.data.authorName}: ${body.data.body}` : body.data.body,
+      href: `/posts/${params.data.id}`,
+      referenceId: params.data.id,
+      referenceType: "post",
+    }).catch(() => {});
+  }
+
   res.status(201).json(comment);
 });
 

@@ -1633,6 +1633,43 @@ export interface ServiceComplianceReport {
   overdueChecklists: number;
 }
 
+export interface UpdateNotificationSettingItem {
+  type: string;
+  enabled: boolean;
+  /** @nullable */
+  advanceDays?: number | null;
+}
+
+export interface Notification {
+  id: number;
+  staffId: number;
+  type: string;
+  title: string;
+  /** @nullable */
+  body?: string | null;
+  /** @nullable */
+  href?: string | null;
+  read: boolean;
+  /** @nullable */
+  referenceId?: number | null;
+  /** @nullable */
+  referenceType?: string | null;
+  /** @nullable */
+  dedupeKey?: string | null;
+  createdAt: string;
+}
+
+export interface NotificationSetting {
+  id: number;
+  type: string;
+  label: string;
+  /** @nullable */
+  description?: string | null;
+  enabled: boolean;
+  /** @nullable */
+  advanceDays?: number | null;
+}
+
 /**
  * Derived from qualifications: cannot_work if WWCC/CPR/First Aid expired; responsible_person if all required quals current; educator if core three current; incomplete otherwise.
  */
@@ -1687,4 +1724,20 @@ export type GetServiceComplianceReportParams = {
    * Filter all metrics to a specific site
    */
   siteId?: number;
+};
+
+export type GetNotificationCount200 = {
+  count: number;
+};
+
+export type MarkAllNotificationsRead200 = {
+  ok: boolean;
+};
+
+export type MarkNotificationRead200 = {
+  ok: boolean;
+};
+
+export type UpdateNotificationSettings200 = {
+  ok: boolean;
 };

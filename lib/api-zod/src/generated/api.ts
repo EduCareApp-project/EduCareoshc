@@ -2805,3 +2805,79 @@ export const UpdateSiteResponse = zod.object({
 export const DeleteSiteParams = zod.object({
   id: zod.coerce.number(),
 });
+
+/**
+ * @summary List notifications for the current user
+ */
+export const ListNotificationsResponseItem = zod.object({
+  id: zod.number(),
+  staffId: zod.number(),
+  type: zod.string(),
+  title: zod.string(),
+  body: zod.string().nullish(),
+  href: zod.string().nullish(),
+  read: zod.boolean(),
+  referenceId: zod.number().nullish(),
+  referenceType: zod.string().nullish(),
+  dedupeKey: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListNotificationsResponse = zod.array(
+  ListNotificationsResponseItem,
+);
+
+/**
+ * @summary Get unread notification count for the current user
+ */
+export const GetNotificationCountResponse = zod.object({
+  count: zod.number(),
+});
+
+/**
+ * @summary Mark all notifications as read
+ */
+export const MarkAllNotificationsReadResponse = zod.object({
+  ok: zod.boolean(),
+});
+
+/**
+ * @summary Mark a notification as read
+ */
+export const MarkNotificationReadParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const MarkNotificationReadResponse = zod.object({
+  ok: zod.boolean(),
+});
+
+/**
+ * @summary Get notification settings
+ */
+export const ListNotificationSettingsResponseItem = zod.object({
+  id: zod.number(),
+  type: zod.string(),
+  label: zod.string(),
+  description: zod.string().nullish(),
+  enabled: zod.boolean(),
+  advanceDays: zod.number().nullish(),
+});
+export const ListNotificationSettingsResponse = zod.array(
+  ListNotificationSettingsResponseItem,
+);
+
+/**
+ * @summary Update notification settings
+ */
+export const UpdateNotificationSettingsBodyItem = zod.object({
+  type: zod.string(),
+  enabled: zod.boolean(),
+  advanceDays: zod.number().nullish(),
+});
+export const UpdateNotificationSettingsBody = zod.array(
+  UpdateNotificationSettingsBodyItem,
+);
+
+export const UpdateNotificationSettingsResponse = zod.object({
+  ok: zod.boolean(),
+});

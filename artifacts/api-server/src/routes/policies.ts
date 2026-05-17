@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { createNotification } from "../lib/notify";
 import { eq, desc } from "drizzle-orm";
 import { db, policiesTable, policyAcknowledgmentsTable, staffTable } from "@workspace/db";
 import {
@@ -19,6 +20,23 @@ router.post("/policies", async (req, res): Promise<void> => {
   const parsed = CreatePolicyBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
   const [policy] = await db.insert(policiesTable).values(parsed.data as any).returning();
+
+  const targetRoles = policy.notifyRoles
+    ? policy.notifyRoles.split(",").map((r) => r.trim()).filter(Boolean)
+    : ["admin", "educational_leader", "coordinator", "educator"];
+  const allStaff = await db.select({ id: staffTable.id, role: staffTable.role })
+    .from(staffTable).where(eq(staffTable.status, "active"));
+  for (const s of allStaff.filter((s) => targetRoles.includes(s.role))) {
+    createNotification({
+      staffId: s.id,
+      type: "policy_new",
+      title: `New policy added: ${policy.title}`,
+      href: `/policies`,
+      referenceId: policy.id,
+      referenceType: "policy",
+    }).catch(() => {});
+  }
+
   res.status(201).json(ListPoliciesResponseItem.parse(policy));
 });
 
@@ -48,6 +66,28 @@ router.patch("/policies/:id", async (req, res): Promise<void> => {
     .set(updateData as any)
     .where(eq(policiesTable.id, params.data.id))
     .returning();
+
+  if (bumpVersion) {
+    const newVersion = updated.versionNumber;
+    const alreadyAcked = await db.select({ staffId: policyAcknowledgmentsTable.staffId })
+      .from(policyAcknowledgmentsTable)
+      .where(eq(policyAcknowledgmentsTable.policyId, updated.id));
+    const ackedIds = new Set(alreadyAcked.map((a) => a.staffId));
+    const allStaff = await db.select({ id: staffTable.id })
+      .from(staffTable).where(eq(staffTable.status, "active"));
+    for (const s of allStaff.filter((s) => !ackedIds.has(s.id))) {
+      createNotification({
+        staffId: s.id,
+        type: "policy_updated",
+        title: `Policy updated: ${updated.title} (v${newVersion})`,
+        body: "Please review and acknowledge the updated policy.",
+        href: `/policies`,
+        referenceId: updated.id,
+        referenceType: "policy",
+        dedupeKey: `policy_updated:${updated.id}:v${newVersion}:${s.id}`,
+      }).catch(() => {});
+    }
+  }
 
   res.json(ListPoliciesResponseItem.parse(updated));
 });

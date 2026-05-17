@@ -59,6 +59,7 @@ import SettingsQip from "@/pages/settings-qip";
 import SettingsEmailNotifications from "@/pages/settings-email-notifications";
 import SettingsOrganisation from "@/pages/settings-organisation";
 import SettingsAccess from "@/pages/settings-access";
+import SettingsNotifications from "@/pages/settings-notifications";
 import Appraisals from "@/pages/appraisals";
 import AppraisalDetail from "@/pages/appraisal-detail";
 import AppraisalStage1 from "@/pages/appraisal-stage1";
@@ -163,6 +164,7 @@ function StaffRoutes() {
         <Route path="/settings/email-notifications" component={SettingsEmailNotifications} />
         <Route path="/settings/organisation" component={SettingsOrganisation} />
         <Route path="/settings/access" component={SettingsAccess} />
+        <Route path="/settings/notifications" component={SettingsNotifications} />
 
         <Route component={NotFound} />
       </Switch>

@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { createNotificationsForRoles } from "../lib/notify";
 import { eq, sql } from "drizzle-orm";
 import { db, conditionReportsTable, staffTable, sitesTable } from "@workspace/db";
 import {
@@ -46,6 +47,17 @@ router.post("/condition-reports", async (req, res): Promise<void> => {
   await db.insert(conditionReportsTable).values({ ...rest, siteId: siteId ?? null } as any);
   const rows = await withJoins();
   const report = rows[rows.length - 1];
+
+  createNotificationsForRoles({
+    roles: ["educational_leader", "admin"],
+    type: "condition_submitted",
+    title: "New condition report submitted",
+    body: parsed.data.description,
+    href: `/condition-reports`,
+    referenceId: report.id,
+    referenceType: "condition_report",
+  }).catch(() => {});
+
   res.status(201).json(ListConditionReportsResponseItem.parse(report));
 });
 
@@ -54,10 +66,27 @@ router.patch("/condition-reports/:id", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = UpdateConditionReportBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  const [prev] = await db.select({ status: conditionReportsTable.status, siteId: conditionReportsTable.siteId })
+    .from(conditionReportsTable).where(eq(conditionReportsTable.id, params.data.id));
+
   await db.update(conditionReportsTable).set(parsed.data as any).where(eq(conditionReportsTable.id, params.data.id));
   const rows = await withJoins();
   const report = rows.find((r) => r.id === params.data.id);
   if (!report) { res.status(404).json({ error: "Condition report not found" }); return; }
+
+  if (prev?.status === "open" && (parsed.data as any).status && (parsed.data as any).status !== "open") {
+    createNotificationsForRoles({
+      roles: ["coordinator"],
+      siteId: prev.siteId,
+      type: "condition_closed",
+      title: "Condition report closed",
+      href: `/condition-reports`,
+      referenceId: report.id,
+      referenceType: "condition_report",
+    }).catch(() => {});
+  }
+
   res.json(UpdateConditionReportResponse.parse(report));
 });
 

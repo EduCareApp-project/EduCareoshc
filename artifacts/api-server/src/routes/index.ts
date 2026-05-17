@@ -37,6 +37,7 @@ import emailSettingsRouter from "./email-settings";
 import organisationRouter from "./organisation";
 import rollSubmissionsRouter from "./roll-submissions";
 import settingsAccessRouter from "./settings-access";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -100,5 +101,6 @@ router.use(emailSettingsRouter);
 router.use(organisationRouter);
 router.use(rollSubmissionsRouter);
 router.use(settingsAccessRouter);
+router.use(notificationsRouter);
 
 export default router;

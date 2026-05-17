@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { createNotification } from "../lib/notify";
 import { eq, desc, and } from "drizzle-orm";
 import { db, staffAppraisalsTable, appraisalGoalNotesTable, staffTable } from "@workspace/db";
 
@@ -151,6 +152,18 @@ router.put("/appraisals/:id/stage1/employee", async (req, res): Promise<void> =>
 
   const [row] = await db.update(staffAppraisalsTable).set(update as any).where(eq(staffAppraisalsTable.id, id)).returning();
   const staffMap = await buildStaffMap();
+
+  if (current.reviewerId) {
+    createNotification({
+      staffId: current.reviewerId,
+      type: "appraisal_submitted",
+      title: `Appraisal stage 1 submitted — awaiting your review`,
+      href: `/appraisals/${id}`,
+      referenceId: id,
+      referenceType: "appraisal",
+    }).catch(() => {});
+  }
+
   res.json(enrichAppraisal(row, staffMap));
 });
 
@@ -175,6 +188,16 @@ router.put("/appraisals/:id/stage1/reviewer", async (req, res): Promise<void> =>
 
   const [row] = await db.update(staffAppraisalsTable).set(update as any).where(eq(staffAppraisalsTable.id, id)).returning();
   const staffMap = await buildStaffMap();
+
+  createNotification({
+    staffId: current.staffId,
+    type: "appraisal_submitted",
+    title: `Your reviewer has submitted their Stage 1 appraisal`,
+    href: `/appraisals/${id}`,
+    referenceId: id,
+    referenceType: "appraisal",
+  }).catch(() => {});
+
   res.json(enrichAppraisal(row, staffMap));
 });
 
@@ -211,6 +234,18 @@ router.put("/appraisals/:id/stage2", async (req, res): Promise<void> => {
     updatedAt: new Date(),
   } as any).where(eq(staffAppraisalsTable.id, id)).returning();
   const staffMap = await buildStaffMap();
+
+  if (current.reviewerId) {
+    createNotification({
+      staffId: current.reviewerId,
+      type: "appraisal_submitted",
+      title: `Appraisal ready for Stage 3 joint meeting`,
+      href: `/appraisals/${id}`,
+      referenceId: id,
+      referenceType: "appraisal",
+    }).catch(() => {});
+  }
+
   res.json(enrichAppraisal(row, staffMap));
 });
 
@@ -244,6 +279,16 @@ router.put("/appraisals/:id/stage3", async (req, res): Promise<void> => {
     updatedAt: new Date(),
   } as any).where(eq(staffAppraisalsTable.id, id)).returning();
   const staffMap = await buildStaffMap();
+
+  createNotification({
+    staffId: current.staffId,
+    type: "appraisal_submitted",
+    title: `Your appraisal has been completed`,
+    href: `/appraisals/${id}`,
+    referenceId: id,
+    referenceType: "appraisal",
+  }).catch(() => {});
+
   res.json(enrichAppraisal(row, staffMap));
 });
 

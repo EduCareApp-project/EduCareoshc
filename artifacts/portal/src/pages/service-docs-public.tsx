@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { FileText, File, ShieldCheck, ChevronDown, Download, Loader2, ExternalLink } from "lucide-react";
+import { FileText, File, ShieldCheck, Download, Loader2, ExternalLink } from "lucide-react";
 import QRCode from "react-qr-code";
 
 type DocItem = {
@@ -16,7 +16,6 @@ type Section = {
   items: DocItem[];
 };
 
-type SiteOption = { id: number; name: string };
 
 function fileExt(name: string): string {
   return name.split(".").pop()?.toLowerCase() ?? "";
@@ -149,32 +148,28 @@ function DocCard({ item }: { item: DocItem }) {
 
 export default function ServiceDocsPublic() {
   const params = new URLSearchParams(window.location.search);
-  const initialSiteId = params.get("siteId");
+  const siteId = params.get("siteId");
 
   const [sections, setSections] = useState<Section[]>([]);
-  const [sites, setSites] = useState<SiteOption[]>([]);
   const [siteName, setSiteName] = useState<string | null>(null);
-  const [activeSiteId, setActiveSiteId] = useState<string>(initialSiteId ?? "");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    const url = activeSiteId
-      ? `/api/service-docs/public?siteId=${activeSiteId}`
+    const url = siteId
+      ? `/api/service-docs/public?siteId=${siteId}`
       : `/api/service-docs/public`;
     fetch(url)
       .then((r) => r.json())
       .then((data) => {
         setSections(data.sections ?? []);
-        setSites(data.sites ?? []);
         setSiteName(data.siteName ?? null);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [activeSiteId]);
+  }, [siteId]);
 
   const nonEmpty = sections.filter((s) => s.items.length > 0);
-  const showSiteFilter = sites.length > 1 || (sites.length === 1 && !activeSiteId);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -195,21 +190,6 @@ export default function ServiceDocsPublic() {
               </p>
             </div>
           </div>
-          {showSiteFilter && (
-            <div className="relative shrink-0">
-              <select
-                value={activeSiteId}
-                onChange={(e) => setActiveSiteId(e.target.value)}
-                className="appearance-none rounded-lg border bg-white pl-3 pr-8 py-1.5 text-sm font-medium text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
-              >
-                <option value="">All sites</option>
-                {sites.map((s) => (
-                  <option key={s.id} value={String(s.id)}>{s.name}</option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            </div>
-          )}
         </div>
       </div>
 

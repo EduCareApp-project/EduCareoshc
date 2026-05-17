@@ -10,8 +10,21 @@ const router: IRouter = Router();
 
 const PUBLIC_CATEGORIES = ["Prescribed Information", "Parent Notices"];
 
+// Default site when none is specified in the URL — Aldercourt (id=1)
+const DEFAULT_SITE_ID = 1;
+
 router.get("/service-docs/public", async (req, res): Promise<void> => {
-  const siteIdParam = req.query.siteId ? parseInt(req.query.siteId as string) : null;
+  // Always lock to a single site — default to Aldercourt if not specified
+  const siteId = req.query.siteId ? parseInt(req.query.siteId as string) : DEFAULT_SITE_ID;
+  if (isNaN(siteId)) {
+    res.status(400).json({ error: "Invalid siteId" });
+    return;
+  }
+
+  const [siteRow] = await db
+    .select({ name: sitesTable.name })
+    .from(sitesTable)
+    .where(eq(sitesTable.id, siteId));
 
   const cats = await db
     .select({ id: fileCategoriesTable.id, name: fileCategoriesTable.name })
@@ -19,17 +32,16 @@ router.get("/service-docs/public", async (req, res): Promise<void> => {
     .where(inArray(fileCategoriesTable.name, PUBLIC_CATEGORIES));
 
   if (cats.length === 0) {
-    res.json({ sections: [], sites: [], siteName: null });
+    res.json({ sections: [], siteName: siteRow?.name ?? null });
     return;
   }
 
   const catIds = cats.map((c) => c.id);
 
-  const allFiles = await db
+  const files = await db
     .select({
       id: fileLibraryTable.id,
       categoryId: fileLibraryTable.categoryId,
-      siteId: fileLibraryTable.siteId,
       name: fileLibraryTable.name,
       documentPath: fileLibraryTable.documentPath,
       documentName: fileLibraryTable.documentName,
@@ -38,26 +50,9 @@ router.get("/service-docs/public", async (req, res): Promise<void> => {
     })
     .from(fileLibraryTable)
     .where(inArray(fileLibraryTable.categoryId, catIds))
+    // Only this site's documents — never cross-site
+    .where(eq(fileLibraryTable.siteId, siteId))
     .orderBy(asc(fileLibraryTable.position), asc(fileLibraryTable.name));
-
-  const siteIdsWithDocs = [...new Set(allFiles.map((f) => f.siteId).filter((id): id is number => id != null))];
-
-  const siteRows = siteIdsWithDocs.length > 0
-    ? await db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable).where(inArray(sitesTable.id, siteIdsWithDocs))
-    : [];
-
-  let siteName: string | null = null;
-  if (siteIdParam) {
-    siteName = siteRows.find((s) => s.id === siteIdParam)?.name ?? null;
-    if (!siteName) {
-      const [s] = await db.select({ name: sitesTable.name }).from(sitesTable).where(eq(sitesTable.id, siteIdParam));
-      siteName = s?.name ?? null;
-    }
-  }
-
-  const files = siteIdParam
-    ? allFiles.filter((f) => f.siteId === siteIdParam)
-    : allFiles;
 
   const sections = PUBLIC_CATEGORIES
     .map((catName) => {
@@ -77,11 +72,8 @@ router.get("/service-docs/public", async (req, res): Promise<void> => {
     })
     .filter(Boolean);
 
-  res.json({
-    sections,
-    sites: siteRows.sort((a, b) => a.name.localeCompare(b.name)),
-    siteName,
-  });
+  // Never expose the sites list — each page is locked to one site
+  res.json({ sections, siteName: siteRow?.name ?? null });
 });
 
 // Public file serving — streams a file_library item without requiring auth.

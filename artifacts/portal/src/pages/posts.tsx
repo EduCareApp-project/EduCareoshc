@@ -9,6 +9,8 @@ import { Newspaper, Plus, Trash2, User, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
+import { useState } from "react";
+import { PostDetailDialog } from "@/components/post-detail-dialog";
 
 function imageUrl(path: string) {
   const stripped = path.replace(/^\/objects\//, "");
@@ -19,6 +21,7 @@ export default function Posts() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
 
   const childIdParam = new URLSearchParams(window.location.search).get("childId");
   const filterChildId = childIdParam ? parseInt(childIdParam) : null;
@@ -102,7 +105,7 @@ export default function Posts() {
               <Card
                 key={post.id}
                 className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow group"
-                onClick={() => setLocation(`/posts/${post.id}`)}
+                onClick={() => setSelectedPostId(post.id)}
               >
                 <div className="relative aspect-video bg-muted overflow-hidden">
                   {coverImage ? (
@@ -154,6 +157,14 @@ export default function Posts() {
           })}
         </div>
       )}
+
+      <PostDetailDialog
+        postId={selectedPostId}
+        open={selectedPostId !== null}
+        onClose={() => setSelectedPostId(null)}
+        canDelete={canDelete}
+        onDeleted={() => setSelectedPostId(null)}
+      />
     </div>
   );
 }

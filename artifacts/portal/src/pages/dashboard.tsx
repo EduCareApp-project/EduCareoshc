@@ -14,7 +14,7 @@ import { RichTextEditor, RichTextView } from "@/components/rich-text-editor";
 import {
   Baby, Users, BookOpen, ClipboardList, ShieldCheck, Bell, Trash2, Plus,
   AlertTriangle, CheckCircle2, Clock, FileText, Calendar,
-  Layers, Image, ChevronRight, GraduationCap, Paperclip, X, Upload, Newspaper, Pencil, ExternalLink,
+  Layers, Image, ChevronRight, GraduationCap, Paperclip, X, Upload, Newspaper, Pencil, ExternalLink, ClipboardCheck,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO, startOfWeek, addDays } from "date-fns";
@@ -25,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getListNoticesQueryKey } from "@workspace/api-client-react";
 
 // ─── Shared priority colours ────────────────────────────────────────────────
@@ -428,6 +428,162 @@ export default function Dashboard() {
   );
 }
 
+// ─── Roll Submission Checklist ────────────────────────────────────────────────
+type RollWeek = {
+  id: number | null;
+  weekStart: string;
+  submitted: boolean;
+  accurate: boolean;
+  notes: string | null;
+};
+
+function getCurrentWeekStart(): string {
+  const today = new Date();
+  const d = today.getDay();
+  const diff = d === 0 ? -6 : 1 - d;
+  const mon = new Date(today);
+  mon.setDate(today.getDate() + diff);
+  return mon.toISOString().slice(0, 10);
+}
+
+function RollSubmissionChecklist() {
+  const queryClient = useQueryClient();
+  const [saving, setSaving] = useState<string | null>(null);
+
+  const { data: weeks, isLoading } = useQuery<RollWeek[]>({
+    queryKey: ["/api/roll-submissions"],
+    queryFn: async () => {
+      const res = await fetch("/api/roll-submissions?weeks=8");
+      if (!res.ok) throw new Error("Failed to load roll submissions");
+      return res.json();
+    },
+  });
+
+  const currentWeekStart = getCurrentWeekStart();
+
+  // Accuracy score from the last 4 completed weeks (older than current week)
+  const completeWeeks = (weeks ?? []).filter((w) => w.weekStart < currentWeekStart).slice(0, 4);
+  const accurateCount = completeWeeks.filter((w) => w.accurate).length;
+  const denominator = Math.min(completeWeeks.length, 4);
+  const accuracyPct = denominator > 0 ? Math.round((accurateCount / denominator) * 100) : null;
+
+  const scoreColor =
+    accuracyPct === null ? "text-muted-foreground" :
+    accuracyPct === 100 ? "text-emerald-600" :
+    accuracyPct >= 75 ? "text-amber-600" : "text-red-600";
+
+  const scoreBg =
+    accuracyPct === null ? "bg-muted/50 border-border" :
+    accuracyPct === 100 ? "bg-emerald-50 border-emerald-200" :
+    accuracyPct >= 75 ? "bg-amber-50 border-amber-200" : "bg-red-50 border-red-200";
+
+  const toggleAccurate = async (week: RollWeek) => {
+    setSaving(week.weekStart);
+    try {
+      const res = await fetch(`/api/roll-submissions/${week.weekStart}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ submitted: true, accurate: !week.accurate }),
+      });
+      if (!res.ok) throw new Error();
+      await queryClient.invalidateQueries({ queryKey: ["/api/roll-submissions"] });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
+              Roll Submission Tracker
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Mark each week the service submitted an accurate attendance roll.
+            </p>
+          </div>
+          <div className={`border rounded-xl px-5 py-2.5 text-center shrink-0 ${scoreBg}`}>
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">4-Week Accuracy</p>
+            <p className={`text-3xl font-bold leading-none ${scoreColor}`}>
+              {accuracyPct !== null ? `${accuracyPct}%` : "—"}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {accuracyPct !== null ? `${accurateCount} of ${denominator} weeks` : "No data yet"}
+            </p>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-2">
+            {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-11 w-full rounded-lg" />)}
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            {(weeks ?? []).map((week) => {
+              const monday = new Date(week.weekStart + "T00:00:00");
+              const friday = new Date(monday);
+              friday.setDate(monday.getDate() + 4);
+              const isCurrent = week.weekStart === currentWeekStart;
+              const isSaving = saving === week.weekStart;
+              const isComplete = week.weekStart < currentWeekStart;
+
+              return (
+                <div
+                  key={week.weekStart}
+                  className={`flex items-center justify-between rounded-lg px-3.5 py-2.5 transition-colors ${
+                    isCurrent
+                      ? "bg-primary/5 border border-primary/20"
+                      : "hover:bg-accent/40 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${
+                      !isComplete ? "bg-blue-400" :
+                      week.accurate ? "bg-emerald-500" : "bg-muted-foreground/40"
+                    }`} />
+                    <div>
+                      <span className="text-sm font-medium">
+                        {format(monday, "d MMM")} – {format(friday, "d MMM yyyy")}
+                      </span>
+                      {isCurrent && (
+                        <Badge variant="outline" className="ml-2 text-[10px] text-primary border-primary/30 py-0 align-middle">
+                          This week
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => toggleAccurate(week)}
+                    disabled={isSaving}
+                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-50 ${
+                      week.accurate
+                        ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                        : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
+                    }`}
+                  >
+                    {week.accurate
+                      ? <><CheckCircle2 className="h-3.5 w-3.5" /> Accurate</>
+                      : <><Clock className="h-3.5 w-3.5" /> Pending</>
+                    }
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground mt-3 pt-3 border-t">
+          Score uses the last 4 completed service weeks. Click a week to toggle its status.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Leadership ───────────────────────────────────────────────────────────────
 function LeadershipDashboard() {
   const { data: summary, isLoading: loadingSummary } = useGetDashboardSummary();
@@ -444,6 +600,8 @@ function LeadershipDashboard() {
       </div>
 
       <NoticeBoard canManage audience="leadership" />
+
+      <RollSubmissionChecklist />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

@@ -35,6 +35,7 @@ import contactEnquiryRouter from "./contact-enquiry";
 import appraisalsRouter from "./appraisals";
 import emailSettingsRouter from "./email-settings";
 import organisationRouter from "./organisation";
+import rollSubmissionsRouter from "./roll-submissions";
 
 const router: IRouter = Router();
 
@@ -96,5 +97,6 @@ router.use(systemAccessRouter);
 router.use(appraisalsRouter);
 router.use(emailSettingsRouter);
 router.use(organisationRouter);
+router.use(rollSubmissionsRouter);
 
 export default router;

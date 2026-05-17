@@ -3,7 +3,7 @@ import {
   Baby, UserCog, Users, CalendarDays, Layers, Newspaper, StickyNote,
   BookOpen, AlertTriangle, ClipboardX, ShieldAlert, TrendingUp,
   FolderOpen, CheckSquare, BookMarked, ShieldCheck, UserCheck,
-  Building2, Mail, ChevronRight, Fingerprint, KeyRound, Bell,
+  Building2, Mail, ChevronRight, Fingerprint, KeyRound, Bell, FileUp,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -72,6 +72,7 @@ const SETTINGS_GROUPS: Group[] = [
       { icon: Fingerprint, label: "Organisation", description: "Assign and manage the Organisation ID used for database routing and multi-site identification.", href: "/settings/organisation" },
       { icon: KeyRound, label: "Access", description: "Control which menu items are visible for each user role — Educational Leader, Educators, and Guardians.", href: "/settings/access" },
       { icon: Bell, label: "Notifications", description: "Configure which events trigger in-app notifications and advance-day thresholds for deadline alerts.", href: "/settings/notifications" },
+      { icon: FileUp, label: "Data Import", description: "Bulk-import children, staff, and guardian accounts from CSV files for rapid site onboarding.", href: "/settings/data-import" },
     ],
   },
 ];

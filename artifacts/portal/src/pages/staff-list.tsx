@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useListStaff, useGetStaffQualifications } from "@workspace/api-client-react";
 import { Link, Redirect } from "wouter";
 import { useAuth } from "@/contexts/auth";
@@ -34,7 +35,21 @@ export default function StaffList() {
   const { data: staff, isLoading } = useListStaff();
   const [tab, setTab] = useState<TopTab>("active");
 
-  if (["educator", "coordinator"].includes(user?.role ?? "") && user?.id) {
+  const { data: accessSettings } = useQuery<Record<string, string[]>>({
+    queryKey: ["settings-access"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings/access");
+      if (!res.ok) return {};
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const isAdmin = user?.role === "admin";
+  const disabledHrefs: string[] = isAdmin ? [] : (accessSettings?.[user?.role ?? ""] ?? []);
+  const ownProfileOnly = !isAdmin && accessSettings !== undefined && !disabledHrefs.includes("staff_own_profile");
+
+  if (ownProfileOnly && user?.id) {
     return <Redirect to={`/staff/${user.id}`} />;
   }
 

@@ -125,21 +125,27 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
 
   const isEducatorRole = ["educator", "coordinator"].includes(user?.role ?? "");
   const EDUCATOR_HIDDEN = new Set(["/guardians", "/settings", "/reports/service", "/reports/staff", "/reports/system-access"]);
+  const ownProfileOnly = !isAdmin && !disabledHrefs.includes("staff_own_profile");
 
-  const finalGroups = isEducatorRole
+  let finalGroups = isEducatorRole
     ? visibleGroups
         .map((group) => ({
           ...group,
-          items: group.items
-            .filter((item) => !EDUCATOR_HIDDEN.has(item.href))
-            .map((item) =>
-              item.href === "/staff"
-                ? { ...item, href: `/staff/${user!.id}`, label: "My Profile", icon: User }
-                : item
-            ),
+          items: group.items.filter((item) => !EDUCATOR_HIDDEN.has(item.href)),
         }))
         .filter((group) => group.items.length > 0)
     : visibleGroups;
+
+  if (ownProfileOnly && user?.id) {
+    finalGroups = finalGroups.map((group) => ({
+      ...group,
+      items: group.items.map((item) =>
+        item.href === "/staff"
+          ? { ...item, href: `/staff/${user!.id}`, label: "My Profile", icon: User }
+          : item
+      ),
+    }));
+  }
 
   return (
     <div className="flex flex-col h-full">

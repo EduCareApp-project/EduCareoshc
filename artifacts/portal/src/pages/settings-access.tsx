@@ -13,6 +13,7 @@ const STAFF_ITEMS: { href: string; label: string; group: string }[] = [
   { href: "/children",            label: "Children",              group: "People" },
   { href: "/guardians",           label: "Guardians",             group: "People" },
   { href: "/staff",               label: "Staff",                 group: "People" },
+  { href: "staff_own_profile",    label: "Educator",              group: "People" },
   { href: "/calendar",            label: "Calendar",              group: "Programming" },
   { href: "/planning",            label: "Planning Cycle",        group: "Programming" },
   { href: "/posts",               label: "Posts",                 group: "Learning" },

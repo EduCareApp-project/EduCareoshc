@@ -4,7 +4,7 @@ import { db, accessSettingsTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
-const ROLES = ["educational_leader", "educator", "guardian"] as const;
+const ROLES = ["educational_leader", "coordinator", "educator", "guardian"] as const;
 
 router.get("/settings/access", async (_req, res): Promise<void> => {
   const rows = await db.select().from(accessSettingsTable);

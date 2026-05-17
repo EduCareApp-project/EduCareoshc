@@ -43,6 +43,7 @@ const GUARDIAN_ITEMS: { href: string; label: string; group: string }[] = [
 
 const TABS = [
   { key: "educational_leader", label: "Educational Leader", items: STAFF_ITEMS },
+  { key: "coordinator",        label: "Coordinator",        items: STAFF_ITEMS },
   { key: "educator",           label: "Educators",          items: STAFF_ITEMS },
   { key: "guardian",           label: "Guardians",          items: GUARDIAN_ITEMS },
 ];

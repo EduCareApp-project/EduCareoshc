@@ -28,3 +28,4 @@ export * from "./child_documents";
 export * from "./password_reset_tokens";
 export * from "./staff_appraisals";
 export * from "./email_settings";
+export * from "./organisation";

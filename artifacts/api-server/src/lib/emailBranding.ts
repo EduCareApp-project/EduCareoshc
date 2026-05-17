@@ -18,14 +18,17 @@ function getBaseUrl(): string {
   return `https://${domains[0]}`;
 }
 
+const DEFAULT_LOGO_PATH = "/educare-logo-dark.png";
+
 export async function getEmailBranding(): Promise<EmailBranding> {
+  const fallbackLogoUrl = `${getBaseUrl()}${DEFAULT_LOGO_PATH}`;
   try {
     const [row] = await db.select().from(emailSettingsTable).limit(1);
-    if (!row) return { senderName: "EduCare Portal", logoUrl: null, templates: {} };
+    if (!row) return { senderName: "EduCare Portal", logoUrl: fallbackLogoUrl, templates: {} };
 
     const logoUrl = row.logoPath
       ? `${getBaseUrl()}/api/email-settings/logo`
-      : null;
+      : fallbackLogoUrl;
 
     return {
       senderName: row.senderName,
@@ -34,6 +37,6 @@ export async function getEmailBranding(): Promise<EmailBranding> {
     };
   } catch (err) {
     logger.warn({ err }, "Failed to fetch email branding settings — using defaults");
-    return { senderName: "EduCare Portal", logoUrl: null, templates: {} };
+    return { senderName: "EduCare Portal", logoUrl: fallbackLogoUrl, templates: {} };
   }
 }

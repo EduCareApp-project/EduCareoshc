@@ -3,7 +3,7 @@ import {
   Baby, UserCog, Users, CalendarDays, Layers, Newspaper, StickyNote,
   BookOpen, AlertTriangle, ClipboardX, ShieldAlert, TrendingUp,
   FolderOpen, CheckSquare, BookMarked, ShieldCheck, UserCheck,
-  Building2, Mail, ChevronRight, Fingerprint,
+  Building2, Mail, ChevronRight, Fingerprint, KeyRound,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +70,7 @@ const SETTINGS_GROUPS: Group[] = [
       { icon: Building2, label: "Sites", description: "Manage service locations, site names and addresses.", href: "/sites" },
       { icon: Mail, label: "Email Notifications", description: "Customise email templates, sender name and logo for all transactional emails.", href: "/settings/email-notifications" },
       { icon: Fingerprint, label: "Organisation", description: "Assign and manage the Organisation ID used for database routing and multi-site identification.", href: "/settings/organisation" },
+      { icon: KeyRound, label: "Access", description: "Control which menu items are visible for each user role — Educational Leader, Educators, and Guardians.", href: "/settings/access" },
     ],
   },
 ];

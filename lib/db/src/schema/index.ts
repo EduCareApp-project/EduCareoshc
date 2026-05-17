@@ -30,3 +30,4 @@ export * from "./staff_appraisals";
 export * from "./email_settings";
 export * from "./organisation";
 export * from "./roll_submissions";
+export * from "./access_settings";

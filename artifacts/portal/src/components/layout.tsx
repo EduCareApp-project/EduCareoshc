@@ -28,10 +28,13 @@ import {
   Globe,
   Star,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { ScrollArea } from "./ui/scroll-area";
 import { useAuth } from "@/contexts/auth";
+
+type AccessSettings = Record<string, string[]>;
 
 const NAV_GROUPS = [
   {
@@ -103,6 +106,26 @@ const ROLE_LABELS: Record<string, string> = {
 function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () => void }) {
   const { user, logout } = useAuth();
 
+  const { data: accessSettings } = useQuery<AccessSettings>({
+    queryKey: ["settings-access"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings/access");
+      if (!res.ok) return {};
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const isAdmin = user?.role === "admin";
+  const disabledHrefs: string[] = isAdmin
+    ? []
+    : (accessSettings?.[user?.role ?? ""] ?? []);
+
+  const visibleGroups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !disabledHrefs.includes(item.href)),
+  })).filter((group) => group.items.length > 0);
+
   return (
     <div className="flex flex-col h-full">
       <div className="px-2 py-4 flex items-center space-x-1 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.2)" }}>
@@ -111,7 +134,7 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
       </div>
       <ScrollArea className="flex-1">
         <div className="px-4 py-4 space-y-5 pb-8">
-          {NAV_GROUPS.map((group, i) => (
+          {visibleGroups.map((group, i) => (
             <div key={i} className="space-y-1">
               {group.label && (
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40 px-2 mb-1">

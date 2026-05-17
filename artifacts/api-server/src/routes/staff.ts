@@ -11,10 +11,23 @@ import {
   ListStaffResponse,
 } from "@workspace/api-zod";
 
+const EDUCATOR_ROLES = ["educator", "coordinator"] as const;
+type EducatorRole = (typeof EDUCATOR_ROLES)[number];
+
+function isEducatorRole(role: string | undefined | null): role is EducatorRole {
+  return EDUCATOR_ROLES.includes(role as EducatorRole);
+}
+
 const router: IRouter = Router();
 
-router.get("/staff", async (_req, res): Promise<void> => {
-  const staff = await db.select().from(staffTable).orderBy(staffTable.lastName);
+router.get("/staff", async (req, res): Promise<void> => {
+  const user = req.session?.user;
+  let staff;
+  if (isEducatorRole(user?.role) && user?.siteId != null) {
+    staff = await db.select().from(staffTable).where(eq(staffTable.siteId, user.siteId)).orderBy(staffTable.lastName);
+  } else {
+    staff = await db.select().from(staffTable).orderBy(staffTable.lastName);
+  }
   res.json(ListStaffResponse.parse(staff));
 });
 
@@ -65,9 +78,14 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const user = req.session?.user;
+  const updateData = { ...parsed.data };
+  if (isEducatorRole(user?.role)) {
+    delete (updateData as any).siteId;
+  }
   const [member] = await db
     .update(staffTable)
-    .set(parsed.data)
+    .set(updateData)
     .where(eq(staffTable.id, params.data.id))
     .returning();
   if (!member) {
@@ -78,6 +96,11 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
 });
 
 router.delete("/staff/:id", async (req, res): Promise<void> => {
+  const user = req.session?.user;
+  if (isEducatorRole(user?.role)) {
+    res.status(403).json({ error: "Not permitted" });
+    return;
+  }
   const params = GetStaffParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

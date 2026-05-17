@@ -393,31 +393,33 @@ export default function StaffProfile() {
         <Link href="/staff">
           <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 mr-1" />Back to Staff</Button>
         </Link>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/10">
-              <Trash2 className="h-4 w-4 mr-1" />Delete Staff Record
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete {staff.firstName} {staff.lastName}?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently remove this staff member and all their qualifications and professional development records. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-white hover:bg-destructive/90"
-                onClick={handleDeleteStaff}
-                disabled={deleteStaffMutation.isPending}
-              >
-                {deleteStaffMutation.isPending ? "Deleting…" : "Delete"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {!isEducatorRole && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/10">
+                <Trash2 className="h-4 w-4 mr-1" />Delete Staff Record
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete {staff.firstName} {staff.lastName}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently remove this staff member and all their qualifications and professional development records. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-white hover:bg-destructive/90"
+                  onClick={handleDeleteStaff}
+                  disabled={deleteStaffMutation.isPending}
+                >
+                  {deleteStaffMutation.isPending ? "Deleting…" : "Delete"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
 
       <div className="flex items-center gap-4">
@@ -969,23 +971,25 @@ export default function StaffProfile() {
               <Label>WWCC Number</Label>
               <Input value={profileEditForm.wwccNumber} onChange={(e) => setProfileEditForm((f) => ({ ...f, wwccNumber: e.target.value }))} placeholder="e.g. WWC1234567A" />
             </div>
-            <div className="space-y-1.5">
-              <Label>Site / Location</Label>
-              <Select
-                value={profileEditForm.siteId || "none"}
-                onValueChange={(v) => setProfileEditForm((f) => ({ ...f, siteId: v === "none" ? "" : v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="No site assigned" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No site assigned</SelectItem>
-                  {(sites ?? []).map((site) => (
-                    <SelectItem key={site.id} value={String(site.id)}>{site.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {!isEducatorRole && (
+              <div className="space-y-1.5">
+                <Label>Site / Location</Label>
+                <Select
+                  value={profileEditForm.siteId || "none"}
+                  onValueChange={(v) => setProfileEditForm((f) => ({ ...f, siteId: v === "none" ? "" : v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="No site assigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No site assigned</SelectItem>
+                    {(sites ?? []).map((site) => (
+                      <SelectItem key={site.id} value={String(site.id)}>{site.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setProfileEditOpen(false)} disabled={profileEditSaving}>Cancel</Button>
               <Button onClick={saveProfile} disabled={profileEditSaving || !profileEditForm.firstName || !profileEditForm.lastName || !profileEditForm.email}>

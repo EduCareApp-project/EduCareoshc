@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, ClipboardList, ChevronRight, Trash2, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 import { format, parseISO, isPast } from "date-fns";
 import { APPRAISAL_TYPES } from "@/lib/appraisal-constants";
 
@@ -146,6 +147,7 @@ export default function AppraisalsTab({ staffId }: { staffId?: number }) {
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const [createOpen, setCreateOpen] = useState(false);
+  const { isEducatorRole } = usePermissions();
 
   const { data: staffList } = useListStaff();
   const activeStaff = (staffList ?? []).filter((s) => s.status === "active");
@@ -181,18 +183,22 @@ export default function AppraisalsTab({ staffId }: { staffId?: number }) {
         <p className="text-sm text-muted-foreground">
           {appraisals.length === 0 ? "No appraisals yet" : `${appraisals.length} appraisal${appraisals.length !== 1 ? "s" : ""}`}
         </p>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="h-3.5 w-3.5 mr-1.5" /> New Appraisal
-        </Button>
+        {!isEducatorRole && (
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" /> New Appraisal
+          </Button>
+        )}
       </div>
 
       {appraisals.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 border border-dashed rounded-lg">
           <ClipboardList className="h-10 w-10 text-muted-foreground/30 mb-3" />
           <p className="text-sm font-medium text-muted-foreground">No appraisals yet</p>
-          <Button className="mt-4" size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1" /> New Appraisal
-          </Button>
+          {!isEducatorRole && (
+            <Button className="mt-4" size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-3.5 w-3.5 mr-1" /> New Appraisal
+            </Button>
+          )}
         </div>
       ) : (
         <div className="rounded-md border overflow-hidden divide-y">
@@ -222,23 +228,25 @@ export default function AppraisalsTab({ staffId }: { staffId?: number }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100">
-                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete this appraisal?</AlertDialogTitle>
-                        <AlertDialogDescription>All stage data will be permanently deleted. This cannot be undone.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={() => deleteMutation.mutate(a.id)}>Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  {!isEducatorRole && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100">
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete this appraisal?</AlertDialogTitle>
+                          <AlertDialogDescription>All stage data will be permanently deleted. This cannot be undone.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={() => deleteMutation.mutate(a.id)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
                   <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
                 </div>
               </div>

@@ -3,6 +3,8 @@ import { createNotification } from "../lib/notify";
 import { eq, desc, and } from "drizzle-orm";
 import { db, staffAppraisalsTable, appraisalGoalNotesTable, staffTable } from "@workspace/db";
 
+const EDUCATOR_ROLES = ["educator", "coordinator"] as const;
+
 const router: IRouter = Router();
 
 async function buildStaffMap() {
@@ -25,10 +27,21 @@ function enrichAppraisal(row: typeof staffAppraisalsTable.$inferSelect, staffMap
 // ─── List ────────────────────────────────────────────────────────────────────
 
 router.get("/appraisals", async (req, res): Promise<void> => {
-  const staffId = req.query.staffId ? Number(req.query.staffId) : undefined;
+  const staffIdParam = req.query.staffId ? Number(req.query.staffId) : undefined;
+  const user = req.session?.user;
+  const isEduRole = user && EDUCATOR_ROLES.includes(user.role as (typeof EDUCATOR_ROLES)[number]);
 
   let rows = await db.select().from(staffAppraisalsTable).orderBy(desc(staffAppraisalsTable.createdAt));
-  if (staffId) rows = rows.filter((r) => r.staffId === staffId);
+  if (staffIdParam) rows = rows.filter((r) => r.staffId === staffIdParam);
+
+  if (isEduRole && user?.siteId != null) {
+    const siteStaff = await db
+      .select({ id: staffTable.id })
+      .from(staffTable)
+      .where(eq(staffTable.siteId, user.siteId));
+    const siteStaffIds = new Set(siteStaff.map((s) => s.id));
+    rows = rows.filter((r) => siteStaffIds.has(r.staffId));
+  }
 
   const staffMap = await buildStaffMap();
   res.json(rows.map((r) => enrichAppraisal(r, staffMap)));
@@ -125,6 +138,11 @@ router.patch("/appraisals/:id", async (req, res): Promise<void> => {
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 router.delete("/appraisals/:id", async (req, res): Promise<void> => {
+  const user = req.session?.user;
+  if (user && EDUCATOR_ROLES.includes(user.role as (typeof EDUCATOR_ROLES)[number])) {
+    res.status(403).json({ error: "Not permitted" });
+    return;
+  }
   const id = Number(req.params.id);
   const [row] = await db.delete(staffAppraisalsTable).where(eq(staffAppraisalsTable.id, id)).returning();
   if (!row) { res.status(404).json({ error: "Appraisal not found" }); return; }

@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/auth";
 import { useListSites } from "@workspace/api-client-react";
-import { Baby, Calendar, User, ExternalLink, ShieldCheck, FileText, BookOpen, ImageIcon } from "lucide-react";
+import { Baby, Calendar, User, ExternalLink, ShieldCheck, FileText, BookOpen } from "lucide-react";
 
 type Child = {
   id: number;
@@ -66,6 +67,7 @@ function stripHtml(html: string | null | undefined): string {
 }
 
 function PostCard({ post }: { post: Post }) {
+  const [open, setOpen] = useState(false);
   const summary = post.aiSummary || stripHtml(post.description) || stripHtml(post.learning);
   const hasImage = post.images && post.images.length > 0;
   const publishDate = post.publishedAt
@@ -73,41 +75,104 @@ function PostCard({ post }: { post: Post }) {
     : null;
 
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      {hasImage && (
-        <div className="h-40 bg-muted overflow-hidden">
-          <img
-            src={`/api/storage/objects/${post.images[0]}`}
-            alt={post.title}
-            className="w-full h-full object-cover"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-          />
-        </div>
-      )}
-      {!hasImage && (
-        <div className="h-2" style={{ background: "linear-gradient(90deg, #4CAF50, #2196F3)" }} />
-      )}
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="font-semibold text-sm leading-snug">{post.title}</h3>
-        </div>
-        {publishDate && (
-          <p className="text-xs text-muted-foreground mb-2">{publishDate}</p>
-        )}
-        {summary && (
-          <p className="text-sm text-muted-foreground line-clamp-3">{summary.slice(0, 200)}</p>
-        )}
-        {post.childNames.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {post.childNames.map((name) => (
-              <span key={name} className="text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium">
-                {name}
-              </span>
-            ))}
+    <>
+      <Card
+        className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+        onClick={() => setOpen(true)}
+      >
+        {hasImage && (
+          <div className="h-40 bg-muted overflow-hidden">
+            <img
+              src={`/api/storage/objects/${post.images[0]}`}
+              alt={post.title}
+              className="w-full h-full object-cover"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            />
           </div>
         )}
-      </CardContent>
-    </Card>
+        {!hasImage && (
+          <div className="h-2" style={{ background: "linear-gradient(90deg, #4CAF50, #2196F3)" }} />
+        )}
+        <CardContent className="p-4">
+          <h3 className="font-semibold text-sm leading-snug mb-1">{post.title}</h3>
+          {publishDate && (
+            <p className="text-xs text-muted-foreground mb-2">{publishDate}</p>
+          )}
+          {summary && (
+            <p className="text-sm text-muted-foreground line-clamp-3">{summary.slice(0, 200)}</p>
+          )}
+          {post.childNames.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {post.childNames.map((name) => (
+                <span key={name} className="text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium">
+                  {name}
+                </span>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg leading-snug pr-6">{post.title}</DialogTitle>
+          </DialogHeader>
+
+          {publishDate && (
+            <p className="text-xs text-muted-foreground -mt-2">{publishDate}</p>
+          )}
+
+          {/* Images */}
+          {hasImage && (
+            <div className="space-y-2">
+              {post.images.map((img, i) => (
+                <img
+                  key={i}
+                  src={`/api/storage/objects/${img}`}
+                  alt={`${post.title} image ${i + 1}`}
+                  className="w-full rounded-lg object-cover"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Description */}
+          {post.description && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">About this activity</p>
+              <div
+                className="text-sm text-foreground prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: post.description }}
+              />
+            </div>
+          )}
+
+          {/* Learning */}
+          {post.learning && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Learning & development</p>
+              <div
+                className="text-sm text-foreground prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: post.learning }}
+              />
+            </div>
+          )}
+
+          {/* Children tagged */}
+          {post.childNames.length > 0 && (
+            <div className="flex flex-wrap gap-1 pt-1 border-t">
+              {post.childNames.map((name) => (
+                <span key={name} className="text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium">
+                  {name}
+                </span>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

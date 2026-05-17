@@ -34,6 +34,7 @@ export const ListChildrenResponseItem = zod.object({
   temperament: zod.string().nullish(),
   background: zod.string().nullish(),
   siteId: zod.number().nullish(),
+  profilePicturePath: zod.string().nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 export const ListChildrenResponse = zod.array(ListChildrenResponseItem);
@@ -58,6 +59,7 @@ export const CreateChildBody = zod.object({
   temperament: zod.string().optional(),
   background: zod.string().optional(),
   siteId: zod.number().optional(),
+  profilePicturePath: zod.string().optional(),
 });
 
 export const GetChildParams = zod.object({
@@ -81,6 +83,7 @@ export const GetChildResponse = zod.object({
   temperament: zod.string().nullish(),
   background: zod.string().nullish(),
   siteId: zod.number().nullish(),
+  profilePicturePath: zod.string().nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 
@@ -106,6 +109,7 @@ export const UpdateChildBody = zod.object({
   temperament: zod.string().optional(),
   background: zod.string().optional(),
   siteId: zod.number().nullish(),
+  profilePicturePath: zod.string().nullish(),
 });
 
 export const UpdateChildResponse = zod.object({
@@ -125,6 +129,7 @@ export const UpdateChildResponse = zod.object({
   temperament: zod.string().nullish(),
   background: zod.string().nullish(),
   siteId: zod.number().nullish(),
+  profilePicturePath: zod.string().nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 
@@ -2849,6 +2854,24 @@ export const MarkNotificationReadParams = zod.object({
 
 export const MarkNotificationReadResponse = zod.object({
   ok: zod.boolean(),
+});
+
+/**
+ * @summary Get children display settings
+ */
+export const GetChildSettingsResponse = zod.object({
+  childDisplayMode: zod.enum(["letter_icon", "profile_picture"]),
+});
+
+/**
+ * @summary Update children display settings
+ */
+export const UpdateChildSettingsBody = zod.object({
+  childDisplayMode: zod.enum(["letter_icon", "profile_picture"]),
+});
+
+export const UpdateChildSettingsResponse = zod.object({
+  childDisplayMode: zod.enum(["letter_icon", "profile_picture"]),
 });
 
 /**

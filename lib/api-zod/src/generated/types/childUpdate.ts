@@ -25,4 +25,6 @@ export interface ChildUpdate {
   background?: string;
   /** @nullable */
   siteId?: number | null;
+  /** @nullable */
+  profilePicturePath?: string | null;
 }

@@ -1,4 +1,4 @@
-import { useListChildren, useListSites } from "@workspace/api-client-react";
+import { useListChildren, useListSites, useGetChildSettings, getGetChildSettingsQueryKey } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,9 +20,16 @@ function calcAge(dob: string) {
   return `${years} year${years !== 1 ? "s" : ""}`;
 }
 
+function storageUrl(objectPath: string): string {
+  const id = objectPath.replace(/^\/objects\//, "");
+  return `/api/storage/objects/${id}`;
+}
+
 export default function ChildrenList() {
   const { data: children, isLoading } = useListChildren();
   const { data: sites } = useListSites();
+  const { data: childSettings } = useGetChildSettings({ query: { queryKey: getGetChildSettingsQueryKey() } });
+  const showPhoto = childSettings?.childDisplayMode === "profile_picture";
   const [search, setSearch] = useState("");
   const [siteFilter, setSiteFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("active");
@@ -114,8 +121,21 @@ export default function ChildrenList() {
             <Link key={child.id} href={`/children/${child.id}`}>
               <Card className="hover:border-primary/50 hover:shadow-md transition-all cursor-pointer h-full">
                 <CardHeader className="pb-3 flex flex-row items-start justify-between space-y-0">
-                  <CardTitle className="text-xl">{child.firstName} {child.lastName}</CardTitle>
-                  <Badge variant={child.status === 'active' ? 'default' : 'secondary'} className="capitalize">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {showPhoto && child.profilePicturePath ? (
+                      <img
+                        src={storageUrl(child.profilePicturePath)}
+                        alt={`${child.firstName} ${child.lastName}`}
+                        className="h-10 w-10 rounded-full object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0 select-none">
+                        {child.firstName[0]}{child.lastName[0]}
+                      </div>
+                    )}
+                    <CardTitle className="text-lg leading-tight">{child.firstName} {child.lastName}</CardTitle>
+                  </div>
+                  <Badge variant={child.status === 'active' ? 'default' : 'secondary'} className="capitalize ml-2 shrink-0">
                     {child.status}
                   </Badge>
                 </CardHeader>

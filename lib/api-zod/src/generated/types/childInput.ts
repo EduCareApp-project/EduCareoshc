@@ -24,4 +24,5 @@ export interface ChildInput {
   temperament?: string;
   background?: string;
   siteId?: number;
+  profilePicturePath?: string;
 }

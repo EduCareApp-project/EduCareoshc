@@ -32,6 +32,8 @@ export * from "./childDocumentInput";
 export * from "./childInput";
 export * from "./childInputAgeGroup";
 export * from "./childInputStatus";
+export * from "./childSettings";
+export * from "./childSettingsChildDisplayMode";
 export * from "./childStatus";
 export * from "./childUpdate";
 export * from "./childUpdateAgeGroup";

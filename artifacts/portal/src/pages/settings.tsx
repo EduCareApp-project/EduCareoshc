@@ -25,7 +25,7 @@ const SETTINGS_GROUPS: Group[] = [
   {
     label: "People & Enrolment",
     tiles: [
-      { icon: Baby, label: "Children", description: "Enrolment defaults, age group configuration and profile fields.", comingSoon: true },
+      { icon: Baby, label: "Children", description: "Profile display mode — letter icon or uploaded profile picture.", href: "/settings/children" },
       { icon: UserCog, label: "Guardians", description: "Guardian relationship types and contact preferences.", comingSoon: true },
       { icon: Users, label: "Staff", description: "Roles, qualification types and WWCC requirements.", comingSoon: true },
     ],

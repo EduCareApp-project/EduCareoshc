@@ -20,6 +20,7 @@ export const childrenTable = pgTable("children", {
   temperament: text("temperament"),
   background: text("background"),
   siteId: integer("site_id").references(() => sitesTable.id, { onDelete: "set null" }),
+  profilePicturePath: text("profile_picture_path"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

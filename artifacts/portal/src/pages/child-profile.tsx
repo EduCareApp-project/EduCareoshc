@@ -7,6 +7,7 @@ import {
   useGetChildConfidentialNotes, useCreateConfidentialNote, useUpdateConfidentialNote, useDeleteConfidentialNote,
   useListStaff, useListJottings, useListPlanningExperiences, useListPosts,
   useListChildDocuments, useCreateChildDocument, useDeleteChildDocument,
+  useGetChildSettings, getGetChildSettingsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
@@ -32,6 +33,11 @@ import {
 } from "lucide-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { useToast } from "@/hooks/use-toast";
+
+function storageUrl(objectPath: string): string {
+  const id = objectPath.replace(/^\/objects\//, "");
+  return `/api/storage/objects/${id}`;
+}
 
 const AGE_GROUP_LABELS: Record<string, string> = { infant: "Infant", toddler: "Toddler", preschool: "Preschool", school_age: "School Age" };
 
@@ -97,9 +103,27 @@ export default function ChildProfile() {
   const [evidenceObjectPath, setEvidenceObjectPath] = useState<string | null>(null);
   const [evidenceFileName, setEvidenceFileName] = useState<string | null>(null);
 
+  const { data: childSettings } = useGetChildSettings({ query: { queryKey: getGetChildSettingsQueryKey() } });
+  const showPhoto = childSettings?.childDisplayMode === "profile_picture";
+
   const { uploadFile, isUploading: isUploadingEvidence } = useUpload({
     onError: () => toast({ title: "File upload failed", variant: "destructive" }),
   });
+
+  const { uploadFile: uploadProfilePic, isUploading: isUploadingPic } = useUpload({
+    onError: () => toast({ title: "Photo upload failed", variant: "destructive" }),
+  });
+
+  async function handleProfilePicUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const response = await uploadProfilePic(file);
+    if (!response) return;
+    await updateMutation.mutateAsync({ id, data: { profilePicturePath: response.objectPath } as any });
+    queryClient.invalidateQueries({ queryKey: [`/api/children/${id}`] });
+    toast({ title: "Profile photo updated" });
+    e.target.value = "";
+  }
 
   const { data: childDocuments, isLoading: docsLoading } = useListChildDocuments(id, { query: { enabled: !!id } });
   const createDocMutation = useCreateChildDocument();
@@ -337,8 +361,33 @@ export default function ChildProfile() {
         </Link>
         <div className="flex-1 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold">
-              {child.firstName[0]}{child.lastName[0]}
+            <div className="relative group">
+              {showPhoto && child.profilePicturePath ? (
+                <img
+                  src={storageUrl(child.profilePicturePath)}
+                  alt={`${child.firstName} ${child.lastName}`}
+                  className="h-12 w-12 rounded-full object-cover"
+                />
+              ) : (
+                <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xl font-bold select-none">
+                  {child.firstName[0]}{child.lastName[0]}
+                </div>
+              )}
+              {showPhoto && (
+                <label
+                  className="absolute inset-0 rounded-full flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity"
+                  title="Upload photo"
+                >
+                  <Upload className="h-4 w-4 text-white" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={handleProfilePicUpload}
+                    disabled={isUploadingPic}
+                  />
+                </label>
+              )}
             </div>
             <div>
               <h1 className="text-2xl font-bold leading-none">{child.firstName} {child.lastName}</h1>

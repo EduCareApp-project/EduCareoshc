@@ -30,6 +30,7 @@ import type {
   ChildDocument,
   ChildDocumentInput,
   ChildInput,
+  ChildSettings,
   ChildUpdate,
   ConditionReport,
   ConditionReportInput,
@@ -10920,6 +10921,167 @@ export const useMarkNotificationRead = <
   TContext
 > => {
   return useMutation(getMarkNotificationReadMutationOptions(options));
+};
+
+/**
+ * @summary Get children display settings
+ */
+export const getGetChildSettingsUrl = () => {
+  return `/api/settings/children`;
+};
+
+export const getChildSettings = async (
+  options?: RequestInit,
+): Promise<ChildSettings> => {
+  return customFetch<ChildSettings>(getGetChildSettingsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetChildSettingsQueryKey = () => {
+  return [`/api/settings/children`] as const;
+};
+
+export const getGetChildSettingsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getChildSettings>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getChildSettings>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetChildSettingsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getChildSettings>>
+  > = ({ signal }) => getChildSettings({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getChildSettings>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetChildSettingsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getChildSettings>>
+>;
+export type GetChildSettingsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get children display settings
+ */
+
+export function useGetChildSettings<
+  TData = Awaited<ReturnType<typeof getChildSettings>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getChildSettings>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetChildSettingsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update children display settings
+ */
+export const getUpdateChildSettingsUrl = () => {
+  return `/api/settings/children`;
+};
+
+export const updateChildSettings = async (
+  childSettings: ChildSettings,
+  options?: RequestInit,
+): Promise<ChildSettings> => {
+  return customFetch<ChildSettings>(getUpdateChildSettingsUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(childSettings),
+  });
+};
+
+export const getUpdateChildSettingsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateChildSettings>>,
+    TError,
+    { data: BodyType<ChildSettings> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateChildSettings>>,
+  TError,
+  { data: BodyType<ChildSettings> },
+  TContext
+> => {
+  const mutationKey = ["updateChildSettings"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateChildSettings>>,
+    { data: BodyType<ChildSettings> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return updateChildSettings(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateChildSettingsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateChildSettings>>
+>;
+export type UpdateChildSettingsMutationBody = BodyType<ChildSettings>;
+export type UpdateChildSettingsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update children display settings
+ */
+export const useUpdateChildSettings = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateChildSettings>>,
+    TError,
+    { data: BodyType<ChildSettings> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateChildSettings>>,
+  TError,
+  { data: BodyType<ChildSettings> },
+  TContext
+> => {
+  return useMutation(getUpdateChildSettingsMutationOptions(options));
 };
 
 /**

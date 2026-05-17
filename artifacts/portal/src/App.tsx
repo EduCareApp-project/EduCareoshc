@@ -60,6 +60,7 @@ import SettingsEmailNotifications from "@/pages/settings-email-notifications";
 import SettingsOrganisation from "@/pages/settings-organisation";
 import SettingsAccess from "@/pages/settings-access";
 import SettingsNotifications from "@/pages/settings-notifications";
+import SettingsChildren from "@/pages/settings-children";
 import Appraisals from "@/pages/appraisals";
 import AppraisalDetail from "@/pages/appraisal-detail";
 import AppraisalStage1 from "@/pages/appraisal-stage1";
@@ -165,6 +166,7 @@ function StaffRoutes() {
         <Route path="/settings/organisation" component={SettingsOrganisation} />
         <Route path="/settings/access" component={SettingsAccess} />
         <Route path="/settings/notifications" component={SettingsNotifications} />
+        <Route path="/settings/children" component={SettingsChildren} />
 
         <Route component={NotFound} />
       </Switch>

@@ -1,0 +1,33 @@
+import { Router, type IRouter } from "express";
+import { eq } from "drizzle-orm";
+import { db, organisationTable } from "@workspace/db";
+
+const router: IRouter = Router();
+
+const VALID_MODES = ["letter_icon", "profile_picture"] as const;
+
+router.get("/settings/children", async (_req, res): Promise<void> => {
+  const [row] = await db.select({ childDisplayMode: organisationTable.childDisplayMode })
+    .from(organisationTable).limit(1);
+  res.json({ childDisplayMode: row?.childDisplayMode ?? "letter_icon" });
+});
+
+router.put("/settings/children", async (req, res): Promise<void> => {
+  const { childDisplayMode } = req.body ?? {};
+  if (!VALID_MODES.includes(childDisplayMode)) {
+    res.status(400).json({ error: "childDisplayMode must be 'letter_icon' or 'profile_picture'" });
+    return;
+  }
+
+  const [existing] = await db.select().from(organisationTable).limit(1);
+  if (existing) {
+    await db.update(organisationTable)
+      .set({ childDisplayMode, updatedAt: new Date() })
+      .where(eq(organisationTable.id, existing.id));
+  } else {
+    await db.insert(organisationTable).values({ childDisplayMode, updatedAt: new Date() } as any);
+  }
+  res.json({ childDisplayMode });
+});
+
+export default router;

@@ -87,6 +87,8 @@ export interface Child {
   background?: string | null;
   /** @nullable */
   siteId?: number | null;
+  /** @nullable */
+  profilePicturePath?: string | null;
   createdAt?: string;
 }
 
@@ -125,6 +127,7 @@ export interface ChildInput {
   temperament?: string;
   background?: string;
   siteId?: number;
+  profilePicturePath?: string;
 }
 
 export type ChildUpdateAgeGroup =
@@ -163,6 +166,8 @@ export interface ChildUpdate {
   background?: string;
   /** @nullable */
   siteId?: number | null;
+  /** @nullable */
+  profilePicturePath?: string | null;
 }
 
 export type StaffRole = (typeof StaffRole)[keyof typeof StaffRole];
@@ -1631,6 +1636,18 @@ export interface ServiceComplianceReport {
   activeChecklists: number;
   /** Active checklists whose target date was more than 7 days ago */
   overdueChecklists: number;
+}
+
+export type ChildSettingsChildDisplayMode =
+  (typeof ChildSettingsChildDisplayMode)[keyof typeof ChildSettingsChildDisplayMode];
+
+export const ChildSettingsChildDisplayMode = {
+  letter_icon: "letter_icon",
+  profile_picture: "profile_picture",
+} as const;
+
+export interface ChildSettings {
+  childDisplayMode: ChildSettingsChildDisplayMode;
 }
 
 export interface UpdateNotificationSettingItem {

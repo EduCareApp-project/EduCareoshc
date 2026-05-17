@@ -2448,6 +2448,36 @@ paths:
                   ok:
                     type: boolean
 
+  /settings/children:
+    get:
+      operationId: getChildSettings
+      tags: [settings]
+      summary: Get children display settings
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChildSettings"
+    put:
+      operationId: updateChildSettings
+      tags: [settings]
+      summary: Update children display settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChildSettings"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChildSettings"
+
   /notification-settings:
     get:
       operationId: listNotificationSettings
@@ -2607,6 +2637,8 @@ components:
           type: ["string", "null"]
         siteId:
           type: ["integer", "null"]
+        profilePicturePath:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -2650,6 +2682,8 @@ components:
           type: string
         siteId:
           type: integer
+        profilePicturePath:
+          type: string
 
     ChildUpdate:
       type: object
@@ -2688,6 +2722,8 @@ components:
           type: string
         siteId:
           type: ["integer", "null"]
+        profilePicturePath:
+          type: ["string", "null"]
 
     Staff:
       type: object
@@ -4851,6 +4887,14 @@ components:
         overdueChecklists:
           type: integer
           description: Active checklists whose target date was more than 7 days ago
+
+    ChildSettings:
+      type: object
+      required: [childDisplayMode]
+      properties:
+        childDisplayMode:
+          type: string
+          enum: [letter_icon, profile_picture]
 
     UpdateNotificationSettingItem:
       type: object

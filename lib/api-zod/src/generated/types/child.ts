@@ -31,5 +31,7 @@ export interface Child {
   background?: string | null;
   /** @nullable */
   siteId?: number | null;
+  /** @nullable */
+  profilePicturePath?: string | null;
   createdAt?: Date;
 }

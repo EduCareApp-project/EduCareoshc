@@ -1,17 +1,10 @@
 import { type ReactNode } from "react";
-import { Link, useLocation } from "wouter";
-import { Home, Newspaper, Baby, LogOut, ShieldCheck, Menu } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
-import { ScrollArea } from "./ui/scroll-area";
 import { useAuth } from "@/contexts/auth";
 
-const NAV_ITEMS = [
-  { href: "/", label: "My Children", icon: Baby },
-  { href: "/notices", label: "Notices & News", icon: Newspaper },
-];
-
-function GuardianNav({ location, onNavigate }: { location: string; onNavigate?: () => void }) {
+function GuardianSidebar({ onClose }: { onClose?: () => void }) {
   const { user, logout } = useAuth();
 
   return (
@@ -25,25 +18,7 @@ function GuardianNav({ location, onNavigate }: { location: string; onNavigate?: 
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
-        <nav className="px-3 py-4 space-y-1">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-            const isActive = href === "/" ? location === "/" : location.startsWith(href);
-            return (
-              <Link key={href} href={href} onClick={onNavigate}>
-                <div className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer ${
-                  isActive
-                    ? "bg-white/20 text-white"
-                    : "text-white/75 hover:bg-white/10 hover:text-white"
-                }`}>
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {label}
-                </div>
-              </Link>
-            );
-          })}
-        </nav>
-      </ScrollArea>
+      <div className="flex-1" />
 
       {/* User info + logout */}
       <div className="px-3 py-4 border-t border-white/20 space-y-2">
@@ -73,13 +48,11 @@ function GuardianNav({ location, onNavigate }: { location: string; onNavigate?: 
 }
 
 export function GuardianLayout({ children }: { children: ReactNode }) {
-  const [location] = useLocation();
-
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-56 shrink-0 flex-col">
-        <GuardianNav location={location} />
+        <GuardianSidebar />
       </aside>
 
       {/* Mobile header */}
@@ -91,7 +64,7 @@ export function GuardianLayout({ children }: { children: ReactNode }) {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-56 border-r-0">
-            <GuardianNav location={location} />
+            <GuardianSidebar />
           </SheetContent>
         </Sheet>
         <img src="/educare-logo.png" alt="EduCare" className="h-7 w-7 object-contain" />

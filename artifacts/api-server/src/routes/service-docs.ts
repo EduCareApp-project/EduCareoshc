@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, inArray, asc } from "drizzle-orm";
+import { and, eq, inArray, asc } from "drizzle-orm";
 import { Readable } from "stream";
 import { db, fileLibraryTable, fileCategoriesTable, sitesTable } from "@workspace/db";
 import { ObjectStorageService } from "../lib/objectStorage";
@@ -49,9 +49,8 @@ router.get("/service-docs/public", async (req, res): Promise<void> => {
       createdAt: fileLibraryTable.createdAt,
     })
     .from(fileLibraryTable)
-    .where(inArray(fileLibraryTable.categoryId, catIds))
-    // Only this site's documents — never cross-site
-    .where(eq(fileLibraryTable.siteId, siteId))
+    // Both conditions required — only public-category docs for this site
+    .where(and(inArray(fileLibraryTable.categoryId, catIds), eq(fileLibraryTable.siteId, siteId)))
     .orderBy(asc(fileLibraryTable.position), asc(fileLibraryTable.name));
 
   const sections = PUBLIC_CATEGORIES

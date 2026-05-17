@@ -43,11 +43,12 @@ type FileItem = {
 };
 
 async function patchFilePosition(id: number, position: number) {
-  await fetch(`/api/file-library/${id}`, {
+  const r = await fetch(`/api/file-library/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ position }),
   });
+  if (!r.ok) throw new Error(`PATCH failed: ${r.status}`);
 }
 
 type SectionProps = {
@@ -123,14 +124,12 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
     if (swapIndex < 0 || swapIndex >= sorted.length) return;
     setReordering(true);
     try {
-      const a = sorted[index];
-      const b = sorted[swapIndex];
-      const posA = a.position ?? index;
-      const posB = b.position ?? swapIndex;
-      await Promise.all([
-        patchFilePosition(a.id, posB),
-        patchFilePosition(b.id, posA),
-      ]);
+      // Swap the two items in the array, then write sequential positions
+      // (0, 1, 2 …) to every item. This ensures the move always works
+      // even when multiple items share the same stored position value.
+      const reordered = [...sorted];
+      [reordered[index], reordered[swapIndex]] = [reordered[swapIndex], reordered[index]];
+      await Promise.all(reordered.map((f, i) => patchFilePosition(f.id, i)));
       onRefresh();
     } catch {
       toast({ title: "Failed to reorder", variant: "destructive" });

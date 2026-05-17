@@ -1,4 +1,5 @@
 import { useListPosts, useListChildren, useDeletePost, getListPostsQueryKey } from "@workspace/api-client-react";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ export default function Posts() {
 
   const { data: posts, isLoading } = useListPosts();
   const { data: children } = useListChildren();
+  const { canDelete } = usePermissions();
   const deleteMutation = useDeletePost();
 
   const filteredChild = filterChildId
@@ -114,12 +116,14 @@ export default function Posts() {
                       <Newspaper className="h-10 w-10 text-muted-foreground opacity-30" />
                     </div>
                   )}
-                  <button
-                    onClick={(e) => handleDelete(e, post.id)}
-                    className="absolute top-2 right-2 p-1.5 rounded-md bg-white/80 hover:bg-white text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  {canDelete && (
+                    <button
+                      onClick={(e) => handleDelete(e, post.id)}
+                      className="absolute top-2 right-2 p-1.5 rounded-md bg-white/80 hover:bg-white text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">

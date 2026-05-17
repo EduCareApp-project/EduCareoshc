@@ -2,7 +2,8 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, 
-  Users, 
+  Users,
+  User,
   Baby, 
   BookOpen, 
   BookMarked,
@@ -122,6 +123,24 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
     items: group.items.filter((item) => !disabledHrefs.includes(item.href)),
   })).filter((group) => group.items.length > 0);
 
+  const isEducatorRole = ["educator", "coordinator"].includes(user?.role ?? "");
+  const EDUCATOR_HIDDEN = new Set(["/guardians", "/settings", "/reports/service", "/reports/staff", "/reports/system-access"]);
+
+  const finalGroups = isEducatorRole
+    ? visibleGroups
+        .map((group) => ({
+          ...group,
+          items: group.items
+            .filter((item) => !EDUCATOR_HIDDEN.has(item.href))
+            .map((item) =>
+              item.href === "/staff"
+                ? { ...item, href: `/staff/${user!.id}`, label: "My Profile", icon: User }
+                : item
+            ),
+        }))
+        .filter((group) => group.items.length > 0)
+    : visibleGroups;
+
   return (
     <div className="flex flex-col h-full">
       <div className="px-2 py-4 flex items-center space-x-1 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.2)" }}>
@@ -130,7 +149,7 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
       </div>
       <ScrollArea className="flex-1">
         <div className="px-4 py-4 space-y-5 pb-8">
-          {visibleGroups.map((group, i) => (
+          {finalGroups.map((group, i) => (
             <div key={i} className="space-y-1">
               {group.label && (
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40 px-2 mb-1">

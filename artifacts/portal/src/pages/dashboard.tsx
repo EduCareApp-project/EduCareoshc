@@ -27,6 +27,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getListNoticesQueryKey } from "@workspace/api-client-react";
+import { usePermissions } from "@/hooks/use-permissions";
 
 // ─── Shared priority colours ────────────────────────────────────────────────
 const PRIORITY_COLORS: Record<string, string> = {
@@ -358,9 +359,10 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
 
 // ─── Dashboard shell ─────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState("leadership");
+  const { isEducatorRole, ownSiteId } = usePermissions();
+  const [activeTab, setActiveTab] = useState<string>(() => isEducatorRole ? "educator" : "leadership");
   const { data: sites } = useListSites();
-  const [selectedSiteId, setSelectedSiteId] = useState<string>("");
+  const [selectedSiteId, setSelectedSiteId] = useState<string>(() => isEducatorRole && ownSiteId ? String(ownSiteId) : "");
   const [guardianSiteId, setGuardianSiteId] = useState<string>("__all__");
   const siteName = sites?.find((s) => String(s.id) === selectedSiteId)?.name ?? sites?.[0]?.name;
 
@@ -373,8 +375,8 @@ export default function Dashboard() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="flex items-center gap-6 flex-wrap">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="leadership">Leadership</TabsTrigger>
+          <TabsList className={`grid w-full ${isEducatorRole ? "max-w-xs grid-cols-2" : "max-w-md grid-cols-3"}`}>
+            {!isEducatorRole && <TabsTrigger value="leadership">Leadership</TabsTrigger>}
             <TabsTrigger value="educator">Educator</TabsTrigger>
             <TabsTrigger value="guardian">Guardian</TabsTrigger>
           </TabsList>
@@ -414,9 +416,11 @@ export default function Dashboard() {
           )}
         </div>
 
-        <TabsContent value="leadership" className="mt-6">
-          <LeadershipDashboard />
-        </TabsContent>
+        {!isEducatorRole && (
+          <TabsContent value="leadership" className="mt-6">
+            <LeadershipDashboard />
+          </TabsContent>
+        )}
         <TabsContent value="educator" className="mt-6">
           <EducatorDashboard />
         </TabsContent>

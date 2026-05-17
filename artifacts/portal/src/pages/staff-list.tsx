@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useListStaff, useGetStaffQualifications } from "@workspace/api-client-react";
-import { Link } from "wouter";
+import { Link, Redirect } from "wouter";
+import { useAuth } from "@/contexts/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,8 +30,13 @@ function QualLevelBadge({ staffId }: { staffId: number }) {
 type TopTab = "active" | "inactive";
 
 export default function StaffList() {
+  const { user } = useAuth();
   const { data: staff, isLoading } = useListStaff();
   const [tab, setTab] = useState<TopTab>("active");
+
+  if (["educator", "coordinator"].includes(user?.role ?? "") && user?.id) {
+    return <Redirect to={`/staff/${user.id}`} />;
+  }
 
   const filtered = staff?.filter((m) => m.status === tab) ?? [];
 

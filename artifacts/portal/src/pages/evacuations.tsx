@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useListEvacuations, useCreateEvacuation, useUpdateEvacuation, useListSites, useListStaff } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -483,6 +484,7 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
   const { uploadFile, isUploading: uploading } = useUpload();
   const updateMutation = useUpdateEvacuation();
 
+  const { canEditAfterSubmit } = usePermissions();
   const [editOpen, setEditOpen] = useState(false);
 
   const conductedDate = evac.conductedAt ? format(new Date(evac.conductedAt), "yyyy-MM-dd") : melbourneDateStr();
@@ -580,7 +582,7 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            {canEditAfterSubmit && <Dialog open={editOpen} onOpenChange={setEditOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={openEdit}>
                   <Pencil className="h-3.5 w-3.5" />
@@ -679,7 +681,7 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
                   </div>
                 </form>
               </DialogContent>
-            </Dialog>
+            </Dialog>}
             <ExpiryBadge nextDueAt={evac.nextDueAt} />
           </div>
         </div>

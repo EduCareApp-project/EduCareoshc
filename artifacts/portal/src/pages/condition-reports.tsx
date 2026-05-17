@@ -8,6 +8,7 @@ import {
   useListSites,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -62,6 +63,7 @@ export default function ConditionReports() {
   const { data: reports, isLoading } = useListConditionReports();
   const { data: staffList } = useListStaff();
   const { data: sites } = useListSites();
+  const { canDelete, canEditAfterSubmit } = usePermissions();
   const createMutation = useCreateConditionReport();
   const updateMutation = useUpdateConditionReport();
   const deleteMutation = useDeleteConditionReport();
@@ -453,16 +455,18 @@ export default function ConditionReports() {
                 <div className="flex items-start justify-between gap-2 pr-8">
                   <SheetTitle className="text-lg leading-snug">{selectedReport.description}</SheetTitle>
                   <div className="flex gap-1 shrink-0 mt-0.5">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                      title="Edit report"
-                      onClick={() => openEdit(selectedReport)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <AlertDialog>
+                    {canEditAfterSubmit && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        title="Edit report"
+                        onClick={() => openEdit(selectedReport)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    {canDelete && <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
                           variant="ghost"
@@ -490,7 +494,7 @@ export default function ConditionReports() {
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
-                    </AlertDialog>
+                    </AlertDialog>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 pt-1">

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useParams, Link, useLocation } from "wouter";
+import { useParams, Link, useLocation, Redirect } from "wouter";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
   useGetStaff,
   useUpdateStaff,
@@ -87,6 +88,7 @@ export default function StaffProfile() {
   const staffId = parseInt(id ?? "0");
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isEducatorRole, canManageQualifications, ownId } = usePermissions();
 
   const { data: staff, isLoading: loadingStaff } = useGetStaff(staffId, { query: { enabled: !!staffId } });
   const { data: pdList, isLoading: loadingPd } = useGetStaffProfessionalDevelopment(staffId, { query: { enabled: !!staffId } });
@@ -173,6 +175,10 @@ export default function StaffProfile() {
   const { uploadFile: uploadProfilePic, isUploading: isUploadingPic } = useUpload({
     onError: () => toast({ title: "Photo upload failed", variant: "destructive" }),
   });
+
+  if (isEducatorRole && ownId && staffId !== ownId) {
+    return <Redirect to={`/staff/${ownId}`} />;
+  }
 
   async function handleDocUpload(file: File) {
     const response = await uploadFile(file);
@@ -577,8 +583,8 @@ export default function StaffProfile() {
             </CardContent>
           </Card>
 
-          {/* Employment Notes */}
-          <Card>
+          {/* Employment Notes — hidden for educator/coordinator roles */}
+          {!isEducatorRole && <Card>
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-base">Employment Notes</CardTitle>
@@ -666,7 +672,7 @@ export default function StaffProfile() {
                 ));
               })()}
             </CardContent>
-          </Card>
+          </Card>}
         </TabsContent>
 
         {/* Qualifications Tab */}
@@ -676,9 +682,11 @@ export default function StaffProfile() {
               <h2 className="font-semibold">Qualifications &amp; Certifications</h2>
               <p className="text-sm text-muted-foreground">Licences, certifications, and compliance documents.</p>
             </div>
-            <Button size="sm" onClick={openAddQual}>
-              <Plus className="h-4 w-4 mr-1" />Add Qualification
-            </Button>
+            {canManageQualifications && (
+              <Button size="sm" onClick={openAddQual}>
+                <Plus className="h-4 w-4 mr-1" />Add Qualification
+              </Button>
+            )}
           </div>
 
           {loadingQuals ? (
@@ -688,9 +696,11 @@ export default function StaffProfile() {
               <CardContent className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
                 <Award className="h-10 w-10 mb-2 opacity-20" />
                 <p>No qualifications recorded yet.</p>
-                <Button variant="outline" size="sm" onClick={openAddQual} className="mt-2">
-                  <Plus className="h-4 w-4 mr-1" />Add first qualification
-                </Button>
+                {canManageQualifications && (
+                  <Button variant="outline" size="sm" onClick={openAddQual} className="mt-2">
+                    <Plus className="h-4 w-4 mr-1" />Add first qualification
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ) : (
@@ -788,7 +798,7 @@ export default function StaffProfile() {
                         })()}
                       </div>
                     </div>
-                    <div className="flex gap-1 shrink-0">
+                    {canManageQualifications && <div className="flex gap-1 shrink-0">
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openEditQual(q)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -816,7 +826,7 @@ export default function StaffProfile() {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
-                    </div>
+                    </div>}
                   </CardContent>
                 </Card>;
               })}

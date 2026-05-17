@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useListJottings, useCreateJotting, useDeleteJotting, useArchiveJotting, useListChildren, useListSites } from "@workspace/api-client-react";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ export default function Jottings() {
   const { data: jottings, isLoading } = useListJottings();
   const { data: children } = useListChildren();
   const { data: sites } = useListSites();
+  const { canDelete } = usePermissions();
   const createMutation = useCreateJotting();
   const deleteMutation = useDeleteJotting();
   const archiveMutation = useArchiveJotting();
@@ -176,9 +178,11 @@ export default function Jottings() {
                   <CheckCheck className="h-3.5 w-3.5" />
                   Actioned
                 </Button>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(j.id)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {canDelete && (
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(j.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

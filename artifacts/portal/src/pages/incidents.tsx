@@ -6,6 +6,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpload } from "@workspace/object-storage-web";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -508,6 +509,7 @@ function IncidentDetail({ incident, onDelete }: { incident: any; onDelete: () =>
   const [confirmDelete, setConfirmDelete] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { canDelete, canEditAfterSubmit } = usePermissions();
   const deleteMutation = useDeleteIncident();
 
   const hasHeadOffice = !!(incident.reportMadeAt || incident.reportMethod || incident.reportPersonId);
@@ -535,26 +537,32 @@ function IncidentDetail({ incident, onDelete }: { incident: any; onDelete: () =>
   return (
     <div className="space-y-3">
       {/* Admin actions bar */}
-      <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-        <Shield className="h-4 w-4 text-amber-600 shrink-0" />
-        <span className="text-xs font-medium text-amber-800 flex-1">Admin</span>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 text-xs gap-1.5 border-amber-300 bg-white hover:bg-amber-50"
-          onClick={() => { setEditingSubmitter(true); setEditingHeadOffice(false); setEditingRegulatory(false); setEditingReview(false); }}
-        >
-          <Edit className="h-3 w-3" />Edit Incident
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 text-xs gap-1.5 border-red-300 bg-white text-destructive hover:bg-red-50 hover:text-destructive"
-          onClick={() => setConfirmDelete(true)}
-        >
-          <Trash2 className="h-3 w-3" />Delete
-        </Button>
-      </div>
+      {(canEditAfterSubmit || canDelete) && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+          <Shield className="h-4 w-4 text-amber-600 shrink-0" />
+          <span className="text-xs font-medium text-amber-800 flex-1">Admin</span>
+          {canEditAfterSubmit && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1.5 border-amber-300 bg-white hover:bg-amber-50"
+              onClick={() => { setEditingSubmitter(true); setEditingHeadOffice(false); setEditingRegulatory(false); setEditingReview(false); }}
+            >
+              <Edit className="h-3 w-3" />Edit Incident
+            </Button>
+          )}
+          {canDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1.5 border-red-300 bg-white text-destructive hover:bg-red-50 hover:text-destructive"
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Trash2 className="h-3 w-3" />Delete
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Delete confirmation dialog */}
       <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>

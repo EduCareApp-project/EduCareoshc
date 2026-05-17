@@ -6,6 +6,7 @@ import {
   useListSites,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -354,6 +355,7 @@ function ItemRow({
   const updateMutation = useUpdateQipItem();
   const deleteMutation = useDeleteQipItem();
   const { toast } = useToast();
+  const { canDelete } = usePermissions();
   const [editOpen, setEditOpen] = useState(false);
 
   function handleEdit(data: FormState) {
@@ -458,9 +460,11 @@ function ItemRow({
           >
             <Archive className="h-3.5 w-3.5" />
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" title="Delete" onClick={handleDelete}>
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          {canDelete && (
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" title="Delete" onClick={handleDelete}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       </td>
     </tr>
@@ -478,6 +482,7 @@ function ArchivedItemRow({
   const updateMutation = useUpdateQipItem();
   const deleteMutation = useDeleteQipItem();
   const { toast } = useToast();
+  const { canDelete } = usePermissions();
 
   const priorityLabel = (item.priority ?? "medium").charAt(0).toUpperCase() + (item.priority ?? "medium").slice(1);
 
@@ -515,19 +520,21 @@ function ArchivedItemRow({
           >
             <ArchiveRestore className="h-3.5 w-3.5" />
           </Button>
-          <Button
-            size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-            title="Delete permanently"
-            onClick={() => {
-              if (!confirm("Permanently delete this archived item?")) return;
-              deleteMutation.mutate({ id: item.id }, {
-                onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/qip"] }),
-                onError: () => toast({ title: "Failed to delete item", variant: "destructive" }),
-              });
-            }}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          {canDelete && (
+            <Button
+              size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+              title="Delete permanently"
+              onClick={() => {
+                if (!confirm("Permanently delete this archived item?")) return;
+                deleteMutation.mutate({ id: item.id }, {
+                  onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/qip"] }),
+                  onError: () => toast({ title: "Failed to delete item", variant: "destructive" }),
+                });
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       </td>
     </tr>

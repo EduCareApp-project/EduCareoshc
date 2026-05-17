@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { FileText, File, ShieldCheck, ChevronDown, Download, Loader2, ExternalLink } from "lucide-react";
+import QRCode from "react-qr-code";
 
 type DocItem = {
   id: number;
@@ -213,6 +214,29 @@ export default function ServiceDocsPublic() {
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-10">
+
+        {/* QR Code — links back to this page for print/display use */}
+        <div className="flex items-start gap-6 bg-white border rounded-xl p-5 shadow-sm">
+          <div className="shrink-0 bg-white p-2 border rounded-lg">
+            <QRCode
+              value={window.location.href}
+              size={96}
+              bgColor="#ffffff"
+              fgColor="#111827"
+              level="M"
+            />
+          </div>
+          <div className="min-w-0 pt-1">
+            <p className="text-sm font-semibold text-foreground">Scan to access online</p>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              Scan this QR code with any mobile device to view the latest versions of all published service documents.
+            </p>
+            <p className="text-xs text-muted-foreground mt-2 font-mono break-all opacity-70">
+              {window.location.href}
+            </p>
+          </div>
+        </div>
+
         {loading && (
           <div className="flex items-center justify-center py-24 text-muted-foreground text-sm">
             Loading…

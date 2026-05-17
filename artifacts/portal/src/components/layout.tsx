@@ -5,8 +5,6 @@ import {
   Users, 
   Baby, 
   BookOpen, 
-  ClipboardList, 
-  Award, 
   BookMarked,
   Menu,
   ShieldCheck,
@@ -59,8 +57,6 @@ const NAV_GROUPS = [
       { href: "/posts", label: "Posts", icon: Newspaper },
       { href: "/jottings", label: "Jottings", icon: StickyNote },
       { href: "/observations", label: "Observations", icon: BookOpen },
-      { href: "/programs", label: "Programs", icon: ClipboardList },
-      { href: "/outcomes", label: "MTOP Outcomes", icon: Award },
     ]
   },
   {

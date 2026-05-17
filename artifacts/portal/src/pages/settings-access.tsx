@@ -18,8 +18,6 @@ const STAFF_ITEMS: { href: string; label: string; group: string }[] = [
   { href: "/posts",               label: "Posts",                 group: "Learning" },
   { href: "/jottings",            label: "Jottings",              group: "Learning" },
   { href: "/observations",        label: "Observations",          group: "Learning" },
-  { href: "/programs",            label: "Programs",              group: "Learning" },
-  { href: "/outcomes",            label: "MTOP Outcomes",         group: "Learning" },
   { href: "/incidents",           label: "Incident Log",          group: "Service Operations" },
   { href: "/condition-reports",   label: "Condition Report",      group: "Service Operations" },
   { href: "/evacuations",         label: "Safety Evacuation",     group: "Service Operations" },

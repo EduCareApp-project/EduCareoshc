@@ -392,6 +392,31 @@ export interface DashboardSummary {
   nqsMeetingCount: number;
 }
 
+export type ActivityItemType =
+  (typeof ActivityItemType)[keyof typeof ActivityItemType];
+
+export const ActivityItemType = {
+  observation: "observation",
+  post: "post",
+  incident: "incident",
+  condition_report: "condition_report",
+} as const;
+
+export interface ActivityItem {
+  id: string;
+  type: ActivityItemType;
+  label: string;
+  /** @nullable */
+  detail?: string | null;
+  /** @nullable */
+  actor?: string | null;
+  /** @nullable */
+  siteName?: string | null;
+  timestamp: string;
+  /** @nullable */
+  href?: string | null;
+}
+
 export interface OutcomeCount {
   outcomeId: number;
   outcomeTitle: string;

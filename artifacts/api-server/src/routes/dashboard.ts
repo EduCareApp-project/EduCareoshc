@@ -1,10 +1,11 @@
 import { Router, type IRouter } from "express";
-import { eq, gte, count } from "drizzle-orm";
-import { db, childrenTable, staffTable, observationsTable, programsTable, nqsAreasTable, outcomesTable } from "@workspace/db";
+import { eq, gte, count, desc } from "drizzle-orm";
+import { db, childrenTable, staffTable, observationsTable, programsTable, nqsAreasTable, outcomesTable, postsTable, incidentsTable, conditionReportsTable, sitesTable } from "@workspace/db";
 import {
   GetDashboardSummaryResponse,
   GetRecentObservationsResponse,
   GetOutcomeCountsResponse,
+  GetRecentActivityResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -92,6 +93,100 @@ router.get("/dashboard/outcome-counts", async (_req, res): Promise<void> => {
   });
 
   res.json(GetOutcomeCountsResponse.parse(counts));
+});
+
+router.get("/dashboard/recent-activity", async (_req, res): Promise<void> => {
+  const [childList, staffList, siteList] = await Promise.all([
+    db.select().from(childrenTable),
+    db.select().from(staffTable),
+    db.select().from(sitesTable),
+  ]);
+
+  const [recentObs, recentPosts, recentIncidents, recentConditions] = await Promise.all([
+    db.select().from(observationsTable).orderBy(desc(observationsTable.createdAt)).limit(20),
+    db.select().from(postsTable).orderBy(desc(postsTable.createdAt)).limit(20),
+    db.select().from(incidentsTable).orderBy(desc(incidentsTable.createdAt)).limit(20),
+    db.select().from(conditionReportsTable).orderBy(desc(conditionReportsTable.createdAt)).limit(20),
+  ]);
+
+  type ActivityItem = {
+    id: string;
+    type: "observation" | "post" | "incident" | "condition_report";
+    label: string;
+    detail: string | null;
+    actor: string | null;
+    siteName: string | null;
+    timestamp: string;
+    href: string | null;
+  };
+
+  const items: ActivityItem[] = [];
+
+  for (const obs of recentObs) {
+    const child = childList.find((c) => c.id === obs.childId);
+    const staff = staffList.find((s) => s.id === obs.staffId);
+    const site = child?.siteId ? siteList.find((s) => s.id === child.siteId) : null;
+    items.push({
+      id: `obs-${obs.id}`,
+      type: "observation",
+      label: child ? `Observation — ${child.firstName} ${child.lastName}` : "Observation recorded",
+      detail: obs.description.length > 120 ? obs.description.slice(0, 120) + "…" : obs.description,
+      actor: staff ? `${staff.firstName} ${staff.lastName}` : null,
+      siteName: site ? site.name : null,
+      timestamp: obs.createdAt.toISOString(),
+      href: `/observations/${obs.id}`,
+    });
+  }
+
+  for (const post of recentPosts) {
+    const staff = staffList.find((s) => s.id === post.staffId);
+    const site = post.siteId ? siteList.find((s) => s.id === post.siteId) : null;
+    items.push({
+      id: `post-${post.id}`,
+      type: "post",
+      label: `Post published — ${post.title}`,
+      detail: post.description ? (post.description.length > 120 ? post.description.slice(0, 120) + "…" : post.description) : null,
+      actor: staff ? `${staff.firstName} ${staff.lastName}` : null,
+      siteName: site ? site.name : null,
+      timestamp: post.createdAt.toISOString(),
+      href: `/posts/${post.id}`,
+    });
+  }
+
+  for (const inc of recentIncidents) {
+    const child = childList.find((c) => c.id === inc.childId);
+    const respondent = staffList.find((s) => s.id === inc.respondentId);
+    const site = inc.siteId ? siteList.find((s) => s.id === inc.siteId) : null;
+    items.push({
+      id: `inc-${inc.id}`,
+      type: "incident",
+      label: child ? `Incident — ${child.firstName} ${child.lastName}` : "Incident recorded",
+      detail: inc.description.length > 120 ? inc.description.slice(0, 120) + "…" : inc.description,
+      actor: respondent ? `${respondent.firstName} ${respondent.lastName}` : null,
+      siteName: site ? site.name : null,
+      timestamp: inc.createdAt.toISOString(),
+      href: `/incidents/${inc.id}`,
+    });
+  }
+
+  for (const cr of recentConditions) {
+    const staff = staffList.find((s) => s.id === cr.staffId);
+    const site = cr.siteId ? siteList.find((s) => s.id === cr.siteId) : null;
+    items.push({
+      id: `cr-${cr.id}`,
+      type: "condition_report",
+      label: `Condition report${cr.immediateActionRequired ? " (action required)" : ""}`,
+      detail: cr.description.length > 120 ? cr.description.slice(0, 120) + "…" : cr.description,
+      actor: staff ? `${staff.firstName} ${staff.lastName}` : null,
+      siteName: site ? site.name : null,
+      timestamp: cr.createdAt.toISOString(),
+      href: `/condition-reports/${cr.id}`,
+    });
+  }
+
+  items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  res.json(GetRecentActivityResponse.parse(items.slice(0, 20)));
 });
 
 export default router;

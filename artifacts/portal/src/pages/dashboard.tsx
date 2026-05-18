@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  useGetDashboardSummary, useGetOutcomeCounts, useGetRecentObservations,
+  useGetDashboardSummary, useGetOutcomeCounts, useGetRecentObservations, useGetRecentActivity,
   useListNotices, useCreateNotice, useDeleteNotice, useUpdateNotice,
   useGetServiceComplianceReport, useGetLearningStoriesReport,
   useListPlanningExperiences, useListPosts, useListSites,
@@ -640,11 +640,28 @@ function RollSubmissionChecklist() {
   );
 }
 
+// ─── Activity type badge ──────────────────────────────────────────────────────
+const ACTIVITY_CONFIG: Record<string, { label: string; className: string }> = {
+  observation: { label: "Observation", className: "bg-blue-100 text-blue-700 border-blue-200" },
+  post:        { label: "Post",        className: "bg-green-100 text-green-700 border-green-200" },
+  incident:    { label: "Incident",    className: "bg-red-100 text-red-700 border-red-200" },
+  condition_report: { label: "Condition", className: "bg-orange-100 text-orange-700 border-orange-200" },
+};
+function ActivityTypeBadge({ type }: { type: string }) {
+  const cfg = ACTIVITY_CONFIG[type] ?? { label: type, className: "bg-muted text-muted-foreground border-border" };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${cfg.className}`}>
+      {cfg.label}
+    </span>
+  );
+}
+
 // ─── Leadership ───────────────────────────────────────────────────────────────
 function LeadershipDashboard() {
   const { data: summary, isLoading: loadingSummary } = useGetDashboardSummary();
   const { data: outcomes, isLoading: loadingOutcomes } = useGetOutcomeCounts();
   const { data: observations, isLoading: loadingObservations } = useGetRecentObservations();
+  const { data: activity, isLoading: loadingActivity } = useGetRecentActivity();
 
   return (
     <div className="space-y-8">
@@ -714,24 +731,67 @@ function LeadershipDashboard() {
         </CardContent>
       </Card>
 
-      <Card className="bg-primary/5 border-primary/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center text-lg text-primary">
-            <ShieldCheck className="mr-2 h-5 w-5" /> NQS Compliance Status
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between text-lg">
+            <span>Recent Activity</span>
+            <span className="text-xs text-muted-foreground font-normal">Observations · Posts · Incidents · Condition Reports</span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm text-foreground/80 mb-1">Quality Areas Meeting or Exceeding Standards</p>
-              <div className="text-2xl font-bold">{summary?.nqsMeetingCount || 0} <span className="text-muted-foreground text-lg font-normal">/ 7</span></div>
+        <CardContent className="p-0">
+          {loadingActivity ? (
+            <div className="space-y-3 p-6">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
             </div>
-            <Link href="/nqs">
-              <span className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium cursor-pointer hover:bg-primary/90 transition-colors">
-                Review NQS
-              </span>
-            </Link>
-          </div>
+          ) : !activity || activity.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No recent activity</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/40">
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground whitespace-nowrap">When</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Type</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Activity</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Site</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground whitespace-nowrap">By</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activity.map((item) => (
+                    <tr key={item.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap align-top text-xs">
+                        {format(new Date(item.timestamp), "d MMM, h:mm a")}
+                      </td>
+                      <td className="px-4 py-3 align-top whitespace-nowrap">
+                        <ActivityTypeBadge type={item.type} />
+                      </td>
+                      <td className="px-4 py-3 align-top max-w-sm">
+                        {item.href ? (
+                          <Link href={item.href}>
+                            <span className="font-medium cursor-pointer hover:text-primary transition-colors block leading-snug">{item.label}</span>
+                          </Link>
+                        ) : (
+                          <span className="font-medium block leading-snug">{item.label}</span>
+                        )}
+                        {item.detail && (
+                          <span className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{item.detail}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap align-top text-xs">
+                        {item.siteName ?? <span className="italic">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap align-top text-xs">
+                        {item.actor ?? <span className="italic">—</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

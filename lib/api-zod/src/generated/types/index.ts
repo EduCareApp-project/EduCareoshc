@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.2.0
  */
 
+export * from "./activityItem";
+export * from "./activityItemType";
 export * from "./assessmentData";
 export * from "./assessmentDataAskTheChildren";
 export * from "./assessmentDataEducatorReview";

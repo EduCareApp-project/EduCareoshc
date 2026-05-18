@@ -669,6 +669,20 @@ paths:
                 items:
                   $ref: "#/components/schemas/OutcomeCount"
 
+  /dashboard/recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
   /notices:
     get:
       operationId: listNotices
@@ -3021,6 +3035,29 @@ components:
           type: integer
         nqsMeetingCount:
           type: integer
+
+    ActivityItem:
+      type: object
+      required: [id, type, label, timestamp]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [observation, post, incident, condition_report]
+        label:
+          type: string
+        detail:
+          type: ["string", "null"]
+        actor:
+          type: ["string", "null"]
+        siteName:
+          type: ["string", "null"]
+        timestamp:
+          type: string
+          format: date-time
+        href:
+          type: ["string", "null"]
 
     OutcomeCount:
       type: object

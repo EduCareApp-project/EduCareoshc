@@ -670,6 +670,20 @@ export const GetOutcomeCountsResponseItem = zod.object({
 });
 export const GetOutcomeCountsResponse = zod.array(GetOutcomeCountsResponseItem);
 
+export const GetRecentActivityResponseItem = zod.object({
+  id: zod.string(),
+  type: zod.enum(["observation", "post", "incident", "condition_report"]),
+  label: zod.string(),
+  detail: zod.string().nullish(),
+  actor: zod.string().nullish(),
+  siteName: zod.string().nullish(),
+  timestamp: zod.coerce.date(),
+  href: zod.string().nullish(),
+});
+export const GetRecentActivityResponse = zod.array(
+  GetRecentActivityResponseItem,
+);
+
 export const ListNoticesQueryParams = zod.object({
   audience: zod.enum(["leadership", "educator", "guardian"]).optional(),
 });

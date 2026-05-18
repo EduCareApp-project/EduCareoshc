@@ -386,10 +386,12 @@ export interface DashboardSummary {
   activeChildren: number;
   totalStaff: number;
   totalObservations: number;
-  observationsThisMonth: number;
+  observationsLast7Days: number;
   totalPrograms: number;
   activePrograms: number;
   nqsMeetingCount: number;
+  sitesWithPublishedPlan: number;
+  totalSites: number;
 }
 
 export type ActivityItemType =

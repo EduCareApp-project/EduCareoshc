@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, gte, count, desc } from "drizzle-orm";
-import { db, childrenTable, staffTable, observationsTable, programsTable, nqsAreasTable, outcomesTable, postsTable, incidentsTable, conditionReportsTable, sitesTable } from "@workspace/db";
+import { eq, gte, count, desc, isNotNull, and, lte } from "drizzle-orm";
+import { db, childrenTable, staffTable, observationsTable, programsTable, nqsAreasTable, outcomesTable, postsTable, incidentsTable, conditionReportsTable, sitesTable, planningExperiencesTable } from "@workspace/db";
 import {
   GetDashboardSummaryResponse,
   GetRecentObservationsResponse,
@@ -19,13 +19,13 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
   const [totalStaffResult] = await db.select({ count: count() }).from(staffTable);
   const [totalObsResult] = await db.select({ count: count() }).from(observationsTable);
 
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
-  const [monthObsResult] = await db
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+  const [last7ObsResult] = await db
     .select({ count: count() })
     .from(observationsTable)
-    .where(gte(observationsTable.createdAt, startOfMonth));
+    .where(gte(observationsTable.createdAt, sevenDaysAgo));
 
   const [totalProgramsResult] = await db.select({ count: count() }).from(programsTable);
   const [activeProgramsResult] = await db
@@ -38,15 +38,41 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
     (a) => a.status === "meeting" || a.status === "exceeding"
   ).length;
 
+  // Sites with a published weekly plan for the current week (Mon–Sun)
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun
+  const daysFromMon = (dayOfWeek + 6) % 7;
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - daysFromMon);
+  weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+  const weekStartStr = weekStart.toISOString().split("T")[0];
+  const weekEndStr = weekEnd.toISOString().split("T")[0];
+
+  const allSites = await db.select({ id: sitesTable.id }).from(sitesTable);
+  const publishedPlans = await db
+    .selectDistinct({ siteId: planningExperiencesTable.siteId })
+    .from(planningExperiencesTable)
+    .where(and(
+      isNotNull(planningExperiencesTable.weeklyPlanData),
+      isNotNull(planningExperiencesTable.siteId),
+      gte(planningExperiencesTable.startDate as any, weekStartStr),
+      lte(planningExperiencesTable.startDate as any, weekEndStr),
+    ));
+
   const summary = {
     totalChildren: totalChildrenResult?.count ?? 0,
     activeChildren: activeChildrenResult?.count ?? 0,
     totalStaff: totalStaffResult?.count ?? 0,
     totalObservations: totalObsResult?.count ?? 0,
-    observationsThisMonth: monthObsResult?.count ?? 0,
+    observationsLast7Days: last7ObsResult?.count ?? 0,
     totalPrograms: totalProgramsResult?.count ?? 0,
     activePrograms: activeProgramsResult?.count ?? 0,
     nqsMeetingCount,
+    sitesWithPublishedPlan: publishedPlans.length,
+    totalSites: allSites.length,
   };
 
   res.json(GetDashboardSummaryResponse.parse(summary));

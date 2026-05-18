@@ -3017,7 +3017,7 @@ components:
 
     DashboardSummary:
       type: object
-      required: [totalChildren, activeChildren, totalStaff, totalObservations, observationsThisMonth, totalPrograms, activePrograms, nqsMeetingCount]
+      required: [totalChildren, activeChildren, totalStaff, totalObservations, observationsLast7Days, totalPrograms, activePrograms, nqsMeetingCount, sitesWithPublishedPlan, totalSites]
       properties:
         totalChildren:
           type: integer
@@ -3027,13 +3027,17 @@ components:
           type: integer
         totalObservations:
           type: integer
-        observationsThisMonth:
+        observationsLast7Days:
           type: integer
         totalPrograms:
           type: integer
         activePrograms:
           type: integer
         nqsMeetingCount:
+          type: integer
+        sitesWithPublishedPlan:
+          type: integer
+        totalSites:
           type: integer
 
     ActivityItem:

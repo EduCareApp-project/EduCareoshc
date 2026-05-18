@@ -668,8 +668,15 @@ function LeadershipDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard title="Active Children" value={summary?.activeChildren} icon={Baby} loading={loadingSummary} href="/children" />
         <MetricCard title="Staff Members" value={summary?.totalStaff} icon={Users} loading={loadingSummary} href="/staff" />
-        <MetricCard title="Monthly Observations" value={summary?.observationsThisMonth} icon={BookOpen} loading={loadingSummary} href="/observations" />
-        <MetricCard title="Active Programs" value={summary?.activePrograms} icon={ClipboardList} loading={loadingSummary} href="/programs" />
+        <MetricCard title="Observations (7 days)" value={summary?.observationsLast7Days} icon={BookOpen} loading={loadingSummary} href="/observations" />
+        <MetricCard
+          title="Weekly Plans Published"
+          label={summary ? `${summary.sitesWithPublishedPlan} / ${summary.totalSites}` : undefined}
+          subtitle={summary ? (summary.sitesWithPublishedPlan === summary.totalSites && summary.totalSites > 0 ? "All sites covered this week" : `${summary.totalSites - summary.sitesWithPublishedPlan} site${summary.totalSites - summary.sitesWithPublishedPlan === 1 ? "" : "s"} missing a plan`) : undefined}
+          icon={ClipboardList}
+          loading={loadingSummary}
+          href="/planning"
+        />
       </div>
 
       <NoticeBoard canManage audience="leadership" />
@@ -1003,8 +1010,8 @@ function EducatorDashboard() {
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2.5">
-                  <span className="text-sm font-medium">Observations this month</span>
-                  <span className="text-lg font-bold text-primary">{summary?.observationsThisMonth ?? 0}</span>
+                  <span className="text-sm font-medium">Observations (last 7 days)</span>
+                  <span className="text-lg font-bold text-primary">{summary?.observationsLast7Days ?? 0}</span>
                 </div>
                 {learning?.underRepresentedOutcomes && learning.underRepresentedOutcomes.length > 0 ? (
                   <div>
@@ -1238,7 +1245,7 @@ function ComplianceRow({ icon: Icon, ok, label, value, suffix, isText }: {
   );
 }
 
-function MetricCard({ title, value, icon: Icon, loading, href }: { title: string; value?: number; icon: any; loading: boolean; href?: string }) {
+function MetricCard({ title, value, label, subtitle, icon: Icon, loading, href }: { title: string; value?: number | string; label?: string; subtitle?: string; icon: any; loading: boolean; href?: string }) {
   const content = (
     <Card className={href ? "hover:border-primary/50 transition-colors cursor-pointer" : ""}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -1246,7 +1253,16 @@ function MetricCard({ title, value, icon: Icon, loading, href }: { title: string
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        {loading ? <Skeleton className="h-8 w-16" /> : <div className="text-3xl font-bold">{value ?? 0}</div>}
+        {loading ? (
+          <Skeleton className="h-8 w-16" />
+        ) : (
+          <>
+            <div className="text-3xl font-bold">
+              {label ?? value ?? 0}
+            </div>
+            {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+          </>
+        )}
       </CardContent>
     </Card>
   );

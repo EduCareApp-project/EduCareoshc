@@ -633,10 +633,12 @@ export const GetDashboardSummaryResponse = zod.object({
   activeChildren: zod.number(),
   totalStaff: zod.number(),
   totalObservations: zod.number(),
-  observationsThisMonth: zod.number(),
+  observationsLast7Days: zod.number(),
   totalPrograms: zod.number(),
   activePrograms: zod.number(),
   nqsMeetingCount: zod.number(),
+  sitesWithPublishedPlan: zod.number(),
+  totalSites: zod.number(),
 });
 
 export const getRecentObservationsResponseOutcomeIdsDefault = [];

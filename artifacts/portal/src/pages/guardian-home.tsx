@@ -9,12 +9,13 @@ import { useListSites } from "@workspace/api-client-react";
 import {
   Baby, Calendar, User, ExternalLink, ShieldCheck, FileText, BookOpen,
   MessageCircle, ChevronLeft, ChevronRight, CalendarDays, Send,
+  Building2, ChevronDown, ChevronUp, ClipboardList,
 } from "lucide-react";
 import { PostDetailDialog } from "@/components/post-detail-dialog";
 import { ReadOnlyPlanView, ExistingPlan } from "@/components/read-only-plan-view";
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-  addMonths, subMonths, format, addDays, isAfter,
+  addMonths, subMonths, format, addDays, isAfter, parseISO,
 } from "date-fns";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -69,10 +70,114 @@ function getWeeksInMonth(month: Date): Date[][] {
 const TODAY = format(new Date(), "yyyy-MM-dd");
 const SHORT_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
+type DayKey = "mon" | "tue" | "wed" | "thu" | "fri";
+type RowKey = "experiencesThemes" | "active" | "creative" | "wellbeing" | "imaginative" | "spontaneousChoice";
+type WeeklyPlanData = Partial<Record<RowKey, Partial<Record<DayKey, string>>>>;
+
+const PLAN_ROWS: { key: RowKey; label: string; color: string }[] = [
+  { key: "experiencesThemes", label: "Theme",            color: "bg-amber-50" },
+  { key: "active",            label: "Active Play",      color: "bg-green-50" },
+  { key: "creative",          label: "Creative",         color: "bg-blue-50" },
+  { key: "wellbeing",         label: "Wellbeing",        color: "bg-rose-50" },
+  { key: "imaginative",       label: "Imaginative Play", color: "bg-purple-50" },
+  { key: "spontaneousChoice", label: "Child's Choice",   color: "bg-orange-50" },
+];
+const PLAN_DAYS: { key: DayKey; label: string }[] = [
+  { key: "mon", label: "Mon" }, { key: "tue", label: "Tue" },
+  { key: "wed", label: "Wed" }, { key: "thu", label: "Thu" },
+  { key: "fri", label: "Fri" },
+];
+
+function WeeklyActivityGrid({ data }: { data: WeeklyPlanData }) {
+  const hasContent = PLAN_ROWS.some((row) =>
+    PLAN_DAYS.some((day) => (data[row.key]?.[day.key] ?? "").trim())
+  );
+  if (!hasContent) {
+    return <p className="text-sm text-muted-foreground italic py-2">No activities entered for this week.</p>;
+  }
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[480px] text-sm border-collapse">
+        <thead>
+          <tr>
+            <th className="text-left font-semibold text-muted-foreground text-xs uppercase tracking-wide py-2 px-2 w-28">Activity</th>
+            {PLAN_DAYS.map((d) => (
+              <th key={d.key} className="text-center font-semibold text-xs uppercase tracking-wide py-2 px-1 text-muted-foreground">{d.label}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {PLAN_ROWS.map((row) => {
+            const rowHasContent = PLAN_DAYS.some((d) => (data[row.key]?.[d.key] ?? "").trim());
+            if (!rowHasContent) return null;
+            return (
+              <tr key={row.key} className="border-t border-border/60">
+                <td className={`py-2 px-2 font-medium text-xs text-foreground rounded-l align-top ${row.color}`}>{row.label}</td>
+                {PLAN_DAYS.map((d) => {
+                  const cell = (data[row.key]?.[d.key] ?? "").trim();
+                  return (
+                    <td key={d.key} className="py-2 px-1 align-top text-center">
+                      {cell
+                        ? <span className="text-xs text-foreground whitespace-pre-wrap leading-snug">{cell}</span>
+                        : <span className="text-muted-foreground/30 text-xs">—</span>}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function WeeklyProgramCard({ plan }: { plan: GuardianPlan }) {
+  const [expanded, setExpanded] = useState(false);
+  const dateLabel = plan.startDate
+    ? `Week of ${format(parseISO(plan.startDate), "d MMMM yyyy")}`
+    : (plan.title ?? "Weekly Program");
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader
+        className="flex flex-row items-start justify-between gap-3 p-4 cursor-pointer hover:bg-muted/40 transition-colors"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        <div className="flex-1 space-y-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-semibold text-base leading-tight">{plan.title ?? "Weekly Program"}</h3>
+            <Badge variant="secondary" className="text-xs font-medium bg-emerald-100 text-emerald-800">Published</Badge>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-0.5">
+            {plan.startDate && (
+              <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" />{dateLabel}</span>
+            )}
+            {(plan as any).siteName && (
+              <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{(plan as any).siteName}</span>
+            )}
+            {(plan as any).preparedBy && (
+              <span className="flex items-center gap-1"><User className="h-3 w-3" />{(plan as any).preparedBy}</span>
+            )}
+          </div>
+        </div>
+        <button className="shrink-0 text-muted-foreground mt-0.5" aria-label={expanded ? "Collapse" : "Expand"}>
+          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+      </CardHeader>
+      {expanded && (
+        <CardContent className="px-4 pb-5 pt-0 border-t">
+          <WeeklyActivityGrid data={(plan.weeklyPlanData as WeeklyPlanData) ?? {}} />
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
 // ── Guardian calendar ─────────────────────────────────────────────────────────
 function GuardianCalendar({ childSiteIds }: { childSiteIds: number[] }) {
+  const [showCalendar, setShowCalendar] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [viewPlan, setViewPlan] = useState<GuardianPlan | null>(null);
 
   const { data: plans, isLoading } = useQuery<GuardianPlan[]>({
     queryKey: ["/api/auth/my-plans"],
@@ -83,143 +188,135 @@ function GuardianCalendar({ childSiteIds }: { childSiteIds: number[] }) {
     },
   });
 
-  const weeks = getWeeksInMonth(currentMonth);
+  const filteredPlans = (plans ?? []).filter(
+    (p) => childSiteIds.length === 0 || (p.siteId != null && childSiteIds.includes(p.siteId))
+  );
+  const sortedPlans = [...filteredPlans].sort((a, b) => {
+    if (!a.startDate) return 1;
+    if (!b.startDate) return -1;
+    return b.startDate.localeCompare(a.startDate);
+  });
 
+  // Calendar helpers
+  const weeks = getWeeksInMonth(currentMonth);
   function publishedPlanForWeek(weekDays: Date[]): GuardianPlan | undefined {
     const weekStart = format(weekDays[0], "yyyy-MM-dd");
     const weekEnd = format(weekDays[4], "yyyy-MM-dd");
     return (plans ?? []).find((p) => {
       if (!p.startDate) return false;
       const d = p.startDate.slice(0, 10);
-      return (
-        d >= weekStart &&
-        d <= weekEnd &&
-        (childSiteIds.length === 0 || (p.siteId != null && childSiteIds.includes(p.siteId)))
-      );
+      return d >= weekStart && d <= weekEnd &&
+        (childSiteIds.length === 0 || (p.siteId != null && childSiteIds.includes(p.siteId)));
     });
   }
-
   const hasAnyPublished = weeks.some((w) => !!publishedPlanForWeek(w));
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-3">
-        <CalendarDays className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-base font-semibold">Weekly Learning Program</h2>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-base font-semibold">Weekly Learning Program</h2>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 text-xs h-8"
+          onClick={() => setShowCalendar((v) => !v)}
+        >
+          <Calendar className="h-3.5 w-3.5" />
+          {showCalendar ? "View programs" : "View calendar"}
+        </Button>
       </div>
 
-      <Card>
-        <CardHeader className="pb-2 pt-4">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <CardTitle className="text-base">{format(currentMonth, "MMMM yyyy")}</CardTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent className="pt-0 pb-4">
-          {isLoading ? (
-            <div className="space-y-3 mt-2">
-              {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+      {showCalendar ? (
+        /* ── Calendar view ── */
+        <Card>
+          <CardHeader className="pb-2 pt-4">
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="icon" className="h-8 w-8"
+                onClick={() => setCurrentMonth((m) => subMonths(m, 1))}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <CardTitle className="text-base">{format(currentMonth, "MMMM yyyy")}</CardTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8"
+                onClick={() => setCurrentMonth((m) => addMonths(m, 1))}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
-          ) : (
-            <div className="border rounded-lg overflow-hidden mt-2">
-              {/* Day headers */}
-              <div className="grid grid-cols-5 bg-muted/50 border-b">
-                {SHORT_DAYS.map((d) => (
-                  <div
-                    key={d}
-                    className="px-2 py-2 text-xs font-semibold text-muted-foreground text-center border-r last:border-r-0"
-                  >
-                    {d}
-                  </div>
-                ))}
+          </CardHeader>
+          <CardContent className="pt-0 pb-4">
+            {isLoading ? (
+              <div className="space-y-3 mt-2">
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
               </div>
-
-              {/* Week rows */}
-              <div className="divide-y">
-                {weeks.map((weekDays, wi) => {
-                  const inMonth = weekDays.some((d) => d.getMonth() === currentMonth.getMonth());
-                  const plan = publishedPlanForWeek(weekDays);
-
-                  return (
-                    <div
-                      key={wi}
-                      className={`relative transition-colors ${
-                        plan ? "cursor-pointer hover:bg-green-50/40" : ""
-                      } ${!inMonth ? "opacity-40" : ""}`}
-                      onClick={plan ? () => setViewPlan(plan) : undefined}
-                    >
-                      {/* Published plan overlay */}
-                      {plan && (
-                        <div className="absolute inset-0 pointer-events-none z-10">
-                          <div className="h-full bg-green-50/70 border-y border-green-200 flex items-center px-3">
-                            <Badge className="bg-green-100 text-green-800 border border-green-300 text-xs gap-1 pointer-events-auto cursor-pointer hover:bg-green-200 transition-colors">
-                              <Send className="h-3 w-3" />
-                              {plan.title ?? "Weekly Program"}
-                            </Badge>
+            ) : (
+              <div className="border rounded-lg overflow-hidden mt-2">
+                <div className="grid grid-cols-5 bg-muted/50 border-b">
+                  {SHORT_DAYS.map((d) => (
+                    <div key={d} className="px-2 py-2 text-xs font-semibold text-muted-foreground text-center border-r last:border-r-0">{d}</div>
+                  ))}
+                </div>
+                <div className="divide-y">
+                  {weeks.map((weekDays, wi) => {
+                    const inMonth = weekDays.some((d) => d.getMonth() === currentMonth.getMonth());
+                    const plan = publishedPlanForWeek(weekDays);
+                    return (
+                      <div key={wi} className={`relative transition-colors ${!inMonth ? "opacity-40" : ""}`}>
+                        {plan && (
+                          <div className="absolute inset-0 pointer-events-none z-10">
+                            <div className="h-full bg-green-50/70 border-y border-green-200 flex items-center px-3">
+                              <Badge className="bg-green-100 text-green-800 border border-green-300 text-xs gap-1">
+                                <Send className="h-3 w-3" />
+                                {plan.title ?? "Weekly Program"}
+                              </Badge>
+                            </div>
                           </div>
+                        )}
+                        <div className="grid grid-cols-5 min-h-[72px]">
+                          {weekDays.map((day, di) => (
+                            <div key={di} className={`border-r last:border-r-0 px-2 py-1.5 ${day.getMonth() !== currentMonth.getMonth() ? "bg-muted/20" : ""}`}>
+                              <p className={`text-xs font-medium ${format(day, "yyyy-MM-dd") === TODAY ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                                {format(day, "d")}
+                              </p>
+                            </div>
+                          ))}
                         </div>
-                      )}
-
-                      {/* Date cells */}
-                      <div className="grid grid-cols-5 min-h-[72px]">
-                        {weekDays.map((day, di) => (
-                          <div
-                            key={di}
-                            className={`border-r last:border-r-0 px-2 py-1.5 ${
-                              day.getMonth() !== currentMonth.getMonth() ? "bg-muted/20" : ""
-                            }`}
-                          >
-                            <p
-                              className={`text-xs font-medium ${
-                                format(day, "yyyy-MM-dd") === TODAY
-                                  ? "text-primary font-bold"
-                                  : "text-muted-foreground"
-                              }`}
-                            >
-                              {format(day, "d")}
-                            </p>
-                          </div>
-                        ))}
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
-
-          {!isLoading && !hasAnyPublished && (
-            <div className="py-8 text-center text-muted-foreground mt-2">
-              <CalendarDays className="h-8 w-8 mx-auto mb-2 opacity-25" />
-              <p className="text-sm">No published programs for this month.</p>
-              <p className="text-xs mt-1">Check back soon — your service will publish the program here.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {viewPlan && (
-        <ReadOnlyPlanView
-          plan={viewPlan}
-          siteName={viewPlan.siteName ?? undefined}
-          onClose={() => setViewPlan(null)}
-        />
+            )}
+            {!isLoading && !hasAnyPublished && (
+              <div className="py-8 text-center text-muted-foreground mt-2">
+                <CalendarDays className="h-8 w-8 mx-auto mb-2 opacity-25" />
+                <p className="text-sm">No published programs for this month.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        /* ── Program cards view (default) ── */
+        isLoading ? (
+          <div className="space-y-3">
+            {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
+          </div>
+        ) : sortedPlans.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center text-muted-foreground">
+              <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No weekly programs published yet.</p>
+              <p className="text-xs mt-1">Check back soon — your service will post the program here each week.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {sortedPlans.map((plan) => (
+              <WeeklyProgramCard key={plan.id} plan={plan} />
+            ))}
+          </div>
+        )
       )}
     </div>
   );

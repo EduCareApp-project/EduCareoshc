@@ -651,6 +651,7 @@ function SourcesDialog() {
 export default function Qip() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isEducatorRole, ownSiteId } = usePermissions();
   const { data: items, isLoading } = useListQipItems();
   const { data: sites = [] } = useListSites();
   const { data: sources = [] } = useListQipSources();
@@ -658,7 +659,9 @@ export default function Qip() {
 
   const [activeTab, setActiveTab] = useState("1");
   const [addOpen, setAddOpen] = useState(false);
-  const [siteFilter, setSiteFilter] = useState("__all__");
+  const [siteFilter, setSiteFilter] = useState(() =>
+    isEducatorRole && ownSiteId ? String(ownSiteId) : "__all__"
+  );
 
   const filteredItems = (items ?? []).filter((item) =>
     siteFilter === "__all__" ? true : String(item.siteId ?? "") === siteFilter

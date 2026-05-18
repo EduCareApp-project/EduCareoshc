@@ -53,7 +53,9 @@ export default function StaffList() {
     return <Redirect to={`/staff/${user.id}`} />;
   }
 
-  const filtered = staff?.filter((m) => m.status === tab) ?? [];
+  const filtered = (staff?.filter((m) => m.status === tab) ?? []).sort((a, b) =>
+    `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`)
+  );
 
   const activeCount = staff?.filter((m) => m.status === "active").length ?? 0;
   const inactiveCount = staff?.filter((m) => m.status === "inactive").length ?? 0;

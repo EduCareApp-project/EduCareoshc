@@ -9,7 +9,7 @@ import { useListSites } from "@workspace/api-client-react";
 import {
   Baby, Calendar, User, ExternalLink, ShieldCheck, FileText, BookOpen,
   MessageCircle, ChevronLeft, ChevronRight, CalendarDays, Send,
-  Building2, ChevronDown, ChevronUp, ClipboardList,
+  Building2, ClipboardList,
 } from "lucide-react";
 import { PostDetailDialog } from "@/components/post-detail-dialog";
 import { ReadOnlyPlanView, ExistingPlan } from "@/components/read-only-plan-view";
@@ -132,18 +132,17 @@ function WeeklyActivityGrid({ data }: { data: WeeklyPlanData }) {
   );
 }
 
-function WeeklyProgramCard({ plan }: { plan: GuardianPlan }) {
-  const [expanded, setExpanded] = useState(false);
+function WeeklyProgramCard({ plan, onOpen }: { plan: GuardianPlan; onOpen: () => void }) {
   const dateLabel = plan.startDate
     ? `Week of ${format(parseISO(plan.startDate), "d MMMM yyyy")}`
     : (plan.title ?? "Weekly Program");
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader
-        className="flex flex-row items-start justify-between gap-3 p-4 cursor-pointer hover:bg-muted/40 transition-colors"
-        onClick={() => setExpanded((v) => !v)}
-      >
+    <Card
+      className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+      onClick={onOpen}
+    >
+      <CardHeader className="flex flex-row items-start justify-between gap-3 p-4">
         <div className="flex-1 space-y-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-semibold text-base leading-tight">{plan.title ?? "Weekly Program"}</h3>
@@ -161,15 +160,8 @@ function WeeklyProgramCard({ plan }: { plan: GuardianPlan }) {
             )}
           </div>
         </div>
-        <button className="shrink-0 text-muted-foreground mt-0.5" aria-label={expanded ? "Collapse" : "Expand"}>
-          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
+        <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
       </CardHeader>
-      {expanded && (
-        <CardContent className="px-4 pb-5 pt-0 border-t">
-          <WeeklyActivityGrid data={(plan.weeklyPlanData as WeeklyPlanData) ?? {}} />
-        </CardContent>
-      )}
     </Card>
   );
 }
@@ -178,6 +170,7 @@ function WeeklyProgramCard({ plan }: { plan: GuardianPlan }) {
 function GuardianCalendar({ childSiteIds }: { childSiteIds: number[] }) {
   const [showCalendar, setShowCalendar] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedPlan, setSelectedPlan] = useState<GuardianPlan | null>(null);
 
   const { data: plans, isLoading } = useQuery<GuardianPlan[]>({
     queryKey: ["/api/auth/my-plans"],
@@ -262,14 +255,19 @@ function GuardianCalendar({ childSiteIds }: { childSiteIds: number[] }) {
                     const inMonth = weekDays.some((d) => d.getMonth() === currentMonth.getMonth());
                     const plan = publishedPlanForWeek(weekDays);
                     return (
-                      <div key={wi} className={`relative transition-colors ${!inMonth ? "opacity-40" : ""}`}>
+                      <div
+                        key={wi}
+                        className={`relative transition-colors ${!inMonth ? "opacity-40" : ""} ${plan ? "cursor-pointer hover:bg-green-50/60" : ""}`}
+                        onClick={() => plan && setSelectedPlan(plan)}
+                      >
                         {plan && (
                           <div className="absolute inset-0 pointer-events-none z-10">
-                            <div className="h-full bg-green-50/70 border-y border-green-200 flex items-center px-3">
+                            <div className="h-full bg-green-50/70 border-y border-green-200 flex items-center px-3 gap-2">
                               <Badge className="bg-green-100 text-green-800 border border-green-300 text-xs gap-1">
                                 <Send className="h-3 w-3" />
                                 {plan.title ?? "Weekly Program"}
                               </Badge>
+                              <ExternalLink className="h-3 w-3 text-green-700 opacity-70" />
                             </div>
                           </div>
                         )}
@@ -313,10 +311,18 @@ function GuardianCalendar({ childSiteIds }: { childSiteIds: number[] }) {
         ) : (
           <div className="space-y-3">
             {sortedPlans.map((plan) => (
-              <WeeklyProgramCard key={plan.id} plan={plan} />
+              <WeeklyProgramCard key={plan.id} plan={plan} onOpen={() => setSelectedPlan(plan)} />
             ))}
           </div>
         )
+      )}
+
+      {selectedPlan && (
+        <ReadOnlyPlanView
+          plan={selectedPlan}
+          siteName={(selectedPlan as any).siteName ?? undefined}
+          onClose={() => setSelectedPlan(null)}
+        />
       )}
     </div>
   );

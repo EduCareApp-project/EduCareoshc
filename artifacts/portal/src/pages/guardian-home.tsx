@@ -3,16 +3,21 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth";
 import { useListSites } from "@workspace/api-client-react";
 import {
   Baby, Calendar, User, ExternalLink, ShieldCheck, FileText, BookOpen,
-  MessageCircle, ChevronLeft, ChevronRight, CalendarDays, Building2,
+  MessageCircle, ChevronLeft, ChevronRight, CalendarDays, Send,
 } from "lucide-react";
 import { PostDetailDialog } from "@/components/post-detail-dialog";
-import { startOfWeek, addWeeks, subWeeks, format, parseISO, addDays } from "date-fns";
+import { ReadOnlyPlanView, ExistingPlan } from "@/components/read-only-plan-view";
+import {
+  startOfMonth, endOfMonth, startOfWeek, endOfWeek,
+  addMonths, subMonths, format, addDays, isAfter,
+} from "date-fns";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 type Child = {
   id: number;
   firstName: string;
@@ -37,34 +42,190 @@ type Post = {
   siteName: string | null;
 };
 
-type DayKey = "mon" | "tue" | "wed" | "thu" | "fri";
-type RowKey = "experiencesThemes" | "active" | "creative" | "wellbeing" | "imaginative" | "spontaneousChoice";
-type WeeklyPlanData = Partial<Record<RowKey, Partial<Record<DayKey, string>>>>;
-
-type Plan = {
-  id: number;
-  title: string;
+type GuardianPlan = ExistingPlan & {
   startDate: string | null;
-  siteId: number | null;
   siteName: string | null;
   preparedBy: string | null;
-  weeklyPlanData: WeeklyPlanData;
 };
 
-// ─── Calendar constants ───────────────────────────────────────────────────────
-const DAY_KEYS: DayKey[] = ["mon", "tue", "wed", "thu", "fri"];
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+// ── Calendar helpers ──────────────────────────────────────────────────────────
+function getWeeksInMonth(month: Date): Date[][] {
+  const start = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
+  const end = endOfWeek(endOfMonth(month), { weekStartsOn: 1 });
+  const weeks: Date[][] = [];
+  let current = start;
+  while (!isAfter(current, end)) {
+    const week: Date[] = [];
+    for (let i = 0; i < 5; i++) {
+      week.push(new Date(current));
+      current = addDays(current, 1);
+    }
+    current = addDays(current, 2);
+    weeks.push(week);
+  }
+  return weeks;
+}
 
-const ROW_CONFIG: { key: RowKey; label: string; color: string }[] = [
-  { key: "experiencesThemes", label: "Theme", color: "bg-amber-50" },
-  { key: "active",            label: "Active Play",        color: "bg-green-50" },
-  { key: "creative",          label: "Creative",           color: "bg-blue-50" },
-  { key: "wellbeing",         label: "Wellbeing",          color: "bg-rose-50" },
-  { key: "imaginative",       label: "Imaginative Play",   color: "bg-purple-50" },
-  { key: "spontaneousChoice", label: "Child's Choice",     color: "bg-orange-50" },
-];
+const TODAY = format(new Date(), "yyyy-MM-dd");
+const SHORT_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ── Guardian calendar ─────────────────────────────────────────────────────────
+function GuardianCalendar({ childSiteIds }: { childSiteIds: number[] }) {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [viewPlan, setViewPlan] = useState<GuardianPlan | null>(null);
+
+  const { data: plans, isLoading } = useQuery<GuardianPlan[]>({
+    queryKey: ["/api/auth/my-plans"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/my-plans");
+      if (!res.ok) throw new Error("Failed to load plans");
+      return res.json();
+    },
+  });
+
+  const weeks = getWeeksInMonth(currentMonth);
+
+  function publishedPlanForWeek(weekDays: Date[]): GuardianPlan | undefined {
+    const weekStart = format(weekDays[0], "yyyy-MM-dd");
+    const weekEnd = format(weekDays[4], "yyyy-MM-dd");
+    return (plans ?? []).find((p) => {
+      if (!p.startDate) return false;
+      const d = p.startDate.slice(0, 10);
+      return (
+        d >= weekStart &&
+        d <= weekEnd &&
+        (childSiteIds.length === 0 || (p.siteId != null && childSiteIds.includes(p.siteId)))
+      );
+    });
+  }
+
+  const hasAnyPublished = weeks.some((w) => !!publishedPlanForWeek(w));
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <CalendarDays className="h-4 w-4 text-muted-foreground" />
+        <h2 className="text-base font-semibold">Weekly Learning Program</h2>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-2 pt-4">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <CardTitle className="text-base">{format(currentMonth, "MMMM yyyy")}</CardTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent className="pt-0 pb-4">
+          {isLoading ? (
+            <div className="space-y-3 mt-2">
+              {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-hidden mt-2">
+              {/* Day headers */}
+              <div className="grid grid-cols-5 bg-muted/50 border-b">
+                {SHORT_DAYS.map((d) => (
+                  <div
+                    key={d}
+                    className="px-2 py-2 text-xs font-semibold text-muted-foreground text-center border-r last:border-r-0"
+                  >
+                    {d}
+                  </div>
+                ))}
+              </div>
+
+              {/* Week rows */}
+              <div className="divide-y">
+                {weeks.map((weekDays, wi) => {
+                  const inMonth = weekDays.some((d) => d.getMonth() === currentMonth.getMonth());
+                  const plan = publishedPlanForWeek(weekDays);
+
+                  return (
+                    <div
+                      key={wi}
+                      className={`relative transition-colors ${
+                        plan ? "cursor-pointer hover:bg-green-50/40" : ""
+                      } ${!inMonth ? "opacity-40" : ""}`}
+                      onClick={plan ? () => setViewPlan(plan) : undefined}
+                    >
+                      {/* Published plan overlay */}
+                      {plan && (
+                        <div className="absolute inset-0 pointer-events-none z-10">
+                          <div className="h-full bg-green-50/70 border-y border-green-200 flex items-center px-3">
+                            <Badge className="bg-green-100 text-green-800 border border-green-300 text-xs gap-1 pointer-events-auto cursor-pointer hover:bg-green-200 transition-colors">
+                              <Send className="h-3 w-3" />
+                              {plan.title ?? "Weekly Program"}
+                            </Badge>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Date cells */}
+                      <div className="grid grid-cols-5 min-h-[72px]">
+                        {weekDays.map((day, di) => (
+                          <div
+                            key={di}
+                            className={`border-r last:border-r-0 px-2 py-1.5 ${
+                              day.getMonth() !== currentMonth.getMonth() ? "bg-muted/20" : ""
+                            }`}
+                          >
+                            <p
+                              className={`text-xs font-medium ${
+                                format(day, "yyyy-MM-dd") === TODAY
+                                  ? "text-primary font-bold"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              {format(day, "d")}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {!isLoading && !hasAnyPublished && (
+            <div className="py-8 text-center text-muted-foreground mt-2">
+              <CalendarDays className="h-8 w-8 mx-auto mb-2 opacity-25" />
+              <p className="text-sm">No published programs for this month.</p>
+              <p className="text-xs mt-1">Check back soon — your service will publish the program here.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {viewPlan && (
+        <ReadOnlyPlanView
+          plan={viewPlan}
+          siteName={viewPlan.siteName ?? undefined}
+          onClose={() => setViewPlan(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function ageFromDob(dob: string | null): string {
   if (!dob) return "—";
   const birth = new Date(dob);
@@ -93,182 +254,14 @@ function imageUrl(path: string) {
   return `/api/storage/objects/${stripped}`;
 }
 
-/** Monday of the week that is `offset` weeks from today */
-function mondayForOffset(offset: number): Date {
-  const base = startOfWeek(new Date(), { weekStartsOn: 1 });
-  return offset === 0 ? base : offset > 0 ? addWeeks(base, offset) : subWeeks(base, Math.abs(offset));
-}
-
-// ─── Weekly Plan Grid ─────────────────────────────────────────────────────────
-function WeeklyGrid({ data, monday }: { data: WeeklyPlanData; monday: Date }) {
-  const dayDates = DAY_KEYS.map((_, i) => format(addDays(monday, i), "d"));
-
-  const activeRows = ROW_CONFIG.filter((row) =>
-    DAY_KEYS.some((d) => (data[row.key]?.[d] ?? "").trim())
-  );
-
-  if (activeRows.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground italic py-3 text-center">
-        No activities entered for this week.
-      </p>
-    );
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[500px] text-sm border-collapse">
-        <thead>
-          <tr>
-            <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide w-28">
-              Activity
-            </th>
-            {DAY_KEYS.map((d, i) => (
-              <th key={d} className="text-center py-2 px-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                <span>{DAY_LABELS[i]}</span>
-                <span className="block text-[10px] font-normal text-muted-foreground/60">{dayDates[i]}</span>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {activeRows.map((row) => (
-            <tr key={row.key} className="border-t border-border/50">
-              <td className={`py-2 px-2 text-xs font-medium align-top rounded-l ${row.color}`}>
-                {row.label}
-              </td>
-              {DAY_KEYS.map((d) => {
-                const cell = (data[row.key]?.[d] ?? "").trim();
-                return (
-                  <td key={d} className="py-2 px-1 text-center align-top">
-                    {cell ? (
-                      <span className="text-xs text-foreground whitespace-pre-wrap leading-snug">{cell}</span>
-                    ) : (
-                      <span className="text-muted-foreground/25 text-xs">—</span>
-                    )}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// ─── Weekly Plan Section ──────────────────────────────────────────────────────
-function WeeklyLearningProgram({ childSiteIds }: { childSiteIds: number[] }) {
-  const [weekOffset, setWeekOffset] = useState(0);
-
-  const { data: plans, isLoading } = useQuery<Plan[]>({
-    queryKey: ["/api/auth/my-plans"],
-    queryFn: async () => {
-      const res = await fetch("/api/auth/my-plans");
-      if (!res.ok) throw new Error("Failed to load plans");
-      return res.json();
-    },
-  });
-
-  const monday = mondayForOffset(weekOffset);
-  const mondayStr = format(monday, "yyyy-MM-dd");
-  const friday = addDays(monday, 4);
-  const weekLabel = `${format(monday, "d MMM")} – ${format(friday, "d MMM yyyy")}`;
-  const isCurrentWeek = weekOffset === 0;
-
-  // Find a published plan whose startDate matches this Monday for the guardian's sites
-  const weekPlan = (plans ?? []).find((p) => {
-    if (!p.startDate) return false;
-    const planMonday = format(
-      startOfWeek(parseISO(p.startDate), { weekStartsOn: 1 }),
-      "yyyy-MM-dd"
-    );
-    if (planMonday !== mondayStr) return false;
-    return childSiteIds.length === 0 || (p.siteId != null && childSiteIds.includes(p.siteId));
-  });
-
-  return (
-    <div>
-      <div className="flex items-center gap-2 mb-3">
-        <CalendarDays className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-base font-semibold">Weekly Learning Program</h2>
-      </div>
-
-      <Card>
-        {/* Week navigator */}
-        <CardHeader className="pb-3 pt-4 px-4">
-          <div className="flex items-center justify-between gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setWeekOffset((o) => o - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-
-            <div className="text-center">
-              <p className="text-sm font-semibold">{weekLabel}</p>
-              {isCurrentWeek && (
-                <span className="text-[10px] text-primary font-medium uppercase tracking-wide">
-                  Current week
-                </span>
-              )}
-            </div>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setWeekOffset((o) => o + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent className="px-4 pb-5 pt-0 border-t">
-          {isLoading ? (
-            <div className="space-y-2 pt-3">
-              {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-8 rounded" />)}
-            </div>
-          ) : weekPlan ? (
-            <div className="pt-3">
-              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-3">
-                {weekPlan.siteName && (
-                  <span className="flex items-center gap-1">
-                    <Building2 className="h-3 w-3" />{weekPlan.siteName}
-                  </span>
-                )}
-                {weekPlan.preparedBy && (
-                  <span className="flex items-center gap-1">
-                    <User className="h-3 w-3" />Prepared by {weekPlan.preparedBy}
-                  </span>
-                )}
-              </div>
-              <WeeklyGrid data={weekPlan.weeklyPlanData} monday={monday} />
-            </div>
-          ) : (
-            <div className="py-10 text-center text-muted-foreground">
-              <CalendarDays className="h-8 w-8 mx-auto mb-2 opacity-25" />
-              <p className="text-sm">No published program for this week.</p>
-              <p className="text-xs mt-1">
-                {weekOffset < 0 ? "Check a later week or ask your service for details." : "Check back soon — your service will publish the program here."}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// ─── Post card ────────────────────────────────────────────────────────────────
+// ── Post card ─────────────────────────────────────────────────────────────────
 function PostCard({ post, onSelect }: { post: Post; onSelect: () => void }) {
   const summary = post.aiSummary || stripHtml(post.description) || stripHtml(post.learning);
   const hasImage = post.images && post.images.length > 0;
   const publishDate = post.publishedAt
-    ? new Date(post.publishedAt).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })
+    ? new Date(post.publishedAt).toLocaleDateString("en-AU", {
+        day: "numeric", month: "long", year: "numeric",
+      })
     : null;
 
   return (
@@ -311,7 +304,7 @@ function PostCard({ post, onSelect }: { post: Post; onSelect: () => void }) {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default function GuardianHome() {
   const { user } = useAuth();
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
@@ -337,7 +330,9 @@ export default function GuardianHome() {
   const { data: sites } = useListSites();
 
   const childSiteIds = [
-    ...new Set((children ?? []).map((c) => c.siteId).filter((id): id is number => id != null)),
+    ...new Set(
+      (children ?? []).map((c) => c.siteId).filter((id): id is number => id != null),
+    ),
   ];
 
   return (
@@ -428,7 +423,11 @@ export default function GuardianHome() {
                         <h3 className="font-semibold text-base leading-tight">
                           {child.firstName} {child.lastName}
                         </h3>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${STATUS_STYLES[child.status] ?? "bg-gray-100 text-gray-600"}`}>
+                        <span
+                          className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
+                            STATUS_STYLES[child.status] ?? "bg-gray-100 text-gray-600"
+                          }`}
+                        >
                           {child.status}
                         </span>
                       </div>
@@ -458,8 +457,8 @@ export default function GuardianHome() {
         )}
       </div>
 
-      {/* Weekly Learning Program (calendar) */}
-      <WeeklyLearningProgram childSiteIds={childSiteIds} />
+      {/* Weekly Learning Program — calendar view */}
+      <GuardianCalendar childSiteIds={childSiteIds} />
 
       {/* Posts & Updates */}
       <div>

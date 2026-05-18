@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { createNotification } from "../lib/notify";
+import { logger } from "../lib/logger";
 import { eq, desc, and } from "drizzle-orm";
 import { db, staffAppraisalsTable, appraisalGoalNotesTable, staffTable } from "@workspace/db";
 
@@ -179,7 +180,7 @@ router.put("/appraisals/:id/stage1/employee", async (req, res): Promise<void> =>
       href: `/appraisals/${id}`,
       referenceId: id,
       referenceType: "appraisal",
-    }).catch(() => {});
+    }).catch((err) => logger.warn({ err }, "Failed to send appraisal_submitted notification"));
   }
 
   res.json(enrichAppraisal(row, staffMap));
@@ -214,7 +215,7 @@ router.put("/appraisals/:id/stage1/reviewer", async (req, res): Promise<void> =>
     href: `/appraisals/${id}`,
     referenceId: id,
     referenceType: "appraisal",
-  }).catch(() => {});
+  }).catch((err) => logger.warn({ err }, "Failed to send appraisal_submitted notification"));
 
   res.json(enrichAppraisal(row, staffMap));
 });
@@ -261,7 +262,7 @@ router.put("/appraisals/:id/stage2", async (req, res): Promise<void> => {
       href: `/appraisals/${id}`,
       referenceId: id,
       referenceType: "appraisal",
-    }).catch(() => {});
+    }).catch((err) => logger.warn({ err }, "Failed to send appraisal_submitted notification"));
   }
 
   res.json(enrichAppraisal(row, staffMap));
@@ -305,7 +306,7 @@ router.put("/appraisals/:id/stage3", async (req, res): Promise<void> => {
     href: `/appraisals/${id}`,
     referenceId: id,
     referenceType: "appraisal",
-  }).catch(() => {});
+  }).catch((err) => logger.warn({ err }, "Failed to send appraisal_submitted notification"));
 
   res.json(enrichAppraisal(row, staffMap));
 });

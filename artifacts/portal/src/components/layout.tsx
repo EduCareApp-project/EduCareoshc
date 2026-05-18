@@ -126,7 +126,7 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short" });
 }
 
-function NotificationBell() {
+function NotificationBell({ dark = false }: { dark?: boolean }) {
   const [open, setOpen] = useState(false);
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
@@ -184,7 +184,7 @@ function NotificationBell() {
         <Button
           variant="ghost"
           size="icon"
-          className="relative text-white hover:bg-white/10 h-8 w-8 shrink-0"
+          className={`relative h-8 w-8 shrink-0 ${dark ? "text-white hover:bg-white/10" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
           aria-label="Notifications"
         >
           <Bell className="h-5 w-5" />
@@ -430,7 +430,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </Sheet>
         <img src="/educare-logo.png" alt="EduCare" className="h-8 w-8 object-contain" />
         <span className="text-xl font-bold text-white flex-1">EduCare</span>
-        {user && <NotificationBell />}
+        {user && <NotificationBell dark />}
       </div>
 
       {/* Page content */}

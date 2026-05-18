@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { createNotificationsForRoles } from "../lib/notify";
+import { logger } from "../lib/logger";
 import { eq, sql } from "drizzle-orm";
 import { db, conditionReportsTable, staffTable, sitesTable } from "@workspace/db";
 import {
@@ -56,7 +57,7 @@ router.post("/condition-reports", async (req, res): Promise<void> => {
     href: `/condition-reports`,
     referenceId: report.id,
     referenceType: "condition_report",
-  }).catch(() => {});
+  }).catch((err) => logger.warn({ err }, "Failed to send condition_submitted notifications"));
 
   res.status(201).json(ListConditionReportsResponseItem.parse(report));
 });
@@ -84,7 +85,7 @@ router.patch("/condition-reports/:id", async (req, res): Promise<void> => {
       href: `/condition-reports`,
       referenceId: report.id,
       referenceType: "condition_report",
-    }).catch(() => {});
+    }).catch((err) => logger.warn({ err }, "Failed to send condition_closed notifications"));
   }
 
   res.json(UpdateConditionReportResponse.parse(report));

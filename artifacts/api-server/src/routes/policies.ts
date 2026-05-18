@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { createNotification } from "../lib/notify";
+import { logger } from "../lib/logger";
 import { eq, desc } from "drizzle-orm";
 import { db, policiesTable, policyAcknowledgmentsTable, staffTable } from "@workspace/db";
 import {
@@ -34,7 +35,7 @@ router.post("/policies", async (req, res): Promise<void> => {
       href: `/policies`,
       referenceId: policy.id,
       referenceType: "policy",
-    }).catch(() => {});
+    }).catch((err) => logger.warn({ err }, "Failed to send policy_new notification"));
   }
 
   res.status(201).json(ListPoliciesResponseItem.parse(policy));
@@ -85,7 +86,7 @@ router.patch("/policies/:id", async (req, res): Promise<void> => {
         referenceId: updated.id,
         referenceType: "policy",
         dedupeKey: `policy_updated:${updated.id}:v${newVersion}:${s.id}`,
-      }).catch(() => {});
+      }).catch((err) => logger.warn({ err }, "Failed to send policy_updated notification"));
     }
   }
 

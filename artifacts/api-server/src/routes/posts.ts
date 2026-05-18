@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { createNotification } from "../lib/notify";
+import { logger } from "../lib/logger";
 import { eq, and, isNotNull, isNull } from "drizzle-orm";
 import { db, postsTable, postCommentsTable, childrenTable, staffTable, sitesTable, parentAccountsTable } from "@workspace/db";
 import {
@@ -199,7 +200,7 @@ router.post("/posts/:id/comments", async (req, res): Promise<void> => {
       href: `/posts/${params.data.id}`,
       referenceId: params.data.id,
       referenceType: "post",
-    }).catch(() => {});
+    }).catch((err) => logger.warn({ err }, "Failed to send post_comment notification"));
   }
 
   res.status(201).json(comment);

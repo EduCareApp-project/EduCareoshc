@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { createNotificationsForRoles } from "../lib/notify";
+import { logger } from "../lib/logger";
 import { eq } from "drizzle-orm";
 import { db, incidentsTable, childrenTable, staffTable, sitesTable } from "@workspace/db";
 import {
@@ -70,7 +71,7 @@ router.post("/incidents", async (req, res): Promise<void> => {
     href: `/incidents`,
     referenceId: inc.id,
     referenceType: "incident",
-  }).catch(() => {});
+  }).catch((err) => logger.warn({ err }, "Failed to send incident_submitted notifications"));
 
   res.status(201).json(GetIncidentResponse.parse(await enrichIncident(inc)));
 });
@@ -115,7 +116,7 @@ router.patch("/incidents/:id", async (req, res): Promise<void> => {
       href: `/incidents`,
       referenceId: inc.id,
       referenceType: "incident",
-    }).catch(() => {});
+    }).catch((err) => logger.warn({ err }, "Failed to send incident_closed notifications"));
   }
 
   res.json(UpdateIncidentResponse.parse(await enrichIncident(inc)));

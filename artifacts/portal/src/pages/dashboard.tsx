@@ -5,7 +5,7 @@ import {
   useListNotices, useCreateNotice, useDeleteNotice, useUpdateNotice,
   useGetServiceComplianceReport, useGetLearningStoriesReport,
   useListPlanningExperiences, useListPosts, useListSites,
-  useListChecklistRoutines,
+  useListChecklistRoutines, useListChildren,
 } from "@workspace/api-client-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { Link } from "wouter";
@@ -882,10 +882,19 @@ function EducatorDashboard() {
   const { data: learning, isLoading: loadingLearning } = useGetLearningStoriesReport();
   const { data: summary, isLoading: loadingSummary } = useGetDashboardSummary();
   const { data: routines, isLoading: loadingRoutines } = useListChecklistRoutines();
+  const { data: children } = useListChildren();
+  const { ownSiteId } = usePermissions();
 
   const evacOk = service?.evacuationStatus?.lastConducted && !service?.evacuationStatus?.isOverdue;
 
-  const childrenWithNoObs = (learning?.byChild ?? []).filter((c) => c.observationCount === 0);
+  // Build a set of child IDs at the educator's home site for fast lookup
+  const siteChildIds = ownSiteId
+    ? new Set((children ?? []).filter((c) => c.siteId === ownSiteId).map((c) => c.id))
+    : null;
+
+  const childrenWithNoObs = (learning?.byChild ?? []).filter(
+    (c) => c.observationCount === 0 && (siteChildIds === null || siteChildIds.has(c.childId))
+  );
 
   const today = format(new Date(), "yyyy-MM-dd");
 

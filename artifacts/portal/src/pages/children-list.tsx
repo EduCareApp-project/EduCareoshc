@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
+import { usePermissions } from "@/hooks/use-permissions";
 
 function calcAge(dob: string) {
   const birth = new Date(dob.length === 10 ? dob + "T00:00:00" : dob);
@@ -26,12 +27,15 @@ function storageUrl(objectPath: string): string {
 }
 
 export default function ChildrenList() {
+  const { isEducatorRole, ownSiteId } = usePermissions();
   const { data: children, isLoading } = useListChildren();
   const { data: sites } = useListSites();
   const { data: childSettings } = useGetChildSettings({ query: { queryKey: getGetChildSettingsQueryKey() } });
   const showPhoto = childSettings?.childDisplayMode === "profile_picture";
   const [search, setSearch] = useState("");
-  const [siteFilter, setSiteFilter] = useState("all");
+  const [siteFilter, setSiteFilter] = useState(() =>
+    isEducatorRole && ownSiteId ? String(ownSiteId) : "all"
+  );
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("active");
 
   const filteredChildren = children?.filter(c => {

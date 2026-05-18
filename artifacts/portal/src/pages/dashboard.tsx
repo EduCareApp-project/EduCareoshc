@@ -364,7 +364,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<string>(() => isEducatorRole ? "educator" : "leadership");
   const { data: sites } = useListSites();
   const [selectedSiteId, setSelectedSiteId] = useState<string>(() => isEducatorRole && ownSiteId ? String(ownSiteId) : "");
-  const [guardianSiteId, setGuardianSiteId] = useState<string>("__all__");
+  const [guardianSiteId, setGuardianSiteId] = useState<string>(() => isEducatorRole && ownSiteId ? String(ownSiteId) : "__all__");
   const siteName = sites?.find((s) => String(s.id) === selectedSiteId)?.name ?? sites?.[0]?.name;
 
   return (

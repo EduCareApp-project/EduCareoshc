@@ -58,7 +58,8 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
   const [title, setTitle] = useState(defaultTitle);
   const [grid, setGrid] = useState<WeeklyPlanGrid>(() => existingPlan ? initGridFromPlan(existingPlan) : emptyGrid());
   const [cellOutcomes, setCellOutcomes] = useState<CellOutcomes>(() => existingPlan?.weeklyPlanData?.cellOutcomes ?? {});
-  const [lastWeekConfirm, setLastWeekConfirm] = useState(false);
+  const [copyFromId, setCopyFromId] = useState<string>("");
+  const [copyConfirm, setCopyConfirm] = useState(false);
   const { mutateAsync: create, isPending: isCreating } = useCreatePlanningExperience();
   const { mutateAsync: update, isPending: isUpdating } = useUpdatePlanningExperience();
   const isPending = isCreating || isUpdating;
@@ -68,23 +69,35 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
     (p) => p.stage !== "closed" && (siteId === undefined || p.siteId === siteId),
   );
 
-  // Find the most recent plan from the previous week (same site)
-  const prevWeekMonday = addDays(weekMonday, -7);
-  const prevWeekFriday = addDays(weekMonday, -3);
-  const prevWeekMondayStr = format(prevWeekMonday, "yyyy-MM-dd");
-  const prevWeekFridayStr = format(prevWeekFriday, "yyyy-MM-dd");
-  const lastWeekPlan = (allPlanning ?? []).find((p) => {
-    if (!p.startDate || p.weeklyPlanData == null) return false;
-    const d = p.startDate.slice(0, 10);
-    return d >= prevWeekMondayStr && d <= prevWeekFridayStr &&
-      (siteId === undefined || p.siteId === siteId);
-  });
+  // Build a list of prior plans from the last 4 weeks (same site, must have grid data)
+  const priorWeekOptions = Array.from({ length: 4 }, (_, i) => {
+    const offsetDays = (i + 1) * 7;
+    const wkMonday = addDays(weekMonday, -offsetDays);
+    const wkFriday = addDays(weekMonday, -(offsetDays - 4));
+    const wkMondayStr = format(wkMonday, "yyyy-MM-dd");
+    const wkFridayStr = format(wkFriday, "yyyy-MM-dd");
+    const plan = (allPlanning ?? []).find((p) => {
+      if (!p.startDate || p.weeklyPlanData == null) return false;
+      const d = p.startDate.slice(0, 10);
+      return d >= wkMondayStr && d <= wkFridayStr &&
+        (siteId === undefined || p.siteId === siteId);
+    });
+    if (!plan) return null;
+    const weekLabel = i === 0 ? "1 week ago" : `${i + 1} weeks ago`;
+    return {
+      plan,
+      label: `${weekLabel} — ${plan.title ?? format(wkMonday, "d MMM yyyy")}`,
+    };
+  }).filter(Boolean) as { plan: ExistingPlan; label: string }[];
 
-  function applyLastWeek() {
-    if (!lastWeekPlan) return;
-    setGrid(initGridFromPlan(lastWeekPlan));
-    setCellOutcomes(lastWeekPlan.weeklyPlanData?.cellOutcomes ?? {});
-    setLastWeekConfirm(false);
+  const selectedPriorPlan = priorWeekOptions.find((o) => String(o.plan.id) === copyFromId)?.plan ?? null;
+
+  function applyCopyFrom() {
+    if (!selectedPriorPlan) return;
+    setGrid(initGridFromPlan(selectedPriorPlan));
+    setCellOutcomes(selectedPriorPlan.weeklyPlanData?.cellOutcomes ?? {});
+    setCopyFromId("");
+    setCopyConfirm(false);
   }
 
   function setCell(row: RowKey, day: DayKey, value: string) {
@@ -155,31 +168,45 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
 
-          {lastWeekPlan && (
-            lastWeekConfirm ? (
+          {priorWeekOptions.length > 0 && (
+            copyConfirm && selectedPriorPlan ? (
               <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2.5">
                 <CopyCheck className="h-4 w-4 text-blue-600 shrink-0" />
                 <p className="text-sm text-blue-800 flex-1">
-                  This will replace the current grid with last week's content. Continue?
+                  This will replace the current grid with the selected week's content. Continue?
                 </p>
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setLastWeekConfirm(false)}>Cancel</Button>
-                <Button size="sm" className="h-7 text-xs" onClick={applyLastWeek}>Yes, apply</Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setCopyConfirm(false)}>Cancel</Button>
+                <Button size="sm" className="h-7 text-xs" onClick={applyCopyFrom}>Yes, apply</Button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 text-xs"
-                  onClick={() => setLastWeekConfirm(true)}
+              <div className="flex items-center gap-2 flex-wrap">
+                <CopyCheck className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-xs text-muted-foreground shrink-0">Start with a prior week:</span>
+                <Select
+                  value={copyFromId}
+                  onValueChange={(val) => { setCopyFromId(val); setCopyConfirm(false); }}
                 >
-                  <CopyCheck className="h-3.5 w-3.5" />
-                  Start with last week's
-                </Button>
-                <span className="text-xs text-muted-foreground">
-                  Copies "{lastWeekPlan.title ?? "last week's plan"}" as a starting point
-                </span>
+                  <SelectTrigger className="h-8 text-xs w-72">
+                    <SelectValue placeholder="Choose a week…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {priorWeekOptions.map((o) => (
+                      <SelectItem key={o.plan.id} value={String(o.plan.id)} className="text-xs">
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {copyFromId && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8 text-xs gap-1.5"
+                    onClick={() => setCopyConfirm(true)}
+                  >
+                    Apply
+                  </Button>
+                )}
               </div>
             )
           )}

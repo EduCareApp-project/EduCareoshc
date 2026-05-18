@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import { useState } from "react";
 import { PostDetailDialog } from "@/components/post-detail-dialog";
+import { useAuth } from "@/contexts/auth";
 
 function imageUrl(path: string) {
   const stripped = path.replace(/^\/objects\//, "");
@@ -20,6 +21,7 @@ function imageUrl(path: string) {
 export default function Posts() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
 
@@ -164,6 +166,7 @@ export default function Posts() {
         onClose={() => setSelectedPostId(null)}
         canDelete={canDelete}
         onDeleted={() => setSelectedPostId(null)}
+        defaultCommentName={user?.name}
       />
     </div>
   );

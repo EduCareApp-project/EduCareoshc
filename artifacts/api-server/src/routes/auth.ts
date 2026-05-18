@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { eq, asc, and, gt, isNull, isNotNull, sql } from "drizzle-orm";
-import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, postsTable, sitesTable } from "@workspace/db";
+import { eq, asc, and, gt, isNull, isNotNull, inArray, sql } from "drizzle-orm";
+import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, postsTable, sitesTable, planningExperiencesTable } from "@workspace/db";
 import { sendPasswordResetEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 
@@ -274,6 +274,51 @@ router.get("/auth/my-posts", async (req, res): Promise<void> => {
       siteName: site ? site.name : null,
     };
   });
+
+  res.json(enriched);
+});
+
+router.get("/auth/my-plans", async (req, res): Promise<void> => {
+  if (!req.session.user || req.session.user.type !== "guardian") {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const children = await db
+    .select({ siteId: childrenTable.siteId })
+    .from(childrenTable)
+    .where(eq(childrenTable.guardianEmail, req.session.user.email));
+
+  const siteIds = [...new Set(children.map((c) => c.siteId).filter((id): id is number => id != null))];
+
+  if (siteIds.length === 0) {
+    res.json([]);
+    return;
+  }
+
+  const [plans, sites] = await Promise.all([
+    db.select()
+      .from(planningExperiencesTable)
+      .where(
+        and(
+          inArray(planningExperiencesTable.siteId, siteIds),
+          sql`${planningExperiencesTable.stage} = 'published'`,
+          isNotNull(planningExperiencesTable.weeklyPlanData),
+        )
+      )
+      .orderBy(planningExperiencesTable.startDate),
+    db.select().from(sitesTable),
+  ]);
+
+  const enriched = plans.map((p) => ({
+    id: p.id,
+    title: p.title,
+    startDate: p.startDate,
+    siteId: p.siteId,
+    siteName: sites.find((s) => s.id === p.siteId)?.name ?? null,
+    weeklyPlanData: p.weeklyPlanData,
+    preparedBy: p.preparedBy,
+  }));
 
   res.json(enriched);
 });

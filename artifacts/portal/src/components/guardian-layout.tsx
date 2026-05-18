@@ -1,8 +1,33 @@
 import { type ReactNode } from "react";
-import { LogOut, Menu } from "lucide-react";
+import { LogOut, Menu, Home, Newspaper, ClipboardList } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { useAuth } from "@/contexts/auth";
+import { useLocation } from "wouter";
+
+const NAV_ITEMS = [
+  { href: "/", label: "Home", icon: Home },
+  { href: "/weekly-program", label: "Weekly Program", icon: ClipboardList },
+  { href: "/notices", label: "Notices & News", icon: Newspaper },
+];
+
+function NavLink({ href, label, icon: Icon, onClose }: { href: string; label: string; icon: typeof Home; onClose?: () => void }) {
+  const [location, setLocation] = useLocation();
+  const active = location === href;
+  return (
+    <button
+      onClick={() => { setLocation(href); onClose?.(); }}
+      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+        active
+          ? "bg-white/20 text-white"
+          : "text-white/70 hover:text-white hover:bg-white/10"
+      }`}
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      {label}
+    </button>
+  );
+}
 
 function GuardianSidebar({ onClose }: { onClose?: () => void }) {
   const { user, logout } = useAuth();
@@ -18,7 +43,12 @@ function GuardianSidebar({ onClose }: { onClose?: () => void }) {
         </div>
       </div>
 
-      <div className="flex-1" />
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-4 space-y-1">
+        {NAV_ITEMS.map((item) => (
+          <NavLink key={item.href} {...item} onClose={onClose} />
+        ))}
+      </nav>
 
       {/* User info + logout */}
       <div className="px-3 py-4 border-t border-white/20 space-y-2">

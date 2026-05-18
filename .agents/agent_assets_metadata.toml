@@ -29,3 +29,9 @@ id = "sqQwiVCZs6A_xmbzChjzI"
 uri = "file://children_import_template.csv"
 type = "table"
 title = "Children Import Template (updated)"
+
+[[outputs]]
+id = "ToVTfaLqtulagsIiww6an"
+uri = "file://sorrento-children-import.csv"
+type = "table"
+title = "Sorrento Children Import (23 children)"

@@ -1076,9 +1076,18 @@ function GuardianDashboard({ siteFilter = "__all__" }: { siteFilter?: string }) 
   const fiveWeeksEnd = format(addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), 34), "yyyy-MM-dd");
 
   const publishedPlans = (planning ?? [])
-    .filter((p) => p.stage === "published" && p.startDate && p.startDate >= thisMonday && p.startDate <= fiveWeeksEnd)
+    .filter((p) =>
+      p.stage === "published" &&
+      p.startDate && p.startDate >= thisMonday && p.startDate <= fiveWeeksEnd &&
+      (siteFilter === "__all__" || String(p.siteId) === siteFilter)
+    )
     .sort((a, b) => (a.startDate ?? "").localeCompare(b.startDate ?? ""))
     .slice(0, 5);
+
+  const filteredPosts = [...(posts ?? [])]
+    .filter((p) => siteFilter === "__all__" || String(p.siteId) === siteFilter)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 6);
 
   return (
     <div className="space-y-8">
@@ -1165,7 +1174,7 @@ function GuardianDashboard({ siteFilter = "__all__" }: { siteFilter?: string }) 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-72 rounded-xl" />)}
           </div>
-        ) : !posts || posts.length === 0 ? (
+        ) : filteredPosts.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
               <Newspaper className="h-10 w-10 mb-2 opacity-40" />
@@ -1174,10 +1183,7 @@ function GuardianDashboard({ siteFilter = "__all__" }: { siteFilter?: string }) 
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[...posts]
-              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-              .slice(0, 6)
-              .map((post) => {
+            {filteredPosts.map((post) => {
                 const coverImage = post.images?.[0];
                 return (
                   <Link key={post.id} href={`/posts/${post.id}`}>

@@ -48,6 +48,7 @@ import type {
   FileCategoryUpdate,
   FileLibraryInput,
   FileLibraryItem,
+  GetLearningStoriesReportParams,
   GetNotificationCount200,
   GetServiceComplianceReportParams,
   Guardian,
@@ -10131,42 +10132,69 @@ export const useDeletePlanningExperience = <
   return useMutation(getDeletePlanningExperienceMutationOptions(options));
 };
 
-export const getGetLearningStoriesReportUrl = () => {
-  return `/api/reports/learning-stories`;
+export const getGetLearningStoriesReportUrl = (
+  params?: GetLearningStoriesReportParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/reports/learning-stories?${stringifiedParams}`
+    : `/api/reports/learning-stories`;
 };
 
 export const getLearningStoriesReport = async (
+  params?: GetLearningStoriesReportParams,
   options?: RequestInit,
 ): Promise<LearningStoriesReport> => {
-  return customFetch<LearningStoriesReport>(getGetLearningStoriesReportUrl(), {
-    ...options,
-    method: "GET",
-  });
+  return customFetch<LearningStoriesReport>(
+    getGetLearningStoriesReportUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
 };
 
-export const getGetLearningStoriesReportQueryKey = () => {
-  return [`/api/reports/learning-stories`] as const;
+export const getGetLearningStoriesReportQueryKey = (
+  params?: GetLearningStoriesReportParams,
+) => {
+  return [
+    `/api/reports/learning-stories`,
+    ...(params ? [params] : []),
+  ] as const;
 };
 
 export const getGetLearningStoriesReportQueryOptions = <
   TData = Awaited<ReturnType<typeof getLearningStoriesReport>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getLearningStoriesReport>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: GetLearningStoriesReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getLearningStoriesReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getGetLearningStoriesReportQueryKey();
+    queryOptions?.queryKey ?? getGetLearningStoriesReportQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof getLearningStoriesReport>>
-  > = ({ signal }) => getLearningStoriesReport({ signal, ...requestOptions });
+  > = ({ signal }) =>
+    getLearningStoriesReport(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof getLearningStoriesReport>>,
@@ -10183,15 +10211,18 @@ export type GetLearningStoriesReportQueryError = ErrorType<unknown>;
 export function useGetLearningStoriesReport<
   TData = Awaited<ReturnType<typeof getLearningStoriesReport>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof getLearningStoriesReport>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetLearningStoriesReportQueryOptions(options);
+>(
+  params?: GetLearningStoriesReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getLearningStoriesReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetLearningStoriesReportQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

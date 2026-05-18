@@ -1810,6 +1810,13 @@ export type ListRoutineItemCompletionsParams = {
   periodKey: string;
 };
 
+export type GetLearningStoriesReportParams = {
+  /**
+   * Filter all metrics to a specific site
+   */
+  siteId?: number;
+};
+
 export type GetServiceComplianceReportParams = {
   /**
    * Filter all metrics to a specific site

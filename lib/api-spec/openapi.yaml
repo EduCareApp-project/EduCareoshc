@@ -2284,6 +2284,13 @@ paths:
     get:
       operationId: getLearningStoriesReport
       tags: [reports]
+      parameters:
+        - name: siteId
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Filter all metrics to a specific site
       responses:
         "200":
           description: OK

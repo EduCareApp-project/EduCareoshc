@@ -2761,6 +2761,13 @@ export const DeletePlanningExperienceParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const GetLearningStoriesReportQueryParams = zod.object({
+  siteId: zod.coerce
+    .number()
+    .optional()
+    .describe("Filter all metrics to a specific site"),
+});
+
 export const GetLearningStoriesReportResponse = zod.object({
   byOutcome: zod.array(
     zod.object({

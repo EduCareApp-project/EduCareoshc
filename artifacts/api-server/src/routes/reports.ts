@@ -5,10 +5,18 @@ import { GetLearningStoriesReportResponse, GetServiceComplianceReportResponse, G
 
 const router: IRouter = Router();
 
-router.get("/reports/learning-stories", async (_req, res): Promise<void> => {
+router.get("/reports/learning-stories", async (req, res): Promise<void> => {
+  const siteId = req.query.siteId ? Number(req.query.siteId) : null;
+
   const outcomes = await db.select().from(outcomesTable).orderBy(outcomesTable.number);
-  const observations = await db.select().from(observationsTable);
-  const children = await db.select().from(childrenTable);
+  const allChildren = await db.select().from(childrenTable);
+  const filteredChildren = siteId ? allChildren.filter((c) => c.siteId === siteId) : allChildren;
+  const filteredChildIds = new Set(filteredChildren.map((c) => c.id));
+
+  const allObservations = await db.select().from(observationsTable);
+  const observations = siteId
+    ? allObservations.filter((obs) => filteredChildIds.has(obs.childId))
+    : allObservations;
 
   const byOutcome = outcomes.map((o) => ({
     outcomeId: o.id,
@@ -17,7 +25,7 @@ router.get("/reports/learning-stories", async (_req, res): Promise<void> => {
     count: observations.filter((obs) => obs.outcomeIds.includes(o.id)).length,
   }));
 
-  const byChild = children.map((c) => ({
+  const byChild = filteredChildren.map((c) => ({
     childId: c.id,
     childName: `${c.firstName} ${c.lastName}`,
     observationCount: observations.filter((obs) => obs.childId === c.id).length,

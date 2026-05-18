@@ -878,12 +878,14 @@ const CHECKLIST_FREQ_COLORS: Record<ChecklistFreq, string> = {
 };
 
 function EducatorDashboard() {
+  const { ownSiteId } = usePermissions();
+  const siteParam = ownSiteId ? { siteId: ownSiteId } : undefined;
+
   const { data: service, isLoading: loadingService } = useGetServiceComplianceReport();
-  const { data: learning, isLoading: loadingLearning } = useGetLearningStoriesReport();
+  const { data: learning, isLoading: loadingLearning } = useGetLearningStoriesReport(siteParam);
   const { data: summary, isLoading: loadingSummary } = useGetDashboardSummary();
   const { data: routines, isLoading: loadingRoutines } = useListChecklistRoutines();
   const { data: children } = useListChildren();
-  const { ownSiteId } = usePermissions();
 
   const evacOk = service?.evacuationStatus?.lastConducted && !service?.evacuationStatus?.isOverdue;
 

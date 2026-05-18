@@ -60,6 +60,7 @@ export * from "./fileCategoryInput";
 export * from "./fileCategoryUpdate";
 export * from "./fileLibraryInput";
 export * from "./fileLibraryItem";
+export * from "./getLearningStoriesReportParams";
 export * from "./getNotificationCount200";
 export * from "./getServiceComplianceReportParams";
 export * from "./guardian";

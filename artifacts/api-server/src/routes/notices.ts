@@ -1,9 +1,16 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
-import { db, noticesTable } from "@workspace/db";
+import { eq, and, isNotNull, isNull } from "drizzle-orm";
+import { db, noticesTable, parentAccountsTable } from "@workspace/db";
 import { CreateNoticeBody, DeleteNoticeParams, ListNoticesResponse, ListNoticesResponseItem, UpdateNoticeBody, UpdateNoticeParams } from "@workspace/api-zod";
+import { sendGuardianNoticeEmail } from "../lib/email";
+import { getEmailBranding } from "../lib/emailBranding";
 
 const router: IRouter = Router();
+
+function getPortalUrl(): string {
+  const domains = (process.env.REPLIT_DOMAINS ?? "").split(",").map((d) => d.trim()).filter(Boolean);
+  return `https://${domains[0] ?? "localhost"}`;
+}
 
 router.get("/notices", async (req, res): Promise<void> => {
   const audience = req.query.audience as string | undefined;
@@ -17,6 +24,24 @@ router.post("/notices", async (req, res): Promise<void> => {
   const parsed = CreateNoticeBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
   const [notice] = await db.insert(noticesTable).values(parsed.data as any).returning();
+
+  if (notice.audience === "guardian") {
+    const guardians = await db
+      .select({ email: parentAccountsTable.guardianEmail })
+      .from(parentAccountsTable)
+      .where(and(isNotNull(parentAccountsTable.passwordHash), isNull(parentAccountsTable.blockedAt)));
+    const recipients = guardians.map((g) => g.email);
+    const strippedContent = notice.content.replace(/<[^>]*>/g, "").trim().slice(0, 300);
+    getEmailBranding().then((branding) =>
+      sendGuardianNoticeEmail(recipients, {
+        noticeTitle: notice.title,
+        priority: notice.priority,
+        content: strippedContent,
+        portalUrl: getPortalUrl(),
+      }, branding)
+    ).catch((err) => req.log.warn({ err }, "Guardian notice email dispatch failed"));
+  }
+
   res.status(201).json(ListNoticesResponseItem.parse(notice));
 });
 

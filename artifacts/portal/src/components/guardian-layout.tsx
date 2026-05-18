@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { LogOut, Menu, Home, Newspaper } from "lucide-react";
+import { LogOut, Menu, Home } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { useAuth } from "@/contexts/auth";
@@ -7,7 +7,6 @@ import { useLocation } from "wouter";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/notices", label: "Notices & News", icon: Newspaper },
 ];
 
 function NavLink({ href, label, icon: Icon, onClose }: { href: string; label: string; icon: typeof Home; onClose?: () => void }) {

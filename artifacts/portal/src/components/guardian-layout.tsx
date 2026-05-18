@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { LogOut, Menu, Home, Newspaper, ClipboardList } from "lucide-react";
+import { LogOut, Menu, Home, Newspaper } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { useAuth } from "@/contexts/auth";
@@ -7,7 +7,6 @@ import { useLocation } from "wouter";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/weekly-program", label: "Weekly Program", icon: ClipboardList },
   { href: "/notices", label: "Notices & News", icon: Newspaper },
 ];
 

@@ -103,7 +103,7 @@ function DonutLabel({ cx, cy, total }: { cx: number; cy: number; total: number }
         {total}
       </tspan>
       <tspan x={cx} dy="1.4em" style={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}>
-        plans
+        linked
       </tspan>
     </text>
   );
@@ -176,26 +176,31 @@ export default function ReportsLearning() {
     });
   }, [planning, cutoff, selectedSite]);
 
-  // MTOP outcome counts from filtered planning experiences
+  // MTOP outcome counts from filtered planning, observations and posts
   const mtopWheelData = useMemo(() => {
     const counts = [0, 0, 0, 0, 0];
-    for (const exp of filteredPlanning) {
-      for (const id of exp.outcomeIds ?? []) {
-        if (id >= 1 && id <= 5) counts[id - 1]++;
+    const tally = (ids: (number | string)[] | null | undefined) => {
+      for (const id of ids ?? []) {
+        const n = typeof id === "string" ? parseInt(id, 10) : id;
+        if (n >= 1 && n <= 5) counts[n - 1]++;
       }
-    }
+    };
+    for (const exp of filteredPlanning)     tally(exp.outcomeIds);
+    for (const obs of filteredObservations) tally(obs.outcomeIds);
+    for (const post of filteredPosts)       tally(post.outcomeIds);
     return counts.map((count, i) => ({
       name: `O${i + 1}`,
       fullName: `Outcome ${i + 1} — ${MTOP_SHORT[i]}`,
       count,
       color: MTOP_COLORS[i],
     }));
-  }, [filteredPlanning]);
+  }, [filteredPlanning, filteredObservations, filteredPosts]);
 
   const mtopTotal = mtopWheelData.reduce((s, d) => s + d.count, 0);
   const hasWheel = mtopTotal > 0;
 
   const isLoadingCounts = postsLoading || jottingsLoading || observationsLoading;
+  const isLoadingMtop = planningLoading || observationsLoading || postsLoading;
 
   // Per-child breakdown: children at the selected site, with counts from filtered data
   const perChildData = useMemo(() => {
@@ -295,10 +300,10 @@ export default function ReportsLearning() {
         <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle className="text-base">MTOP Outcome</CardTitle>
-          <p className="text-xs text-muted-foreground">Outcome coverage across planning cycles — {periodLabel.toLowerCase()}</p>
+          <p className="text-xs text-muted-foreground">Outcome coverage across planning cycles, observations and posts — {periodLabel.toLowerCase()}</p>
         </CardHeader>
         <CardContent>
-          {planningLoading ? (
+          {isLoadingMtop ? (
             <Skeleton className="h-60 w-full" />
           ) : !hasWheel ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
@@ -328,7 +333,7 @@ export default function ReportsLearning() {
                     </Pie>
                     <Tooltip
                       formatter={(value, _name, props) => [
-                        `${value} plan${Number(value) !== 1 ? "s" : ""}`,
+                        `${value} linked`,
                         props.payload?.fullName ?? "",
                       ]}
                     />

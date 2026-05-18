@@ -149,6 +149,7 @@ export default function Evacuations() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { uploadFile, isUploading: uploading } = useUpload();
+  const { isEducatorRole, ownSiteId } = usePermissions();
 
   const { data: evacuations, isLoading } = useListEvacuations();
   const { data: sites } = useListSites();
@@ -157,7 +158,9 @@ export default function Evacuations() {
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
-  const [filterSiteId, setFilterSiteId] = useState<string>("__all__");
+  const [filterSiteId, setFilterSiteId] = useState<string>(() =>
+    isEducatorRole && ownSiteId ? String(ownSiteId) : "__all__"
+  );
 
   const evacFileRef = useRef<HTMLInputElement>(null);
   const attendFileRef = useRef<HTMLInputElement>(null);
@@ -484,7 +487,7 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
   const { uploadFile, isUploading: uploading } = useUpload();
   const updateMutation = useUpdateEvacuation();
 
-  const { canEditAfterSubmit } = usePermissions();
+  const { canEditAfterSubmit, isEducatorRole, ownSiteId } = usePermissions();
   const [editOpen, setEditOpen] = useState(false);
 
   const conductedDate = evac.conductedAt ? format(new Date(evac.conductedAt), "yyyy-MM-dd") : melbourneDateStr();

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useGetServiceComplianceReport, useListSites, useListPlanningExperiences } from "@workspace/api-client-react";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,10 @@ import { format } from "date-fns";
 import { Link } from "wouter";
 
 export default function ReportsService() {
-  const [filterSiteId, setFilterSiteId] = useState<string>("__all__");
+  const { isEducatorRole, ownSiteId } = usePermissions();
+  const [filterSiteId, setFilterSiteId] = useState<string>(() =>
+    isEducatorRole && ownSiteId ? String(ownSiteId) : "__all__"
+  );
   const { data: sites } = useListSites();
   const siteIdParam = filterSiteId === "__all__" ? undefined : Number(filterSiteId);
   const { data: report, isLoading } = useGetServiceComplianceReport(siteIdParam ? { siteId: siteIdParam } : undefined);

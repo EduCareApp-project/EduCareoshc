@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
   useGetLearningStoriesReport,
   useListPosts,
@@ -111,7 +112,10 @@ function DonutLabel({ cx, cy, total }: { cx: number; cy: number; total: number }
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ReportsLearning() {
-  const [selectedSite, setSelectedSite] = useState<string>("all");
+  const { isEducatorRole, ownSiteId } = usePermissions();
+  const [selectedSite, setSelectedSite] = useState<string>(() =>
+    isEducatorRole && ownSiteId ? String(ownSiteId) : "all"
+  );
   const [selectedPeriod, setSelectedPeriod] = useState<string>("7d");
 
   const { data: sites } = useListSites();

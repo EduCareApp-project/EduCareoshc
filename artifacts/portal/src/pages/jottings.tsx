@@ -17,15 +17,19 @@ export default function Jottings() {
   const { data: jottings, isLoading } = useListJottings();
   const { data: children } = useListChildren();
   const { data: sites } = useListSites();
-  const { canDelete } = usePermissions();
+  const { canDelete, isEducatorRole, ownSiteId } = usePermissions();
   const createMutation = useCreateJotting();
   const deleteMutation = useDeleteJotting();
   const archiveMutation = useArchiveJotting();
 
   const [content, setContent] = useState("");
   const [childId, setChildId] = useState<string>("none");
-  const [captureSite, setCaptureSite] = useState<string>("all");
-  const [listSiteFilter, setListSiteFilter] = useState<string>("all");
+  const [captureSite, setCaptureSite] = useState<string>(() =>
+    isEducatorRole && ownSiteId ? String(ownSiteId) : "all"
+  );
+  const [listSiteFilter, setListSiteFilter] = useState<string>(() =>
+    isEducatorRole && ownSiteId ? String(ownSiteId) : "all"
+  );
 
   // Map childId → siteId for client-side filtering
   const childSiteMap = new Map((children ?? []).map((c) => [c.id, c.siteId ?? null]));

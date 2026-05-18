@@ -30,7 +30,7 @@ export default function Posts() {
 
   const { data: posts, isLoading } = useListPosts();
   const { data: children } = useListChildren();
-  const { canDelete } = usePermissions();
+  const { canDelete, isEducatorRole, ownSiteId } = usePermissions();
   const deleteMutation = useDeletePost();
 
   const filteredChild = filterChildId
@@ -41,9 +41,10 @@ export default function Posts() {
     ? `${filteredChild.firstName} ${filteredChild.lastName}`
     : null;
 
-  const displayedPosts = filterChildId
+  const displayedPosts = (filterChildId
     ? (posts ?? []).filter((p) => (p.childIds ?? []).includes(filterChildId))
-    : (posts ?? []);
+    : (posts ?? [])
+  ).filter((p) => !isEducatorRole || !ownSiteId || p.siteId === ownSiteId);
 
   function handleDelete(e: React.MouseEvent, id: number) {
     e.stopPropagation();

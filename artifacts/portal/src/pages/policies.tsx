@@ -1,6 +1,7 @@
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { FolderOpen, ChevronRight, ShieldCheck, ClipboardList, FileText, ExternalLink } from "lucide-react";
+import { usePermissions } from "@/hooks/use-permissions";
 
 const TILES = [
   {
@@ -34,6 +35,10 @@ const TILES = [
 
 export default function PoliciesFiles() {
   const [, navigate] = useLocation();
+  const { isEducatorRole } = usePermissions();
+  const tiles = isEducatorRole
+    ? TILES.filter((t) => t.title !== "Service Documentation")
+    : TILES;
 
   return (
     <div className="space-y-6">
@@ -45,7 +50,7 @@ export default function PoliciesFiles() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {TILES.map(({ href, icon: Icon, title, description, external }) => (
+        {tiles.map(({ href, icon: Icon, title, description, external }) => (
           <Card
             key={href}
             className="cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group"

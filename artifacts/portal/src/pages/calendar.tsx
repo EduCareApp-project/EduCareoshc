@@ -17,6 +17,7 @@ import {
 } from "date-fns";
 import { Link, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getListPlanningExperiencesQueryKey } from "@workspace/api-client-react";
 import {
   ReadOnlyPlanView, ExistingPlan,
@@ -351,12 +352,15 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
 export default function Calendar() {
   const search = useSearch();
   const isGuardianMode = new URLSearchParams(search).get("mode") === "guardian";
+  const { isEducatorRole, ownSiteId } = usePermissions();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [planWeek, setPlanWeek] = useState<Date | null>(null);
   const [planExisting, setPlanExisting] = useState<ExistingPlan | null>(null);
   const [viewPlan, setViewPlan] = useState<ExistingPlan | null>(null);
-  const [filterSiteId, setFilterSiteId] = useState<string>("");
+  const [filterSiteId, setFilterSiteId] = useState<string>(() =>
+    isEducatorRole && ownSiteId ? String(ownSiteId) : ""
+  );
   const queryClient = useQueryClient();
 
   const { data: sites } = useListSites();

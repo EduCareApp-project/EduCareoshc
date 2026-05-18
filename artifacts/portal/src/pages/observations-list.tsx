@@ -1,4 +1,4 @@
-import { useListObservations } from "@workspace/api-client-react";
+import { useListObservations, useListChildren } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,13 +6,25 @@ import { Input } from "@/components/ui/input";
 import { Plus, Search, FileText, Calendar, User, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, isEqual } from "date-fns";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function ObservationsList() {
+  const { isEducatorRole, ownSiteId } = usePermissions();
   const { data: observations, isLoading } = useListObservations();
+  const { data: children } = useListChildren();
   const [search, setSearch] = useState("");
 
+  const childSiteMap = useMemo(
+    () => new Map((children ?? []).map((c) => [c.id, c.siteId ?? null])),
+    [children],
+  );
+
   const filteredObs = observations?.filter((obs) => {
+    if (isEducatorRole && ownSiteId) {
+      const childSite = childSiteMap.get(obs.childId);
+      if (childSite !== undefined && childSite !== ownSiteId) return false;
+    }
     const q = search.toLowerCase();
     return (
       obs.description.toLowerCase().includes(q) ||

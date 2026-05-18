@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useListPlanningExperiences, useListChildren, useListSites } from "@workspace/api-client-react";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,7 +24,10 @@ const STAGE_COLORS: Record<string, string> = {
 
 export default function Planning() {
   const [, navigate] = useLocation();
-  const [siteFilter, setSiteFilter] = useState("all");
+  const { isEducatorRole, ownSiteId } = usePermissions();
+  const [siteFilter, setSiteFilter] = useState(() =>
+    isEducatorRole && ownSiteId ? String(ownSiteId) : "all"
+  );
   const { data: experiences, isLoading } = useListPlanningExperiences();
   const { data: children } = useListChildren();
   const { data: sites } = useListSites();

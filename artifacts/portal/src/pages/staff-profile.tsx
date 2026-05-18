@@ -502,7 +502,7 @@ export default function StaffProfile() {
                       ) : null}
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>Site:</span>
+                      <span>Home Site:</span>
                       <span className="font-medium text-foreground">
                         {assignedSite ? assignedSite.name : <span className="italic text-muted-foreground">Not assigned</span>}
                       </span>

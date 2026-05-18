@@ -63,7 +63,7 @@ export default function ConditionReports() {
   const { data: reports, isLoading } = useListConditionReports();
   const { data: staffList } = useListStaff();
   const { data: sites } = useListSites();
-  const { canDelete, canEditAfterSubmit } = usePermissions();
+  const { canDelete, canEditAfterSubmit, isEducatorRole, ownSiteId } = usePermissions();
   const createMutation = useCreateConditionReport();
   const updateMutation = useUpdateConditionReport();
   const deleteMutation = useDeleteConditionReport();
@@ -74,7 +74,9 @@ export default function ConditionReports() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [siteFilter, setSiteFilter] = useState<string>("all");
+  const [siteFilter, setSiteFilter] = useState<string>(() =>
+    isEducatorRole && ownSiteId ? String(ownSiteId) : "all"
+  );
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [leadershipNotes, setLeadershipNotes] = useState("");
   const [editingLeadership, setEditingLeadership] = useState(false);

@@ -66,6 +66,11 @@ function stripHtml(html: string | null | undefined): string {
   return html.replace(/<[^>]*>/g, "").trim();
 }
 
+function imageUrl(path: string) {
+  const stripped = path.replace(/^\/objects\//, "");
+  return `/api/storage/objects/${stripped}`;
+}
+
 function PostCard({ post, onSelect }: { post: Post; onSelect: () => void }) {
   const summary = post.aiSummary || stripHtml(post.description) || stripHtml(post.learning);
   const hasImage = post.images && post.images.length > 0;
@@ -81,7 +86,7 @@ function PostCard({ post, onSelect }: { post: Post; onSelect: () => void }) {
       {hasImage && (
         <div className="h-40 bg-muted overflow-hidden">
           <img
-            src={`/api/storage/objects/${post.images[0]}`}
+            src={imageUrl(post.images[0])}
             alt={post.title}
             className="w-full h-full object-cover"
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}

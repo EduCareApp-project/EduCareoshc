@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Newspaper, Image as ImageIcon } from "lucide-react";
+import { Newspaper } from "lucide-react";
 import { format } from "date-fns";
 
 type Post = {
   id: number;
   title: string;
-  content: string | null;
-  imagePath: string | null;
+  description: string | null;
+  images: string[];
   publishedAt: string | null;
   createdAt: string;
 };
@@ -55,10 +55,10 @@ export default function GuardianNotices() {
         <div className="space-y-4">
           {published.map((post) => (
             <Card key={post.id} className="overflow-hidden hover:shadow-md transition-shadow">
-              {post.imagePath && (
+              {post.images && post.images.length > 0 && (
                 <div className="aspect-[4/1] overflow-hidden bg-muted">
                   <img
-                    src={imageUrl(post.imagePath)}
+                    src={imageUrl(post.images[0])}
                     alt={post.title}
                     className="w-full h-full object-cover"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
@@ -67,7 +67,7 @@ export default function GuardianNotices() {
               )}
               <CardContent className="p-5">
                 <div className="flex items-start gap-3">
-                  {!post.imagePath && (
+                  {(!post.images || post.images.length === 0) && (
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                       <Newspaper className="h-5 w-5 text-primary" />
                     </div>
@@ -79,9 +79,9 @@ export default function GuardianNotices() {
                         {format(new Date(post.publishedAt), "d MMMM yyyy")}
                       </p>
                     )}
-                    {post.content && (
+                    {post.description && (
                       <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
-                        {post.content}
+                        {post.description.replace(/<[^>]*>/g, "").trim()}
                       </p>
                     )}
                   </div>

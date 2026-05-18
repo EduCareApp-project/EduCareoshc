@@ -53,6 +53,8 @@ router.get("/roll-submissions", async (req, res): Promise<void> => {
         submitted: sub?.submitted ?? false,
         accurate: sub?.accurate ?? false,
         notes: sub?.notes ?? null,
+        updatedBy: sub?.updatedBy ?? null,
+        updatedAt: sub?.updatedAt?.toISOString() ?? null,
       };
     }),
   });
@@ -81,18 +83,21 @@ router.put("/roll-submissions/:weekStart/:siteId", async (req, res): Promise<voi
     .limit(1);
 
   if (existing) {
+    const updatedByName = (req.session as any)?.user?.name ?? null;
     const [updated] = await db
       .update(rollSubmissionsTable)
       .set({
         submitted: submitted !== undefined ? Boolean(submitted) : existing.submitted,
         accurate: accurate !== undefined ? Boolean(accurate) : existing.accurate,
         notes: notes !== undefined ? (notes?.trim() || null) : existing.notes,
+        updatedBy: updatedByName,
         updatedAt: new Date(),
       })
       .where(eq(rollSubmissionsTable.id, existing.id))
       .returning();
     res.json(updated);
   } else {
+    const updatedByName = (req.session as any)?.user?.name ?? null;
     const [created] = await db
       .insert(rollSubmissionsTable)
       .values({
@@ -101,6 +106,7 @@ router.put("/roll-submissions/:weekStart/:siteId", async (req, res): Promise<voi
         submitted: submitted !== undefined ? Boolean(submitted) : false,
         accurate: accurate !== undefined ? Boolean(accurate) : false,
         notes: notes?.trim() || null,
+        updatedBy: updatedByName,
       })
       .returning();
     res.status(201).json(created);

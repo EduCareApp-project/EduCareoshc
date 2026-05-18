@@ -8,6 +8,7 @@ export const rollSubmissionsTable = pgTable("roll_submissions", {
   submitted: boolean("submitted").notNull().default(false),
   accurate: boolean("accurate").notNull().default(false),
   notes: text("notes"),
+  updatedBy: text("updated_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [

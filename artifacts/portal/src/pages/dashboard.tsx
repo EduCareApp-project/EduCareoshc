@@ -28,6 +28,7 @@ import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getListNoticesQueryKey } from "@workspace/api-client-react";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useToast } from "@/hooks/use-toast";
 
 // ─── Shared priority colours ────────────────────────────────────────────────
 const PRIORITY_COLORS: Record<string, string> = {
@@ -440,6 +441,8 @@ type SiteStatus = {
   submitted: boolean;
   accurate: boolean;
   notes: string | null;
+  updatedBy: string | null;
+  updatedAt: string | null;
 };
 
 type WeekData = {
@@ -458,6 +461,7 @@ function getWeekStartForOffset(offset: number): string {
 
 function RollSubmissionChecklist() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [weekOffset, setWeekOffset] = useState(0);
   const [saving, setSaving] = useState<number | null>(null);
 
@@ -494,8 +498,10 @@ function RollSubmissionChecklist() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (!r.ok) throw new Error();
+      if (!r.ok) throw new Error("Failed to save");
       await queryClient.invalidateQueries({ queryKey: ["/api/roll-submissions", weekStart] });
+    } catch {
+      toast({ title: "Failed to save roll submission", variant: "destructive" });
     } finally {
       setSaving(null);
     }
@@ -560,7 +566,14 @@ function RollSubmissionChecklist() {
                         isError     ? "bg-red-500" :
                                       "bg-muted-foreground/30"
                       }`} />
-                      <span className="text-sm font-medium truncate">{site.siteName}</span>
+                      <div className="min-w-0">
+                        <span className="text-sm font-medium truncate block">{site.siteName}</span>
+                        {site.updatedBy && (
+                          <span className="text-[11px] text-muted-foreground">
+                            Updated by {site.updatedBy}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">

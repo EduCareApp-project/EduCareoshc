@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Trash2, User, CalendarDays, GraduationCap, Building2, MessageCircle, Send } from "lucide-react";
+import { ArrowLeft, Trash2, Pencil, User, CalendarDays, GraduationCap, Building2, MessageCircle, Send } from "lucide-react";
+import { usePermissions } from "@/hooks/use-permissions";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -162,6 +163,7 @@ export default function PostDetail() {
   const backPath = new URLSearchParams(window.location.search).get("back") ?? "/posts";
   const { data: post, isLoading } = useGetPost(id, { query: { enabled: id > 0 } });
   const deleteMutation = useDeletePost();
+  const { canDelete, canEditPost } = usePermissions();
 
   function handleDelete() {
     if (!confirm("Delete this post permanently?")) return;
@@ -202,15 +204,29 @@ export default function PostDetail() {
         <Button variant="ghost" size="sm" onClick={() => setLocation(backPath)} className="gap-1.5">
           <ArrowLeft className="h-4 w-4" />Back
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground hover:text-destructive gap-1.5"
-          onClick={handleDelete}
-          disabled={deleteMutation.isPending}
-        >
-          <Trash2 className="h-4 w-4" />Delete
-        </Button>
+        <div className="flex items-center gap-1">
+          {canEditPost && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground gap-1.5"
+              onClick={() => setLocation(`/posts/${id}/edit`)}
+            >
+              <Pencil className="h-4 w-4" />Edit
+            </Button>
+          )}
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-destructive gap-1.5"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+            >
+              <Trash2 className="h-4 w-4" />Delete
+            </Button>
+          )}
+        </div>
       </div>
 
       <article className="space-y-6">

@@ -30,7 +30,7 @@ export default function Posts() {
 
   const { data: posts, isLoading } = useListPosts();
   const { data: children } = useListChildren();
-  const { canDelete, isEducatorRole, ownSiteId } = usePermissions();
+  const { canDelete, canEditPost, isEducatorRole, ownSiteId } = usePermissions();
   const deleteMutation = useDeletePost();
 
   const filteredChild = filterChildId
@@ -166,6 +166,7 @@ export default function Posts() {
         open={selectedPostId !== null}
         onClose={() => setSelectedPostId(null)}
         canDelete={canDelete}
+        canEditPost={canEditPost}
         onDeleted={() => setSelectedPostId(null)}
         defaultCommentName={user?.name}
       />

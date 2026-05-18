@@ -38,6 +38,7 @@ import PlanningDetail from "@/pages/planning-detail";
 import Posts from "@/pages/posts";
 import NewPost from "@/pages/new-post";
 import PostDetail from "@/pages/post-detail";
+import EditPost from "@/pages/edit-post";
 import Jottings from "@/pages/jottings";
 import Incidents from "@/pages/incidents";
 import ConditionReports from "@/pages/condition-reports";
@@ -150,6 +151,7 @@ function StaffRoutes() {
 
         <Route path="/posts" component={Posts} />
         <Route path="/posts/new" component={NewPost} />
+        <Route path="/posts/:id/edit" component={EditPost} />
         <Route path="/posts/:id" component={PostDetail} />
         <Route path="/jottings" component={Jottings} />
 

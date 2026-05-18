@@ -11,6 +11,7 @@ export function usePermissions() {
     isEducatorRole,
     isFullAccess: !isEducatorRole,
     canDelete: !isEducatorRole,
+    canEditPost: !isEducatorRole,
     canEditAfterSubmit: !isEducatorRole,
     canViewSettings: !isEducatorRole,
     canViewAllReports: !isEducatorRole,

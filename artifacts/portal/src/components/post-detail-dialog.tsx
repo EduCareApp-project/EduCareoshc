@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Trash2, User, CalendarDays, GraduationCap, Building2, MessageCircle, Send } from "lucide-react";
+import { Trash2, Pencil, User, CalendarDays, GraduationCap, Building2, MessageCircle, Send } from "lucide-react";
+import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,6 +40,7 @@ interface PostDetailDialogProps {
   open: boolean;
   onClose: () => void;
   canDelete?: boolean;
+  canEditPost?: boolean;
   onDeleted?: () => void;
   defaultCommentName?: string;
 }
@@ -48,9 +50,11 @@ export function PostDetailDialog({
   open,
   onClose,
   canDelete,
+  canEditPost,
   onDeleted,
   defaultCommentName,
 }: PostDetailDialogProps) {
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [authorName, setAuthorName] = useState(defaultCommentName ?? "");
@@ -160,17 +164,29 @@ export function PostDetailDialog({
                   )}
                 </div>
               </SheetHeader>
-              {canDelete && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0 text-muted-foreground hover:text-destructive gap-1.5 -mr-1"
-                  onClick={handleDelete}
-                  disabled={deleteMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
+              <div className="flex items-center gap-1 shrink-0">
+                {canEditPost && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground gap-1.5"
+                    onClick={() => { onClose(); setLocation(`/posts/${postId}/edit`); }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive gap-1.5 -mr-1"
+                    onClick={handleDelete}
+                    disabled={deleteMutation.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Body */}

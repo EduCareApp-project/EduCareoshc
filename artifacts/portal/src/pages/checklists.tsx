@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearch } from "wouter";
+import { usePermissions } from "@/hooks/use-permissions";
+import { useAuth } from "@/contexts/auth";
 import { melbourneDate, melbourneDateStr } from "@/lib/timezone";
 import {
   useListChecklistTemplates, useCreateChecklistTemplate, useUpdateChecklistTemplate, useDeleteChecklistTemplate,
@@ -976,6 +978,8 @@ export default function Checklists() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const search = useSearch();
+  const { isEducatorRole, ownSiteId } = usePermissions();
+  const { user } = useAuth();
 
   const { data: templates, isLoading: templatesLoading } = useListChecklistTemplates();
   const { data: routines, isLoading: routinesLoading } = useListChecklistRoutines();
@@ -1059,81 +1063,98 @@ export default function Checklists() {
   const nonRepeatingRoutines = (routines ?? []).filter((r) => !r.isRepeating && !r.frequency);
   const allRoutines = routines ?? [];
 
+  // For educators/coordinators: only show checklists for their site or assigned to them
+  const visibleActiveChecklists = isEducatorRole
+    ? allRoutines.filter((r) =>
+        (ownSiteId && r.siteId === ownSiteId) || (user?.id && r.staffId === user.id)
+      )
+    : allRoutines;
+
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Checklists</h1>
-          <p className="text-muted-foreground mt-1">Build reusable templates and schedule them as routines.</p>
+          <p className="text-muted-foreground mt-1">
+            {isEducatorRole
+              ? "Active checklists assigned to your site or to you."
+              : "Build reusable templates and schedule them as routines."}
+          </p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />New Template
-        </Button>
+        {!isEducatorRole && (
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4 mr-2" />New Template
+          </Button>
+        )}
       </div>
 
-      {/* Templates */}
-      <section>
-        <h2 className="text-lg font-semibold mb-3">Templates</h2>
-        {templatesLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-44 w-full rounded-xl" />)}
-          </div>
-        ) : (templates ?? []).length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
-              <CheckSquare className="h-8 w-8 mb-2" />
-              <p>No templates yet. Create your first checklist template to get started.</p>
-              <Button variant="outline" size="sm" onClick={openCreate} className="mt-2">
-                <Plus className="h-4 w-4 mr-1" />New Template
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {(templates ?? []).map((t) => (
-              <TemplateTile
-                key={t.id}
-                template={t}
-                onRoutine={() => openRoutine(t)}
-                onEdit={() => openEdit(t)}
-                onDelete={() => handleDeleteTemplate(t.id)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Routines */}
-      <section>
-        <h2 className="text-lg font-semibold mb-3">Routines</h2>
-        {routinesLoading ? (
-          <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
-        ) : allRoutines.length === 0 ? (
-          <Card>
-            <CardContent className="py-10 text-center text-muted-foreground text-sm">
-              No routines yet. Use the <strong>Routine</strong> button on a template tile to schedule one.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-2">
-            {allRoutines.map((r) => {
-              const currentTemplate = (templates ?? []).find((t) => t.id === r.templateId);
-              return (
-                <RoutineRow
-                  key={r.id}
-                  routine={r}
-                  currentTemplateSections={currentTemplate?.sections}
-                  onEdit={() => openEditRoutine(r)}
-                  onDelete={() => handleDeleteRoutine(r.id)}
-                  onSync={() => handleSyncRoutine(r)}
-                  isSyncing={syncingRoutineId === r.id}
+      {/* Templates — admins only */}
+      {!isEducatorRole && (
+        <section>
+          <h2 className="text-lg font-semibold mb-3">Templates</h2>
+          {templatesLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-44 w-full rounded-xl" />)}
+            </div>
+          ) : (templates ?? []).length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
+                <CheckSquare className="h-8 w-8 mb-2" />
+                <p>No templates yet. Create your first checklist template to get started.</p>
+                <Button variant="outline" size="sm" onClick={openCreate} className="mt-2">
+                  <Plus className="h-4 w-4 mr-1" />New Template
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {(templates ?? []).map((t) => (
+                <TemplateTile
+                  key={t.id}
+                  template={t}
+                  onRoutine={() => openRoutine(t)}
+                  onEdit={() => openEdit(t)}
+                  onDelete={() => handleDeleteTemplate(t.id)}
                 />
-              );
-            })}
-          </div>
-        )}
-      </section>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Routines — admins only */}
+      {!isEducatorRole && (
+        <section>
+          <h2 className="text-lg font-semibold mb-3">Routines</h2>
+          {routinesLoading ? (
+            <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+          ) : allRoutines.length === 0 ? (
+            <Card>
+              <CardContent className="py-10 text-center text-muted-foreground text-sm">
+                No routines yet. Use the <strong>Routine</strong> button on a template tile to schedule one.
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {allRoutines.map((r) => {
+                const currentTemplate = (templates ?? []).find((t) => t.id === r.templateId);
+                return (
+                  <RoutineRow
+                    key={r.id}
+                    routine={r}
+                    currentTemplateSections={currentTemplate?.sections}
+                    onEdit={() => openEditRoutine(r)}
+                    onDelete={() => handleDeleteRoutine(r.id)}
+                    onSync={() => handleSyncRoutine(r)}
+                    isSyncing={syncingRoutineId === r.id}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Active Checklists */}
       <section>
@@ -1147,15 +1168,17 @@ export default function Checklists() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}
           </div>
-        ) : allRoutines.length === 0 ? (
+        ) : visibleActiveChecklists.length === 0 ? (
           <Card>
             <CardContent className="py-10 text-center text-muted-foreground text-sm">
-              No routines scheduled yet. Create a routine from a template above to get started.
+              {isEducatorRole
+                ? "No active checklists assigned to your site or to you."
+                : "No routines scheduled yet. Create a routine from a template above to get started."}
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {allRoutines.map((r) => (
+            {visibleActiveChecklists.map((r) => (
               <ActiveChecklistTile
                 key={r.id}
                 routine={r}

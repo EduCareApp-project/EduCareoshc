@@ -249,6 +249,8 @@ export interface Observation {
   staffId: number;
   /** @nullable */
   staffName?: string | null;
+  /** @nullable */
+  siteName?: string | null;
   description: string;
   observationDate: string;
   outcomeIds: string[];

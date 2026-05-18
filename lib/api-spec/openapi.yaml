@@ -2822,6 +2822,8 @@ components:
           type: integer
         staffName:
           type: ["string", "null"]
+        siteName:
+          type: ["string", "null"]
         description:
           type: string
         observationDate:

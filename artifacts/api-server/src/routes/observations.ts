@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, observationsTable, childrenTable, staffTable, programsTable } from "@workspace/db";
+import { db, observationsTable, childrenTable, staffTable, programsTable, sitesTable } from "@workspace/db";
 import {
   CreateObservationBody,
   GetObservationParams,
@@ -20,10 +20,14 @@ async function enrichObservation(obs: typeof observationsTable.$inferSelect) {
   const program = obs.programId
     ? (await db.select().from(programsTable).where(eq(programsTable.id, obs.programId)))[0]
     : null;
+  const site = child?.siteId
+    ? (await db.select().from(sitesTable).where(eq(sitesTable.id, child.siteId)))[0]
+    : null;
   return {
     ...obs,
     childName: child ? `${child.firstName} ${child.lastName}` : null,
     staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
+    siteName: site ? site.name : null,
     programName: program ? program.title : null,
   };
 }
@@ -34,18 +38,23 @@ router.get("/observations", async (_req, res): Promise<void> => {
     .from(observationsTable)
     .orderBy(observationsTable.observationDate);
 
-  const childList = await db.select().from(childrenTable);
-  const staffList = await db.select().from(staffTable);
-  const programList = await db.select().from(programsTable);
+  const [childList, staffList, programList, siteList] = await Promise.all([
+    db.select().from(childrenTable),
+    db.select().from(staffTable),
+    db.select().from(programsTable),
+    db.select().from(sitesTable),
+  ]);
 
   const enriched = rows.map((obs) => {
     const child = childList.find((c) => c.id === obs.childId);
     const staff = staffList.find((s) => s.id === obs.staffId);
     const program = programList.find((p) => p.id === obs.programId);
+    const site = child?.siteId ? siteList.find((s) => s.id === child.siteId) : null;
     return {
       ...obs,
       childName: child ? `${child.firstName} ${child.lastName}` : null,
       staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
+      siteName: site ? site.name : null,
       programName: program ? program.title : null,
     };
   });

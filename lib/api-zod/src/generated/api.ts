@@ -142,6 +142,7 @@ export const GetChildObservationsResponseItem = zod.object({
   childName: zod.string().nullish(),
   staffId: zod.number(),
   staffName: zod.string().nullish(),
+  siteName: zod.string().nullish(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
   outcomeIds: zod
@@ -434,6 +435,7 @@ export const ListObservationsResponseItem = zod.object({
   childName: zod.string().nullish(),
   staffId: zod.number(),
   staffName: zod.string().nullish(),
+  siteName: zod.string().nullish(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
   outcomeIds: zod
@@ -472,6 +474,7 @@ export const GetObservationResponse = zod.object({
   childName: zod.string().nullish(),
   staffId: zod.number(),
   staffName: zod.string().nullish(),
+  siteName: zod.string().nullish(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
   outcomeIds: zod
@@ -504,6 +507,7 @@ export const UpdateObservationResponse = zod.object({
   childName: zod.string().nullish(),
   staffId: zod.number(),
   staffName: zod.string().nullish(),
+  siteName: zod.string().nullish(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
   outcomeIds: zod
@@ -643,6 +647,7 @@ export const GetRecentObservationsResponseItem = zod.object({
   childName: zod.string().nullish(),
   staffId: zod.number(),
   staffName: zod.string().nullish(),
+  siteName: zod.string().nullish(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
   outcomeIds: zod

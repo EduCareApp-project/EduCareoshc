@@ -659,65 +659,60 @@ function LeadershipDashboard() {
 
       <RollSubmissionChecklist />
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex justify-between items-center text-lg">
-              <span>Recent Observations</span>
-              <Link href="/observations"><span className="text-sm text-primary font-normal cursor-pointer hover:underline">View all</span></Link>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loadingObservations ? (
-              <div className="space-y-4"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>
-            ) : !observations || observations.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No recent observations</div>
-            ) : (
-              <div className="space-y-4">
-                {observations.slice(0, 5).map((obs) => (
-                  <div key={obs.id} className="flex justify-between items-start border-b pb-4 last:border-0 last:pb-0">
-                    <div>
-                      <Link href={`/observations/${obs.id}`}>
-                        <div className="font-medium cursor-pointer hover:text-primary transition-colors">{obs.title}</div>
-                      </Link>
-                      <div className="text-sm text-muted-foreground mt-1">{obs.childName} • By {obs.staffName}</div>
-                    </div>
-                    <div className="text-xs text-muted-foreground bg-accent/50 px-2 py-1 rounded">{format(new Date(obs.observationDate), "MMM d, yyyy")}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle className="text-lg">MTOP Outcomes Focus</CardTitle></CardHeader>
-          <CardContent>
-            {loadingOutcomes ? (
-              <div className="space-y-4"><Skeleton className="h-8 w-full" /><Skeleton className="h-8 w-full" /></div>
-            ) : !outcomes || outcomes.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No outcome data available</div>
-            ) : (
-              <div className="space-y-4">
-                {outcomes.map((oc) => (
-                  <div key={oc.outcomeId} className="flex items-center">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm mr-3 shrink-0">{oc.outcomeNumber}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm font-medium line-clamp-1 pr-2">{oc.outcomeTitle}</span>
-                        <span className="text-sm text-muted-foreground">{oc.count}</span>
-                      </div>
-                      <div className="h-2 w-full bg-accent rounded-full overflow-hidden">
-                        <div className="h-full bg-primary" style={{ width: `${Math.min(100, (oc.count / (summary?.totalObservations || 1)) * 100)}%` }} />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center text-lg">
+            <span>Recent Observations</span>
+            <Link href="/observations"><span className="text-sm text-primary font-normal cursor-pointer hover:underline">View all</span></Link>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loadingObservations ? (
+            <div className="space-y-4 p-6"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
+          ) : !observations || observations.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No recent observations</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/40">
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Date</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Child</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Observation</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Site</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Submitter</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {observations.slice(0, 10).map((obs) => (
+                    <tr key={obs.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap align-top">
+                        {format(new Date(obs.observationDate.length === 10 ? obs.observationDate + "T00:00:00" : obs.observationDate), "d MMM yyyy")}
+                      </td>
+                      <td className="px-4 py-3 font-medium whitespace-nowrap align-top">
+                        {obs.childName ?? <span className="text-muted-foreground italic">Unknown</span>}
+                      </td>
+                      <td className="px-4 py-3 align-top max-w-xs">
+                        <Link href={`/observations/${obs.id}`}>
+                          <span className="line-clamp-2 cursor-pointer hover:text-primary transition-colors leading-snug">
+                            {obs.description}
+                          </span>
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap align-top">
+                        {obs.siteName ?? <span className="italic">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap align-top">
+                        {obs.staffName ?? <span className="italic">—</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="bg-primary/5 border-primary/20">
         <CardHeader className="pb-3">

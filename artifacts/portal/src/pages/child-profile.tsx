@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePermissions } from "@/hooks/use-permissions";
 import { melbourneDateTimeStr } from "@/lib/timezone";
 import {
   useGetChild, useUpdateChild, useDeleteChild,
@@ -68,6 +69,7 @@ export default function ChildProfile() {
   const id = parseInt(params.id || "0");
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isEducatorRole } = usePermissions();
 
   const [, navigate] = useLocation();
 
@@ -661,8 +663,8 @@ export default function ChildProfile() {
         </CardContent>
       </Card>
 
-      {/* Confidential Notes */}
-      <Card className="border-slate-300 dark:border-slate-600">
+      {/* Confidential Notes — Admin & Educational Leader only */}
+      {!isEducatorRole && <Card className="border-slate-300 dark:border-slate-600">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div className="space-y-1">
             <CardTitle className="text-base flex items-center gap-2">
@@ -673,7 +675,6 @@ export default function ChildProfile() {
               <span className="inline-flex items-center gap-1 rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-slate-700 dark:text-slate-300 font-medium">
                 Admin &amp; Educational Leader only
               </span>
-              <span>— role restriction will be enforced once authentication is added</span>
             </p>
           </div>
           <Button size="sm" onClick={() => { setConfNoteText(""); setConfNoteStaffId(""); setConfAddOpen(true); }}>
@@ -754,7 +755,7 @@ export default function ChildProfile() {
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card>}
         </TabsContent>
 
         {/* ── Child's Data ── */}
@@ -969,8 +970,8 @@ export default function ChildProfile() {
 
       </Tabs>
 
-      {/* Add Confidential Note Dialog */}
-      <Dialog open={confAddOpen} onOpenChange={setConfAddOpen}>
+      {/* Add Confidential Note Dialog — Admin & Educational Leader only */}
+      {!isEducatorRole && <Dialog open={confAddOpen} onOpenChange={setConfAddOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1013,7 +1014,7 @@ export default function ChildProfile() {
             </div>
           </form>
         </DialogContent>
-      </Dialog>
+      </Dialog>}
 
       {/* Edit Profile Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>

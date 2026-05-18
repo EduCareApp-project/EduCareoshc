@@ -94,9 +94,15 @@ const SETTING_META: Record<string, { label: string; description: string; hasAdva
     hasAdvanceDays: false,
     group: "Events",
   },
+  planning_published: {
+    label: "Weekly program published",
+    description: "Email guardians when a weekly program is published.",
+    hasAdvanceDays: false,
+    group: "Guardian Emails",
+  },
 };
 
-const GROUPS = ["Deadline Reminders", "Events"];
+const GROUPS = ["Deadline Reminders", "Events", "Guardian Emails"];
 
 type SettingRow = {
   type: string;

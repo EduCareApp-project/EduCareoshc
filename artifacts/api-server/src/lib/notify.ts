@@ -17,7 +17,7 @@ export type NotificationType =
   | "staff_qualification_expiry"
   | "checklist_overdue";
 
-async function isTypeEnabled(type: NotificationType): Promise<boolean> {
+export async function isTypeEnabled(type: NotificationType): Promise<boolean> {
   const [setting] = await db.select({ enabled: notificationSettingsTable.enabled })
     .from(notificationSettingsTable)
     .where(eq(notificationSettingsTable.type, type));

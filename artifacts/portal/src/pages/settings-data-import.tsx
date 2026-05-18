@@ -2,8 +2,8 @@ import { useState, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import {
   ChevronLeft, Upload, Download, CheckCircle2, XCircle,
-  AlertCircle, Building2, Users, Baby, UserCheck, Loader2,
-  FileText, X, SkipForward,
+  AlertCircle, Building2, Users, Baby, Loader2,
+  FileText, X, SkipForward, UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -51,12 +51,14 @@ function parseCSV(text: string): Array<Record<string, string>> {
 // ── CSV templates ─────────────────────────────────────────────────────────────
 const TEMPLATES = {
   children: [
-    "# EduCare Children Import Template",
+    "# EduCare Children & Guardians Import Template",
+    "# One row per child. Guardian portal accounts are created automatically from guardianEmail.",
+    "# username is optional — the guardian can set it on first login if left blank.",
     "# Date format: YYYY-MM-DD or DD/MM/YYYY",
     "# status values: active | inactive | waitlisted  (default: active)",
-    "firstName,lastName,dateOfBirth,enrollmentDate,guardianName,guardianEmail,guardianPhone,medicalNotes,status",
-    "Emma,Smith,2018-06-15,2024-01-22,Jane Smith,jane.smith@email.com,0412 345 678,,active",
-    "Liam,Jones,2020-03-01,2024-01-22,David Jones,david.jones@email.com,0487 654 321,Peanut allergy,active",
+    "firstName,lastName,dateOfBirth,enrollmentDate,guardianName,guardianEmail,guardianPhone,medicalNotes,status,username",
+    "Emma,Smith,2018-06-15,2024-01-22,Jane Smith,jane.smith@email.com,0412 345 678,,active,",
+    "Liam,Jones,2020-03-01,2024-01-22,David Jones,david.jones@email.com,0487 654 321,Peanut allergy,active,davidj",
   ].join("\n"),
 
   staff: [
@@ -66,18 +68,9 @@ const TEMPLATES = {
     "Sarah,Williams,sarah.williams@centre.com.au,educator,Certificate III,0411 222 333,WWC1234567E",
     "Michael,Brown,m.brown@centre.com.au,coordinator,Diploma of Early Childhood,0422 333 444,WWC7654321E",
   ].join("\n"),
-
-  guardians: [
-    "# EduCare Guardian Accounts Import Template",
-    "# Creates login accounts for guardian emails already linked to enrolled children.",
-    "# username is optional — guardians can set it on first login.",
-    "guardianEmail,username",
-    "jane.smith@email.com,",
-    "david.jones@email.com,davidj",
-  ].join("\n"),
 };
 
-function downloadTemplate(type: "children" | "staff" | "guardians") {
+function downloadTemplate(type: "children" | "staff") {
   const csv = TEMPLATES[type];
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -93,6 +86,7 @@ type ImportResult = {
   inserted: number;
   skipped: number;
   errors: Array<{ row: number; message: string; data?: string }>;
+  guardianAccountsCreated?: number;
 };
 
 // ── File drop zone ────────────────────────────────────────────────────────────
@@ -163,7 +157,7 @@ function FileDropZone({
 }
 
 // ── Result summary ────────────────────────────────────────────────────────────
-function ResultSummary({ result }: { result: ImportResult }) {
+function ResultSummary({ result, showGuardians }: { result: ImportResult; showGuardians?: boolean }) {
   return (
     <div className="space-y-3 mt-4">
       <div className="flex flex-wrap gap-3">
@@ -171,6 +165,14 @@ function ResultSummary({ result }: { result: ImportResult }) {
           <CheckCircle2 className="h-4 w-4 text-green-600" />
           <span className="text-sm font-medium text-green-700 dark:text-green-400">{result.inserted} inserted</span>
         </div>
+        {showGuardians && (result.guardianAccountsCreated ?? 0) > 0 && (
+          <div className="flex items-center gap-2 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 px-3 py-2">
+            <UserCheck className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
+              {result.guardianAccountsCreated} guardian {result.guardianAccountsCreated === 1 ? "account" : "accounts"} created
+            </span>
+          </div>
+        )}
         <div className="flex items-center gap-2 rounded-md bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 px-3 py-2">
           <SkipForward className="h-4 w-4 text-yellow-600" />
           <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">{result.skipped} skipped (already exist)</span>
@@ -204,11 +206,13 @@ function ImportTab({
   siteId,
   description,
   requiresSite = true,
+  showGuardians = false,
 }: {
-  type: "children" | "staff" | "guardians";
+  type: "children" | "staff";
   siteId: number | null;
-  description: string;
+  description: React.ReactNode;
   requiresSite?: boolean;
+  showGuardians?: boolean;
 }) {
   const [fileName, setFileName] = useState<string>();
   const [rows, setRows] = useState<Array<Record<string, string>>>([]);
@@ -272,7 +276,7 @@ function ImportTab({
 
   return (
     <div className="space-y-4 pt-4">
-      <p className="text-sm text-muted-foreground">{description}</p>
+      <div className="text-sm text-muted-foreground">{description}</div>
 
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground">
@@ -298,7 +302,7 @@ function ImportTab({
         </Alert>
       )}
 
-      {result && <ResultSummary result={result} />}
+      {result && <ResultSummary result={result} showGuardians={showGuardians} />}
 
       <div className="flex justify-end pt-1">
         <Button
@@ -340,7 +344,7 @@ export default function SettingsDataImport() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Data Import</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Bulk-import children, staff, and guardian accounts from CSV files.
+            Bulk-import children and staff from CSV files. Guardian portal accounts are created automatically.
           </p>
         </div>
       </div>
@@ -411,18 +415,14 @@ export default function SettingsDataImport() {
 
       {/* Import tabs */}
       <Tabs defaultValue="children">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="children" className="gap-2">
             <Baby className="h-4 w-4" />
-            Children
+            Children & Guardians
           </TabsTrigger>
           <TabsTrigger value="staff" className="gap-2">
             <Users className="h-4 w-4" />
             Staff
-          </TabsTrigger>
-          <TabsTrigger value="guardians" className="gap-2">
-            <UserCheck className="h-4 w-4" />
-            Guardians
           </TabsTrigger>
         </TabsList>
 
@@ -432,7 +432,23 @@ export default function SettingsDataImport() {
               <ImportTab
                 type="children"
                 siteId={selectedSiteId}
-                description="Import enrolled children. Duplicate records (matching first name, last name, and guardian email) are skipped automatically."
+                showGuardians
+                description={
+                  <div className="space-y-2">
+                    <p>
+                      Upload one row per child. Each row also creates a <strong>guardian portal account</strong> using
+                      the guardian's email address — so there is no separate guardian import step.
+                    </p>
+                    <ul className="list-disc list-inside space-y-0.5 text-xs text-muted-foreground">
+                      <li>Duplicate children (matching name + guardian email) are skipped automatically.</li>
+                      <li>If the guardian already has a portal account, it won't be duplicated.</li>
+                      <li>
+                        The <code className="font-mono bg-muted px-1 rounded text-xs">username</code> column is
+                        optional — guardians can set their username on first login if left blank.
+                      </li>
+                    </ul>
+                  </div>
+                }
               />
             </CardContent>
           </Card>
@@ -449,19 +465,6 @@ export default function SettingsDataImport() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="guardians">
-          <Card>
-            <CardContent className="pt-2 pb-6 px-6">
-              <ImportTab
-                type="guardians"
-                siteId={selectedSiteId}
-                requiresSite={false}
-                description="Create guardian portal login accounts. Each row requires a guardian email that is already linked to an enrolled child. Duplicates are skipped."
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       {/* Notes */}
@@ -471,10 +474,9 @@ export default function SettingsDataImport() {
           <p><strong>Import notes:</strong></p>
           <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
             <li>Rows with missing required fields are reported as errors and skipped — they do not block the rest of the import.</li>
-            <li>Staff are imported without passwords. Send login instructions from each staff profile after import.</li>
-            <li>Guardian accounts do not create child records — enrol children first, then import guardians to enable portal access.</li>
             <li>Date formats accepted: YYYY-MM-DD or DD/MM/YYYY.</li>
-            <li>Age group values accepted: infant, toddler, preschool, school_age, oshc.</li>
+            <li>Staff are imported without passwords. Send login instructions from each staff profile after import.</li>
+            <li>Guardian portal accounts are created automatically when children are imported — no separate upload needed.</li>
           </ul>
         </AlertDescription>
       </Alert>

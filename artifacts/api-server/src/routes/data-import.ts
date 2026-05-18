@@ -31,6 +31,7 @@ type ImportResult = {
   inserted: number;
   skipped: number;
   errors: Array<{ row: number; message: string; data?: string }>;
+  guardianAccountsCreated?: number;
 };
 
 // ── POST /import/children ─────────────────────────────────────────────────────
@@ -47,7 +48,7 @@ router.post("/import/children", async (req, res): Promise<void> => {
     return;
   }
 
-  const result: ImportResult = { inserted: 0, skipped: 0, errors: [] };
+  const result: ImportResult = { inserted: 0, skipped: 0, errors: [], guardianAccountsCreated: 0 };
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -61,6 +62,7 @@ router.post("/import/children", async (req, res): Promise<void> => {
     const guardianEmail = (row.guardianEmail?.trim() || row.guardian_email?.trim() || row.parentEmail?.trim() || row.parent_email?.trim())?.toLowerCase();
     const guardianPhone = row.guardianPhone?.trim() || row.guardian_phone?.trim() || row.parentPhone?.trim() || row.parent_phone?.trim();
     const medicalNotes = row.medicalNotes?.trim() || row.medical_notes?.trim() || undefined;
+    const username = row.username?.trim() || undefined;
     const statusRaw = (row.status?.trim() || "active").toLowerCase();
     const status = ["active", "inactive", "waitlisted"].includes(statusRaw) ? statusRaw : "active";
 
@@ -111,6 +113,19 @@ router.post("/import/children", async (req, res): Promise<void> => {
         siteId,
       });
       result.inserted++;
+
+      // Also create a guardian portal account if one doesn't already exist
+      const existingAccount = await db.select({ id: parentAccountsTable.id })
+        .from(parentAccountsTable)
+        .where(eq(parentAccountsTable.guardianEmail, guardianEmail!))
+        .limit(1);
+      if (existingAccount.length === 0) {
+        await db.insert(parentAccountsTable).values({
+          guardianEmail: guardianEmail!,
+          username: username ?? null,
+        });
+        result.guardianAccountsCreated = (result.guardianAccountsCreated ?? 0) + 1;
+      }
     } catch (err: any) {
       result.errors.push({ row: rowNum, message: err?.message ?? "Database error", data: `${firstName} ${lastName}` });
     }

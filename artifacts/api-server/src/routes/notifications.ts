@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { logger } from "../lib/logger";
 import { eq, and, desc, isNull, lte, gte, inArray, not } from "drizzle-orm";
 import {
   db,
@@ -237,7 +238,7 @@ async function computeDeadlineNotifications(): Promise<void> {
 router.get("/notifications", async (req, res): Promise<void> => {
   const userId = req.session.user!.id;
 
-  computeDeadlineNotifications().catch(() => {});
+  computeDeadlineNotifications().catch((err) => logger.warn({ err }, "Deadline notification computation failed"));
 
   const items = await db.select()
     .from(notificationsTable)

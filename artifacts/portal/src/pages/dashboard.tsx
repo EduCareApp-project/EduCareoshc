@@ -1112,7 +1112,7 @@ function GuardianDashboard({ siteFilter = "__all__" }: { siteFilter?: string }) 
         ))}
       </div>
 
-      <NoticeBoard canManage={false} audience="guardian" />
+      <NoticeBoard canManage audience="guardian" />
 
       {/* Published weekly plans */}
       <Card>

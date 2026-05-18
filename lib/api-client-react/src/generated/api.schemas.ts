@@ -1647,6 +1647,83 @@ export interface ChildSettings {
   childDisplayMode: ChildSettingsChildDisplayMode;
 }
 
+export type FeatureSettingsPostsDefaultScope =
+  (typeof FeatureSettingsPostsDefaultScope)[keyof typeof FeatureSettingsPostsDefaultScope];
+
+export const FeatureSettingsPostsDefaultScope = {
+  all_sites: "all_sites",
+  own_site: "own_site",
+} as const;
+
+export type FeatureSettingsObservationsDefaultType =
+  (typeof FeatureSettingsObservationsDefaultType)[keyof typeof FeatureSettingsObservationsDefaultType];
+
+export const FeatureSettingsObservationsDefaultType = {
+  individual: "individual",
+  group: "group",
+} as const;
+
+export type FeatureSettingsStoriesDefaultSharing =
+  (typeof FeatureSettingsStoriesDefaultSharing)[keyof typeof FeatureSettingsStoriesDefaultSharing];
+
+export const FeatureSettingsStoriesDefaultSharing = {
+  staff_only: "staff_only",
+  guardians: "guardians",
+} as const;
+
+export type FeatureSettingsCalendarDefaultView =
+  (typeof FeatureSettingsCalendarDefaultView)[keyof typeof FeatureSettingsCalendarDefaultView];
+
+export const FeatureSettingsCalendarDefaultView = {
+  week: "week",
+  month: "month",
+} as const;
+
+export interface FeatureSettings {
+  guardianAllowComments?: boolean;
+  /** @nullable */
+  guardianWelcomeMessage?: string | null;
+  guardianShowLearningStories?: boolean;
+  guardianShowObservations?: boolean;
+  guardianRequireEmail?: boolean;
+  staffRequireWwcc?: boolean;
+  staffAppraisalCycleDays?: number;
+  staffProfilesVisibleToPeers?: boolean;
+  childrenRequireMedicalNotes?: boolean;
+  childrenShowDobOnProfile?: boolean;
+  postsAllowGuardianComments?: boolean;
+  postsDefaultScope?: FeatureSettingsPostsDefaultScope;
+  postsRequireCommentApproval?: boolean;
+  observationsRequireMtop?: boolean;
+  observationsDefaultType?: FeatureSettingsObservationsDefaultType;
+  observationsVisibleToPeers?: boolean;
+  storiesIncludeMtop?: boolean;
+  storiesIncludePhoto?: boolean;
+  storiesDefaultSharing?: FeatureSettingsStoriesDefaultSharing;
+  incidentNotifyGuardians?: boolean;
+  incidentRequireFollowUp?: boolean;
+  incidentNotifyAllSites?: boolean;
+  conditionNotifyGuardians?: boolean;
+  conditionRequireFollowUp?: boolean;
+  calendarDefaultView?: FeatureSettingsCalendarDefaultView;
+  calendarPublishByDefault?: boolean;
+  calendarShowPublicHolidays?: boolean;
+  checklistReminderDays?: number;
+  checklistAutoClose?: boolean;
+  planningCycleDurationWeeks?: number;
+  planningRequireOutcomes?: boolean;
+  planningLockAfterPublish?: boolean;
+  complianceReviewCycleDays?: number;
+  staffComplianceWarnDays?: number;
+  staffComplianceSuspendOnExpiry?: boolean;
+  jottingsVisibleToGuardians?: boolean;
+  jottingsRequireChild?: boolean;
+  evacuationDrillFrequencyDays?: number;
+  evacuationDrillReminderDays?: number;
+  policiesRequireAcknowledgement?: boolean;
+  policiesAcknowledgementDays?: number;
+}
+
 export interface UpdateNotificationSettingItem {
   type: string;
   enabled: boolean;

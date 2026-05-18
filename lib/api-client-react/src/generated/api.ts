@@ -42,6 +42,7 @@ import type {
   ErrorEnvelope,
   Evacuation,
   EvacuationInput,
+  FeatureSettings,
   FileCategory,
   FileCategoryInput,
   FileCategoryUpdate,
@@ -10990,6 +10991,167 @@ export const useMarkNotificationRead = <
   TContext
 > => {
   return useMutation(getMarkNotificationReadMutationOptions(options));
+};
+
+/**
+ * @summary Get feature settings for all portal sections
+ */
+export const getGetFeatureSettingsUrl = () => {
+  return `/api/settings/features`;
+};
+
+export const getFeatureSettings = async (
+  options?: RequestInit,
+): Promise<FeatureSettings> => {
+  return customFetch<FeatureSettings>(getGetFeatureSettingsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetFeatureSettingsQueryKey = () => {
+  return [`/api/settings/features`] as const;
+};
+
+export const getGetFeatureSettingsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getFeatureSettings>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getFeatureSettings>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetFeatureSettingsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getFeatureSettings>>
+  > = ({ signal }) => getFeatureSettings({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getFeatureSettings>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetFeatureSettingsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getFeatureSettings>>
+>;
+export type GetFeatureSettingsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get feature settings for all portal sections
+ */
+
+export function useGetFeatureSettings<
+  TData = Awaited<ReturnType<typeof getFeatureSettings>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getFeatureSettings>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetFeatureSettingsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update feature settings (partial update — only provided keys are changed)
+ */
+export const getUpdateFeatureSettingsUrl = () => {
+  return `/api/settings/features`;
+};
+
+export const updateFeatureSettings = async (
+  featureSettings: FeatureSettings,
+  options?: RequestInit,
+): Promise<FeatureSettings> => {
+  return customFetch<FeatureSettings>(getUpdateFeatureSettingsUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(featureSettings),
+  });
+};
+
+export const getUpdateFeatureSettingsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateFeatureSettings>>,
+    TError,
+    { data: BodyType<FeatureSettings> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateFeatureSettings>>,
+  TError,
+  { data: BodyType<FeatureSettings> },
+  TContext
+> => {
+  const mutationKey = ["updateFeatureSettings"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateFeatureSettings>>,
+    { data: BodyType<FeatureSettings> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return updateFeatureSettings(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateFeatureSettingsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateFeatureSettings>>
+>;
+export type UpdateFeatureSettingsMutationBody = BodyType<FeatureSettings>;
+export type UpdateFeatureSettingsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update feature settings (partial update — only provided keys are changed)
+ */
+export const useUpdateFeatureSettings = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateFeatureSettings>>,
+    TError,
+    { data: BodyType<FeatureSettings> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateFeatureSettings>>,
+  TError,
+  { data: BodyType<FeatureSettings> },
+  TContext
+> => {
+  return useMutation(getUpdateFeatureSettingsMutationOptions(options));
 };
 
 /**

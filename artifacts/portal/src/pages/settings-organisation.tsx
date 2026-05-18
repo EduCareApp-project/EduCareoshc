@@ -5,13 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Building2, Copy, Check, Info, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Building2, Copy, Check, Info, ShieldCheck, Phone, Mail } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
 type Organisation = {
   id: number;
   organisationId: string | null;
   name: string | null;
+  approvalNumber: string | null;
+  abn: string | null;
+  servicePhone: string | null;
+  serviceEmail: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -33,6 +38,10 @@ export default function SettingsOrganisation() {
 
   const [orgIdInput, setOrgIdInput] = useState("");
   const [nameInput, setNameInput] = useState("");
+  const [approvalNumber, setApprovalNumber] = useState("");
+  const [abn, setAbn] = useState("");
+  const [servicePhone, setServicePhone] = useState("");
+  const [serviceEmail, setServiceEmail] = useState("");
   const [copied, setCopied] = useState(false);
   const [dirty, setDirty] = useState(false);
 
@@ -49,6 +58,10 @@ export default function SettingsOrganisation() {
     if (data) {
       setOrgIdInput(data.organisationId ?? "");
       setNameInput(data.name ?? "");
+      setApprovalNumber(data.approvalNumber ?? "");
+      setAbn(data.abn ?? "");
+      setServicePhone(data.servicePhone ?? "");
+      setServiceEmail(data.serviceEmail ?? "");
     }
   }, [data?.id]);
 
@@ -60,6 +73,10 @@ export default function SettingsOrganisation() {
         body: JSON.stringify({
           organisationId: orgIdInput.trim() || null,
           name: nameInput.trim() || null,
+          approvalNumber: approvalNumber.trim() || null,
+          abn: abn.trim() || null,
+          servicePhone: servicePhone.trim() || null,
+          serviceEmail: serviceEmail.trim() || null,
         }),
       });
       const json = await res.json();
@@ -84,8 +101,10 @@ export default function SettingsOrganisation() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  function markDirty() { setDirty(true); }
+
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-8">
+    <div className="max-w-2xl space-y-8">
       {/* Header */}
       <div>
         <button
@@ -100,7 +119,7 @@ export default function SettingsOrganisation() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">Organisation</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Identify this organisation for database assignment and multi-site management.</p>
+            <p className="text-sm text-muted-foreground mt-0.5">Manage your organisation's identity, approval details and contact information.</p>
           </div>
         </div>
       </div>
@@ -140,65 +159,119 @@ export default function SettingsOrganisation() {
       <div className="flex gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
         <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
         <div className="space-y-1">
-          <p><strong>Format:</strong> 6 digits followed by 1 uppercase letter — for example <code className="bg-blue-100 px-1 rounded">123456A</code></p>
-          <p className="text-blue-600 text-xs">This ID uniquely identifies your organisation and will be used to assign and route databases as the platform scales to support multiple organisations.</p>
+          <p><strong>Organisation ID format:</strong> 6 digits followed by 1 uppercase letter — for example <code className="bg-blue-100 px-1 rounded">123456A</code></p>
+          <p className="text-blue-600 text-xs">This ID uniquely identifies your organisation and is used for database assignment across multi-site deployments.</p>
         </div>
       </div>
 
-      {/* Form */}
-      <div className="bg-card border rounded-xl p-6 space-y-5">
-        <h2 className="font-semibold text-sm">Organisation Details</h2>
-
-        <div className="space-y-2">
-          <Label htmlFor="org-id">
-            Organisation ID <span className="text-destructive">*</span>
-          </Label>
-          <div className="relative">
-            <Input
-              id="org-id"
-              value={orgIdInput}
-              onChange={(e) => {
-                setOrgIdInput(e.target.value.toUpperCase());
-                setDirty(true);
-              }}
-              placeholder="e.g. 123456A"
-              maxLength={7}
-              className={`font-mono tracking-widest text-base ${orgIdError ? "border-destructive focus-visible:ring-destructive" : ""}`}
-            />
-            {orgIdInput && !orgIdError && (
-              <Check className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-600" />
+      {/* Organisation Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Organisation Details</CardTitle>
+          <CardDescription>Legal identity and system identifier for this organisation.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="org-id">
+              Organisation ID <span className="text-destructive">*</span>
+            </Label>
+            <div className="relative">
+              <Input
+                id="org-id"
+                value={orgIdInput}
+                onChange={(e) => { setOrgIdInput(e.target.value.toUpperCase()); markDirty(); }}
+                placeholder="e.g. 123456A"
+                maxLength={7}
+                className={`font-mono tracking-widest text-base ${orgIdError ? "border-destructive focus-visible:ring-destructive" : ""}`}
+              />
+              {orgIdInput && !orgIdError && (
+                <Check className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-600" />
+              )}
+            </div>
+            {orgIdError && <p className="text-xs text-destructive">{orgIdError}</p>}
+            {!orgIdError && orgIdInput && ORG_ID_REGEX.test(orgIdInput) && (
+              <p className="text-xs text-emerald-700 font-medium">Valid format</p>
             )}
           </div>
-          {orgIdError && (
-            <p className="text-xs text-destructive">{orgIdError}</p>
-          )}
-          {!orgIdError && !orgIdInput && (
-            <p className="text-xs text-muted-foreground">Enter 6 digits and a capital letter — the letter will be auto-uppercased as you type.</p>
-          )}
-          {!orgIdError && orgIdInput && ORG_ID_REGEX.test(orgIdInput) && (
-            <p className="text-xs text-emerald-700 font-medium">✓ Valid format</p>
-          )}
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="org-name">Organisation Name</Label>
-          <Input
-            id="org-name"
-            value={nameInput}
-            onChange={(e) => { setNameInput(e.target.value); setDirty(true); }}
-            placeholder="e.g. Elysium OSHC Pty Ltd"
-          />
-          <p className="text-xs text-muted-foreground">The registered legal name of the organisation.</p>
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="org-name">Organisation Name</Label>
+            <Input
+              id="org-name"
+              value={nameInput}
+              onChange={(e) => { setNameInput(e.target.value); markDirty(); }}
+              placeholder="e.g. Elysium OSHC Pty Ltd"
+            />
+            <p className="text-xs text-muted-foreground">The registered legal name of the organisation.</p>
+          </div>
 
-        <div className="flex justify-end gap-2 pt-1 border-t">
-          <Button
-            onClick={() => saveMutation.mutate()}
-            disabled={!canSave || saveMutation.isPending}
-          >
-            {saveMutation.isPending ? "Saving…" : "Save"}
-          </Button>
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="abn">ABN</Label>
+            <Input
+              id="abn"
+              value={abn}
+              onChange={(e) => { setAbn(e.target.value); markDirty(); }}
+              placeholder="e.g. 12 345 678 901"
+              maxLength={14}
+            />
+            <p className="text-xs text-muted-foreground">Australian Business Number — 11 digits.</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Service Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Service Details</CardTitle>
+          <CardDescription>Approval number and public contact information for this service.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="approval-number">Service Approval Number</Label>
+            <Input
+              id="approval-number"
+              value={approvalNumber}
+              onChange={(e) => { setApprovalNumber(e.target.value); markDirty(); }}
+              placeholder="e.g. SA-20-12345"
+            />
+            <p className="text-xs text-muted-foreground">The service approval number issued by the relevant state or territory regulatory authority.</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="service-phone">
+              <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> Service Phone</span>
+            </Label>
+            <Input
+              id="service-phone"
+              type="tel"
+              value={servicePhone}
+              onChange={(e) => { setServicePhone(e.target.value); markDirty(); }}
+              placeholder="e.g. (03) 9000 0000"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="service-email">
+              <span className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> Service Email</span>
+            </Label>
+            <Input
+              id="service-email"
+              type="email"
+              value={serviceEmail}
+              onChange={(e) => { setServiceEmail(e.target.value); markDirty(); }}
+              placeholder="e.g. info@myservice.edu.au"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end gap-2">
+        <Button
+          onClick={() => saveMutation.mutate()}
+          disabled={!canSave || saveMutation.isPending}
+        >
+          {saveMutation.isPending ? "Saving…" : "Save Organisation Settings"}
+        </Button>
       </div>
     </div>
   );

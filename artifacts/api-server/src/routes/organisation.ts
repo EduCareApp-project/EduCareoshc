@@ -14,7 +14,7 @@ router.get("/organisation", async (req, res): Promise<void> => {
 
 // PUT /api/organisation
 router.put("/organisation", async (req, res): Promise<void> => {
-  const { organisationId, name } = req.body ?? {};
+  const { organisationId, name, approvalNumber, abn, servicePhone, serviceEmail } = req.body ?? {};
 
   if (organisationId !== undefined && organisationId !== null && organisationId !== "") {
     if (!ORG_ID_REGEX.test(String(organisationId))) {
@@ -27,24 +27,25 @@ router.put("/organisation", async (req, res): Promise<void> => {
 
   const [existing] = await db.select().from(organisationTable).limit(1);
 
+  const patch: Record<string, unknown> = { updatedAt: new Date() };
+  if (organisationId !== undefined) patch.organisationId = organisationId ?? null;
+  if (name !== undefined) patch.name = name?.trim() || null;
+  if (approvalNumber !== undefined) patch.approvalNumber = approvalNumber?.trim() || null;
+  if (abn !== undefined) patch.abn = abn?.trim() || null;
+  if (servicePhone !== undefined) patch.servicePhone = servicePhone?.trim() || null;
+  if (serviceEmail !== undefined) patch.serviceEmail = serviceEmail?.trim() || null;
+
   if (existing) {
     const [updated] = await db
       .update(organisationTable)
-      .set({
-        organisationId: organisationId ?? existing.organisationId,
-        name: name !== undefined ? (name?.trim() || null) : existing.name,
-        updatedAt: new Date(),
-      })
+      .set(patch as any)
       .where(eq(organisationTable.id, existing.id))
       .returning();
     res.json(updated);
   } else {
     const [created] = await db
       .insert(organisationTable)
-      .values({
-        organisationId: organisationId ?? null,
-        name: name?.trim() || null,
-      })
+      .values(patch as any)
       .returning();
     res.status(201).json(created);
   }

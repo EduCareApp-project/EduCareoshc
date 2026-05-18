@@ -62,6 +62,21 @@ import SettingsAccess from "@/pages/settings-access";
 import SettingsNotifications from "@/pages/settings-notifications";
 import SettingsChildren from "@/pages/settings-children";
 import SettingsDataImport from "@/pages/settings-data-import";
+import SettingsGuardians from "@/pages/settings-guardians";
+import SettingsStaffConfig from "@/pages/settings-staff-config";
+import SettingsPostsConfig from "@/pages/settings-posts-config";
+import SettingsObservationsConfig from "@/pages/settings-observations-config";
+import SettingsLearningStoriesConfig from "@/pages/settings-learning-stories-config";
+import SettingsIncidentsConfig from "@/pages/settings-incidents-config";
+import SettingsCalendarConfig from "@/pages/settings-calendar-config";
+import SettingsChecklistsConfig from "@/pages/settings-checklists-config";
+import SettingsPlanningConfig from "@/pages/settings-planning-config";
+import SettingsServiceComplianceConfig from "@/pages/settings-service-compliance-config";
+import SettingsStaffComplianceConfig from "@/pages/settings-staff-compliance-config";
+import SettingsJottingsConfig from "@/pages/settings-jottings-config";
+import SettingsConditionConfig from "@/pages/settings-condition-config";
+import SettingsEvacuationConfig from "@/pages/settings-evacuation-config";
+import SettingsPoliciesConfig from "@/pages/settings-policies-config";
 import Appraisals from "@/pages/appraisals";
 import AppraisalDetail from "@/pages/appraisal-detail";
 import AppraisalStage1 from "@/pages/appraisal-stage1";
@@ -170,6 +185,21 @@ function StaffRoutes() {
         <Route path="/settings/notifications" component={SettingsNotifications} />
         <Route path="/settings/children" component={SettingsChildren} />
         <Route path="/settings/data-import" component={SettingsDataImport} />
+        <Route path="/settings/guardians" component={SettingsGuardians} />
+        <Route path="/settings/staff" component={SettingsStaffConfig} />
+        <Route path="/settings/posts" component={SettingsPostsConfig} />
+        <Route path="/settings/observations" component={SettingsObservationsConfig} />
+        <Route path="/settings/learning-stories" component={SettingsLearningStoriesConfig} />
+        <Route path="/settings/incident-config" component={SettingsIncidentsConfig} />
+        <Route path="/settings/calendar-config" component={SettingsCalendarConfig} />
+        <Route path="/settings/checklists-config" component={SettingsChecklistsConfig} />
+        <Route path="/settings/planning" component={SettingsPlanningConfig} />
+        <Route path="/settings/service-compliance-config" component={SettingsServiceComplianceConfig} />
+        <Route path="/settings/staff-compliance" component={SettingsStaffComplianceConfig} />
+        <Route path="/settings/jottings" component={SettingsJottingsConfig} />
+        <Route path="/settings/condition-config" component={SettingsConditionConfig} />
+        <Route path="/settings/evacuation-config" component={SettingsEvacuationConfig} />
+        <Route path="/settings/policies-config" component={SettingsPoliciesConfig} />
 
         <Route component={NotFound} />
       </Switch>

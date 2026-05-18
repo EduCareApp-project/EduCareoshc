@@ -2462,6 +2462,36 @@ paths:
                   ok:
                     type: boolean
 
+  /settings/features:
+    get:
+      operationId: getFeatureSettings
+      tags: [settings]
+      summary: Get feature settings for all portal sections
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeatureSettings"
+    put:
+      operationId: updateFeatureSettings
+      tags: [settings]
+      summary: Update feature settings (partial update — only provided keys are changed)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeatureSettings"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeatureSettings"
+
   /settings/children:
     get:
       operationId: getChildSettings
@@ -4933,6 +4963,96 @@ components:
         childDisplayMode:
           type: string
           enum: [letter_icon, profile_picture]
+
+    FeatureSettings:
+      type: object
+      properties:
+        guardianAllowComments:
+          type: boolean
+        guardianWelcomeMessage:
+          type: ["string", "null"]
+        guardianShowLearningStories:
+          type: boolean
+        guardianShowObservations:
+          type: boolean
+        guardianRequireEmail:
+          type: boolean
+        staffRequireWwcc:
+          type: boolean
+        staffAppraisalCycleDays:
+          type: integer
+        staffProfilesVisibleToPeers:
+          type: boolean
+        childrenRequireMedicalNotes:
+          type: boolean
+        childrenShowDobOnProfile:
+          type: boolean
+        postsAllowGuardianComments:
+          type: boolean
+        postsDefaultScope:
+          type: string
+          enum: [all_sites, own_site]
+        postsRequireCommentApproval:
+          type: boolean
+        observationsRequireMtop:
+          type: boolean
+        observationsDefaultType:
+          type: string
+          enum: [individual, group]
+        observationsVisibleToPeers:
+          type: boolean
+        storiesIncludeMtop:
+          type: boolean
+        storiesIncludePhoto:
+          type: boolean
+        storiesDefaultSharing:
+          type: string
+          enum: [staff_only, guardians]
+        incidentNotifyGuardians:
+          type: boolean
+        incidentRequireFollowUp:
+          type: boolean
+        incidentNotifyAllSites:
+          type: boolean
+        conditionNotifyGuardians:
+          type: boolean
+        conditionRequireFollowUp:
+          type: boolean
+        calendarDefaultView:
+          type: string
+          enum: [week, month]
+        calendarPublishByDefault:
+          type: boolean
+        calendarShowPublicHolidays:
+          type: boolean
+        checklistReminderDays:
+          type: integer
+        checklistAutoClose:
+          type: boolean
+        planningCycleDurationWeeks:
+          type: integer
+        planningRequireOutcomes:
+          type: boolean
+        planningLockAfterPublish:
+          type: boolean
+        complianceReviewCycleDays:
+          type: integer
+        staffComplianceWarnDays:
+          type: integer
+        staffComplianceSuspendOnExpiry:
+          type: boolean
+        jottingsVisibleToGuardians:
+          type: boolean
+        jottingsRequireChild:
+          type: boolean
+        evacuationDrillFrequencyDays:
+          type: integer
+        evacuationDrillReminderDays:
+          type: integer
+        policiesRequireAcknowledgement:
+          type: boolean
+        policiesAcknowledgementDays:
+          type: integer
 
     UpdateNotificationSettingItem:
       type: object

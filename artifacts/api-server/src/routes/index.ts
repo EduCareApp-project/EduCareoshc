@@ -39,6 +39,7 @@ import rollSubmissionsRouter from "./roll-submissions";
 import settingsAccessRouter from "./settings-access";
 import notificationsRouter from "./notifications";
 import settingsChildrenRouter from "./settings-children";
+import settingsFeaturesRouter from "./settings-features";
 import dataImportRouter from "./data-import";
 
 const router: IRouter = Router();
@@ -105,6 +106,7 @@ router.use(rollSubmissionsRouter);
 router.use(settingsAccessRouter);
 router.use(notificationsRouter);
 router.use(settingsChildrenRouter);
+router.use(settingsFeaturesRouter);
 router.use(dataImportRouter);
 
 export default router;

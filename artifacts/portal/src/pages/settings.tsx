@@ -26,42 +26,42 @@ const SETTINGS_GROUPS: Group[] = [
     label: "People & Enrolment",
     tiles: [
       { icon: Baby, label: "Children", description: "Profile display mode — letter icon or uploaded profile picture.", href: "/settings/children" },
-      { icon: UserCog, label: "Guardians", description: "Guardian relationship types and contact preferences.", comingSoon: true },
-      { icon: Users, label: "Staff", description: "Roles, qualification types and WWCC requirements.", comingSoon: true },
+      { icon: UserCog, label: "Guardians", description: "Guardian relationship types and contact preferences.", href: "/settings/guardians" },
+      { icon: Users, label: "Staff", description: "Roles, qualification types and WWCC requirements.", href: "/settings/staff" },
     ],
   },
   {
     label: "Programming",
     tiles: [
-      { icon: CalendarDays, label: "Calendar", description: "Viewing preferences, event types and display options.", comingSoon: true },
-      { icon: Layers, label: "Planning Cycle", description: "Stage labels, default templates and planning cycle options.", comingSoon: true },
+      { icon: CalendarDays, label: "Calendar", description: "Viewing preferences, event types and display options.", href: "/settings/calendar-config" },
+      { icon: Layers, label: "Planning Cycle", description: "Stage labels, default templates and planning cycle options.", href: "/settings/planning" },
     ],
   },
   {
     label: "Learning",
     tiles: [
-      { icon: Newspaper, label: "Posts", description: "Post categories, visibility defaults and notification settings.", comingSoon: true },
-      { icon: StickyNote, label: "Jottings", description: "Jotting types and tagging configuration.", comingSoon: true },
-      { icon: BookOpen, label: "Observations", description: "Observation templates, MTOP outcome defaults and sharing settings.", comingSoon: true },
+      { icon: Newspaper, label: "Posts", description: "Post categories, visibility defaults and notification settings.", href: "/settings/posts" },
+      { icon: StickyNote, label: "Jottings", description: "Jotting types and tagging configuration.", href: "/settings/jottings" },
+      { icon: BookOpen, label: "Observations", description: "Observation templates, MTOP outcome defaults and sharing settings.", href: "/settings/observations" },
     ],
   },
   {
     label: "Service Operations",
     tiles: [
-      { icon: AlertTriangle, label: "Incident Log", description: "Incident categories, severity levels and reporting requirements.", comingSoon: true },
-      { icon: ClipboardX, label: "Condition Report", description: "Condition types and escalation workflows.", comingSoon: true },
-      { icon: ShieldAlert, label: "Safety Evacuation", description: "Evacuation procedure templates and drill frequency.", comingSoon: true },
+      { icon: AlertTriangle, label: "Incident Log", description: "Incident categories, severity levels and reporting requirements.", href: "/settings/incident-config" },
+      { icon: ClipboardX, label: "Condition Report", description: "Condition types and escalation workflows.", href: "/settings/condition-config" },
+      { icon: ShieldAlert, label: "Safety Evacuation", description: "Evacuation procedure templates and drill frequency.", href: "/settings/evacuation-config" },
       { icon: TrendingUp, label: "QIP Settings", description: "Manage QIP sources, priority types and improvement item defaults.", href: "/settings/qip" },
-      { icon: FolderOpen, label: "Policies & Files", description: "File categories, retention periods and access permissions.", comingSoon: true },
-      { icon: CheckSquare, label: "Checklists", description: "Checklist templates, schedules and completion reminders.", comingSoon: true },
+      { icon: FolderOpen, label: "Policies & Files", description: "File categories, retention periods and access permissions.", href: "/settings/policies-config" },
+      { icon: CheckSquare, label: "Checklists", description: "Checklist templates, schedules and completion reminders.", href: "/settings/checklists-config" },
     ],
   },
   {
     label: "Reports",
     tiles: [
-      { icon: BookMarked, label: "Learning Stories", description: "Report templates, branding and export preferences.", comingSoon: true },
-      { icon: ShieldCheck, label: "Service Compliance", description: "NQS area configuration and compliance tracking preferences.", comingSoon: true },
-      { icon: UserCheck, label: "Staff Compliance", description: "Qualification expiry thresholds and compliance alert settings.", comingSoon: true },
+      { icon: BookMarked, label: "Learning Stories", description: "Report templates, branding and export preferences.", href: "/settings/learning-stories" },
+      { icon: ShieldCheck, label: "Service Compliance", description: "NQS area configuration and compliance tracking preferences.", href: "/settings/service-compliance-config" },
+      { icon: UserCheck, label: "Staff Compliance", description: "Qualification expiry thresholds and compliance alert settings.", href: "/settings/staff-compliance" },
     ],
   },
   {

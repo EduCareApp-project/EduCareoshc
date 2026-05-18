@@ -15,15 +15,6 @@ function requireAdmin(req: any, res: any): boolean {
   return true;
 }
 
-function normalizeAgeGroup(raw: string): string | null {
-  const v = raw.trim().toLowerCase().replace(/[\s_-]+/g, "_");
-  if (["infant", "baby", "babies"].includes(v)) return "infant";
-  if (["toddler", "toddlers"].includes(v)) return "toddler";
-  if (["preschool", "pre_school", "pre_k", "kindergarten", "kindy"].includes(v)) return "preschool";
-  if (["school_age", "school", "oshc", "oosh", "osc", "primary", "primary_school"].includes(v)) return "school_age";
-  return null;
-}
-
 function parseDate(raw: string): string | null {
   if (!raw?.trim()) return null;
   const s = raw.trim();
@@ -66,7 +57,6 @@ router.post("/import/children", async (req, res): Promise<void> => {
     const lastName = row.lastName?.trim() || row.last_name?.trim();
     const dobRaw = row.dateOfBirth?.trim() || row.date_of_birth?.trim() || row.dob?.trim();
     const enrollRaw = row.enrollmentDate?.trim() || row.enrollment_date?.trim() || row.enrolmentDate?.trim() || row.enrolment_date?.trim();
-    const ageGroupRaw = row.ageGroup?.trim() || row.age_group?.trim() || row.agegroup?.trim();
     const guardianName = row.guardianName?.trim() || row.guardian_name?.trim() || row.parentName?.trim() || row.parent_name?.trim();
     const guardianEmail = (row.guardianEmail?.trim() || row.guardian_email?.trim() || row.parentEmail?.trim() || row.parent_email?.trim())?.toLowerCase();
     const guardianPhone = row.guardianPhone?.trim() || row.guardian_phone?.trim() || row.parentPhone?.trim() || row.parent_phone?.trim();
@@ -83,9 +73,6 @@ router.post("/import/children", async (req, res): Promise<void> => {
 
     const enrollmentDate = parseDate(enrollRaw ?? "");
     if (!enrollmentDate) errors.push("enrollmentDate is required (YYYY-MM-DD or DD/MM/YYYY)");
-
-    const ageGroup = normalizeAgeGroup(ageGroupRaw ?? "");
-    if (!ageGroup) errors.push(`ageGroup "${ageGroupRaw}" is not recognised — use: infant, toddler, preschool, school_age, oshc`);
 
     if (!guardianName) errors.push("guardianName is required");
     if (!guardianEmail) errors.push("guardianEmail is required");
@@ -116,7 +103,6 @@ router.post("/import/children", async (req, res): Promise<void> => {
         lastName: lastName!,
         dateOfBirth: dateOfBirth! as any,
         enrollmentDate: enrollmentDate! as any,
-        ageGroup: ageGroup!,
         status,
         guardianName: guardianName!,
         guardianEmail: guardianEmail!,

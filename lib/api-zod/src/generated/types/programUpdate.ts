@@ -14,5 +14,4 @@ export interface ProgramUpdate {
   endDate?: string;
   status?: ProgramUpdateStatus;
   outcomeIds?: number[];
-  ageGroups?: string[];
 }

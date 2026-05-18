@@ -14,5 +14,4 @@ export interface ProgramInput {
   endDate?: string;
   status?: ProgramInputStatus;
   outcomeIds: number[];
-  ageGroups?: string[];
 }

@@ -15,7 +15,6 @@ export interface PlanningExperienceInput {
   stage?: PlanningExperienceInputStage;
   outcomeIds?: number[];
   childIds?: number[];
-  ageGroups?: string[];
   startDate?: Date;
   programId?: number;
   evaluationNotes?: string;

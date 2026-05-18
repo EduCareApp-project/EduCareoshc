@@ -68,17 +68,6 @@ export default function ProgramsList() {
                 <p className="text-sm text-muted-foreground line-clamp-2">{program.description}</p>
                 
                 <div className="space-y-3">
-                  {program.ageGroups && program.ageGroups.length > 0 && (
-                    <div className="flex gap-2 items-start">
-                      <span className="text-xs text-muted-foreground w-16 pt-0.5">Groups:</span>
-                      <div className="flex flex-wrap gap-1 flex-1">
-                        {program.ageGroups.map(ag => (
-                          <Badge key={ag} variant="secondary" className="text-xs capitalize">{ag.replace('_', ' ')}</Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
                   {program.outcomeIds && program.outcomeIds.length > 0 && (
                     <div className="flex gap-2 items-start">
                       <span className="text-xs text-muted-foreground w-16 pt-0.5 flex items-center gap-1">

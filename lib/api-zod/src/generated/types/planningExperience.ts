@@ -17,7 +17,6 @@ export interface PlanningExperience {
   stage: PlanningExperienceStage;
   outcomeIds: number[];
   childIds: number[];
-  ageGroups: string[];
   /** @nullable */
   startDate?: Date | null;
   /** @nullable */

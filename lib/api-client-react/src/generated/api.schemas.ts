@@ -47,15 +47,6 @@ export interface SiteUpdate {
   address?: string;
 }
 
-export type ChildAgeGroup = (typeof ChildAgeGroup)[keyof typeof ChildAgeGroup];
-
-export const ChildAgeGroup = {
-  infant: "infant",
-  toddler: "toddler",
-  preschool: "preschool",
-  school_age: "school_age",
-} as const;
-
 export type ChildStatus = (typeof ChildStatus)[keyof typeof ChildStatus];
 
 export const ChildStatus = {
@@ -70,7 +61,6 @@ export interface Child {
   lastName: string;
   dateOfBirth: string;
   enrollmentDate: string;
-  ageGroup: ChildAgeGroup;
   status: ChildStatus;
   guardianName: string;
   guardianEmail: string;
@@ -92,16 +82,6 @@ export interface Child {
   createdAt?: string;
 }
 
-export type ChildInputAgeGroup =
-  (typeof ChildInputAgeGroup)[keyof typeof ChildInputAgeGroup];
-
-export const ChildInputAgeGroup = {
-  infant: "infant",
-  toddler: "toddler",
-  preschool: "preschool",
-  school_age: "school_age",
-} as const;
-
 export type ChildInputStatus =
   (typeof ChildInputStatus)[keyof typeof ChildInputStatus];
 
@@ -116,7 +96,6 @@ export interface ChildInput {
   lastName: string;
   dateOfBirth: string;
   enrollmentDate: string;
-  ageGroup: ChildInputAgeGroup;
   status?: ChildInputStatus;
   guardianName: string;
   guardianEmail: string;
@@ -129,16 +108,6 @@ export interface ChildInput {
   siteId?: number;
   profilePicturePath?: string;
 }
-
-export type ChildUpdateAgeGroup =
-  (typeof ChildUpdateAgeGroup)[keyof typeof ChildUpdateAgeGroup];
-
-export const ChildUpdateAgeGroup = {
-  infant: "infant",
-  toddler: "toddler",
-  preschool: "preschool",
-  school_age: "school_age",
-} as const;
 
 export type ChildUpdateStatus =
   (typeof ChildUpdateStatus)[keyof typeof ChildUpdateStatus];
@@ -154,7 +123,6 @@ export interface ChildUpdate {
   lastName?: string;
   dateOfBirth?: string;
   enrollmentDate?: string;
-  ageGroup?: ChildUpdateAgeGroup;
   status?: ChildUpdateStatus;
   guardianName?: string;
   guardianEmail?: string;
@@ -333,7 +301,6 @@ export interface Program {
   endDate?: string | null;
   status: ProgramStatus;
   outcomeIds: number[];
-  ageGroups?: string[];
   createdAt?: string;
 }
 
@@ -353,7 +320,6 @@ export interface ProgramInput {
   endDate?: string;
   status?: ProgramInputStatus;
   outcomeIds: number[];
-  ageGroups?: string[];
 }
 
 export type ProgramUpdateStatus =
@@ -372,7 +338,6 @@ export interface ProgramUpdate {
   endDate?: string;
   status?: ProgramUpdateStatus;
   outcomeIds?: number[];
-  ageGroups?: string[];
 }
 
 export type NqsAreaStatus = (typeof NqsAreaStatus)[keyof typeof NqsAreaStatus];
@@ -1475,7 +1440,6 @@ export interface PlanningExperience {
   stage: PlanningExperienceStage;
   outcomeIds: number[];
   childIds: number[];
-  ageGroups: string[];
   /** @nullable */
   startDate?: string | null;
   /** @nullable */
@@ -1533,7 +1497,6 @@ export interface PlanningExperienceInput {
   stage?: PlanningExperienceInputStage;
   outcomeIds?: number[];
   childIds?: number[];
-  ageGroups?: string[];
   startDate?: string;
   programId?: number;
   evaluationNotes?: string;
@@ -1575,7 +1538,6 @@ export interface PlanningExperienceUpdate {
   stage?: PlanningExperienceUpdateStage;
   outcomeIds?: number[];
   childIds?: number[];
-  ageGroups?: string[];
   startDate?: string;
   programId?: number;
   evaluationNotes?: string;

@@ -13,14 +13,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
-import { ChildInputAgeGroup, ChildInputStatus } from "@workspace/api-client-react/src/generated/api.schemas";
-
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   dateOfBirth: z.string().min(1, "Date of birth is required"),
   enrollmentDate: z.string().min(1, "Enrollment date is required"),
-  ageGroup: z.enum(["infant", "toddler", "preschool", "school_age"]),
   status: z.enum(["active", "inactive", "waitlist"]).default("active"),
   guardianName: z.string().min(1, "Guardian name is required"),
   guardianEmail: z.string().email("Invalid email address"),
@@ -43,7 +40,6 @@ export default function EnrollChild() {
       lastName: "",
       dateOfBirth: "",
       enrollmentDate: new Date().toLocaleDateString("en-CA", { timeZone: "Australia/Melbourne" }),
-      ageGroup: "preschool",
       status: "active",
       guardianName: "",
       guardianEmail: "",
@@ -126,27 +122,6 @@ export default function EnrollChild() {
                   <FormItem>
                     <FormLabel>Date of Birth</FormLabel>
                     <FormControl><Input type="date" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="ageGroup"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Age Group</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Select age group" /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="infant">Infant (0-2 yrs)</SelectItem>
-                        <SelectItem value="toddler">Toddler (2-3 yrs)</SelectItem>
-                        <SelectItem value="preschool">Preschool (3-5 yrs)</SelectItem>
-                        <SelectItem value="school_age">School Age</SelectItem>
-                      </SelectContent>
-                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -39,8 +39,6 @@ function storageUrl(objectPath: string): string {
   return `/api/storage/objects/${id}`;
 }
 
-const AGE_GROUP_LABELS: Record<string, string> = { infant: "Infant", toddler: "Toddler", preschool: "Preschool", school_age: "School Age" };
-
 function safeDate(value: string, fmt: string) {
   try {
     const d = new Date(value.length === 10 ? value + "T00:00:00" : value);
@@ -163,7 +161,7 @@ export default function ChildProfile() {
 
   const [form, setForm] = useState({
     firstName: "", lastName: "", dateOfBirth: "", enrollmentDate: "",
-    ageGroup: "", status: "", guardianName: "", guardianEmail: "", guardianPhone: "",
+    status: "", guardianName: "", guardianEmail: "", guardianPhone: "",
     medicalNotes: "", likes: "", dislikes: "", temperament: "", background: "",
     siteId: "" as string,
   });
@@ -175,7 +173,6 @@ export default function ChildProfile() {
       lastName: child.lastName,
       dateOfBirth: child.dateOfBirth,
       enrollmentDate: child.enrollmentDate,
-      ageGroup: child.ageGroup,
       status: child.status,
       guardianName: child.guardianName,
       guardianEmail: child.guardianEmail,
@@ -1090,19 +1087,6 @@ export default function ChildProfile() {
                 <div className="space-y-1">
                   <Label>Enrollment Date</Label>
                   <Input type="date" value={form.enrollmentDate} onChange={(e) => setForm({ ...form, enrollmentDate: e.target.value })} required />
-                </div>
-                <div className="space-y-1">
-                  <Label>Age Group / Room</Label>
-                  <Select value={form.ageGroup} onValueChange={(v) => setForm({ ...form, ageGroup: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select age group" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="infant">Infant (0–12 months)</SelectItem>
-                      <SelectItem value="toddler">Toddler (1–2 years)</SelectItem>
-                      <SelectItem value="twos">Twos (2–3 years)</SelectItem>
-                      <SelectItem value="preschool">Preschool (3–5 years)</SelectItem>
-                      <SelectItem value="schoolage">School Age (5+ years)</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </TabsContent>
             </Tabs>

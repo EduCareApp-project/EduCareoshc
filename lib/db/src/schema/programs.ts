@@ -10,7 +10,6 @@ export const programsTable = pgTable("programs", {
   endDate: date("end_date"),
   status: text("status").notNull().default("planned"),
   outcomeIds: integer("outcome_ids").array().notNull().default([]),
-  ageGroups: text("age_groups").array().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

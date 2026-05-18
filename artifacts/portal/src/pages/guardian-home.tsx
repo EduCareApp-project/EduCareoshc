@@ -18,7 +18,6 @@ type Child = {
   firstName: string;
   lastName: string;
   dateOfBirth: string | null;
-  ageGroup: string | null;
   status: string;
   enrollmentDate: string | null;
   siteId: number | null;
@@ -78,9 +77,6 @@ function ageFromDob(dob: string | null): string {
   return m > 0 ? `${y}y ${m}m` : `${y} year${y !== 1 ? "s" : ""}`;
 }
 
-const AGE_GROUP_LABELS: Record<string, string> = {
-  infant: "Infant", toddler: "Toddler", preschool: "Preschool", school_age: "School Age",
-};
 const STATUS_STYLES: Record<string, string> = {
   active: "bg-emerald-100 text-emerald-800",
   enrolled: "bg-blue-100 text-blue-800",
@@ -440,9 +436,6 @@ export default function GuardianHome() {
                         <div className="flex items-center gap-1.5">
                           <User className="h-3 w-3 shrink-0" />
                           <span>{ageFromDob(child.dateOfBirth)}</span>
-                          {child.ageGroup && (
-                            <span className="text-muted-foreground/60">· {AGE_GROUP_LABELS[child.ageGroup] ?? child.ageGroup}</span>
-                          )}
                         </div>
                         {child.enrollmentDate && (
                           <div className="flex items-center gap-1.5">

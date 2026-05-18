@@ -16,6 +16,5 @@ export interface Program {
   endDate?: string | null;
   status: ProgramStatus;
   outcomeIds: number[];
-  ageGroups?: string[];
   createdAt?: Date;
 }

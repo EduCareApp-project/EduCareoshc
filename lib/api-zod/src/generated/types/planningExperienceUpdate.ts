@@ -15,7 +15,6 @@ export interface PlanningExperienceUpdate {
   stage?: PlanningExperienceUpdateStage;
   outcomeIds?: number[];
   childIds?: number[];
-  ageGroups?: string[];
   startDate?: Date;
   programId?: number;
   evaluationNotes?: string;

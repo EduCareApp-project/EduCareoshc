@@ -52,12 +52,11 @@ function parseCSV(text: string): Array<Record<string, string>> {
 const TEMPLATES = {
   children: [
     "# EduCare Children Import Template",
-    "# ageGroup values: infant | toddler | preschool | school_age | oshc",
     "# Date format: YYYY-MM-DD or DD/MM/YYYY",
     "# status values: active | inactive | waitlisted  (default: active)",
-    "firstName,lastName,dateOfBirth,enrollmentDate,ageGroup,guardianName,guardianEmail,guardianPhone,medicalNotes,status",
-    "Emma,Smith,2018-06-15,2024-01-22,school_age,Jane Smith,jane.smith@email.com,0412 345 678,,active",
-    "Liam,Jones,2020-03-01,2024-01-22,preschool,David Jones,david.jones@email.com,0487 654 321,Peanut allergy,active",
+    "firstName,lastName,dateOfBirth,enrollmentDate,guardianName,guardianEmail,guardianPhone,medicalNotes,status",
+    "Emma,Smith,2018-06-15,2024-01-22,Jane Smith,jane.smith@email.com,0412 345 678,,active",
+    "Liam,Jones,2020-03-01,2024-01-22,David Jones,david.jones@email.com,0487 654 321,Peanut allergy,active",
   ].join("\n"),
 
   staff: [

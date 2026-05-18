@@ -23,7 +23,6 @@ export const ListChildrenResponseItem = zod.object({
   lastName: zod.string(),
   dateOfBirth: zod.coerce.date(),
   enrollmentDate: zod.coerce.date(),
-  ageGroup: zod.enum(["infant", "toddler", "preschool", "school_age"]),
   status: zod.enum(["active", "inactive", "waitlist"]),
   guardianName: zod.string(),
   guardianEmail: zod.string(),
@@ -46,7 +45,6 @@ export const CreateChildBody = zod.object({
   lastName: zod.string(),
   dateOfBirth: zod.coerce.date(),
   enrollmentDate: zod.coerce.date(),
-  ageGroup: zod.enum(["infant", "toddler", "preschool", "school_age"]),
   status: zod
     .enum(["active", "inactive", "waitlist"])
     .default(createChildBodyStatusDefault),
@@ -72,7 +70,6 @@ export const GetChildResponse = zod.object({
   lastName: zod.string(),
   dateOfBirth: zod.coerce.date(),
   enrollmentDate: zod.coerce.date(),
-  ageGroup: zod.enum(["infant", "toddler", "preschool", "school_age"]),
   status: zod.enum(["active", "inactive", "waitlist"]),
   guardianName: zod.string(),
   guardianEmail: zod.string(),
@@ -96,9 +93,6 @@ export const UpdateChildBody = zod.object({
   lastName: zod.string().optional(),
   dateOfBirth: zod.coerce.date().optional(),
   enrollmentDate: zod.coerce.date().optional(),
-  ageGroup: zod
-    .enum(["infant", "toddler", "preschool", "school_age"])
-    .optional(),
   status: zod.enum(["active", "inactive", "waitlist"]).optional(),
   guardianName: zod.string().optional(),
   guardianEmail: zod.string().optional(),
@@ -118,7 +112,6 @@ export const UpdateChildResponse = zod.object({
   lastName: zod.string(),
   dateOfBirth: zod.coerce.date(),
   enrollmentDate: zod.coerce.date(),
-  ageGroup: zod.enum(["infant", "toddler", "preschool", "school_age"]),
   status: zod.enum(["active", "inactive", "waitlist"]),
   guardianName: zod.string(),
   guardianEmail: zod.string(),
@@ -517,7 +510,6 @@ export const ListProgramsResponseItem = zod.object({
   endDate: zod.string().nullish(),
   status: zod.enum(["planned", "active", "completed"]),
   outcomeIds: zod.array(zod.number()),
-  ageGroups: zod.array(zod.string()).optional(),
   createdAt: zod.coerce.date().optional(),
 });
 export const ListProgramsResponse = zod.array(ListProgramsResponseItem);
@@ -533,7 +525,6 @@ export const CreateProgramBody = zod.object({
     .enum(["planned", "active", "completed"])
     .default(createProgramBodyStatusDefault),
   outcomeIds: zod.array(zod.number()),
-  ageGroups: zod.array(zod.string()).optional(),
 });
 
 export const GetProgramParams = zod.object({
@@ -548,7 +539,6 @@ export const GetProgramResponse = zod.object({
   endDate: zod.string().nullish(),
   status: zod.enum(["planned", "active", "completed"]),
   outcomeIds: zod.array(zod.number()),
-  ageGroups: zod.array(zod.string()).optional(),
   createdAt: zod.coerce.date().optional(),
 });
 
@@ -563,7 +553,6 @@ export const UpdateProgramBody = zod.object({
   endDate: zod.string().optional(),
   status: zod.enum(["planned", "active", "completed"]).optional(),
   outcomeIds: zod.array(zod.number()).optional(),
-  ageGroups: zod.array(zod.string()).optional(),
 });
 
 export const UpdateProgramResponse = zod.object({
@@ -574,7 +563,6 @@ export const UpdateProgramResponse = zod.object({
   endDate: zod.string().nullish(),
   status: zod.enum(["planned", "active", "completed"]),
   outcomeIds: zod.array(zod.number()),
-  ageGroups: zod.array(zod.string()).optional(),
   createdAt: zod.coerce.date().optional(),
 });
 
@@ -2040,7 +2028,6 @@ export const ListPlanningExperiencesResponseItem = zod.object({
   ]),
   outcomeIds: zod.array(zod.number()),
   childIds: zod.array(zod.number()),
-  ageGroups: zod.array(zod.string()),
   startDate: zod.coerce.date().nullish(),
   programId: zod.number().nullish(),
   evaluationNotes: zod.string().nullish(),
@@ -2176,7 +2163,6 @@ export const CreatePlanningExperienceBody = zod.object({
     .default(createPlanningExperienceBodyStageDefault),
   outcomeIds: zod.array(zod.number()).optional(),
   childIds: zod.array(zod.number()).optional(),
-  ageGroups: zod.array(zod.string()).optional(),
   startDate: zod.coerce.date().optional(),
   programId: zod.number().optional(),
   evaluationNotes: zod.string().optional(),
@@ -2316,7 +2302,6 @@ export const GetPlanningExperienceResponse = zod.object({
   ]),
   outcomeIds: zod.array(zod.number()),
   childIds: zod.array(zod.number()),
-  ageGroups: zod.array(zod.string()),
   startDate: zod.coerce.date().nullish(),
   programId: zod.number().nullish(),
   evaluationNotes: zod.string().nullish(),
@@ -2450,7 +2435,6 @@ export const UpdatePlanningExperienceBody = zod.object({
     .optional(),
   outcomeIds: zod.array(zod.number()).optional(),
   childIds: zod.array(zod.number()).optional(),
-  ageGroups: zod.array(zod.string()).optional(),
   startDate: zod.coerce.date().optional(),
   programId: zod.number().optional(),
   evaluationNotes: zod.string().optional(),
@@ -2584,7 +2568,6 @@ export const UpdatePlanningExperienceResponse = zod.object({
   ]),
   outcomeIds: zod.array(zod.number()),
   childIds: zod.array(zod.number()),
-  ageGroups: zod.array(zod.string()),
   startDate: zod.coerce.date().nullish(),
   programId: zod.number().nullish(),
   evaluationNotes: zod.string().nullish(),

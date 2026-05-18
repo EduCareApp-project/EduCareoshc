@@ -23,15 +23,7 @@ const formSchema = z.object({
   endDate: z.string().optional(),
   status: z.enum(["planned", "active", "completed"]).default("planned"),
   outcomeIds: z.array(z.number()).min(1, "Select at least one MTOP outcome"),
-  ageGroups: z.array(z.string()).min(1, "Select at least one age group"),
 });
-
-const AGE_GROUPS = [
-  { id: "infant", label: "Infant (0-2 yrs)" },
-  { id: "toddler", label: "Toddler (2-3 yrs)" },
-  { id: "preschool", label: "Preschool (3-5 yrs)" },
-  { id: "school_age", label: "School Age" },
-];
 
 export default function NewProgram() {
   const [, setLocation] = useLocation();
@@ -49,7 +41,6 @@ export default function NewProgram() {
       endDate: "",
       status: "planned",
       outcomeIds: [],
-      ageGroups: [],
     },
   });
 
@@ -116,36 +107,9 @@ export default function NewProgram() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Target Groups & Outcomes</CardTitle>
-              <CardDescription>Link this program to age groups and MTOP learning outcomes.</CardDescription>
+              <CardTitle>MTOP Learning Outcomes</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <FormField control={form.control} name="ageGroups" render={() => (
-                <FormItem>
-                  <div className="mb-4"><FormLabel className="text-base">Age Groups</FormLabel></div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {AGE_GROUPS.map((ag) => (
-                      <FormField key={ag.id} control={form.control} name="ageGroups" render={({ field }) => (
-                        <FormItem key={ag.id} className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 shadow-sm bg-card">
-                          <FormControl>
-                            <Checkbox 
-                              checked={field.value?.includes(ag.id)} 
-                              onCheckedChange={(checked) => {
-                                return checked 
-                                  ? field.onChange([...field.value, ag.id])
-                                  : field.onChange(field.value?.filter((val) => val !== ag.id))
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="font-normal cursor-pointer text-sm">{ag.label}</FormLabel>
-                        </FormItem>
-                      )} />
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )} />
-
               <FormField control={form.control} name="outcomeIds" render={() => (
                 <FormItem>
                   <div className="mb-4"><FormLabel className="text-base">MTOP Learning Outcomes</FormLabel></div>

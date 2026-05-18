@@ -9,7 +9,6 @@ export const childrenTable = pgTable("children", {
   lastName: text("last_name").notNull(),
   dateOfBirth: date("date_of_birth").notNull(),
   enrollmentDate: date("enrollment_date").notNull(),
-  ageGroup: text("age_group").notNull().default("preschool"),
   status: text("status").notNull().default("active"),
   guardianName: text("guardian_name").notNull(),
   guardianEmail: text("guardian_email").notNull(),

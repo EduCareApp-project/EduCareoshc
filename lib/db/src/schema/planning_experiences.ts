@@ -9,7 +9,6 @@ export const planningExperiencesTable = pgTable("planning_experiences", {
   description: text("description"),
   outcomeIds: integer("outcome_ids").array().notNull().default([]),
   childIds: integer("child_ids").array().notNull().default([]),
-  ageGroups: text("age_groups").array().notNull().default([]),
   stage: text("stage").notNull().default("brainstorm"),
   startDate: date("start_date"),
   programId: integer("program_id"),

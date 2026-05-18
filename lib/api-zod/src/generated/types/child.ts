@@ -5,7 +5,6 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
-import type { ChildAgeGroup } from "./childAgeGroup";
 import type { ChildStatus } from "./childStatus";
 
 export interface Child {
@@ -14,7 +13,6 @@ export interface Child {
   lastName: string;
   dateOfBirth: Date;
   enrollmentDate: Date;
-  ageGroup: ChildAgeGroup;
   status: ChildStatus;
   guardianName: string;
   guardianEmail: string;

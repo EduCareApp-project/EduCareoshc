@@ -23,8 +23,7 @@ import {
 const router: IRouter = Router();
 
 // Normalise an incoming child payload from external systems.
-// Handles snake_case keys, AU spelling variants ("enrolment"), and loose
-// ageGroup values (e.g. "OSHC", "school age") before Zod validation runs.
+// Handles snake_case keys and AU spelling variants ("enrolment") before Zod validation runs.
 function normalizeChildPayload(body: unknown): unknown {
   if (typeof body !== "object" || body === null) return body;
   const raw = body as Record<string, unknown>;
@@ -38,7 +37,6 @@ function normalizeChildPayload(body: unknown): unknown {
     enrollment_date: "enrollmentDate",
     enrolment_date: "enrollmentDate",
     start_date: "enrollmentDate",
-    age_group: "ageGroup",
     guardian_name: "guardianName",
     guardian_email: "guardianEmail",
     guardian_phone: "guardianPhone",
@@ -47,37 +45,10 @@ function normalizeChildPayload(body: unknown): unknown {
     profile_picture_path: "profilePicturePath",
   };
 
-  const ageGroupMap: Record<string, string> = {
-    infant: "infant",
-    toddler: "toddler",
-    preschool: "preschool",
-    "pre-school": "preschool",
-    "pre school": "preschool",
-    kindergarten: "preschool",
-    kinder: "preschool",
-    prep: "preschool",
-    school_age: "school_age",
-    schoolage: "school_age",
-    "school age": "school_age",
-    "school-age": "school_age",
-    school: "school_age",
-    oshc: "school_age",
-    "before school care": "school_age",
-    "after school care": "school_age",
-    asc: "school_age",
-    bsc: "school_age",
-    "primary school": "school_age",
-  };
-
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(raw)) {
     const mapped = keyMap[k.toLowerCase()] ?? k;
     out[mapped] = v;
-  }
-
-  if (typeof out.ageGroup === "string") {
-    const normalized = ageGroupMap[out.ageGroup.toLowerCase().trim()];
-    if (normalized) out.ageGroup = normalized;
   }
 
   return out;

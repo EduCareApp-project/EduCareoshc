@@ -2599,7 +2599,7 @@ components:
 
     Child:
       type: object
-      required: [id, firstName, lastName, dateOfBirth, enrollmentDate, ageGroup, status, guardianName, guardianEmail, guardianPhone]
+      required: [id, firstName, lastName, dateOfBirth, enrollmentDate, status, guardianName, guardianEmail, guardianPhone]
       properties:
         id:
           type: integer
@@ -2613,9 +2613,6 @@ components:
         enrollmentDate:
           type: string
           format: date
-        ageGroup:
-          type: string
-          enum: [infant, toddler, preschool, school_age]
         status:
           type: string
           enum: [active, inactive, waitlist]
@@ -2645,7 +2642,7 @@ components:
 
     ChildInput:
       type: object
-      required: [firstName, lastName, dateOfBirth, enrollmentDate, ageGroup, guardianName, guardianEmail, guardianPhone]
+      required: [firstName, lastName, dateOfBirth, enrollmentDate, guardianName, guardianEmail, guardianPhone]
       properties:
         firstName:
           type: string
@@ -2657,9 +2654,6 @@ components:
         enrollmentDate:
           type: string
           format: date
-        ageGroup:
-          type: string
-          enum: [infant, toddler, preschool, school_age]
         status:
           type: string
           enum: [active, inactive, waitlist]
@@ -2698,9 +2692,6 @@ components:
         enrollmentDate:
           type: string
           format: date
-        ageGroup:
-          type: string
-          enum: [infant, toddler, preschool, school_age]
         status:
           type: string
           enum: [active, inactive, waitlist]
@@ -2919,10 +2910,6 @@ components:
           type: array
           items:
             type: integer
-        ageGroups:
-          type: array
-          items:
-            type: string
         createdAt:
           type: string
           format: date-time
@@ -2948,10 +2935,6 @@ components:
           type: array
           items:
             type: integer
-        ageGroups:
-          type: array
-          items:
-            type: string
 
     ProgramUpdate:
       type: object
@@ -2972,10 +2955,6 @@ components:
           type: array
           items:
             type: integer
-        ageGroups:
-          type: array
-          items:
-            type: string
 
     NqsArea:
       type: object
@@ -4504,7 +4483,7 @@ components:
 
     PlanningExperience:
       type: object
-      required: [id, title, stage, outcomeIds, childIds, ageGroups, isTemplate, createdAt]
+      required: [id, title, stage, outcomeIds, childIds, isTemplate, createdAt]
       properties:
         id:
           type: integer
@@ -4523,10 +4502,6 @@ components:
           type: array
           items:
             type: integer
-        ageGroups:
-          type: array
-          items:
-            type: string
         startDate:
           type: ["string", "null"]
           format: date
@@ -4609,10 +4584,6 @@ components:
           type: array
           items:
             type: integer
-        ageGroups:
-          type: array
-          items:
-            type: string
         startDate:
           type: string
           format: date
@@ -4690,10 +4661,6 @@ components:
           type: array
           items:
             type: integer
-        ageGroups:
-          type: array
-          items:
-            type: string
         startDate:
           type: string
           format: date

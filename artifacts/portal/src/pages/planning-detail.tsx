@@ -394,7 +394,6 @@ export default function PlanningDetail() {
       stage: form.stage,
       childIds: form.childIds,
       outcomeIds: experience?.outcomeIds ?? [],
-      ageGroups: experience?.ageGroups ?? [],
       documentPaths: form.documents.map((d) => d.path),
       documentNames: form.documents.map((d) => d.name),
       assessmentDocumentPaths: form.assessmentDocuments.map((d) => d.path),

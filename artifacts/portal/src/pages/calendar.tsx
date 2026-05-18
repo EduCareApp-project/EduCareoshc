@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronLeft, ChevronRight, Layers, ArrowRight, CheckCircle2, Plus, X, Send, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Layers, ArrowRight, CheckCircle2, Plus, X, Send, AlertTriangle, CopyCheck } from "lucide-react";
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   addMonths, subMonths, format, parseISO, isBefore, isAfter, addDays,
@@ -58,6 +58,7 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
   const [title, setTitle] = useState(defaultTitle);
   const [grid, setGrid] = useState<WeeklyPlanGrid>(() => existingPlan ? initGridFromPlan(existingPlan) : emptyGrid());
   const [cellOutcomes, setCellOutcomes] = useState<CellOutcomes>(() => existingPlan?.weeklyPlanData?.cellOutcomes ?? {});
+  const [lastWeekConfirm, setLastWeekConfirm] = useState(false);
   const { mutateAsync: create, isPending: isCreating } = useCreatePlanningExperience();
   const { mutateAsync: update, isPending: isUpdating } = useUpdatePlanningExperience();
   const isPending = isCreating || isUpdating;
@@ -66,6 +67,25 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
   const openExperiences = (allPlanning ?? []).filter(
     (p) => p.stage !== "closed" && (siteId === undefined || p.siteId === siteId),
   );
+
+  // Find the most recent plan from the previous week (same site)
+  const prevWeekMonday = addDays(weekMonday, -7);
+  const prevWeekFriday = addDays(weekMonday, -3);
+  const prevWeekMondayStr = format(prevWeekMonday, "yyyy-MM-dd");
+  const prevWeekFridayStr = format(prevWeekFriday, "yyyy-MM-dd");
+  const lastWeekPlan = (allPlanning ?? []).find((p) => {
+    if (!p.startDate || p.weeklyPlanData == null) return false;
+    const d = p.startDate.slice(0, 10);
+    return d >= prevWeekMondayStr && d <= prevWeekFridayStr &&
+      (siteId === undefined || p.siteId === siteId);
+  });
+
+  function applyLastWeek() {
+    if (!lastWeekPlan) return;
+    setGrid(initGridFromPlan(lastWeekPlan));
+    setCellOutcomes(lastWeekPlan.weeklyPlanData?.cellOutcomes ?? {});
+    setLastWeekConfirm(false);
+  }
 
   function setCell(row: RowKey, day: DayKey, value: string) {
     setGrid((g) => ({ ...g, [row]: { ...g[row], [day]: value } }));
@@ -134,6 +154,35 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
             <Label>Plan title</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
+
+          {lastWeekPlan && (
+            lastWeekConfirm ? (
+              <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2.5">
+                <CopyCheck className="h-4 w-4 text-blue-600 shrink-0" />
+                <p className="text-sm text-blue-800 flex-1">
+                  This will replace the current grid with last week's content. Continue?
+                </p>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setLastWeekConfirm(false)}>Cancel</Button>
+                <Button size="sm" className="h-7 text-xs" onClick={applyLastWeek}>Yes, apply</Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  onClick={() => setLastWeekConfirm(true)}
+                >
+                  <CopyCheck className="h-3.5 w-3.5" />
+                  Start with last week's
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  Copies "{lastWeekPlan.title ?? "last week's plan"}" as a starting point
+                </span>
+              </div>
+            )
+          )}
 
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">

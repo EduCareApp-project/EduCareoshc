@@ -14,6 +14,7 @@ export interface PostInput {
   date?: Date;
   /** @maxItems 3 */
   images?: string[];
+  outcomeIds?: string[];
   description?: string;
   learning?: string;
   opportunities?: string;

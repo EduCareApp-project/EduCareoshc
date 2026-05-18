@@ -8,11 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, ImagePlus, X, Loader2 } from "lucide-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { useMemo } from "react";
+import { MtopOutcomePicker } from "@/components/mtop-outcome-picker";
 
 const EMPTY_FORM = {
   siteId: "",
@@ -24,6 +26,7 @@ const EMPTY_FORM = {
   learning: "",
   opportunities: "",
   notifyGuardians: true,
+  outcomeIds: [] as string[],
 };
 
 export default function NewPost() {
@@ -100,6 +103,7 @@ export default function NewPost() {
       date: form.date,
       images,
       childIds: form.childIds,
+      outcomeIds: form.outcomeIds,
     };
     if (form.siteId && form.siteId !== "none") body.siteId = parseInt(form.siteId);
     if (form.staffId && form.staffId !== "none") body.staffId = parseInt(form.staffId);
@@ -284,6 +288,17 @@ export default function NewPost() {
         <Card>
           <CardHeader><CardTitle className="text-base">Content</CardTitle></CardHeader>
           <CardContent className="space-y-5">
+            <div className="space-y-1.5">
+              <Label>MTOP Outcomes</Label>
+              <MtopOutcomePicker
+                value={form.outcomeIds}
+                onChange={(ids) => setForm((f) => ({ ...f, outcomeIds: ids }))}
+                label="MTOP Outcomes"
+              />
+            </div>
+
+            <Separator />
+
             <div className="space-y-1.5">
               <Label>Description</Label>
               <Textarea

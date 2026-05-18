@@ -9,7 +9,7 @@ export const observationsTable = pgTable("observations", {
   title: text("title"),
   description: text("description").notNull(),
   observationDate: date("observation_date").notNull(),
-  outcomeIds: integer("outcome_ids").array().notNull().default([]),
+  outcomeIds: text("outcome_ids").array().notNull().default([]),
   programId: integer("program_id"),
   learningExtension: text("learning_extension"),
   commentPlan: text("comment_plan"),

@@ -54,7 +54,7 @@ export function initGridFromPlan(plan: ExistingPlan): WeeklyPlanGrid {
   return g;
 }
 
-const MTOP_OUTCOMES = [
+export const MTOP_OUTCOMES = [
   {
     id: 1,
     label: "Outcome 1",

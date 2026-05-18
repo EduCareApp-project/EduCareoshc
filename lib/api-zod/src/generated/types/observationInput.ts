@@ -11,6 +11,7 @@ export interface ObservationInput {
   staffId: number;
   description: string;
   observationDate: Date;
+  outcomeIds?: string[];
   commentPlan?: string;
   actionNotes?: string;
 }

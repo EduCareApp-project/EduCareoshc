@@ -16,6 +16,7 @@ export interface Observation {
   staffName?: string | null;
   description: string;
   observationDate: Date;
+  outcomeIds: string[];
   /** @nullable */
   commentPlan?: string | null;
   /** @nullable */

@@ -2810,7 +2810,7 @@ components:
 
     Observation:
       type: object
-      required: [id, childId, staffId, description, observationDate, createdAt, updatedAt]
+      required: [id, childId, staffId, description, observationDate, outcomeIds, createdAt, updatedAt]
       properties:
         id:
           type: integer
@@ -2827,6 +2827,11 @@ components:
         observationDate:
           type: string
           format: date
+        outcomeIds:
+          type: array
+          items:
+            type: string
+          default: []
         commentPlan:
           type: ["string", "null"]
         actionNotes:
@@ -2851,6 +2856,11 @@ components:
         observationDate:
           type: string
           format: date
+        outcomeIds:
+          type: array
+          items:
+            type: string
+          default: []
         commentPlan:
           type: string
         actionNotes:
@@ -2866,6 +2876,10 @@ components:
         observationDate:
           type: string
           format: date
+        outcomeIds:
+          type: array
+          items:
+            type: string
         commentPlan:
           type: string
         actionNotes:
@@ -4233,7 +4247,7 @@ components:
 
     Post:
       type: object
-      required: [id, title, images, createdAt]
+      required: [id, title, images, outcomeIds, createdAt]
       properties:
         id:
           type: integer
@@ -4263,6 +4277,11 @@ components:
           items:
             type: string
           maxItems: 3
+        outcomeIds:
+          type: array
+          items:
+            type: string
+          default: []
         description:
           type: ["string", "null"]
         learning:
@@ -4326,6 +4345,11 @@ components:
           items:
             type: string
           maxItems: 3
+        outcomeIds:
+          type: array
+          items:
+            type: string
+          default: []
         description:
           type: string
         learning:
@@ -4364,6 +4388,10 @@ components:
           type: string
         opportunities:
           type: string
+        outcomeIds:
+          type: array
+          items:
+            type: string
         aiSummary:
           type: string
         publishedAt:

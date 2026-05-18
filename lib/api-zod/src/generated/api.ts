@@ -134,6 +134,8 @@ export const GetChildObservationsParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const getChildObservationsResponseOutcomeIdsDefault = [];
+
 export const GetChildObservationsResponseItem = zod.object({
   id: zod.number(),
   childId: zod.number(),
@@ -142,6 +144,9 @@ export const GetChildObservationsResponseItem = zod.object({
   staffName: zod.string().nullish(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
+  outcomeIds: zod
+    .array(zod.string())
+    .default(getChildObservationsResponseOutcomeIdsDefault),
   commentPlan: zod.string().nullish(),
   actionNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
@@ -421,6 +426,8 @@ export const GetStaffProfessionalDevelopmentResponse = zod.array(
   GetStaffProfessionalDevelopmentResponseItem,
 );
 
+export const listObservationsResponseOutcomeIdsDefault = [];
+
 export const ListObservationsResponseItem = zod.object({
   id: zod.number(),
   childId: zod.number(),
@@ -429,6 +436,9 @@ export const ListObservationsResponseItem = zod.object({
   staffName: zod.string().nullish(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
+  outcomeIds: zod
+    .array(zod.string())
+    .default(listObservationsResponseOutcomeIdsDefault),
   commentPlan: zod.string().nullish(),
   actionNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
@@ -436,11 +446,16 @@ export const ListObservationsResponseItem = zod.object({
 });
 export const ListObservationsResponse = zod.array(ListObservationsResponseItem);
 
+export const createObservationBodyOutcomeIdsDefault = [];
+
 export const CreateObservationBody = zod.object({
   childId: zod.number(),
   staffId: zod.number(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
+  outcomeIds: zod
+    .array(zod.string())
+    .default(createObservationBodyOutcomeIdsDefault),
   commentPlan: zod.string().optional(),
   actionNotes: zod.string().optional(),
 });
@@ -448,6 +463,8 @@ export const CreateObservationBody = zod.object({
 export const GetObservationParams = zod.object({
   id: zod.coerce.number(),
 });
+
+export const getObservationResponseOutcomeIdsDefault = [];
 
 export const GetObservationResponse = zod.object({
   id: zod.number(),
@@ -457,6 +474,9 @@ export const GetObservationResponse = zod.object({
   staffName: zod.string().nullish(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
+  outcomeIds: zod
+    .array(zod.string())
+    .default(getObservationResponseOutcomeIdsDefault),
   commentPlan: zod.string().nullish(),
   actionNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
@@ -471,9 +491,12 @@ export const UpdateObservationBody = zod.object({
   staffId: zod.number().optional(),
   description: zod.string().optional(),
   observationDate: zod.coerce.date().optional(),
+  outcomeIds: zod.array(zod.string()).optional(),
   commentPlan: zod.string().optional(),
   actionNotes: zod.string().optional(),
 });
+
+export const updateObservationResponseOutcomeIdsDefault = [];
 
 export const UpdateObservationResponse = zod.object({
   id: zod.number(),
@@ -483,6 +506,9 @@ export const UpdateObservationResponse = zod.object({
   staffName: zod.string().nullish(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
+  outcomeIds: zod
+    .array(zod.string())
+    .default(updateObservationResponseOutcomeIdsDefault),
   commentPlan: zod.string().nullish(),
   actionNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
@@ -609,6 +635,8 @@ export const GetDashboardSummaryResponse = zod.object({
   nqsMeetingCount: zod.number(),
 });
 
+export const getRecentObservationsResponseOutcomeIdsDefault = [];
+
 export const GetRecentObservationsResponseItem = zod.object({
   id: zod.number(),
   childId: zod.number(),
@@ -617,6 +645,9 @@ export const GetRecentObservationsResponseItem = zod.object({
   staffName: zod.string().nullish(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
+  outcomeIds: zod
+    .array(zod.string())
+    .default(getRecentObservationsResponseOutcomeIdsDefault),
   commentPlan: zod.string().nullish(),
   actionNotes: zod.string().nullish(),
   createdAt: zod.coerce.date(),
@@ -1839,6 +1870,8 @@ export const DeleteRoutineItemCompletionParams = zod.object({
 
 export const listPostsResponseImagesMax = 3;
 
+export const listPostsResponseOutcomeIdsDefault = [];
+
 export const ListPostsResponseItem = zod.object({
   id: zod.number(),
   siteId: zod.number().nullish(),
@@ -1850,6 +1883,9 @@ export const ListPostsResponseItem = zod.object({
   title: zod.string(),
   date: zod.coerce.date().nullish(),
   images: zod.array(zod.string()).max(listPostsResponseImagesMax),
+  outcomeIds: zod
+    .array(zod.string())
+    .default(listPostsResponseOutcomeIdsDefault),
   description: zod.string().nullish(),
   learning: zod.string().nullish(),
   opportunities: zod.string().nullish(),
@@ -1864,6 +1900,7 @@ export const ListPostsResponse = zod.array(ListPostsResponseItem);
 
 export const createPostBodyImagesMax = 3;
 
+export const createPostBodyOutcomeIdsDefault = [];
 export const createPostBodyNotifyGuardiansDefault = true;
 
 export const CreatePostBody = zod.object({
@@ -1873,6 +1910,7 @@ export const CreatePostBody = zod.object({
   title: zod.string(),
   date: zod.coerce.date().optional(),
   images: zod.array(zod.string()).max(createPostBodyImagesMax).optional(),
+  outcomeIds: zod.array(zod.string()).default(createPostBodyOutcomeIdsDefault),
   description: zod.string().optional(),
   learning: zod.string().optional(),
   opportunities: zod.string().optional(),
@@ -1890,6 +1928,8 @@ export const GetPostParams = zod.object({
 
 export const getPostResponseImagesMax = 3;
 
+export const getPostResponseOutcomeIdsDefault = [];
+
 export const GetPostResponse = zod.object({
   id: zod.number(),
   siteId: zod.number().nullish(),
@@ -1901,6 +1941,7 @@ export const GetPostResponse = zod.object({
   title: zod.string(),
   date: zod.coerce.date().nullish(),
   images: zod.array(zod.string()).max(getPostResponseImagesMax),
+  outcomeIds: zod.array(zod.string()).default(getPostResponseOutcomeIdsDefault),
   description: zod.string().nullish(),
   learning: zod.string().nullish(),
   opportunities: zod.string().nullish(),
@@ -1930,6 +1971,7 @@ export const UpdatePostBody = zod.object({
   description: zod.string().optional(),
   learning: zod.string().optional(),
   opportunities: zod.string().optional(),
+  outcomeIds: zod.array(zod.string()).optional(),
   aiSummary: zod.string().optional(),
   publishedAt: zod.coerce
     .date()
@@ -1947,6 +1989,8 @@ export const UpdatePostBody = zod.object({
 
 export const updatePostResponseImagesMax = 3;
 
+export const updatePostResponseOutcomeIdsDefault = [];
+
 export const UpdatePostResponse = zod.object({
   id: zod.number(),
   siteId: zod.number().nullish(),
@@ -1958,6 +2002,9 @@ export const UpdatePostResponse = zod.object({
   title: zod.string(),
   date: zod.coerce.date().nullish(),
   images: zod.array(zod.string()).max(updatePostResponseImagesMax),
+  outcomeIds: zod
+    .array(zod.string())
+    .default(updatePostResponseOutcomeIdsDefault),
   description: zod.string().nullish(),
   learning: zod.string().nullish(),
   opportunities: zod.string().nullish(),

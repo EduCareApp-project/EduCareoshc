@@ -22,7 +22,7 @@ import {
   ReadOnlyPlanView, ExistingPlan,
   DayKey, RowKey, ROW_LABELS, DAY_KEYS, DAY_LABELS,
   WeeklyPlanGrid, CellOutcomes,
-  emptyGrid, initGridFromPlan, bubbleClassForSub, dotClassForSub,
+  emptyGrid, initGridFromPlan, bubbleClassForSub, dotClassForSub, MTOP_OUTCOMES,
 } from "@/components/read-only-plan-view";
 
 function getWeeksInMonth(month: Date): Date[][] {

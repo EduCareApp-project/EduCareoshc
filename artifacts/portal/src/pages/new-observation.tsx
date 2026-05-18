@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, FileText } from "lucide-react";
 import { useMemo } from "react";
+import { MtopOutcomePicker } from "@/components/mtop-outcome-picker";
 
 const EMPTY_FORM = {
   childId: "",
@@ -41,6 +42,7 @@ export default function NewObservation() {
     ...EMPTY_FORM,
     childId: prefilledChildId || "",
   });
+  const [outcomeIds, setOutcomeIds] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function validate() {
@@ -62,6 +64,7 @@ export default function NewObservation() {
       staffId: parseInt(form.staffId),
       observationDate: form.observationDate,
       description: form.description.trim(),
+      outcomeIds,
     };
     if (form.commentPlan.trim()) body.commentPlan = form.commentPlan.trim();
     if (form.actionNotes.trim()) body.actionNotes = form.actionNotes.trim();
@@ -144,6 +147,13 @@ export default function NewObservation() {
         <Card>
           <CardHeader><CardTitle>Documentation</CardTitle></CardHeader>
           <CardContent className="space-y-5">
+            <div className="space-y-1.5">
+              <Label>MTOP Outcomes</Label>
+              <MtopOutcomePicker value={outcomeIds} onChange={setOutcomeIds} label="MTOP Outcomes" />
+            </div>
+
+            <Separator />
+
             <div className="space-y-1.5">
               <Label>Observation</Label>
               <Textarea

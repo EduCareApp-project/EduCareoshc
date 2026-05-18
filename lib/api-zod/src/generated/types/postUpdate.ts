@@ -17,6 +17,7 @@ export interface PostUpdate {
   description?: string;
   learning?: string;
   opportunities?: string;
+  outcomeIds?: string[];
   aiSummary?: string;
   /** Setting this transitions the post from draft to published and triggers guardian notifications. */
   publishedAt?: Date;

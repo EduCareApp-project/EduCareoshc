@@ -14,6 +14,8 @@ import { format } from "date-fns";
 import { ArrowLeft, User, Calendar, Trash2, Pencil } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { MtopOutcomePicker } from "@/components/mtop-outcome-picker";
+import { bubbleClassForSub, dotClassForSub } from "@/components/read-only-plan-view";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,6 +48,7 @@ export default function ViewObservation() {
     commentPlan: "",
     actionNotes: "",
   });
+  const [editOutcomeIds, setEditOutcomeIds] = useState<string[]>([]);
 
   function openEdit() {
     if (!obs) return;
@@ -56,6 +59,7 @@ export default function ViewObservation() {
       commentPlan: obs.commentPlan ?? "",
       actionNotes: obs.actionNotes ?? "",
     });
+    setEditOutcomeIds(obs.outcomeIds ?? []);
     setEditOpen(true);
   }
 
@@ -65,6 +69,7 @@ export default function ViewObservation() {
       staffId: parseInt(editForm.staffId),
       observationDate: editForm.observationDate,
       description: editForm.description,
+      outcomeIds: editOutcomeIds,
       commentPlan: editForm.commentPlan || undefined,
       actionNotes: editForm.actionNotes || undefined,
     };
@@ -166,6 +171,24 @@ export default function ViewObservation() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {(obs.outcomeIds ?? []).length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">MTOP Outcomes</p>
+              <div className="flex flex-wrap gap-1.5">
+                {(obs.outcomeIds ?? []).map((subId) => (
+                  <span
+                    key={subId}
+                    className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border ${bubbleClassForSub(subId)}`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${dotClassForSub(subId)}`} />
+                    {subId}
+                  </span>
+                ))}
+              </div>
+              <Separator />
+            </div>
+          )}
+
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Observation</p>
             <p className="whitespace-pre-wrap leading-relaxed">{obs.description}</p>
@@ -201,6 +224,11 @@ export default function ViewObservation() {
             <DialogTitle>Edit Observation</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label>MTOP Outcomes</Label>
+              <MtopOutcomePicker value={editOutcomeIds} onChange={setEditOutcomeIds} label="MTOP Outcomes" />
+            </div>
+
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Educator</Label>

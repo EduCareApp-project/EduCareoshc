@@ -23,6 +23,7 @@ export interface Post {
   date?: Date | null;
   /** @maxItems 3 */
   images: string[];
+  outcomeIds: string[];
   /** @nullable */
   description?: string | null;
   /** @nullable */

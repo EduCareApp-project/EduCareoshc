@@ -251,6 +251,7 @@ export interface Observation {
   staffName?: string | null;
   description: string;
   observationDate: string;
+  outcomeIds: string[];
   /** @nullable */
   commentPlan?: string | null;
   /** @nullable */
@@ -264,6 +265,7 @@ export interface ObservationInput {
   staffId: number;
   description: string;
   observationDate: string;
+  outcomeIds?: string[];
   commentPlan?: string;
   actionNotes?: string;
 }
@@ -272,6 +274,7 @@ export interface ObservationUpdate {
   staffId?: number;
   description?: string;
   observationDate?: string;
+  outcomeIds?: string[];
   commentPlan?: string;
   actionNotes?: string;
 }
@@ -1255,6 +1258,7 @@ export interface Post {
   date?: string | null;
   /** @maxItems 3 */
   images: string[];
+  outcomeIds: string[];
   /** @nullable */
   description?: string | null;
   /** @nullable */
@@ -1292,6 +1296,7 @@ export interface PostInput {
   date?: string;
   /** @maxItems 3 */
   images?: string[];
+  outcomeIds?: string[];
   description?: string;
   learning?: string;
   opportunities?: string;
@@ -1310,6 +1315,7 @@ export interface PostUpdate {
   description?: string;
   learning?: string;
   opportunities?: string;
+  outcomeIds?: string[];
   aiSummary?: string;
   /** Setting this transitions the post from draft to published and triggers guardian notifications. */
   publishedAt?: string;

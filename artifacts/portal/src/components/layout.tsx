@@ -62,7 +62,7 @@ const NAV_GROUPS = [
   {
     label: "PROGRAMMING",
     items: [
-      { href: "/calendar", label: "Weekly Programs", icon: CalendarDays },
+      { href: "/calendar", label: "Calendar", icon: CalendarDays },
       { href: "/planning", label: "Planning Cycle", icon: Layers },
     ]
   },

@@ -28,7 +28,7 @@ async function seedNotificationSettings(): Promise<void> {
     { type: "condition_closed",          label: "Condition report closed",          enabled: true,  advanceDays: null },
     { type: "policy_new",                label: "New policy added",                 enabled: true,  advanceDays: null },
     { type: "policy_updated",            label: "Policy updated",                   enabled: true,  advanceDays: null },
-    { type: "planning_published",        label: "Weekly program published",          enabled: true,  advanceDays: null },
+    { type: "planning_published",        label: "Calendar published",                enabled: true,  advanceDays: null },
     { type: "qip_deadline",              label: "QIP deadline approaching",         enabled: true,  advanceDays: 14   },
     { type: "qip_deadline_expired",      label: "QIP deadline expired",             enabled: true,  advanceDays: null },
     { type: "weekly_plan_missing",       label: "No published plan for week",       enabled: true,  advanceDays: null },

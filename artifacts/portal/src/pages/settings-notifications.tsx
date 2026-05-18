@@ -95,8 +95,8 @@ const SETTING_META: Record<string, { label: string; description: string; hasAdva
     group: "Events",
   },
   planning_published: {
-    label: "Weekly program published",
-    description: "Email guardians when a weekly program is published.",
+    label: "Calendar published",
+    description: "Email guardians when a calendar program is published.",
     hasAdvanceDays: false,
     group: "Guardian Emails",
   },

@@ -76,7 +76,7 @@ router.patch("/planning/:id", async (req, res): Promise<void> => {
       if (!enabled || recipients.length === 0) return;
       return getEmailBranding().then((branding) =>
         sendWeeklyPlanPublishedEmail(recipients, {
-          planTitle: exp.title ?? "Weekly Program",
+          planTitle: exp.title ?? "Calendar",
           weekOf,
           portalUrl: getPortalUrl(),
         }, branding)

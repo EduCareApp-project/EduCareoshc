@@ -130,7 +130,7 @@ function GuardianNotificationBell({ dark = false }: { dark?: boolean }) {
   const TYPE_LABELS: Record<FeedItem["type"], string> = {
     notice: "Notice",
     post: "New post",
-    plan: "Weekly program",
+    plan: "Calendar",
   };
   const TYPE_COLORS: Record<FeedItem["type"], string> = {
     notice: "bg-amber-100 text-amber-700",

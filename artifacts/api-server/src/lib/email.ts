@@ -448,7 +448,7 @@ export async function sendWeeklyPlanPublishedEmail(
             <html>
               <body style="font-family: sans-serif; color: #1a1a1a; max-width: 560px; margin: 0 auto; padding: 24px;">
                 ${buildLogoHtml(branding)}
-                <h2 style="margin: 0 0 8px;">Weekly program published</h2>
+                <h2 style="margin: 0 0 8px;">Calendar published</h2>
                 <h3 style="margin: 0 0 12px; color: #1b5e20;">${opts.planTitle.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</h3>
                 ${weekHtml}
                 <a href="${opts.portalUrl}" style="
@@ -460,7 +460,7 @@ export async function sendWeeklyPlanPublishedEmail(
                   text-decoration: none;
                   border-radius: 8px;
                   font-weight: 600;
-                ">View weekly program</a>
+                ">View calendar</a>
                 <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
                 <p style="color: #aaa; font-size: 12px;">You received this email because you have a Family Portal account. Log in at <a href="${opts.portalUrl}" style="color: #1b5e20;">${opts.portalUrl}</a>.</p>
               </body>

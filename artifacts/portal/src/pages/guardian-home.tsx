@@ -161,7 +161,7 @@ function WeeklyActivityGrid({ data }: { data: WeeklyPlanData }) {
 function WeeklyProgramCard({ plan, onOpen }: { plan: GuardianPlan; onOpen: () => void }) {
   const dateLabel = plan.startDate
     ? `Week of ${format(parseISO(plan.startDate), "d MMMM yyyy")}`
-    : (plan.title ?? "Weekly Program");
+    : (plan.title ?? "Calendar");
 
   return (
     <Card
@@ -171,7 +171,7 @@ function WeeklyProgramCard({ plan, onOpen }: { plan: GuardianPlan; onOpen: () =>
       <CardHeader className="flex flex-row items-start justify-between gap-3 p-4">
         <div className="flex-1 space-y-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-semibold text-base leading-tight">{plan.title ?? "Weekly Program"}</h3>
+            <h3 className="font-semibold text-base leading-tight">{plan.title ?? "Calendar"}</h3>
             <Badge variant="secondary" className="text-xs font-medium bg-emerald-100 text-emerald-800">Published</Badge>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-0.5">
@@ -291,7 +291,7 @@ function GuardianCalendar({ childSiteIds }: { childSiteIds: number[] }) {
                             <div className="h-full bg-green-50/70 border-y border-green-200 flex items-center px-3 gap-2">
                               <Badge className="bg-green-100 text-green-800 border border-green-300 text-xs gap-1">
                                 <Send className="h-3 w-3" />
-                                {plan.title ?? "Weekly Program"}
+                                {plan.title ?? "Calendar"}
                               </Badge>
                               <ExternalLink className="h-3 w-3 text-green-700 opacity-70" />
                             </div>
@@ -330,7 +330,7 @@ function GuardianCalendar({ childSiteIds }: { childSiteIds: number[] }) {
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
               <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">No weekly programs published yet.</p>
+              <p className="text-sm">No calendar programs published yet.</p>
               <p className="text-xs mt-1">Check back soon — your service will post the program here each week.</p>
             </CardContent>
           </Card>

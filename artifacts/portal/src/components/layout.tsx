@@ -318,7 +318,7 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
   })).filter((group) => group.items.length > 0);
 
   const isEducatorRole = ["educator", "coordinator"].includes(user?.role ?? "");
-  const EDUCATOR_HIDDEN = new Set(["/guardians", "/settings", "/reports/service", "/reports/staff", "/reports/system-access"]);
+  const EDUCATOR_HIDDEN = new Set(["/guardians", "/settings", "/reports/service", "/reports/staff", "/reports/system-access", "/appraisals"]);
   const ownProfileOnly = !isAdmin && !disabledHrefs.includes("staff_own_profile");
 
   let finalGroups = isEducatorRole

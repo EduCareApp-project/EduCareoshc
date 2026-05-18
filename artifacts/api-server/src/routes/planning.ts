@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and, isNotNull, isNull } from "drizzle-orm";
-import { db, planningExperiencesTable, parentAccountsTable } from "@workspace/db";
+import { db, planningExperiencesTable, parentAccountsTable, childrenTable } from "@workspace/db";
 import {
   CreatePlanningExperienceBody, UpdatePlanningExperienceParams, UpdatePlanningExperienceBody,
   UpdatePlanningExperienceResponse, DeletePlanningExperienceParams,
@@ -59,8 +59,15 @@ router.patch("/planning/:id", async (req, res): Promise<void> => {
   const wasJustPublished = existing?.stage !== "published" && exp.stage === "published";
   if (wasJustPublished) {
     const guardians = await db
-      .select({ email: parentAccountsTable.guardianEmail })
+      .selectDistinct({ email: parentAccountsTable.guardianEmail })
       .from(parentAccountsTable)
+      .innerJoin(
+        childrenTable,
+        and(
+          eq(childrenTable.guardianEmail, parentAccountsTable.guardianEmail),
+          eq(childrenTable.status, "active"),
+        ),
+      )
       .where(and(isNotNull(parentAccountsTable.passwordHash), isNull(parentAccountsTable.blockedAt)));
     const recipients = guardians.map((g) => g.email);
     const weekOf = exp.startDate ? formatDateAU(exp.startDate as string) : null;

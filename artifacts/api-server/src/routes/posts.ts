@@ -132,8 +132,15 @@ router.patch("/posts/:id", async (req, res): Promise<void> => {
   const wasPublished = existing.publishedAt == null && post.publishedAt != null;
   if (wasPublished && notifyGuardians !== false) {
     const guardians = await db
-      .select({ guardianEmail: parentAccountsTable.guardianEmail })
+      .selectDistinct({ email: parentAccountsTable.guardianEmail })
       .from(parentAccountsTable)
+      .innerJoin(
+        childrenTable,
+        and(
+          eq(childrenTable.guardianEmail, parentAccountsTable.guardianEmail),
+          eq(childrenTable.status, "active"),
+        ),
+      )
       .where(
         and(
           isNotNull(parentAccountsTable.passwordHash),
@@ -141,7 +148,7 @@ router.patch("/posts/:id", async (req, res): Promise<void> => {
         ),
       );
 
-    const recipients = guardians.map((g) => g.guardianEmail);
+    const recipients = guardians.map((g) => g.email);
     const excerpt = ((post.description ?? post.learning ?? "") as string)
       .replace(/<[^>]*>/g, "")
       .trim()

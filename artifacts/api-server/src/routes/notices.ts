@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and, isNotNull, isNull } from "drizzle-orm";
-import { db, noticesTable, parentAccountsTable } from "@workspace/db";
+import { db, noticesTable, parentAccountsTable, childrenTable } from "@workspace/db";
 import { CreateNoticeBody, DeleteNoticeParams, ListNoticesResponse, ListNoticesResponseItem, UpdateNoticeBody, UpdateNoticeParams } from "@workspace/api-zod";
 import { sendGuardianNoticeEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
@@ -27,8 +27,15 @@ router.post("/notices", async (req, res): Promise<void> => {
 
   if (notice.audience === "guardian") {
     const guardians = await db
-      .select({ email: parentAccountsTable.guardianEmail })
+      .selectDistinct({ email: parentAccountsTable.guardianEmail })
       .from(parentAccountsTable)
+      .innerJoin(
+        childrenTable,
+        and(
+          eq(childrenTable.guardianEmail, parentAccountsTable.guardianEmail),
+          eq(childrenTable.status, "active"),
+        ),
+      )
       .where(and(isNotNull(parentAccountsTable.passwordHash), isNull(parentAccountsTable.blockedAt)));
     const recipients = guardians.map((g) => g.email);
     const strippedContent = notice.content.replace(/<[^>]*>/g, "").trim().slice(0, 300);

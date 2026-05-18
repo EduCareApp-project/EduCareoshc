@@ -143,16 +143,25 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
     },
   });
 
+  // Keep stale data so the list stays visible while the popover closes
   const { data: notifications } = useListNotifications({
     query: {
       queryKey: listQueryKey,
       enabled: open,
+      staleTime: 2 * 60 * 1000,
     },
   });
 
   const { mutate: markAll } = useMarkAllNotificationsRead({
     mutation: {
-      onSuccess: () => {
+      onMutate: () => {
+        // Optimistically zero the badge and mark all items read in cache
+        queryClient.setQueryData(countQueryKey, { count: 0 });
+        queryClient.setQueryData(listQueryKey, (old: { id: number; read: boolean }[] | undefined) =>
+          old?.map((n) => ({ ...n, read: true }))
+        );
+      },
+      onError: () => {
         queryClient.invalidateQueries({ queryKey: countQueryKey });
         queryClient.invalidateQueries({ queryKey: listQueryKey });
       },
@@ -161,7 +170,16 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
 
   const { mutate: markOne } = useMarkNotificationRead({
     mutation: {
-      onSuccess: () => {
+      onMutate: ({ id }) => {
+        // Optimistically mark the single item read and decrement badge
+        queryClient.setQueryData(countQueryKey, (old: { count: number } | undefined) => ({
+          count: Math.max(0, (old?.count ?? 1) - 1),
+        }));
+        queryClient.setQueryData(listQueryKey, (old: { id: number; read: boolean }[] | undefined) =>
+          old?.map((n) => n.id === id ? { ...n, read: true } : n)
+        );
+      },
+      onError: () => {
         queryClient.invalidateQueries({ queryKey: countQueryKey });
         queryClient.invalidateQueries({ queryKey: listQueryKey });
       },
@@ -169,13 +187,14 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
   });
 
   const unread = countData?.count ?? 0;
+  const hasNotifications = notifications && notifications.length > 0;
 
   function handleNotificationClick(n: { id: number; href?: string | null; read: boolean }) {
+    // Mark as read (optimistic — happens instantly)
     if (!n.read) markOne({ id: n.id });
-    if (n.href) {
-      setOpen(false);
-      setLocation(n.href);
-    }
+    // Navigate first, then close — avoids the enabled:open race
+    if (n.href) setLocation(n.href);
+    setOpen(false);
   }
 
   return (
@@ -203,19 +222,17 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
       >
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <span className="font-semibold text-sm">Notifications</span>
-          <div className="flex items-center gap-2">
-            {unread > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
-                onClick={() => markAll(undefined)}
-              >
-                <CheckCheck className="h-3.5 w-3.5" />
-                Mark all read
-              </Button>
-            )}
-          </div>
+          {hasNotifications && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
+              onClick={() => markAll(undefined)}
+            >
+              <CheckCheck className="h-3.5 w-3.5" />
+              Acknowledge all
+            </Button>
+          )}
         </div>
 
         <ScrollArea className="max-h-[400px]">
@@ -229,11 +246,21 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
               {notifications.map((n) => (
                 <div
                   key={n.id}
+                  role="button"
+                  tabIndex={0}
                   className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-accent/50 ${
                     !n.read ? "bg-blue-50/50 dark:bg-blue-950/20" : ""
                   }`}
                   onClick={() => handleNotificationClick(n)}
+                  onKeyDown={(e) => e.key === "Enter" && handleNotificationClick(n)}
                 >
+                  {/* Unread dot */}
+                  <div className="mt-1.5 shrink-0">
+                    {!n.read
+                      ? <span className="block h-2 w-2 rounded-full bg-blue-500" />
+                      : <span className="block h-2 w-2" />
+                    }
+                  </div>
                   <div className="flex-1 min-w-0 space-y-0.5">
                     <p className={`text-sm leading-snug ${!n.read ? "font-semibold" : "font-medium text-muted-foreground"}`}>
                       {n.title}
@@ -243,18 +270,9 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
                     )}
                     <p className="text-[11px] text-muted-foreground/70">{timeAgo(n.createdAt)}</p>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
-                    {n.href && <ExternalLink className="h-3 w-3 text-muted-foreground/50" />}
-                    {!n.read && (
-                      <button
-                        className="rounded-full p-0.5 hover:bg-muted"
-                        onClick={(e) => { e.stopPropagation(); markOne({ id: n.id }); }}
-                        title="Mark as read"
-                      >
-                        <Check className="h-3 w-3 text-blue-500" />
-                      </button>
-                    )}
-                  </div>
+                  {n.href && (
+                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 mt-1" />
+                  )}
                 </div>
               ))}
             </div>

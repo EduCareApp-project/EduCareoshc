@@ -54,7 +54,7 @@ router.post("/condition-reports", async (req, res): Promise<void> => {
     type: "condition_submitted",
     title: "New condition report submitted",
     body: parsed.data.description,
-    href: `/condition-reports`,
+    href: `/condition-reports?highlight=${report.id}`,
     referenceId: report.id,
     referenceType: "condition_report",
   }).catch((err) => logger.warn({ err }, "Failed to send condition_submitted notifications"));
@@ -82,7 +82,7 @@ router.patch("/condition-reports/:id", async (req, res): Promise<void> => {
       siteId: prev.siteId,
       type: "condition_closed",
       title: "Condition report closed",
-      href: `/condition-reports`,
+      href: `/condition-reports?highlight=${report.id}`,
       referenceId: report.id,
       referenceType: "condition_report",
     }).catch((err) => logger.warn({ err }, "Failed to send condition_closed notifications"));

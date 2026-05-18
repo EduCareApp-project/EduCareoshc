@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-zod";
 import { sendWeeklyPlanPublishedEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
+import { createNotificationsForRoles } from "../lib/notify";
 
 const router: IRouter = Router();
 
@@ -58,6 +59,19 @@ router.patch("/planning/:id", async (req, res): Promise<void> => {
 
   const wasJustPublished = existing?.stage !== "published" && exp.stage === "published";
   if (wasJustPublished) {
+    const weekOf = exp.startDate ? formatDateAU(exp.startDate as string) : null;
+    createNotificationsForRoles({
+      roles: ["coordinator", "educational_leader", "admin"],
+      siteId: exp.siteId,
+      type: "planning_published",
+      title: `Weekly program published${weekOf ? ` — week of ${weekOf}` : ""}`,
+      body: exp.title ?? undefined,
+      href: `/planning/${params.data.id}`,
+      referenceId: params.data.id,
+      referenceType: "planning_experience",
+      dedupeKeyPrefix: `planning_published:${params.data.id}`,
+    }).catch((err) => req.log.warn({ err }, "Failed to send planning_published notifications"));
+
     const guardians = await db
       .selectDistinct({ email: parentAccountsTable.guardianEmail })
       .from(parentAccountsTable)
@@ -70,7 +84,6 @@ router.patch("/planning/:id", async (req, res): Promise<void> => {
       )
       .where(and(isNotNull(parentAccountsTable.passwordHash), isNull(parentAccountsTable.blockedAt)));
     const recipients = guardians.map((g) => g.email);
-    const weekOf = exp.startDate ? formatDateAU(exp.startDate as string) : null;
     getEmailBranding().then((branding) =>
       sendWeeklyPlanPublishedEmail(recipients, {
         planTitle: exp.title ?? "Weekly Program",

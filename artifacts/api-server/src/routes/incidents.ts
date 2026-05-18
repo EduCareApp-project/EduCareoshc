@@ -68,7 +68,7 @@ router.post("/incidents", async (req, res): Promise<void> => {
     type: "incident_submitted",
     title: "New incident log submitted",
     body: parsed.data.description,
-    href: `/incidents`,
+    href: `/incidents?highlight=${inc.id}`,
     referenceId: inc.id,
     referenceType: "incident",
   }).catch((err) => logger.warn({ err }, "Failed to send incident_submitted notifications"));
@@ -113,7 +113,7 @@ router.patch("/incidents/:id", async (req, res): Promise<void> => {
       siteId: inc.siteId,
       type: "incident_closed",
       title: "Incident log closed",
-      href: `/incidents`,
+      href: `/incidents?highlight=${inc.id}`,
       referenceId: inc.id,
       referenceType: "incident",
     }).catch((err) => logger.warn({ err }, "Failed to send incident_closed notifications"));

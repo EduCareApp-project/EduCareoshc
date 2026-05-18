@@ -10,6 +10,7 @@ export type NotificationType =
   | "condition_closed"
   | "policy_new"
   | "policy_updated"
+  | "planning_published"
   | "qip_deadline"
   | "qip_deadline_expired"
   | "weekly_plan_missing"

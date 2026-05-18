@@ -414,9 +414,9 @@ export default function Calendar() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{isGuardianMode ? "Learning Calendar" : "Calendar"}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{isGuardianMode ? "Weekly Learning Program" : "Weekly Programs"}</h1>
           <p className="text-muted-foreground mt-1">
-            {isGuardianMode ? "Published weekly learning programs." : "View planning cycles and programs by week."}
+            {isGuardianMode ? "Published weekly learning programs." : "Create and publish weekly learning programs for guardians."}
           </p>
         </div>
         {!isGuardianMode && (

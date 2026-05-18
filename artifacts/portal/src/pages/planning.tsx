@@ -95,24 +95,26 @@ export default function Planning() {
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 w-full" />)}
         </div>
-      ) : (experiences ?? []).length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="rounded-full bg-muted p-4 mb-4">
-            <CalendarDays className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h3 className="font-semibold text-lg mb-1">No planning cycles yet</h3>
-          <p className="text-muted-foreground text-sm mb-4">Start by creating your first planning experience document.</p>
-          <Button onClick={() => navigate("/planning/new")}>
-            <Plus className="h-4 w-4 mr-2" />New Planning Cycle
-          </Button>
-        </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-muted-foreground">No planning cycles match the selected site.</p>
-          <button onClick={() => setSiteFilter("all")} className="mt-2 text-sm text-primary hover:underline">
-            Clear filter
-          </button>
-        </div>
+        siteFilter === "all" || siteFilter === "templates" ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="rounded-full bg-muted p-4 mb-4">
+              <CalendarDays className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="font-semibold text-lg mb-1">No planning cycles yet</h3>
+            <p className="text-muted-foreground text-sm mb-4">Start by creating your first planning experience document.</p>
+            <Button onClick={() => navigate("/planning/new")}>
+              <Plus className="h-4 w-4 mr-2" />New Planning Cycle
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <p className="text-muted-foreground">No planning cycles match the selected site.</p>
+            <button onClick={() => setSiteFilter("all")} className="mt-2 text-sm text-primary hover:underline">
+              Clear filter
+            </button>
+          </div>
+        )
       ) : (
         <div className="space-y-3">
           {filtered.map((exp) => {

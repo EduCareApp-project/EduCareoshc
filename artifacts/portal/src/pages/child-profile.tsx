@@ -69,7 +69,7 @@ export default function ChildProfile() {
   const id = parseInt(params.id || "0");
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { isEducatorRole } = usePermissions();
+  const { isEducatorRole, canDelete } = usePermissions();
 
   const [, navigate] = useLocation();
 
@@ -399,6 +399,7 @@ export default function ChildProfile() {
             <Button variant="outline" onClick={openEdit}>
               <Edit className="h-4 w-4 mr-2" />Edit Profile
             </Button>
+            {canDelete && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" className="text-destructive hover:bg-destructive/10 border-destructive/30">
@@ -424,6 +425,7 @@ export default function ChildProfile() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+            )}
           </div>
         </div>
       </div>
@@ -588,6 +590,7 @@ export default function ChildProfile() {
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openEditWelfareNote(note)}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
+                    {canDelete && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
@@ -612,6 +615,7 @@ export default function ChildProfile() {
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
+                    )}
                     </div>
                   </div>
                   <div className="grid md:grid-cols-2 gap-3 text-sm">
@@ -727,6 +731,7 @@ export default function ChildProfile() {
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
+                        {canDelete && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
@@ -747,6 +752,7 @@ export default function ChildProfile() {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
+                        )}
                       </div>
                     </div>
                   )}
@@ -953,6 +959,7 @@ export default function ChildProfile() {
                       <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">
                         {format(new Date(doc.uploadedAt), "d MMM yyyy")}
                       </span>
+                      {canDelete && (
                       <button
                         type="button"
                         onClick={() => handleDocDelete(doc.id, doc.documentName)}
@@ -960,6 +967,7 @@ export default function ChildProfile() {
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
+                      )}
                     </div>
                   ))}
                 </div>

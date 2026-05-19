@@ -1,4 +1,5 @@
 import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -118,8 +119,10 @@ function GuardianRoutes() {
 }
 
 function StaffRoutes() {
+  const [location] = useLocation();
   return (
     <Layout>
+      <ErrorBoundary key={location}>
       <Switch>
         <Route path="/" component={Dashboard} />
 
@@ -205,6 +208,7 @@ function StaffRoutes() {
 
         <Route component={NotFound} />
       </Switch>
+      </ErrorBoundary>
     </Layout>
   );
 }

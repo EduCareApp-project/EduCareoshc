@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ArrowLeft, Plus, Trash2, GraduationCap, User, Award, Paperclip, X, Pencil, FileText, AlertTriangle, Camera, Check, ClipboardList } from "lucide-react";
 import AppraisalsTab from "./appraisals-tab";
-import { format } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import {
   type QualItem,
@@ -45,6 +45,16 @@ import {
 } from "@/lib/qual-level";
 
 const ROLE_LABELS: Record<string, string> = { admin: "Admin", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
+
+function safePdDate(completedAt: string | null | undefined): string {
+  if (!completedAt) return "—";
+  try {
+    const d = parseISO(completedAt);
+    return isValid(d) ? format(d, "MMM d, yyyy") : "—";
+  } catch {
+    return "—";
+  }
+}
 
 function storageUrl(objectPath: string): string {
   const id = objectPath.replace(/^\/objects\//, "");
@@ -360,7 +370,11 @@ export default function StaffProfile() {
   }
 
   const currentYear = new Date().getFullYear();
-  const pdThisYear = (pdList ?? []).filter((p) => new Date(p.completedAt + "T00:00:00").getFullYear() === currentYear);
+  const pdThisYear = (pdList ?? []).filter((p) => {
+    if (!p.completedAt) return false;
+    try { return isValid(parseISO(p.completedAt)) && parseISO(p.completedAt).getFullYear() === currentYear; }
+    catch { return false; }
+  });
   const totalHoursThisYear = pdThisYear.reduce((s, p) => s + (p.hoursEarned ?? 0), 0);
 
   if (loadingStaff) {
@@ -890,7 +904,7 @@ export default function StaffProfile() {
                     <div className="flex-1">
                       <p className="font-medium text-sm">{p.title}</p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                        <span>{format(new Date(p.completedAt + "T00:00:00"), "MMM d, yyyy")}</span>
+                        <span>{safePdDate(p.completedAt)}</span>
                         {p.provider && <><span>•</span><span>{p.provider}</span></>}
                         {p.hoursEarned != null && <><span>•</span><span className="font-medium text-foreground/70">{p.hoursEarned}h</span></>}
                       </div>

@@ -55,7 +55,7 @@ function normalizeChildPayload(body: unknown): unknown {
 }
 
 router.get("/children", async (_req, res): Promise<void> => {
-  const children = await db.select().from(childrenTable).orderBy(asc(childrenTable.lastName), asc(childrenTable.firstName));
+  const children = await db.select().from(childrenTable).orderBy(asc(childrenTable.firstName), asc(childrenTable.lastName));
   res.json(ListChildrenResponse.parse(children));
 });
 

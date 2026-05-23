@@ -2687,6 +2687,12 @@ components:
           type: string
         guardianPhone:
           type: string
+        guardian2Name:
+          type: ["string", "null"]
+        guardian2Email:
+          type: ["string", "null"]
+        guardian2Phone:
+          type: ["string", "null"]
         medicalNotes:
           type: ["string", "null"]
         likes:

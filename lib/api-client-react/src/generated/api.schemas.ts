@@ -66,6 +66,12 @@ export interface Child {
   guardianEmail: string;
   guardianPhone: string;
   /** @nullable */
+  guardian2Name?: string | null;
+  /** @nullable */
+  guardian2Email?: string | null;
+  /** @nullable */
+  guardian2Phone?: string | null;
+  /** @nullable */
   medicalNotes?: string | null;
   /** @nullable */
   likes?: string | null;

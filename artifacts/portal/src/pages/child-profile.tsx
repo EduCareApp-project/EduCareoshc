@@ -164,6 +164,7 @@ export default function ChildProfile() {
   const [form, setForm] = useState({
     firstName: "", lastName: "", dateOfBirth: "", enrollmentDate: "",
     status: "", guardianName: "", guardianEmail: "", guardianPhone: "",
+    guardian2Name: "", guardian2Email: "", guardian2Phone: "",
     medicalNotes: "", likes: "", dislikes: "", temperament: "", background: "",
     siteId: "" as string,
   });
@@ -179,6 +180,9 @@ export default function ChildProfile() {
       guardianName: child.guardianName,
       guardianEmail: child.guardianEmail,
       guardianPhone: child.guardianPhone,
+      guardian2Name: child.guardian2Name ?? "",
+      guardian2Email: child.guardian2Email ?? "",
+      guardian2Phone: child.guardian2Phone ?? "",
       medicalNotes: child.medicalNotes ?? "",
       likes: child.likes ?? "",
       dislikes: child.dislikes ?? "",
@@ -208,6 +212,9 @@ export default function ChildProfile() {
     if (!data.dislikes) delete data.dislikes;
     if (!data.temperament) delete data.temperament;
     if (!data.background) delete data.background;
+    if (!data.guardian2Name) data.guardian2Name = null;
+    if (!data.guardian2Email) data.guardian2Email = null;
+    if (!data.guardian2Phone) data.guardian2Phone = null;
     data.siteId = form.siteId ? parseInt(form.siteId) : null;
     updateMutation.mutate({ id, data: data as any }, {
       onSuccess: () => {
@@ -474,7 +481,7 @@ export default function ChildProfile() {
               </div>
               <Separator />
               <div className="space-y-1">
-                <div className="text-sm text-muted-foreground flex items-center gap-2"><User className="h-4 w-4" />Guardian</div>
+                <div className="text-sm text-muted-foreground flex items-center gap-2"><User className="h-4 w-4" />Guardian 1</div>
                 <p className="font-medium">{child.guardianName}</p>
               </div>
               <div className="space-y-1">
@@ -485,6 +492,27 @@ export default function ChildProfile() {
                 <div className="text-sm text-muted-foreground flex items-center gap-2"><Mail className="h-4 w-4" />Email</div>
                 <p className="font-medium">{child.guardianEmail}</p>
               </div>
+              {child.guardian2Name && (
+                <>
+                  <Separator />
+                  <div className="space-y-1">
+                    <div className="text-sm text-muted-foreground flex items-center gap-2"><User className="h-4 w-4" />Guardian 2</div>
+                    <p className="font-medium">{child.guardian2Name}</p>
+                  </div>
+                  {child.guardian2Phone && (
+                    <div className="space-y-1">
+                      <div className="text-sm text-muted-foreground flex items-center gap-2"><Phone className="h-4 w-4" />Phone</div>
+                      <p className="font-medium">{child.guardian2Phone}</p>
+                    </div>
+                  )}
+                  {child.guardian2Email && (
+                    <div className="space-y-1">
+                      <div className="text-sm text-muted-foreground flex items-center gap-2"><Mail className="h-4 w-4" />Email</div>
+                      <p className="font-medium">{child.guardian2Email}</p>
+                    </div>
+                  )}
+                </>
+              )}
               {child.medicalNotes && (
                 <>
                   <Separator />
@@ -1066,9 +1094,15 @@ export default function ChildProfile() {
               </TabsContent>
 
               <TabsContent value="guardian" className="space-y-4">
-                <div className="space-y-1"><Label>Guardian Name</Label><Input value={form.guardianName} onChange={(e) => setForm({ ...form, guardianName: e.target.value })} required /></div>
-                <div className="space-y-1"><Label>Guardian Email</Label><Input type="email" value={form.guardianEmail} onChange={(e) => setForm({ ...form, guardianEmail: e.target.value })} required /></div>
-                <div className="space-y-1"><Label>Guardian Phone</Label><Input type="text" autoComplete="tel" placeholder="e.g. 0400 000 000" value={form.guardianPhone} onChange={(e) => setForm({ ...form, guardianPhone: e.target.value })} required /></div>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Guardian 1</p>
+                <div className="space-y-1"><Label>Name</Label><Input value={form.guardianName} onChange={(e) => setForm({ ...form, guardianName: e.target.value })} required /></div>
+                <div className="space-y-1"><Label>Email</Label><Input type="email" value={form.guardianEmail} onChange={(e) => setForm({ ...form, guardianEmail: e.target.value })} required /></div>
+                <div className="space-y-1"><Label>Phone</Label><Input type="text" autoComplete="tel" placeholder="e.g. 0400 000 000" value={form.guardianPhone} onChange={(e) => setForm({ ...form, guardianPhone: e.target.value })} required /></div>
+                <Separator />
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Guardian 2 <span className="normal-case font-normal">(optional)</span></p>
+                <div className="space-y-1"><Label>Name</Label><Input value={form.guardian2Name} onChange={(e) => setForm({ ...form, guardian2Name: e.target.value })} placeholder="Full name" /></div>
+                <div className="space-y-1"><Label>Email</Label><Input type="email" value={form.guardian2Email} onChange={(e) => setForm({ ...form, guardian2Email: e.target.value })} placeholder="email@example.com" /></div>
+                <div className="space-y-1"><Label>Phone</Label><Input type="text" autoComplete="tel" value={form.guardian2Phone} onChange={(e) => setForm({ ...form, guardian2Phone: e.target.value })} placeholder="e.g. 0400 000 000" /></div>
               </TabsContent>
 
               <TabsContent value="profile" className="space-y-4">

@@ -40,6 +40,7 @@ async function buildGuardianList() {
   }>();
 
   for (const c of children) {
+    // Primary guardian
     const key = c.guardianEmail;
     if (!grouped.has(key)) {
       grouped.set(key, {
@@ -55,6 +56,27 @@ async function buildGuardianList() {
     g.childIds.push(c.id);
     g.childNames.push(`${c.firstName} ${c.lastName}`);
     if (c.siteId != null && !g.siteIds.includes(c.siteId)) g.siteIds.push(c.siteId);
+
+    // Second guardian (if set)
+    if (c.guardian2Email) {
+      const key2 = c.guardian2Email;
+      if (!grouped.has(key2)) {
+        grouped.set(key2, {
+          guardianEmail: c.guardian2Email,
+          guardianName: c.guardian2Name ?? c.guardian2Email,
+          guardianPhone: c.guardian2Phone ?? "",
+          childIds: [],
+          childNames: [],
+          siteIds: [],
+        });
+      }
+      const g2 = grouped.get(key2)!;
+      if (!g2.childIds.includes(c.id)) {
+        g2.childIds.push(c.id);
+        g2.childNames.push(`${c.firstName} ${c.lastName}`);
+      }
+      if (c.siteId != null && !g2.siteIds.includes(c.siteId)) g2.siteIds.push(c.siteId);
+    }
   }
 
   return Array.from(grouped.values()).map((g) => {

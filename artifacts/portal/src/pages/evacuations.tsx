@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useListEvacuations, useCreateEvacuation, useUpdateEvacuation, useListSites, useListStaff } from "@workspace/api-client-react";
+import { useListEvacuations, useCreateEvacuation, useUpdateEvacuation, useDeleteEvacuation, useListSites, useListStaff, ListEvacuationsQueryResult, ListSitesQueryResult, ListStaffQueryResult } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/use-permissions";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,9 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import {
-  ShieldAlert, Plus, AlertCircle, CheckCircle, Clock, Paperclip, Upload, X, FileText, Users, Pencil,
+  ShieldAlert, Plus, AlertCircle, CheckCircle, Clock, Paperclip, Upload, X, FileText, Users, Pencil, Trash2,
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -479,11 +480,24 @@ export default function Evacuations() {
   );
 }
 
-type EvacRecord = NonNullable<ReturnType<typeof useListEvacuations>["data"]>[number];
-type SiteItem = NonNullable<ReturnType<typeof useListSites>["data"]>[number];
-type StaffItem = NonNullable<ReturnType<typeof useListStaff>["data"]>[number];
+type EvacRecord = ListEvacuationsQueryResult[number];
+type SiteItem = ListSitesQueryResult[number];
+type StaffItem = ListStaffQueryResult[number];
 
 function ArchivedDrillRow({ evac }: { evac: EvacRecord }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { canDelete } = usePermissions();
+  const deleteMutation = useDeleteEvacuation({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/evacuations"] });
+        toast({ title: "Record deleted" });
+      },
+      onError: () => toast({ title: "Failed to delete record", variant: "destructive" }),
+    },
+  });
+
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg border bg-muted/30 text-sm">
       <span className="font-medium shrink-0">{DRILL_LABELS[evac.drillType] ?? evac.drillType}</span>
@@ -497,6 +511,32 @@ function ArchivedDrillRow({ evac }: { evac: EvacRecord }) {
       <span className="text-muted-foreground shrink-0 text-xs">
         Expired {evac.nextDueAt ? format(new Date(evac.nextDueAt), "dd/MM/yyyy") : "—"}
       </span>
+      {canDelete && (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive shrink-0">
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this record?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the {DRILL_LABELS[evac.drillType] ?? evac.drillType} drill record. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => deleteMutation.mutate({ id: evac.id })}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }
@@ -507,7 +547,16 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
   const { uploadFile, isUploading: uploading } = useUpload();
   const updateMutation = useUpdateEvacuation();
 
-  const { canEditAfterSubmit, isEducatorRole, ownSiteId } = usePermissions();
+  const { canEditAfterSubmit, canDelete, isEducatorRole, ownSiteId } = usePermissions();
+  const deleteMutation = useDeleteEvacuation({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/evacuations"] });
+        toast({ title: "Record deleted" });
+      },
+      onError: () => toast({ title: "Failed to delete record", variant: "destructive" }),
+    },
+  });
   const [editOpen, setEditOpen] = useState(false);
 
   const conductedDate = evac.conductedAt ? format(new Date(evac.conductedAt), "yyyy-MM-dd") : melbourneDateStr();
@@ -605,6 +654,32 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            {canDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this record?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete the {DRILL_LABELS[evac.drillType] ?? evac.drillType} drill record. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={() => deleteMutation.mutate({ id: evac.id })}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
             {canEditAfterSubmit && <Dialog open={editOpen} onOpenChange={setEditOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={openEdit}>
@@ -616,7 +691,7 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
                 <form onSubmit={handleUpdate} className="space-y-4 pb-2">
                   <div className="space-y-1.5">
                     <Label>Drill Type</Label>
-                    <Select value={form.drillType} onValueChange={(v) => setForm({ ...form, drillType: v })}>
+                    <Select value={form.drillType} onValueChange={(v) => setForm({ ...form, drillType: v as typeof form.drillType })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="evacuation">Evacuation</SelectItem>

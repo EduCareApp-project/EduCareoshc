@@ -1022,6 +1022,10 @@ export const CreateEvacuationBody = zod.object({
   attendanceDocName: zod.string().optional(),
 });
 
+export const DeleteEvacuationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
 export const UpdateEvacuationParams = zod.object({
   id: zod.coerce.number(),
 });

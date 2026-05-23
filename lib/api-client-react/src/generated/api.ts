@@ -4554,6 +4554,84 @@ export const useCreateEvacuation = <
   return useMutation(getCreateEvacuationMutationOptions(options));
 };
 
+export const getDeleteEvacuationUrl = (id: number) => {
+  return `/api/evacuations/${id}`;
+};
+
+export const deleteEvacuation = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteEvacuationUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteEvacuationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteEvacuation>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteEvacuation>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteEvacuation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteEvacuation>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteEvacuation(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteEvacuationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteEvacuation>>
+>;
+
+export type DeleteEvacuationMutationError = ErrorType<void>;
+
+export const useDeleteEvacuation = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteEvacuation>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteEvacuation>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteEvacuationMutationOptions(options));
+};
+
 export const getUpdateEvacuationUrl = (id: number) => {
   return `/api/evacuations/${id}`;
 };

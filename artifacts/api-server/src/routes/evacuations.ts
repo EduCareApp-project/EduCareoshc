@@ -86,4 +86,12 @@ router.patch("/evacuations/:id", async (req, res): Promise<void> => {
   res.json(ListEvacuationsResponseItem.parse({ ...evac, siteName }));
 });
 
+router.delete("/evacuations/:id", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const [deleted] = await db.delete(evacuationsTable).where(eq(evacuationsTable.id, id)).returning({ id: evacuationsTable.id });
+  if (!deleted) { res.status(404).json({ error: "Not found" }); return; }
+  res.status(204).end();
+});
+
 export default router;

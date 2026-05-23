@@ -1005,6 +1005,20 @@ paths:
                 $ref: "#/components/schemas/Evacuation"
 
   /evacuations/{id}:
+    delete:
+      operationId: deleteEvacuation
+      tags: [evacuations]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
     patch:
       operationId: updateEvacuation
       tags: [evacuations]

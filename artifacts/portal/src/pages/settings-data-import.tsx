@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { useListSites } from "@workspace/api-client-react";
+import { useToast } from "@/hooks/use-toast";
 
 // ── CSV parser ────────────────────────────────────────────────────────────────
 function parseCSV(text: string): Array<Record<string, string>> {
@@ -219,6 +220,7 @@ function ImportTab({
   const [result, setResult] = useState<ImportResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   function handleFile(text: string, name: string) {
     const parsed = parseCSV(text);
@@ -266,7 +268,13 @@ function ImportTab({
 
       const data: ImportResult = await res.json();
       setResult(data);
-      if (data.inserted > 0) handleClear();
+      if (data.inserted > 0) {
+        handleClear();
+        toast({
+          title: "Import successful",
+          description: `${data.inserted} record${data.inserted === 1 ? "" : "s"} imported successfully${data.skipped > 0 ? `, ${data.skipped} skipped` : ""}.`,
+        });
+      }
     } catch (err: any) {
       setError(err?.message ?? "Network error");
     } finally {

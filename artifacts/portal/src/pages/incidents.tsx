@@ -43,12 +43,12 @@ function statusBadge(inc: any) {
 
 function fmt(dt: string | null | undefined) {
   if (!dt) return "—";
-  try { return format(new Date(dt), "d MMM yyyy, h:mm a"); } catch { return dt; }
+  try { return format(new Date(dt), "dd/MM/yyyy, h:mm a"); } catch { return dt; }
 }
 
 function fmtDate(d: string | null | undefined) {
   if (!d) return "—";
-  try { return format(new Date(d.slice(0, 10) + "T00:00:00"), "d MMM yyyy"); } catch { return d; }
+  try { return format(new Date(d.slice(0, 10) + "T00:00:00"), "dd/MM/yyyy"); } catch { return d; }
 }
 
 // ── Section wrapper ──────────────────────────────────────────────────────────
@@ -785,7 +785,7 @@ export default function Incidents() {
               <SheetHeader className="mb-4">
                 <SheetTitle>{selectedIncident.childName ?? "Incident"}</SheetTitle>
                 <p className="text-sm text-muted-foreground" suppressHydrationWarning>
-                  Logged {format(new Date(selectedIncident.createdAt), "d MMM yyyy 'at' h:mm a")}
+                  Logged {format(new Date(selectedIncident.createdAt), "dd/MM/yyyy 'at' h:mm a")}
                 </p>
               </SheetHeader>
               <IncidentDetail key={selectedIncident.id} incident={selectedIncident} onDelete={() => setSelected(null)} />

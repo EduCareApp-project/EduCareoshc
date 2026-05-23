@@ -76,7 +76,7 @@ export default function GuardianNotices() {
                     <h3 className="font-semibold text-base mb-1">{post.title}</h3>
                     {post.publishedAt && (
                       <p className="text-xs text-muted-foreground mb-2">
-                        {format(new Date(post.publishedAt), "d MMMM yyyy")}
+                        {format(new Date(post.publishedAt), "dd/MM/yyyy")}
                       </p>
                     )}
                     {post.description && (

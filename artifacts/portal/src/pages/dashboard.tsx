@@ -313,7 +313,7 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
                 {selectedNotice?.priority}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                {selectedNotice && format(new Date(selectedNotice.createdAt), "MMMM d, yyyy 'at' h:mm a")}
+                {selectedNotice && format(new Date(selectedNotice.createdAt), "dd/MM/yyyy 'at' h:mm a")}
               </span>
             </div>
             <DialogTitle className="text-lg leading-snug">{selectedNotice?.title}</DialogTitle>
@@ -526,7 +526,7 @@ function RollSubmissionChecklist() {
               <ChevronLeft className="h-4 w-4" />
             </button>
             <div className="text-sm font-medium px-2 text-center min-w-[180px]">
-              {format(monday, "d MMM")}–{format(friday, "d MMM yyyy")}
+              {format(monday, "d MMM")}–{format(friday, "dd/MM/yyyy")}
               {isCurrentWeek && (
                 <Badge variant="outline" className="ml-2 text-[10px] text-primary border-primary/30 py-0 align-middle">
                   This week
@@ -711,7 +711,7 @@ function LeadershipDashboard() {
                   {observations.slice(0, 10).map((obs) => (
                     <tr key={obs.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap align-top">
-                        {format(new Date(obs.observationDate.length === 10 ? obs.observationDate + "T00:00:00" : obs.observationDate), "d MMM yyyy")}
+                        {format(new Date(obs.observationDate.length === 10 ? obs.observationDate + "T00:00:00" : obs.observationDate), "dd/MM/yyyy")}
                       </td>
                       <td className="px-4 py-3 font-medium whitespace-nowrap align-top">
                         {obs.childName ?? <span className="text-muted-foreground italic">Unknown</span>}
@@ -939,7 +939,7 @@ function EducatorDashboard() {
                 <ComplianceRow
                   icon={evacOk ? CheckCircle2 : AlertTriangle} ok={!!evacOk}
                   label="Evacuation Drill"
-                  value={service?.evacuationStatus?.lastConducted ? format(parseISO(service.evacuationStatus.lastConducted), "d MMM yyyy") : "Never conducted"}
+                  value={service?.evacuationStatus?.lastConducted ? format(parseISO(service.evacuationStatus.lastConducted), "dd/MM/yyyy") : "Never conducted"}
                   isText
                 />
               </div>
@@ -986,7 +986,7 @@ function EducatorDashboard() {
                           <Badge className={`${colorClass} border-none text-xs shrink-0`}>{label}</Badge>
                           <div className="min-w-0">
                             <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{primary.title}</p>
-                            <p className="text-xs text-muted-foreground">Due {format(parseISO(String(primary.targetDate)), "d MMM yyyy")}</p>
+                            <p className="text-xs text-muted-foreground">Due {format(parseISO(String(primary.targetDate)), "dd/MM/yyyy")}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
@@ -1156,7 +1156,7 @@ function GuardianDashboard({ siteFilter = "__all__" }: { siteFilter?: string }) 
                       <Layers className="h-4 w-4 text-green-600" />
                       <div>
                         <p className="text-sm font-medium">{plan.title}</p>
-                        {plan.startDate && <p className="text-xs text-muted-foreground">Week of {format(parseISO(plan.startDate), "d MMMM yyyy")}</p>}
+                        {plan.startDate && <p className="text-xs text-muted-foreground">Week of {format(parseISO(plan.startDate), "dd/MM/yyyy")}</p>}
                       </div>
                     </div>
                     <Badge className="bg-green-100 text-green-800 border-none text-xs">Published</Badge>
@@ -1231,7 +1231,7 @@ function GuardianDashboard({ siteFilter = "__all__" }: { siteFilter?: string }) 
                         <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
                           {post.staffName && <span>{post.staffName}</span>}
                           {post.staffName && post.date && <span>·</span>}
-                          {post.date && <span>{format(new Date(post.date.slice(0, 10) + "T00:00:00"), "d MMM yyyy")}</span>}
+                          {post.date && <span>{format(new Date(post.date.slice(0, 10) + "T00:00:00"), "dd/MM/yyyy")}</span>}
                         </div>
                       </CardContent>
                     </Card>

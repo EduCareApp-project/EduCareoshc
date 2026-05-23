@@ -88,13 +88,13 @@ export default function ObservationsList() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(obs.observationDate.length === 10 ? obs.observationDate + "T00:00:00" : obs.observationDate), "d MMM yyyy")}
+                        {format(new Date(obs.observationDate.length === 10 ? obs.observationDate + "T00:00:00" : obs.observationDate), "dd/MM/yyyy")}
                       </span>
                     </span>
                   </div>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground pt-1">
                     <Clock className="h-3 w-3" />
-                    <span>Last edited {format(new Date(obs.updatedAt), "d MMM yyyy, h:mm a")}</span>
+                    <span>Last edited {format(new Date(obs.updatedAt), "dd/MM/yyyy, h:mm a")}</span>
                   </div>
 
                   {obs.actionNotes && (

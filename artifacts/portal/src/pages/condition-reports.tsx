@@ -441,7 +441,7 @@ export default function ConditionReports() {
                 </div>
                 <span className="text-sm text-muted-foreground truncate">{r.staffName ?? "—"}</span>
                 <span className="text-sm text-muted-foreground truncate">{r.siteName ?? "—"}</span>
-                <span className="text-sm text-muted-foreground text-right whitespace-nowrap">{safeDate(r.reportedDate, "d MMM yyyy")}</span>
+                <span className="text-sm text-muted-foreground text-right whitespace-nowrap">{safeDate(r.reportedDate, "dd/MM/yyyy")}</span>
               </div>
             ))}
           </div>
@@ -508,7 +508,7 @@ export default function ConditionReports() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Date</p>
-                  <p>{safeDate(selectedReport.reportedDate, "d MMMM yyyy")}</p>
+                  <p>{safeDate(selectedReport.reportedDate, "dd/MM/yyyy")}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Reported By</p>

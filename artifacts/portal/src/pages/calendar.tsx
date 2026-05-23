@@ -55,7 +55,7 @@ interface WeekPlanModalProps {
 }
 
 function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, onSaved }: WeekPlanModalProps) {
-  const defaultTitle = existingPlan?.title ?? `Week of ${format(weekMonday, "d MMMM yyyy")}`;
+  const defaultTitle = existingPlan?.title ?? `Week of ${format(weekMonday, "dd/MM/yyyy")}`;
   const [title, setTitle] = useState(defaultTitle);
   const [grid, setGrid] = useState<WeeklyPlanGrid>(() => existingPlan ? initGridFromPlan(existingPlan) : emptyGrid());
   const [cellOutcomes, setCellOutcomes] = useState<CellOutcomes>(() => existingPlan?.weeklyPlanData?.cellOutcomes ?? {});
@@ -87,7 +87,7 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
     const weekLabel = i === 0 ? "1 week ago" : `${i + 1} weeks ago`;
     return {
       plan,
-      label: `${weekLabel} — ${plan.title ?? format(wkMonday, "d MMM yyyy")}`,
+      label: `${weekLabel} — ${plan.title ?? format(wkMonday, "dd/MM/yyyy")}`,
     };
   }).filter(Boolean) as { plan: ExistingPlan; label: string }[];
 
@@ -608,7 +608,7 @@ export default function Calendar() {
                           <div>
                             <p className="text-sm font-medium">{p.title}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              {p.startDate ? `Starts ${format(parseISO(p.startDate), "MMM d, yyyy")}` : ""}
+                              {p.startDate ? `Starts ${format(parseISO(p.startDate), "dd/MM/yyyy")}` : ""}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -621,7 +621,7 @@ export default function Calendar() {
                           <div>
                             <p className="text-sm font-medium">{p.title}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              {p.startDate ? `Starts ${format(parseISO(p.startDate), "MMM d, yyyy")}` : ""}
+                              {p.startDate ? `Starts ${format(parseISO(p.startDate), "dd/MM/yyyy")}` : ""}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">

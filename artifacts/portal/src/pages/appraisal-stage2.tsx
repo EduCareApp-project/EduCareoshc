@@ -125,7 +125,7 @@ export default function AppraisalStage2() {
         {submitted && appraisal.stage2SubmittedAt && (
           <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1 font-medium">
             <CheckCircle2 className="h-3.5 w-3.5" />
-            Submitted {format(new Date(appraisal.stage2SubmittedAt), "d MMM yyyy, h:mm a")}
+            Submitted {format(new Date(appraisal.stage2SubmittedAt), "dd/MM/yyyy, h:mm a")}
           </div>
         )}
       </div>

@@ -507,7 +507,7 @@ export default function PlanningDetail() {
         <img src="/educare-logo.png" alt="EduCare" className="h-10 w-10 object-contain" />
         <div>
           <p className="text-xs text-gray-500 uppercase tracking-widest font-medium">EduCare</p>
-          <p className="text-xs text-gray-400">Planning Cycle — printed {format(new Date(), "d MMM yyyy")}</p>
+          <p className="text-xs text-gray-400">Planning Cycle — printed {format(new Date(), "dd/MM/yyyy")}</p>
         </div>
       </div>
 
@@ -951,7 +951,7 @@ function PlanningViewContent({ form, siteName, focusChildrenNames }: { form: For
           <h1 className="text-2xl font-bold tracking-tight">{form.title || "Untitled"}</h1>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-          <ViewField label="Commencement Date" value={form.startDate ? format(new Date(form.startDate), "d MMM yyyy") : null} />
+          <ViewField label="Commencement Date" value={form.startDate ? format(new Date(form.startDate), "dd/MM/yyyy") : null} />
           <ViewField label="Location" value={siteName} />
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">Focus Children</p>

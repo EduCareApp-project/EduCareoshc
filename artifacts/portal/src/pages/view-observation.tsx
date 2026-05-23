@@ -157,7 +157,7 @@ export default function ViewObservation() {
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <Calendar className="h-4 w-4" />
-              {format(new Date(obs.observationDate.length === 10 ? obs.observationDate + "T00:00:00" : obs.observationDate), "d MMMM yyyy")}
+              {format(new Date(obs.observationDate.length === 10 ? obs.observationDate + "T00:00:00" : obs.observationDate), "dd/MM/yyyy")}
             </span>
             <span className="flex items-center gap-1.5">
               <User className="h-4 w-4" />

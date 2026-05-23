@@ -154,7 +154,7 @@ export function PostDetailDialog({
                   {post.date && (
                     <span className="flex items-center gap-1">
                       <CalendarDays className="h-3 w-3" />
-                      {format(new Date(post.date.slice(0, 10) + "T00:00:00"), "d MMMM yyyy")}
+                      {format(new Date(post.date.slice(0, 10) + "T00:00:00"), "dd/MM/yyyy")}
                     </span>
                   )}
                   {post.siteName && (
@@ -223,7 +223,7 @@ export function PostDetailDialog({
               </div>
 
               <p className="text-xs text-muted-foreground border-t pt-4">
-                Posted {format(new Date(post.createdAt), "d MMM yyyy 'at' h:mm a")}
+                Posted {format(new Date(post.createdAt), "dd/MM/yyyy 'at' h:mm a")}
               </p>
 
               {/* Comments */}
@@ -255,7 +255,7 @@ export function PostDetailDialog({
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-medium">{c.authorName}</span>
                               <span className="text-xs text-muted-foreground">
-                                {format(new Date(c.createdAt), "d MMM yyyy 'at' h:mm a")}
+                                {format(new Date(c.createdAt), "dd/MM/yyyy 'at' h:mm a")}
                               </span>
                             </div>
                             {canDelete && (

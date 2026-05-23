@@ -152,7 +152,7 @@ export default function Posts() {
                   <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
                     {post.staffName && <span>{post.staffName}</span>}
                     {post.staffName && post.date && <span>·</span>}
-                    {post.date && <span>{format(new Date(post.date.slice(0, 10) + "T00:00:00"), "d MMM yyyy")}</span>}
+                    {post.date && <span>{format(new Date(post.date.slice(0, 10) + "T00:00:00"), "dd/MM/yyyy")}</span>}
                   </div>
                 </CardContent>
               </Card>

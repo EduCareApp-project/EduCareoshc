@@ -50,7 +50,7 @@ function safePdDate(completedAt: string | null | undefined): string {
   if (!completedAt) return "—";
   try {
     const d = parseISO(completedAt);
-    return isValid(d) ? format(d, "MMM d, yyyy") : "—";
+    return isValid(d) ? format(d, "dd/MM/yyyy") : "—";
   } catch {
     return "—";
   }
@@ -758,7 +758,7 @@ export default function StaffProfile() {
                         )}
                         {expiryValid && (
                           <span>Expires: <span className={`font-medium ${isDateExpired ? "text-red-600" : "text-foreground"}`}>
-                            {format(expiry!, "d MMM yyyy")}
+                            {format(expiry!, "dd/MM/yyyy")}
                           </span></span>
                         )}
                         {(() => {

@@ -181,7 +181,7 @@ export default function AppraisalDetail() {
                 {appraisal.dueDate && (
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <CalendarDays className="h-3.5 w-3.5" />
-                    Due {format(parseISO(appraisal.dueDate), "d MMMM yyyy")}
+                    Due {format(parseISO(appraisal.dueDate), "dd/MM/yyyy")}
                   </div>
                 )}
                 {appraisal.absencesCount != null && (
@@ -303,7 +303,7 @@ export default function AppraisalDetail() {
                               : <Circle className="h-3.5 w-3.5 text-muted-foreground/40 flex-shrink-0" />
                             }
                             <span className={d.done ? "text-foreground" : "text-muted-foreground"}>{d.label}</span>
-                            {d.done && d.at && <span className="text-muted-foreground/60">— {format(new Date(d.at), "d MMM yyyy, h:mm a")}</span>}
+                            {d.done && d.at && <span className="text-muted-foreground/60">— {format(new Date(d.at), "dd/MM/yyyy, h:mm a")}</span>}
                           </div>
                         ))}
                       </div>
@@ -318,7 +318,7 @@ export default function AppraisalDetail() {
 
       {appraisal.status === "completed" && appraisal.completedAt && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-sm text-emerald-800 font-medium text-center">
-          ✓ Appraisal completed on {format(new Date(appraisal.completedAt), "d MMMM yyyy")}
+          ✓ Appraisal completed on {format(new Date(appraisal.completedAt), "dd/MM/yyyy")}
         </div>
       )}
     </div>

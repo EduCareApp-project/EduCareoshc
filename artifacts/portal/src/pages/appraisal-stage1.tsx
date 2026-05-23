@@ -50,7 +50,7 @@ function SubmittedBadge({ at }: { at: string }) {
   return (
     <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1 font-medium">
       <CheckCircle2 className="h-3.5 w-3.5" />
-      Submitted {format(new Date(at), "d MMM yyyy, h:mm a")}
+      Submitted {format(new Date(at), "dd/MM/yyyy, h:mm a")}
     </div>
   );
 }

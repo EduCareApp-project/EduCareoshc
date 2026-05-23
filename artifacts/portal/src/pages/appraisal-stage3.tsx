@@ -192,7 +192,7 @@ function GoalRow({
             <div key={note.id} className="flex items-start justify-between gap-2 bg-muted/40 rounded-md px-3 py-2">
               <div>
                 <p className="text-xs">{note.note}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(note.createdAt), "d MMM yyyy, h:mm a")}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(note.createdAt), "dd/MM/yyyy, h:mm a")}</p>
               </div>
               <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => onDeleteNote(note.id)}>
                 <Trash2 className="h-3 w-3 text-destructive" />
@@ -366,7 +366,7 @@ export default function AppraisalStage3() {
         {submitted && appraisal.completedAt && (
           <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1 font-medium">
             <CheckCircle2 className="h-3.5 w-3.5" />
-            Completed {format(new Date(appraisal.completedAt), "d MMM yyyy, h:mm a")}
+            Completed {format(new Date(appraisal.completedAt), "dd/MM/yyyy, h:mm a")}
           </div>
         )}
       </div>
@@ -543,7 +543,7 @@ export default function AppraisalStage3() {
               <p className="font-medium text-sm">Assessor signature</p>
               <p className="text-xs text-muted-foreground">{appraisal.reviewerName ?? "Reviewer"}</p>
               {formData.signatures.reviewerSignedAt && (
-                <p className="text-xs text-emerald-700 mt-0.5">{format(new Date(formData.signatures.reviewerSignedAt), "d MMM yyyy, h:mm a")}</p>
+                <p className="text-xs text-emerald-700 mt-0.5">{format(new Date(formData.signatures.reviewerSignedAt), "dd/MM/yyyy, h:mm a")}</p>
               )}
             </div>
           </label>
@@ -562,7 +562,7 @@ export default function AppraisalStage3() {
               <p className="font-medium text-sm">Employee signature</p>
               <p className="text-xs text-muted-foreground">{appraisal.staffName}</p>
               {formData.signatures.employeeSignedAt && (
-                <p className="text-xs text-emerald-700 mt-0.5">{format(new Date(formData.signatures.employeeSignedAt), "d MMM yyyy, h:mm a")}</p>
+                <p className="text-xs text-emerald-700 mt-0.5">{format(new Date(formData.signatures.employeeSignedAt), "dd/MM/yyyy, h:mm a")}</p>
               )}
             </div>
           </label>

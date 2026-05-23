@@ -470,7 +470,7 @@ export default function ChildProfile() {
               <Separator />
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground flex items-center gap-2"><Calendar className="h-4 w-4" />Date of Birth</div>
-                <p className="font-medium">{safeDate(child.dateOfBirth, "MMMM d, yyyy")}</p>
+                <p className="font-medium">{safeDate(child.dateOfBirth, "dd/MM/yyyy")}</p>
               </div>
               <Separator />
               <div className="space-y-1">
@@ -568,7 +568,7 @@ export default function ChildProfile() {
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center gap-3 flex-wrap">
                         <span className="text-sm font-medium">
-                          {safeDate(note.occurredAt, "d MMM yyyy, h:mm a")}
+                          {safeDate(note.occurredAt, "dd/MM/yyyy, h:mm a")}
                         </span>
                         {note.staffName && (
                           <span className="text-xs text-muted-foreground">Recorded by {note.staffName}</span>
@@ -719,7 +719,7 @@ export default function ChildProfile() {
                       <div className="flex-1 space-y-1">
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{note.content}</p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                          <span>{safeDate(note.createdAt, "d MMM yyyy, h:mm a")}</span>
+                          <span>{safeDate(note.createdAt, "dd/MM/yyyy, h:mm a")}</span>
                           {note.staffName && <><span>·</span><span>{note.staffName}</span></>}
                         </div>
                       </div>
@@ -795,7 +795,7 @@ export default function ChildProfile() {
                                 <p className="leading-relaxed line-clamp-2 flex-1">{j.content}</p>
                                 {j.archivedAt && <Badge variant="secondary" className="text-xs shrink-0">Actioned</Badge>}
                               </div>
-                              <p className="text-xs text-muted-foreground mt-1">{safeDate(j.createdAt, "d MMM yyyy")}{j.staffName ? ` · ${j.staffName}` : ""}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{safeDate(j.createdAt, "dd/MM/yyyy")}{j.staffName ? ` · ${j.staffName}` : ""}</p>
                             </div>
                           </div>
                         ))}
@@ -827,8 +827,8 @@ export default function ChildProfile() {
                               <p className="text-sm line-clamp-1 leading-relaxed">{obs.description}</p>
                               <p className="text-xs text-muted-foreground whitespace-nowrap">{obs.staffName ?? "—"}</p>
                               <div className="text-right">
-                                <p className="text-xs text-muted-foreground whitespace-nowrap">{safeDate(obs.observationDate, "d MMM yyyy")}</p>
-                                <p className="text-xs text-muted-foreground whitespace-nowrap">Edited {safeDate(obs.updatedAt, "d MMM yyyy")}</p>
+                                <p className="text-xs text-muted-foreground whitespace-nowrap">{safeDate(obs.observationDate, "dd/MM/yyyy")}</p>
+                                <p className="text-xs text-muted-foreground whitespace-nowrap">Edited {safeDate(obs.updatedAt, "dd/MM/yyyy")}</p>
                               </div>
                             </div>
                           </Link>
@@ -858,7 +858,7 @@ export default function ChildProfile() {
                             <div className="px-3 py-2.5 rounded-lg border bg-green-50 hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer flex items-center gap-2 min-w-0">
                               <span className="text-sm font-medium truncate flex-1">{p.title}</span>
                               <Badge variant="outline" className="text-xs capitalize shrink-0">{p.stage}</Badge>
-                              {p.startDate && <span className="text-xs text-muted-foreground shrink-0">{safeDate(p.startDate, "d MMM yyyy")}</span>}
+                              {p.startDate && <span className="text-xs text-muted-foreground shrink-0">{safeDate(p.startDate, "dd/MM/yyyy")}</span>}
                             </div>
                           </Link>
                         ))}
@@ -886,7 +886,7 @@ export default function ChildProfile() {
                                 <div className="min-w-0">
                                   <p className="text-sm font-medium line-clamp-1">{p.title}</p>
                                   <p className="text-xs text-muted-foreground">
-                                    {p.date ? safeDate(p.date.slice(0, 10) + "T00:00:00", "d MMM yyyy") : safeDate(p.createdAt, "d MMM yyyy")}
+                                    {p.date ? safeDate(p.date.slice(0, 10) + "T00:00:00", "dd/MM/yyyy") : safeDate(p.createdAt, "dd/MM/yyyy")}
                                     {p.staffName ? ` · ${p.staffName}` : ""}
                                   </p>
                                 </div>
@@ -957,7 +957,7 @@ export default function ChildProfile() {
                         {doc.documentName ?? doc.documentPath.split("/").pop()}
                       </a>
                       <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">
-                        {format(new Date(doc.uploadedAt), "d MMM yyyy")}
+                        {format(new Date(doc.uploadedAt), "dd/MM/yyyy")}
                       </span>
                       {canDelete && (
                       <button

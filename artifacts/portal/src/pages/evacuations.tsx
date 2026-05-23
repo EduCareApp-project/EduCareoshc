@@ -411,9 +411,9 @@ export default function Evacuations() {
           </p>
           <p className="text-sm opacity-80">
             {mostRecent
-              ? `Last conducted: ${format(new Date(mostRecent.conductedAt), "d MMM yyyy")}${mostRecent.siteName ? ` at ${mostRecent.siteName}` : ""}`
+              ? `Last conducted: ${format(new Date(mostRecent.conductedAt), "dd/MM/yyyy")}${mostRecent.siteName ? ` at ${mostRecent.siteName}` : ""}`
               : "Log your first drill to start tracking"}
-            {nextDue ? ` • Records expire: ${format(nextDue, "d MMM yyyy")}` : ""}
+            {nextDue ? ` • Records expire: ${format(nextDue, "dd/MM/yyyy")}` : ""}
           </p>
         </div>
       </div>
@@ -580,7 +580,7 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {format(new Date(evac.conductedAt), "d MMMM yyyy 'at' h:mm a")}
+              {format(new Date(evac.conductedAt), "dd/MM/yyyy 'at' h:mm a")}
               {evac.conductedBy && ` • ${evac.conductedBy}`}
             </p>
           </div>

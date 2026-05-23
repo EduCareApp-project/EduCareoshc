@@ -160,7 +160,7 @@ function WeeklyActivityGrid({ data }: { data: WeeklyPlanData }) {
 
 function WeeklyProgramCard({ plan, onOpen }: { plan: GuardianPlan; onOpen: () => void }) {
   const dateLabel = plan.startDate
-    ? `Week of ${format(parseISO(plan.startDate), "d MMMM yyyy")}`
+    ? `Week of ${format(parseISO(plan.startDate), "dd/MM/yyyy")}`
     : (plan.title ?? "Calendar");
 
   return (
@@ -388,9 +388,7 @@ function PostCard({ post, onSelect }: { post: Post; onSelect: () => void }) {
   const summary = post.aiSummary || stripHtml(post.description) || stripHtml(post.learning);
   const hasImage = post.images && post.images.length > 0;
   const publishDate = post.publishedAt
-    ? new Date(post.publishedAt).toLocaleDateString("en-AU", {
-        day: "numeric", month: "long", year: "numeric",
-      })
+    ? new Date(post.publishedAt).toLocaleDateString("en-AU")
     : null;
 
   return (
@@ -523,9 +521,7 @@ export default function GuardianHome() {
         <p className="text-sm text-white/70 mb-1">Welcome back</p>
         <h1 className="text-2xl font-bold mb-0.5">{user?.name ?? "Guardian"}</h1>
         <p className="text-white/70 text-sm">
-          {new Date().toLocaleDateString("en-AU", {
-            weekday: "long", day: "numeric", month: "long", year: "numeric",
-          })}
+          {format(new Date(), "EEEE, dd/MM/yyyy")}
         </p>
       </div>
 
@@ -565,9 +561,7 @@ export default function GuardianHome() {
                     </a>
                   )}
                   <p className="text-[11px] text-muted-foreground/60 mt-2">
-                    {new Date(notice.createdAt).toLocaleDateString("en-AU", {
-                      day: "numeric", month: "long", year: "numeric",
-                    })}
+                    {new Date(notice.createdAt).toLocaleDateString("en-AU")}
                   </p>
                 </CardContent>
               </Card>
@@ -637,9 +631,7 @@ export default function GuardianHome() {
                             <Calendar className="h-3 w-3 shrink-0" />
                             <span>
                               Enrolled{" "}
-                              {new Date(child.enrollmentDate).toLocaleDateString("en-AU", {
-                                day: "numeric", month: "long", year: "numeric",
-                              })}
+                              {new Date(child.enrollmentDate).toLocaleDateString("en-AU")}
                             </span>
                           </div>
                         )}

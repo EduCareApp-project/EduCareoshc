@@ -220,11 +220,11 @@ export default function AppraisalsTab({ staffId }: { staffId?: number }) {
                     {a.dueDate && (
                       <div className={`flex items-center gap-1 ${isOverdue ? "text-red-600 font-medium" : ""}`}>
                         <CalendarDays className="h-3 w-3" />
-                        Due {format(parseISO(a.dueDate), "d MMM yyyy")}
+                        Due {format(parseISO(a.dueDate), "dd/MM/yyyy")}
                         {isOverdue && " (overdue)"}
                       </div>
                     )}
-                    {a.completedAt && <span className="text-emerald-700">Completed {format(new Date(a.completedAt), "d MMM yyyy")}</span>}
+                    {a.completedAt && <span className="text-emerald-700">Completed {format(new Date(a.completedAt), "dd/MM/yyyy")}</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>

@@ -147,7 +147,7 @@ export default function ChildrenList() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Date of Birth</span>
-                      <span className="font-medium">{format(new Date(child.dateOfBirth.length === 10 ? child.dateOfBirth + "T00:00:00" : child.dateOfBirth), "MMM d, yyyy")}</span>
+                      <span className="font-medium">{format(new Date(child.dateOfBirth.length === 10 ? child.dateOfBirth + "T00:00:00" : child.dateOfBirth), "dd/MM/yyyy")}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Guardian</span>

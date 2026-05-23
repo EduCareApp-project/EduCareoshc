@@ -102,7 +102,7 @@ function GuardianNotificationBell({ dark = false }: { dark?: boolean }) {
         type: "plan" as const,
         title: p.title ?? "Weekly Program",
         subtitle: p.startDate
-          ? `Week of ${new Date(p.startDate + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}`
+          ? `Week of ${new Date(p.startDate + "T00:00:00").toLocaleDateString("en-AU")}`
           : undefined,
         date: p.createdAt,
       })),

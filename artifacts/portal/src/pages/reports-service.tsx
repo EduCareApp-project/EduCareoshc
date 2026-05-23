@@ -89,8 +89,8 @@ export default function ReportsService() {
                 <p className="text-sm text-muted-foreground mt-1">No drills recorded. Evacuation drills are required every 90 days.</p>
               ) : (
                 <div className="text-sm mt-1 space-y-0.5">
-                  <p className="text-muted-foreground">Last conducted: <span className="font-medium text-foreground">{format(new Date(evac.lastConducted), "MMM d, yyyy")}</span></p>
-                  {evac.nextDue && <p className="text-muted-foreground">Next due: <span className={`font-medium ${evac.isOverdue ? "text-red-700" : "text-foreground"}`}>{format(new Date(evac.nextDue), "MMM d, yyyy")}{evac.isOverdue ? " (OVERDUE)" : ""}</span></p>}
+                  <p className="text-muted-foreground">Last conducted: <span className="font-medium text-foreground">{format(new Date(evac.lastConducted), "dd/MM/yyyy")}</span></p>
+                  {evac.nextDue && <p className="text-muted-foreground">Next due: <span className={`font-medium ${evac.isOverdue ? "text-red-700" : "text-foreground"}`}>{format(new Date(evac.nextDue), "dd/MM/yyyy")}{evac.isOverdue ? " (OVERDUE)" : ""}</span></p>}
                 </div>
               )}
             </div>
@@ -159,7 +159,7 @@ export default function ReportsService() {
                         <p className="font-medium text-sm truncate">{cycle.title}</p>
                         <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
                           {site && <span>{site.name}</span>}
-                          {cycle.startDate && <span>Started {format(new Date(cycle.startDate), "MMM d, yyyy")}</span>}
+                          {cycle.startDate && <span>Started {format(new Date(cycle.startDate), "dd/MM/yyyy")}</span>}
                           {cycle.preparedBy && <span>By {cycle.preparedBy}</span>}
                         </div>
                       </div>

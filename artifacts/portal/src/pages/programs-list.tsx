@@ -56,8 +56,8 @@ export default function ProgramsList() {
                   <CardTitle className="text-xl mb-1">{program.title}</CardTitle>
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <Calendar className="h-3 w-3" />
-                    {format(new Date(program.startDate), "MMM d, yyyy")}
-                    {program.endDate ? ` - ${format(new Date(program.endDate), "MMM d, yyyy")}` : ' (Ongoing)'}
+                    {format(new Date(program.startDate), "dd/MM/yyyy")}
+                    {program.endDate ? ` - ${format(new Date(program.endDate), "dd/MM/yyyy")}` : ' (Ongoing)'}
                   </div>
                 </div>
                 <Badge variant={getStatusColor(program.status) as any} className="capitalize">

@@ -100,12 +100,12 @@ function getPeriodLabel(date: Date, frequency: string): string {
     case "weekly": {
       const s = startOfISOWeek(date);
       const e = endOfISOWeek(date);
-      return `${format(s, "d MMM")} – ${format(e, "d MMM yyyy")}`;
+      return `${format(s, "d MMM")} – ${format(e, "dd/MM/yyyy")}`;
     }
     case "fortnightly": {
       const s = startOfISOWeek(date);
       const e = addDays(s, 13);
-      return `${format(s, "d MMM")} – ${format(e, "d MMM yyyy")} (Fortnight)`;
+      return `${format(s, "d MMM")} – ${format(e, "dd/MM/yyyy")} (Fortnight)`;
     }
     case "monthly": return format(date, "MMMM yyyy");
     case "term": {
@@ -114,7 +114,7 @@ function getPeriodLabel(date: Date, frequency: string): string {
       return `Term ${t}, ${date.getFullYear()}`;
     }
     case "annual": return String(date.getFullYear());
-    default: return format(date, "d MMMM yyyy");
+    default: return format(date, "dd/MM/yyyy");
   }
 }
 

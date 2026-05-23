@@ -91,7 +91,7 @@ function PlanCard({ plan }: { plan: Plan }) {
   const [expanded, setExpanded] = useState(false);
 
   const dateLabel = plan.startDate
-    ? format(parseISO(plan.startDate), "d MMMM yyyy")
+    ? format(parseISO(plan.startDate), "dd/MM/yyyy")
     : plan.title;
 
   return (

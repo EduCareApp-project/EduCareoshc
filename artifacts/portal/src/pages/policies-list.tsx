@@ -200,7 +200,7 @@ function PolicyRow({
           {selectedStaffId && isRequired && myAck && (
             <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3">
               <CheckCircle2 className="h-4 w-4 shrink-0" />
-              <span>You acknowledged this policy on {format(new Date(myAck.acknowledgedAt), "d MMMM yyyy")}.</span>
+              <span>You acknowledged this policy on {format(new Date(myAck.acknowledgedAt), "dd/MM/yyyy")}.</span>
             </div>
           )}
 
@@ -244,7 +244,7 @@ function PolicyRow({
                           <span className="text-[10px] text-muted-foreground shrink-0">{roleLabel(s.role)}</span>
                         </div>
                         {ack ? (
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(ack.acknowledgedAt), "d MMM yyyy")}</span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(ack.acknowledgedAt), "dd/MM/yyyy")}</span>
                         ) : (
                           <Button size="sm" variant="outline" className="h-6 text-xs px-2"
                             onClick={() => handleAcknowledge(s.id)}

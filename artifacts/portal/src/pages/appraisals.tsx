@@ -255,7 +255,7 @@ export default function Appraisals() {
                       {a.dueDate && (
                         <div className={`flex items-center gap-1 text-xs ${isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
                           <CalendarDays className="h-3.5 w-3.5" />
-                          {format(parseISO(a.dueDate), "d MMM yyyy")}
+                          {format(parseISO(a.dueDate), "dd/MM/yyyy")}
                           {isOverdue && " (overdue)"}
                         </div>
                       )}

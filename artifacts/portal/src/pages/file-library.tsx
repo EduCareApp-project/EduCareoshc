@@ -381,7 +381,7 @@ function FileRow({
         >
           {file.name}
         </a>
-        <p className="text-xs text-muted-foreground mt-0.5">{file.documentName} · Added {format(new Date(file.createdAt), "d MMM yyyy")}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{file.documentName} · Added {format(new Date(file.createdAt), "dd/MM/yyyy")}</p>
       </div>
       <AlertDialog>
         <AlertDialogTrigger asChild>

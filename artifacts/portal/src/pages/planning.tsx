@@ -148,7 +148,7 @@ export default function Planning() {
                       {exp.startDate && (
                         <span className="flex items-center gap-1">
                           <CalendarDays className="h-3.5 w-3.5" />
-                          {format(new Date(exp.startDate), "d MMM yyyy")}
+                          {format(new Date(exp.startDate), "dd/MM/yyyy")}
                         </span>
                       )}
                       {(exp.childIds ?? []).length > 0 && (

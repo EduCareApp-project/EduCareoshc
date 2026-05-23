@@ -115,7 +115,7 @@ export default function Wellbeing() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium text-sm">{r.childName}</span>
                   {typeBadge(r.reportType)}
-                  <span className="text-xs text-muted-foreground">{format(new Date(r.reportedAt + "T00:00:00"), "MMM d, yyyy")}</span>
+                  <span className="text-xs text-muted-foreground">{format(new Date(r.reportedAt + "T00:00:00"), "dd/MM/yyyy")}</span>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-2">{r.description}</p>
                 {r.referredTo && <p className="text-xs text-muted-foreground">Referred to: {r.referredTo}</p>}

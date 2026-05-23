@@ -165,7 +165,7 @@ export default function Jottings() {
           <Card key={j.id}>
             <CardContent className="py-2.5 flex items-center gap-4">
               <span className="shrink-0 text-xs text-muted-foreground w-36">
-                {format(new Date(j.createdAt), "MMM d, yyyy h:mm a")}
+                {format(new Date(j.createdAt), "dd/MM/yyyy h:mm a")}
               </span>
               <span className="shrink-0 text-xs font-medium text-foreground/70 w-32 truncate">
                 {j.childName ?? <span className="text-muted-foreground italic">No child</span>}

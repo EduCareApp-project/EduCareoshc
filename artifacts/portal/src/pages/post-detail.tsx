@@ -102,7 +102,7 @@ function CommentSection({ postId }: { postId: number }) {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">{c.authorName}</span>
                     <span className="text-xs text-muted-foreground">
-                      {format(new Date(c.createdAt), "d MMM yyyy 'at' h:mm a")}
+                      {format(new Date(c.createdAt), "dd/MM/yyyy 'at' h:mm a")}
                     </span>
                   </div>
                   <Button
@@ -251,7 +251,7 @@ export default function PostDetail() {
             {post.date && (
               <span className="flex items-center gap-1.5">
                 <CalendarDays className="h-3.5 w-3.5" />
-                {format(new Date(post.date.slice(0, 10) + "T00:00:00"), "d MMMM yyyy")}
+                {format(new Date(post.date.slice(0, 10) + "T00:00:00"), "dd/MM/yyyy")}
               </span>
             )}
             {post.siteName && (
@@ -287,7 +287,7 @@ export default function PostDetail() {
         </div>
 
         <p className="text-xs text-muted-foreground border-t pt-4">
-          Posted {format(new Date(post.createdAt), "d MMM yyyy 'at' h:mm a")}
+          Posted {format(new Date(post.createdAt), "dd/MM/yyyy 'at' h:mm a")}
         </p>
 
         <CommentSection postId={id} />

@@ -468,7 +468,9 @@ export default function Evacuations() {
                 <div className="flex-1 h-px bg-border" />
                 <span className="text-xs text-muted-foreground">{expired.length} record{expired.length !== 1 ? "s" : ""}</span>
               </div>
-              {expired.map((evac) => <DrillCard key={evac.id} evac={evac} sites={sites ?? []} staff={staff ?? []} />)}
+              <div className="space-y-1.5">
+                {expired.map((evac) => <ArchivedDrillRow key={evac.id} evac={evac} />)}
+              </div>
             </div>
           )}
         </div>
@@ -480,6 +482,24 @@ export default function Evacuations() {
 type EvacRecord = NonNullable<ReturnType<typeof useListEvacuations>["data"]>[number];
 type SiteItem = NonNullable<ReturnType<typeof useListSites>["data"]>[number];
 type StaffItem = NonNullable<ReturnType<typeof useListStaff>["data"]>[number];
+
+function ArchivedDrillRow({ evac }: { evac: EvacRecord }) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg border bg-muted/30 text-sm">
+      <span className="font-medium shrink-0">{DRILL_LABELS[evac.drillType] ?? evac.drillType}</span>
+      {evac.siteName && (
+        <>
+          <span className="text-muted-foreground/40 shrink-0">·</span>
+          <span className="text-muted-foreground truncate">{evac.siteName}</span>
+        </>
+      )}
+      <span className="text-muted-foreground/40 shrink-0 ml-auto">·</span>
+      <span className="text-muted-foreground shrink-0 text-xs">
+        Expired {evac.nextDueAt ? format(new Date(evac.nextDueAt), "dd/MM/yyyy") : "—"}
+      </span>
+    </div>
+  );
+}
 
 function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]; staff: StaffItem[] }) {
   const queryClient = useQueryClient();

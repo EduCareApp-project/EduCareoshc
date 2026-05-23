@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, LayoutGrid, List } from "lucide-react";
 import { useState } from "react";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -26,6 +26,20 @@ function storageUrl(objectPath: string): string {
   return `/api/storage/objects/${id}`;
 }
 
+type ViewMode = "tiles" | "list";
+
+function useViewMode(): [ViewMode, (v: ViewMode) => void] {
+  const [view, setViewState] = useState<ViewMode>(() => {
+    try { return (localStorage.getItem("children-view") as ViewMode) ?? "tiles"; }
+    catch { return "tiles"; }
+  });
+  function setView(v: ViewMode) {
+    setViewState(v);
+    try { localStorage.setItem("children-view", v); } catch {}
+  }
+  return [view, setView];
+}
+
 export default function ChildrenList() {
   const { isEducatorRole, ownSiteId } = usePermissions();
   const { data: children, isLoading } = useListChildren();
@@ -37,6 +51,7 @@ export default function ChildrenList() {
     isEducatorRole && ownSiteId ? String(ownSiteId) : "all"
   );
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("active");
+  const [view, setView] = useViewMode();
 
   const filteredChildren = children?.filter(c => {
     const matchesSearch = c.firstName.toLowerCase().includes(search.toLowerCase()) ||
@@ -103,23 +118,48 @@ export default function ChildrenList() {
             </button>
           ))}
         </div>
+
+        <div className="flex rounded-md border border-input bg-card overflow-hidden ml-auto">
+          <button
+            onClick={() => setView("tiles")}
+            title="Tile view"
+            className={`p-2 transition-colors ${view === "tiles" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setView("list")}
+            title="List view"
+            className={`p-2 transition-colors ${view === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+          >
+            <List className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1,2,3,4,5,6].map(i => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6 h-32 bg-muted/20" />
-            </Card>
-          ))}
-        </div>
+        view === "tiles" ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[1,2,3,4,5,6].map(i => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-6 h-32 bg-muted/20" />
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} className="h-14 rounded-lg border bg-card animate-pulse bg-muted/20" />
+            ))}
+          </div>
+        )
       ) : filteredChildren?.length === 0 ? (
         <div className="text-center p-12 bg-card rounded-lg border border-dashed">
           <BabyIcon className="mx-auto h-12 w-12 text-muted-foreground mb-4 opacity-20" />
           <h3 className="text-lg font-medium text-foreground mb-1">No children found</h3>
           <p className="text-muted-foreground">Get started by enrolling a new child.</p>
         </div>
-      ) : (
+      ) : view === "tiles" ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredChildren?.map((child) => (
             <Link key={child.id} href={`/children/${child.id}`}>
@@ -164,6 +204,48 @@ export default function ChildrenList() {
               </Card>
             </Link>
           ))}
+        </div>
+      ) : (
+        <div className="rounded-lg border bg-card overflow-hidden">
+          <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-x-4 items-center px-4 py-2 border-b bg-muted/40 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <span className="w-8" />
+            <span>Name</span>
+            <span className="w-28 text-right hidden sm:block">Age</span>
+            <span className="w-32 text-right hidden md:block">Site</span>
+            <span className="w-20 text-right">Status</span>
+          </div>
+          <div className="divide-y">
+            {filteredChildren?.map((child) => {
+              const siteName = child.siteId && sites ? (sites.find(s => s.id === child.siteId)?.name ?? null) : null;
+              const age = calcAge(child.dateOfBirth);
+              return (
+                <Link key={child.id} href={`/children/${child.id}`}>
+                  <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-x-4 items-center px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer">
+                    {showPhoto && child.profilePicturePath ? (
+                      <img
+                        src={storageUrl(child.profilePicturePath)}
+                        alt={`${child.firstName} ${child.lastName}`}
+                        className="h-8 w-8 rounded-full object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0 select-none">
+                        {child.firstName[0]}{child.lastName[0]}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm truncate">{child.firstName} {child.lastName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{child.guardianName}</p>
+                    </div>
+                    <span className="w-28 text-right text-sm text-muted-foreground hidden sm:block">{age}</span>
+                    <span className="w-32 text-right text-sm text-muted-foreground truncate hidden md:block">{siteName ?? "—"}</span>
+                    <Badge variant={child.status === 'active' ? 'default' : 'secondary'} className="capitalize w-20 justify-center text-xs">
+                      {child.status}
+                    </Badge>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

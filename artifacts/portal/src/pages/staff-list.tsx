@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useListStaff, useGetStaffQualifications } from "@workspace/api-client-react";
+import { useListStaff, useGetStaffQualifications, useListSites } from "@workspace/api-client-react";
 import { Link, Redirect } from "wouter";
 import { useAuth } from "@/contexts/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, UserCog, Mail, Phone, Award } from "lucide-react";
+import { Plus, UserCog, Mail, Phone, Award, Building2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { computeQualLevel, QUAL_LEVEL_LABELS, QUAL_LEVEL_STYLES, type QualItem } from "@/lib/qual-level";
 
@@ -33,6 +33,8 @@ type TopTab = "active" | "inactive";
 export default function StaffList() {
   const { user } = useAuth();
   const { data: staff, isLoading } = useListStaff();
+  const { data: sites } = useListSites();
+  const siteMap = Object.fromEntries((sites ?? []).map((s) => [s.id, s.name]));
   const [tab, setTab] = useState<TopTab>("active");
 
   const { data: accessSettings } = useQuery<Record<string, string[]>>({
@@ -139,6 +141,12 @@ export default function StaffList() {
                   </Badge>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {member.siteId && siteMap[member.siteId] && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Building2 className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{siteMap[member.siteId]}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Award className="h-4 w-4 shrink-0" />
                     <span className="truncate">{member.qualifications}</span>

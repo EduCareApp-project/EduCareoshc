@@ -376,6 +376,8 @@ export default function StaffProfile() {
     catch { return false; }
   });
   const totalHoursThisYear = pdThisYear.reduce((s, p) => s + (p.hoursEarned ?? 0), 0);
+  const recordedQualNames = new Set((qualifications ?? []).map((q) => q.name));
+  const missingQualNames = QUALIFICATION_NAMES.filter((n) => !recordedQualNames.has(n));
 
   if (loadingStaff) {
     return (
@@ -846,6 +848,22 @@ export default function StaffProfile() {
                   </CardContent>
                 </Card>;
               })}
+            </div>
+          )}
+
+          {!loadingQuals && missingQualNames.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Not yet recorded</p>
+              <div className="flex flex-wrap gap-1.5">
+                {missingQualNames.map((name) => (
+                  <span
+                    key={name}
+                    className="inline-flex items-center px-2.5 py-1 rounded-md text-xs border border-dashed border-muted-foreground/30 text-muted-foreground/70 bg-muted/20"
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 

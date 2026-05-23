@@ -114,7 +114,7 @@ export default function Procedures() {
               <div key={p.id} className="px-5 py-3 flex items-center gap-3 group hover:bg-muted/20 transition-colors">
                 <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
                 <a
-                  href={p.documentPath ? `/api/objects/${p.documentPath}` : undefined}
+                  href={p.documentPath ? `/api/storage${p.documentPath}` : undefined}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 text-sm font-medium text-primary hover:underline underline-offset-4 truncate"

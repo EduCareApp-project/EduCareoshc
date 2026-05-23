@@ -533,7 +533,7 @@ export default function ConditionReports() {
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Evidence</p>
                     <a
-                      href={`/api/objects/${selectedReport.evidenceDocumentPath}`}
+                      href={`/api/storage${selectedReport.evidenceDocumentPath}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-primary underline-offset-4 hover:underline"

@@ -374,7 +374,7 @@ function FileRow({
       <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
       <div className="flex-1 min-w-0">
         <a
-          href={`/api/objects/${file.documentPath}`}
+          href={`/api/storage${file.documentPath}`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-sm font-medium text-primary hover:underline underline-offset-4 truncate block"

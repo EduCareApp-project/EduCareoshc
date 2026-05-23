@@ -212,7 +212,7 @@ function PolicyRow({
             />
           ) : policy.documentPath ? (
             <a
-              href={`/api/objects/${policy.documentPath}`}
+              href={`/api/storage${policy.documentPath}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm text-primary hover:underline underline-offset-4 bg-primary/5 border border-primary/20 rounded-md px-3 py-2"

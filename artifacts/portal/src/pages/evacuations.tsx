@@ -694,13 +694,13 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
         {(hasEvacDoc || hasAttendDoc) && (
           <div className="flex flex-wrap gap-2 pt-1">
             {hasEvacDoc && (
-              <a href={`/api/objects/${evac.evacuationDocPath}`} target="_blank" rel="noopener noreferrer"
+              <a href={`/api/storage${evac.evacuationDocPath}`} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline underline-offset-4 bg-primary/5 border border-primary/20 rounded-md px-2.5 py-1.5">
                 <FileText className="h-3.5 w-3.5" />{evac.evacuationDocName ?? "Evacuation Record"}
               </a>
             )}
             {hasAttendDoc && (
-              <a href={`/api/objects/${evac.attendanceDocPath}`} target="_blank" rel="noopener noreferrer"
+              <a href={`/api/storage${evac.attendanceDocPath}`} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline underline-offset-4 bg-primary/5 border border-primary/20 rounded-md px-2.5 py-1.5">
                 <Users className="h-3.5 w-3.5" />{evac.attendanceDocName ?? "Attendance Record"}
               </a>

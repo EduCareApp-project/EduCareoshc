@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useCreateStaff, getListStaffQueryKey } from "@workspace/api-client-react";
+import { useCreateStaff, useListSites, getListStaffQueryKey } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ const formSchema = z.object({
   status: z.enum(["active", "inactive"]).default("active"),
   phone: z.string().optional(),
   wwccNumber: z.string().optional(),
+  siteId: z.string().optional(),
 });
 
 export default function AddStaff() {
@@ -29,6 +30,7 @@ export default function AddStaff() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const createStaff = useCreateStaff();
+  const { data: sites } = useListSites();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -41,12 +43,18 @@ export default function AddStaff() {
       status: "active",
       phone: "",
       wwccNumber: "",
+      siteId: "none",
     },
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
+    const { siteId, ...rest } = data;
+    const payload = {
+      ...rest,
+      siteId: siteId && siteId !== "none" ? parseInt(siteId) : null,
+    };
     createStaff.mutate(
-      { data: data as any },
+      { data: payload as any },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListStaffQueryKey() });
@@ -106,6 +114,19 @@ export default function AddStaff() {
                     <SelectContent>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                <FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="siteId" render={({ field }) => (
+                <FormItem><FormLabel>Site (Optional)</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value ?? "none"}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="No site assigned" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">No site assigned</SelectItem>
+                      {(sites ?? []).map((site) => (
+                        <SelectItem key={site.id} value={String(site.id)}>{site.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 <FormMessage /></FormItem>

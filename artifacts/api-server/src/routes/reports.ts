@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, childrenTable, staffTable, observationsTable, outcomesTable, evacuationsTable, incidentsTable, conditionReportsTable, qipItemsTable, checklistsTable, professionalDevelopmentTable, staffQualificationsTable } from "@workspace/db";
+import { db, childrenTable, staffTable, observationsTable, outcomesTable, evacuationsTable, incidentsTable, conditionReportsTable, qipItemsTable, checklistsTable, professionalDevelopmentTable, staffQualificationsTable, postsTable } from "@workspace/db";
 import { GetLearningStoriesReportResponse, GetServiceComplianceReportResponse, GetStaffComplianceReportResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -18,11 +18,17 @@ router.get("/reports/learning-stories", async (req, res): Promise<void> => {
     ? allObservations.filter((obs) => filteredChildIds.has(obs.childId))
     : allObservations;
 
+  const allPosts = await db.select({ outcomeIds: postsTable.outcomeIds, siteId: postsTable.siteId }).from(postsTable);
+  const posts = siteId ? allPosts.filter((p) => p.siteId === siteId) : allPosts;
+
+  // Combine outcome references from both observations and posts
   const byOutcome = outcomes.map((o) => ({
     outcomeId: o.id,
     outcomeTitle: o.title,
     outcomeNumber: o.number,
-    count: observations.filter((obs) => obs.outcomeIds.includes(o.id)).length,
+    count:
+      observations.filter((obs) => obs.outcomeIds.includes(o.id)).length +
+      posts.filter((p) => p.outcomeIds.includes(o.id as any)).length,
   }));
 
   const byChild = filteredChildren.map((c) => ({

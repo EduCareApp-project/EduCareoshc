@@ -1007,13 +1007,13 @@ function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
         </Card>
       </div>
 
-      {/* Row 2: Learning Story Compliance + Children with no observations */}
+      {/* Row 2: MTOP Outcomes + Children with no observations */}
       <div className="grid gap-4 md:grid-cols-2">
-        {/* Learning Story Compliance */}
+        {/* MTOP Outcomes */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between text-base">
-              <span className="flex items-center gap-2"><GraduationCap className="h-4 w-4 text-primary" /> Learning Story Compliance</span>
+              <span className="flex items-center gap-2"><GraduationCap className="h-4 w-4 text-primary" /> MTOP Outcomes</span>
               <Link href="/reports/learning"><span className="text-xs text-primary font-normal cursor-pointer hover:underline flex items-center gap-0.5">Full report <ChevronRight className="h-3 w-3" /></span></Link>
             </CardTitle>
           </CardHeader>

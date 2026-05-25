@@ -63,14 +63,16 @@ function storageUrl(objectPath: string): string {
 
 const STATUS_OPTIONS = [
   { value: "current", label: "Current" },
-  { value: "expired", label: "Expired" },
+  { value: "working_towards", label: "Working Towards" },
   { value: "pending", label: "Pending Renewal" },
+  { value: "expired", label: "Expired" },
 ];
 
 const STATUS_STYLES: Record<string, string> = {
   current: "bg-green-100 text-green-800 border-green-200",
-  expired: "bg-red-100 text-red-800 border-red-200",
+  working_towards: "bg-blue-100 text-blue-800 border-blue-200",
   pending: "bg-amber-100 text-amber-800 border-amber-200",
+  expired: "bg-red-100 text-red-800 border-red-200",
 };
 
 const QUALIFICATION_NAMES = [

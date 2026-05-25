@@ -16,6 +16,13 @@
 import nodemailer from "nodemailer";
 import { logger } from "./logger";
 
+export interface BehaviouralNotificationEmailOptions {
+  childName: string;
+  behaviourDescription: string;
+  supportRequest: string;
+  branding?: EmailBranding;
+}
+
 export interface PostNotificationEmailOptions {
   postTitle: string;
   excerpt: string | null;
@@ -639,6 +646,75 @@ export async function sendMedicationLogEmail(
       });
     } catch (err) {
       logger.error({ email, err }, "Failed to send medication log email");
+    }
+  }
+}
+
+export async function sendBehaviouralNotificationEmail(
+  recipients: string[],
+  opts: BehaviouralNotificationEmailOptions,
+): Promise<void> {
+  const transport = createTransport();
+  if (!transport) {
+    logger.warn("sendBehaviouralNotificationEmail: SMTP not configured — skipping");
+    return;
+  }
+
+  const from = process.env.SMTP_FROM ?? "onboarding@resend.dev";
+  const subject = `Behavioural Notification — ${opts.childName}`;
+
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+
+  const txtBody = [
+    `Dear Parent/Guardian,`,
+    ``,
+    `We are writing to inform you that today your child displayed the following behaviour(s):`,
+    ``,
+    opts.behaviourDescription,
+    ``,
+    `At Elysium OSHC, we work closely with families to support positive behaviour and wellbeing for all students. We are hoping you can assist us with:`,
+    ``,
+    opts.supportRequest,
+    ``,
+    `We appreciate your partnership and support in helping your child make positive choices. If you would like to discuss this matter further, please feel free to contact us.`,
+    ``,
+    `Regards,`,
+    ``,
+    `Admin Team`,
+    `ELYSIUM OSHC`,
+    ``,
+    `(03) 8595 3022 | 0466 047 908 | admin@elysiumoshc.com.au`,
+  ].join("\n");
+
+  const htmlBody = `<!DOCTYPE html>
+<html>
+  <body style="font-family: sans-serif; color: #1a1a1a; max-width: 580px; margin: 0 auto; padding: 24px;">
+    ${opts.branding ? buildLogoHtml(opts.branding) : ""}
+    <p style="margin:0 0 12px;">Dear Parent/Guardian,</p>
+    <p style="margin:0 0 8px;">We are writing to inform you that today your child displayed the following behaviour(s):</p>
+    <div style="background:#fef2f2; border-left:4px solid #dc2626; padding:14px 18px; margin:16px 0; white-space:pre-wrap; line-height:1.6;">${esc(opts.behaviourDescription)}</div>
+    <p style="margin:0 0 8px;">At Elysium OSHC, we work closely with families to support positive behaviour and wellbeing for all students. We are hoping you can assist us with:</p>
+    <div style="background:#f0fdf4; border-left:4px solid #16a34a; padding:14px 18px; margin:16px 0; white-space:pre-wrap; line-height:1.6;">${esc(opts.supportRequest)}</div>
+    <p style="margin:0 0 20px;">We appreciate your partnership and support in helping your child make positive choices. If you would like to discuss this matter further, please feel free to contact us.</p>
+    <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
+    <p style="margin:0;font-weight:600;">Regards,</p>
+    <p style="margin:4px 0 0;">Admin Team<br/><strong>ELYSIUM OSHC</strong></p>
+    <p style="margin:10px 0 0; color:#555; font-size:13px;">(03) 8595 3022 | 0466 047 908 | <a href="mailto:admin@elysiumoshc.com.au" style="color:#1b5e20;">admin@elysiumoshc.com.au</a></p>
+  </body>
+</html>`;
+
+  for (const email of recipients) {
+    try {
+      await transport.sendMail({
+        from: `"${opts.branding ? fromName(opts.branding) : "ELYSIUM OSHC"}" <${from}>`,
+        to: email,
+        subject,
+        text: txtBody,
+        html: htmlBody,
+      });
+    } catch (err) {
+      logger.error({ email, err }, "Failed to send behavioural notification email");
     }
   }
 }

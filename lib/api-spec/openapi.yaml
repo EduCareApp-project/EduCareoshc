@@ -2712,6 +2712,71 @@ paths:
         "204":
           description: Deleted
 
+  /children/{id}/behavioural-notifications:
+    get:
+      tags: [behavioural]
+      summary: List behavioural notifications sent for a child
+      operationId: listChildBehaviouralNotifications
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BehaviouralNotification"
+    post:
+      tags: [behavioural]
+      summary: Send a behavioural notification email and log it
+      operationId: sendBehaviouralNotification
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BehaviouralNotificationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BehaviouralNotification"
+
+  /guardians/{email}/behavioural-notifications:
+    get:
+      tags: [behavioural]
+      summary: List behavioural notifications for a guardian (by email)
+      operationId: listGuardianBehaviouralNotifications
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BehaviouralNotification"
+
   /guardian/medication-logs:
     get:
       tags: [medications]
@@ -5423,3 +5488,41 @@ components:
                 type: string
                 enum: [cannot_work, responsible_person, educator, incomplete]
                 description: "Derived from qualifications: cannot_work if WWCC/CPR/First Aid expired; responsible_person if all required quals current; educator if core three current; incomplete otherwise."
+
+    BehaviouralNotification:
+      type: object
+      required: [id, childId, behaviourDescription, supportRequest, recipientEmails, sentAt, createdAt]
+      properties:
+        id:
+          type: integer
+        childId:
+          type: integer
+        childName:
+          type: ["string", "null"]
+        sentByStaffId:
+          type: ["integer", "null"]
+        sentByStaffName:
+          type: ["string", "null"]
+        behaviourDescription:
+          type: string
+        supportRequest:
+          type: string
+        recipientEmails:
+          type: array
+          items:
+            type: string
+        sentAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    BehaviouralNotificationInput:
+      type: object
+      required: [behaviourDescription, supportRequest]
+      properties:
+        behaviourDescription:
+          type: string
+        supportRequest:
+          type: string

@@ -1860,6 +1860,27 @@ export interface StaffComplianceReport {
   staff: StaffComplianceReportStaffItem[];
 }
 
+export interface BehaviouralNotification {
+  id: number;
+  childId: number;
+  /** @nullable */
+  childName?: string | null;
+  /** @nullable */
+  sentByStaffId?: number | null;
+  /** @nullable */
+  sentByStaffName?: string | null;
+  behaviourDescription: string;
+  supportRequest: string;
+  recipientEmails: string[];
+  sentAt: string;
+  createdAt: string;
+}
+
+export interface BehaviouralNotificationInput {
+  behaviourDescription: string;
+  supportRequest: string;
+}
+
 export type ListNoticesParams = {
   audience?: ListNoticesAudience;
 };

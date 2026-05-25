@@ -1,9 +1,16 @@
-import { useGetGuardian, useResetGuardianPassword } from "@workspace/api-client-react";
+import {
+  useGetGuardian,
+  useResetGuardianPassword,
+  useListGuardianBehaviouralNotifications,
+  getListGuardianBehaviouralNotificationsQueryKey,
+} from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft,
@@ -18,9 +25,12 @@ import {
   ShieldOff,
   Copy,
   Check,
+  MessageSquareWarning,
+  ClipboardList,
 } from "lucide-react";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 
 function initials(name: string) {
   return name
@@ -36,6 +46,10 @@ export default function GuardianDetail() {
   const email = decodeURIComponent(encodedEmail ?? "");
 
   const { data: guardian, isLoading } = useGetGuardian(encodedEmail ?? "");
+  const { data: behaviouralLogs = [], isLoading: logsLoading } = useListGuardianBehaviouralNotifications(
+    encodedEmail ?? "",
+    { query: { enabled: !!encodedEmail, queryKey: getListGuardianBehaviouralNotificationsQueryKey(encodedEmail ?? "") } }
+  );
   const resetMutation = useResetGuardianPassword();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -209,6 +223,69 @@ export default function GuardianDetail() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Behavioural Email Log */}
+      <div className="bg-card border rounded-xl p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-base font-semibold flex items-center gap-2">
+              <MessageSquareWarning className="h-4 w-4 text-amber-500" />
+              Behavioural Email Log
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              All behavioural notifications sent to {guardian.guardianName} for their enrolled children.
+            </p>
+          </div>
+          {guardian.childIds.length > 0 && (
+            <Link href={`/children/${guardian.childIds[0]}?tab=behaviour`}>
+              <Button size="sm" variant="outline">Send Email</Button>
+            </Link>
+          )}
+        </div>
+
+        {logsLoading ? (
+          <div className="space-y-3">{[1, 2].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+        ) : behaviouralLogs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
+            <ClipboardList className="h-8 w-8 mb-2 opacity-25" />
+            <p className="text-sm font-medium">No behavioural notifications sent yet</p>
+            <p className="text-xs mt-1">Go to a child's profile to send a behavioural email.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {behaviouralLogs.map(n => (
+              <Card key={n.id} className="overflow-hidden">
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div>
+                      <CardTitle className="text-sm">{format(new Date(n.sentAt), "dd/MM/yyyy 'at' h:mm a")}</CardTitle>
+                      {n.childName && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Re: <Link href={`/children/${n.childId}`} className="hover:underline text-foreground">{n.childName}</Link>
+                        </p>
+                      )}
+                    </div>
+                    {n.sentByStaffName && (
+                      <span className="text-xs text-muted-foreground">Sent by {n.sentByStaffName}</span>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0 px-4 pb-4 space-y-3">
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Behaviour</p>
+                    <p className="text-sm whitespace-pre-wrap">{n.behaviourDescription}</p>
+                  </div>
+                  <Separator />
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Support Requested</p>
+                    <p className="text-sm whitespace-pre-wrap">{n.supportRequest}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -18,6 +18,8 @@ import type {
 
 import type {
   ActivityItem,
+  BehaviouralNotification,
+  BehaviouralNotificationInput,
   Checklist,
   ChecklistCompletion,
   ChecklistCompletionInput,
@@ -12054,6 +12056,290 @@ export const useDeleteMedicationLog = <
 > => {
   return useMutation(getDeleteMedicationLogMutationOptions(options));
 };
+
+/**
+ * @summary List behavioural notifications sent for a child
+ */
+export const getListChildBehaviouralNotificationsUrl = (id: number) => {
+  return `/api/children/${id}/behavioural-notifications`;
+};
+
+export const listChildBehaviouralNotifications = async (
+  id: number,
+  options?: RequestInit,
+): Promise<BehaviouralNotification[]> => {
+  return customFetch<BehaviouralNotification[]>(
+    getListChildBehaviouralNotificationsUrl(id),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListChildBehaviouralNotificationsQueryKey = (id: number) => {
+  return [`/api/children/${id}/behavioural-notifications`] as const;
+};
+
+export const getListChildBehaviouralNotificationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listChildBehaviouralNotifications>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listChildBehaviouralNotifications>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListChildBehaviouralNotificationsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listChildBehaviouralNotifications>>
+  > = ({ signal }) =>
+    listChildBehaviouralNotifications(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listChildBehaviouralNotifications>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListChildBehaviouralNotificationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listChildBehaviouralNotifications>>
+>;
+export type ListChildBehaviouralNotificationsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List behavioural notifications sent for a child
+ */
+
+export function useListChildBehaviouralNotifications<
+  TData = Awaited<ReturnType<typeof listChildBehaviouralNotifications>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listChildBehaviouralNotifications>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListChildBehaviouralNotificationsQueryOptions(
+    id,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Send a behavioural notification email and log it
+ */
+export const getSendBehaviouralNotificationUrl = (id: number) => {
+  return `/api/children/${id}/behavioural-notifications`;
+};
+
+export const sendBehaviouralNotification = async (
+  id: number,
+  behaviouralNotificationInput: BehaviouralNotificationInput,
+  options?: RequestInit,
+): Promise<BehaviouralNotification> => {
+  return customFetch<BehaviouralNotification>(
+    getSendBehaviouralNotificationUrl(id),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(behaviouralNotificationInput),
+    },
+  );
+};
+
+export const getSendBehaviouralNotificationMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendBehaviouralNotification>>,
+    TError,
+    { id: number; data: BodyType<BehaviouralNotificationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendBehaviouralNotification>>,
+  TError,
+  { id: number; data: BodyType<BehaviouralNotificationInput> },
+  TContext
+> => {
+  const mutationKey = ["sendBehaviouralNotification"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendBehaviouralNotification>>,
+    { id: number; data: BodyType<BehaviouralNotificationInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return sendBehaviouralNotification(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendBehaviouralNotificationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendBehaviouralNotification>>
+>;
+export type SendBehaviouralNotificationMutationBody =
+  BodyType<BehaviouralNotificationInput>;
+export type SendBehaviouralNotificationMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Send a behavioural notification email and log it
+ */
+export const useSendBehaviouralNotification = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendBehaviouralNotification>>,
+    TError,
+    { id: number; data: BodyType<BehaviouralNotificationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendBehaviouralNotification>>,
+  TError,
+  { id: number; data: BodyType<BehaviouralNotificationInput> },
+  TContext
+> => {
+  return useMutation(getSendBehaviouralNotificationMutationOptions(options));
+};
+
+/**
+ * @summary List behavioural notifications for a guardian (by email)
+ */
+export const getListGuardianBehaviouralNotificationsUrl = (email: string) => {
+  return `/api/guardians/${email}/behavioural-notifications`;
+};
+
+export const listGuardianBehaviouralNotifications = async (
+  email: string,
+  options?: RequestInit,
+): Promise<BehaviouralNotification[]> => {
+  return customFetch<BehaviouralNotification[]>(
+    getListGuardianBehaviouralNotificationsUrl(email),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListGuardianBehaviouralNotificationsQueryKey = (
+  email: string,
+) => {
+  return [`/api/guardians/${email}/behavioural-notifications`] as const;
+};
+
+export const getListGuardianBehaviouralNotificationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGuardianBehaviouralNotifications>>,
+  TError = ErrorType<unknown>,
+>(
+  email: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listGuardianBehaviouralNotifications>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getListGuardianBehaviouralNotificationsQueryKey(email);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listGuardianBehaviouralNotifications>>
+  > = ({ signal }) =>
+    listGuardianBehaviouralNotifications(email, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!email,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listGuardianBehaviouralNotifications>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListGuardianBehaviouralNotificationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listGuardianBehaviouralNotifications>>
+>;
+export type ListGuardianBehaviouralNotificationsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List behavioural notifications for a guardian (by email)
+ */
+
+export function useListGuardianBehaviouralNotifications<
+  TData = Awaited<ReturnType<typeof listGuardianBehaviouralNotifications>>,
+  TError = ErrorType<unknown>,
+>(
+  email: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listGuardianBehaviouralNotifications>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListGuardianBehaviouralNotificationsQueryOptions(
+    email,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary List all medication logs for the authenticated guardian's children

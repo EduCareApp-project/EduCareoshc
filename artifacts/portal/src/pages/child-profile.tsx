@@ -13,6 +13,8 @@ import {
   useListMedicationLogs, getListMedicationLogsQueryKey,
   useCreateMedicationLog, useDeleteMedicationLog,
   getListChildMedicationsQueryKey,
+  useListChildBehaviouralNotifications, useSendBehaviouralNotification,
+  getListChildBehaviouralNotificationsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
@@ -34,7 +36,7 @@ import {
   ArrowLeft, Edit, Plus, Trash2, User, Users, Phone, Mail, FileText,
   Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2,
   ShieldAlert, AlertTriangle, Paperclip, X, Lock, Pencil, StickyNote, Newspaper,
-  Upload, FolderOpen, Pill, ChevronDown, ChevronUp, ClipboardList,
+  Upload, FolderOpen, Pill, ChevronDown, ChevronUp, ClipboardList, MessageSquareWarning,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth";
 import { useUpload } from "@workspace/object-storage-web";
@@ -68,6 +70,153 @@ const EMPTY_WELFARE_FORM = {
   fvissNotes: "",
   confidentialNotes: "",
 };
+
+// ── Behaviour Tab ──────────────────────────────────────────────────────────────
+
+const DEFAULT_SUPPORT = `\u2022 Reinforcing appropriate behaviour expectations at home\n\u2022 Discussing respectful and safe choices with your child\n\u2022 Supporting strategies such as [insert relevant strategies if needed]`;
+
+function BehaviourTab({ childId }: { childId: number }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: notifications = [], isLoading } = useListChildBehaviouralNotifications(childId);
+  const sendMutation = useSendBehaviouralNotification();
+
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [behaviourDescription, setBehaviourDescription] = useState("");
+  const [supportRequest, setSupportRequest] = useState(DEFAULT_SUPPORT);
+
+  function openCompose() {
+    setBehaviourDescription("");
+    setSupportRequest(DEFAULT_SUPPORT);
+    setComposeOpen(true);
+  }
+
+  function handleSend(e: React.FormEvent) {
+    e.preventDefault();
+    sendMutation.mutate(
+      { id: childId, data: { behaviourDescription, supportRequest } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListChildBehaviouralNotificationsQueryKey(childId) });
+          setComposeOpen(false);
+          toast({ title: "Behavioural notification sent" });
+        },
+        onError: () => toast({ title: "Failed to send notification", variant: "destructive" }),
+      }
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold">Behavioural Email Log</h3>
+          <p className="text-sm text-muted-foreground">Emails sent to guardians about this child's behaviour.</p>
+        </div>
+        <Button onClick={openCompose}>
+          <Plus className="h-4 w-4 mr-1.5" />Send Email
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+      ) : notifications.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-14 text-center text-muted-foreground">
+            <MessageSquareWarning className="h-8 w-8 mb-2 opacity-25" />
+            <p className="font-medium">No behavioural emails sent yet</p>
+            <p className="text-sm mt-1">Use "Send Email" to notify guardians about a behaviour incident.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {notifications.map(n => (
+            <Card key={n.id}>
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <CardTitle className="text-sm">{n.sentAt ? format(new Date(n.sentAt), "dd/MM/yyyy 'at' h:mm a") : "—"}</CardTitle>
+                  <div className="flex flex-wrap gap-1">
+                    {n.recipientEmails?.map(e => <Badge key={e} variant="outline" className="text-xs">{e}</Badge>)}
+                  </div>
+                </div>
+                {n.sentByStaffName && <p className="text-xs text-muted-foreground">Sent by {n.sentByStaffName}</p>}
+              </CardHeader>
+              <CardContent className="pt-0 space-y-3">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Behaviour Description</p>
+                  <p className="text-sm whitespace-pre-wrap">{n.behaviourDescription}</p>
+                </div>
+                <Separator />
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Support Requested</p>
+                  <p className="text-sm whitespace-pre-wrap">{n.supportRequest}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquareWarning className="h-4 w-4 text-amber-500" />
+              Send Behavioural Notification
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSend} className="space-y-4 pt-1">
+            <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground space-y-1">
+              <p>Dear Parent/Guardian,</p>
+              <p>We are writing to inform you that today your child displayed the following behaviour(s):</p>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Behaviour Description <span className="text-destructive">*</span></Label>
+              <Textarea
+                value={behaviourDescription}
+                onChange={(e) => setBehaviourDescription(e.target.value)}
+                rows={4}
+                placeholder="Describe the behaviour(s) observed today…"
+                required
+                autoFocus
+              />
+            </div>
+
+            <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+              <p>At Elysium OSHC, we work closely with families to support positive behaviour and wellbeing for all students. We are hoping you can assist us with:</p>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Support Request <span className="text-destructive">*</span></Label>
+              <Textarea
+                value={supportRequest}
+                onChange={(e) => setSupportRequest(e.target.value)}
+                rows={5}
+                required
+              />
+            </div>
+
+            <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground space-y-1">
+              <p>We appreciate your partnership and support in helping your child make positive choices. If you would like to discuss this matter further, please feel free to contact us.</p>
+              <p className="pt-1">Regards,</p>
+              <p className="font-medium">Admin Team<br />ELYSIUM OSHC</p>
+              <p>(03) 8595 3022 | 0466 047 908 | admin@elysiumoshc.com.au</p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1 border-t">
+              <Button type="button" variant="outline" onClick={() => setComposeOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={sendMutation.isPending}>
+                {sendMutation.isPending ? "Sending…" : "Send Email to Guardian(s)"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
 
 // ── Medications Tab ────────────────────────────────────────────────────────────
 
@@ -668,6 +817,7 @@ export default function ChildProfile() {
           <TabsTrigger value="childdata">Child's Data</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="medications" className="flex items-center gap-1.5"><Pill className="h-3.5 w-3.5" />Medications</TabsTrigger>
+          <TabsTrigger value="behaviour" className="flex items-center gap-1.5"><MessageSquareWarning className="h-3.5 w-3.5" />Behaviour</TabsTrigger>
         </TabsList>
 
         {/* ── Overview ── */}
@@ -1233,6 +1383,11 @@ export default function ChildProfile() {
         {/* ── Medications ── */}
         <TabsContent value="medications">
           <MedicationsTab childId={id} staffList={staff ?? []} currentUserId={user?.id ?? 0} />
+        </TabsContent>
+
+        {/* ── Behaviour ── */}
+        <TabsContent value="behaviour">
+          <BehaviourTab childId={id} />
         </TabsContent>
 
       </Tabs>

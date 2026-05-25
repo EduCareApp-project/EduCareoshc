@@ -33,3 +33,4 @@ export * from "./roll_submissions";
 export * from "./access_settings";
 export * from "./notifications";
 export * from "./medications";
+export * from "./behavioural_notifications";

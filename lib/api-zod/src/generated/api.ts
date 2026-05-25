@@ -3217,6 +3217,64 @@ export const DeleteMedicationLogParams = zod.object({
 });
 
 /**
+ * @summary List behavioural notifications sent for a child
+ */
+export const ListChildBehaviouralNotificationsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListChildBehaviouralNotificationsResponseItem = zod.object({
+  id: zod.number(),
+  childId: zod.number(),
+  childName: zod.string().nullish(),
+  sentByStaffId: zod.number().nullish(),
+  sentByStaffName: zod.string().nullish(),
+  behaviourDescription: zod.string(),
+  supportRequest: zod.string(),
+  recipientEmails: zod.array(zod.string()),
+  sentAt: zod.coerce.date(),
+  createdAt: zod.coerce.date(),
+});
+export const ListChildBehaviouralNotificationsResponse = zod.array(
+  ListChildBehaviouralNotificationsResponseItem,
+);
+
+/**
+ * @summary Send a behavioural notification email and log it
+ */
+export const SendBehaviouralNotificationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SendBehaviouralNotificationBody = zod.object({
+  behaviourDescription: zod.string(),
+  supportRequest: zod.string(),
+});
+
+/**
+ * @summary List behavioural notifications for a guardian (by email)
+ */
+export const ListGuardianBehaviouralNotificationsParams = zod.object({
+  email: zod.coerce.string(),
+});
+
+export const ListGuardianBehaviouralNotificationsResponseItem = zod.object({
+  id: zod.number(),
+  childId: zod.number(),
+  childName: zod.string().nullish(),
+  sentByStaffId: zod.number().nullish(),
+  sentByStaffName: zod.string().nullish(),
+  behaviourDescription: zod.string(),
+  supportRequest: zod.string(),
+  recipientEmails: zod.array(zod.string()),
+  sentAt: zod.coerce.date(),
+  createdAt: zod.coerce.date(),
+});
+export const ListGuardianBehaviouralNotificationsResponse = zod.array(
+  ListGuardianBehaviouralNotificationsResponseItem,
+);
+
+/**
  * @summary List all medication logs for the authenticated guardian's children
  */
 export const ListGuardianMedicationLogsResponseItem = zod.object({

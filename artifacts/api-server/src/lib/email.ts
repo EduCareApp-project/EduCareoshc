@@ -551,3 +551,94 @@ export async function sendPostNotificationEmail(
   const sent = recipients.length - errors.length;
   logger.info({ sent, failed: errors.length }, "Post notification emails dispatched");
 }
+
+export interface MedicationLogEmailOptions {
+  childName: string;
+  medicationName: string;
+  administeredAt: string;
+  dosageAdministered: string;
+  methodOfAdministration: string;
+  administeredByName: string;
+  witnessName: string | null;
+  portalUrl: string;
+}
+
+export async function sendMedicationLogEmail(
+  recipients: string[],
+  opts: MedicationLogEmailOptions,
+  branding?: EmailBranding,
+): Promise<void> {
+  if (recipients.length === 0) return;
+
+  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@educare.example.com";
+  const transport = createTransport();
+
+  if (!transport) {
+    logger.warn({ count: recipients.length }, "SMTP not configured — medication log emails were not sent");
+    return;
+  }
+
+  const when = new Date(opts.administeredAt).toLocaleString("en-AU", {
+    day: "numeric", month: "short", year: "numeric",
+    hour: "numeric", minute: "2-digit", hour12: true,
+    timeZone: "Australia/Melbourne",
+  });
+
+  const subject = `Medication given to ${opts.childName} — ${opts.medicationName}`;
+
+  const rows = [
+    ["Child", opts.childName],
+    ["Medication", opts.medicationName],
+    ["Date & Time", when],
+    ["Dosage", opts.dosageAdministered],
+    ["Method", opts.methodOfAdministration],
+    ["Administered by", opts.administeredByName],
+    ...(opts.witnessName ? [["Witnessed by", opts.witnessName] as [string, string]] : []),
+  ] as [string, string][];
+
+  const tableRows = rows
+    .map(([label, val]) => `<tr><td style="padding:6px 12px 6px 0; color:#555; white-space:nowrap; vertical-align:top;">${label}</td><td style="padding:6px 0; font-weight:600; vertical-align:top;">${val}</td></tr>`)
+    .join("");
+
+  const textLines = rows.map(([l, v]) => `${l}: ${v}`).join("\n");
+
+  for (const email of recipients) {
+    try {
+      await transport.sendMail({
+        from: `"${fromName(branding)}" <${from}>`,
+        to: email,
+        subject,
+        text: [
+          `Hi,`,
+          ``,
+          `A medication has been administered at the centre. Details below.`,
+          ``,
+          textLines,
+          ``,
+          `Log in to view full medication history:`,
+          opts.portalUrl,
+          ``,
+          `— ${fromName(branding)}`,
+        ].join("\n"),
+        html: `
+          <!DOCTYPE html>
+          <html>
+            <body style="font-family: sans-serif; color: #1a1a1a; max-width: 560px; margin: 0 auto; padding: 24px;">
+              ${buildLogoHtml(branding)}
+              <h2 style="margin: 0 0 4px;">Medication administered</h2>
+              <p style="color:#555; margin: 0 0 20px;">A medication has been given to <strong>${opts.childName}</strong> at the centre.</p>
+              <table style="border-collapse: collapse; width: 100%; margin-bottom: 24px;">
+                ${tableRows}
+              </table>
+              <a href="${opts.portalUrl}" style="display:inline-block;padding:12px 24px;background:#1b5e20;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View medication log</a>
+              <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
+              <p style="color:#aaa;font-size:12px;">You received this because you have a Family Portal account for ${opts.childName}.</p>
+            </body>
+          </html>
+        `,
+      });
+    } catch (err) {
+      logger.error({ email, err }, "Failed to send medication log email");
+    }
+  }
+}

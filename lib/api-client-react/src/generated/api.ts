@@ -31,6 +31,7 @@ import type {
   ChildDocument,
   ChildDocumentInput,
   ChildInput,
+  ChildMedication,
   ChildSettings,
   ChildUpdate,
   ConditionReport,
@@ -52,6 +53,7 @@ import type {
   GetNotificationCount200,
   GetServiceComplianceReportParams,
   Guardian,
+  GuardianMedicationLog,
   GuardianUpdate,
   HealthStatus,
   Incident,
@@ -65,6 +67,9 @@ import type {
   ListRoutineItemCompletionsParams,
   MarkAllNotificationsRead200,
   MarkNotificationRead200,
+  MedicationLog,
+  MedicationLogPayload,
+  MedicationSlotPayload,
   NewPasswordResult,
   Notice,
   NoticeInput,
@@ -11590,3 +11595,541 @@ export const useUpdateNotificationSettings = <
 > => {
   return useMutation(getUpdateNotificationSettingsMutationOptions(options));
 };
+
+/**
+ * @summary List medication slots for a child (always returns up to 4)
+ */
+export const getListChildMedicationsUrl = (id: number) => {
+  return `/api/children/${id}/medications`;
+};
+
+export const listChildMedications = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ChildMedication[]> => {
+  return customFetch<ChildMedication[]>(getListChildMedicationsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListChildMedicationsQueryKey = (id: number) => {
+  return [`/api/children/${id}/medications`] as const;
+};
+
+export const getListChildMedicationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listChildMedications>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listChildMedications>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListChildMedicationsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listChildMedications>>
+  > = ({ signal }) => listChildMedications(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listChildMedications>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListChildMedicationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listChildMedications>>
+>;
+export type ListChildMedicationsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List medication slots for a child (always returns up to 4)
+ */
+
+export function useListChildMedications<
+  TData = Awaited<ReturnType<typeof listChildMedications>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listChildMedications>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListChildMedicationsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create or update a medication slot (1–4)
+ */
+export const getUpsertChildMedicationUrl = (id: number, slot: number) => {
+  return `/api/children/${id}/medications/${slot}`;
+};
+
+export const upsertChildMedication = async (
+  id: number,
+  slot: number,
+  medicationSlotPayload: MedicationSlotPayload,
+  options?: RequestInit,
+): Promise<ChildMedication> => {
+  return customFetch<ChildMedication>(getUpsertChildMedicationUrl(id, slot), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(medicationSlotPayload),
+  });
+};
+
+export const getUpsertChildMedicationMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upsertChildMedication>>,
+    TError,
+    { id: number; slot: number; data: BodyType<MedicationSlotPayload> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof upsertChildMedication>>,
+  TError,
+  { id: number; slot: number; data: BodyType<MedicationSlotPayload> },
+  TContext
+> => {
+  const mutationKey = ["upsertChildMedication"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof upsertChildMedication>>,
+    { id: number; slot: number; data: BodyType<MedicationSlotPayload> }
+  > = (props) => {
+    const { id, slot, data } = props ?? {};
+
+    return upsertChildMedication(id, slot, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpsertChildMedicationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof upsertChildMedication>>
+>;
+export type UpsertChildMedicationMutationBody = BodyType<MedicationSlotPayload>;
+export type UpsertChildMedicationMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create or update a medication slot (1–4)
+ */
+export const useUpsertChildMedication = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upsertChildMedication>>,
+    TError,
+    { id: number; slot: number; data: BodyType<MedicationSlotPayload> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof upsertChildMedication>>,
+  TError,
+  { id: number; slot: number; data: BodyType<MedicationSlotPayload> },
+  TContext
+> => {
+  return useMutation(getUpsertChildMedicationMutationOptions(options));
+};
+
+/**
+ * @summary List administration logs for a medication
+ */
+export const getListMedicationLogsUrl = (id: number, medicationId: number) => {
+  return `/api/children/${id}/medications/${medicationId}/logs`;
+};
+
+export const listMedicationLogs = async (
+  id: number,
+  medicationId: number,
+  options?: RequestInit,
+): Promise<MedicationLog[]> => {
+  return customFetch<MedicationLog[]>(
+    getListMedicationLogsUrl(id, medicationId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListMedicationLogsQueryKey = (
+  id: number,
+  medicationId: number,
+) => {
+  return [`/api/children/${id}/medications/${medicationId}/logs`] as const;
+};
+
+export const getListMedicationLogsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMedicationLogs>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  medicationId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMedicationLogs>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListMedicationLogsQueryKey(id, medicationId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listMedicationLogs>>
+  > = ({ signal }) =>
+    listMedicationLogs(id, medicationId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(id && medicationId),
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMedicationLogs>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMedicationLogsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMedicationLogs>>
+>;
+export type ListMedicationLogsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List administration logs for a medication
+ */
+
+export function useListMedicationLogs<
+  TData = Awaited<ReturnType<typeof listMedicationLogs>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  medicationId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMedicationLogs>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMedicationLogsQueryOptions(
+    id,
+    medicationId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Record a medication administration
+ */
+export const getCreateMedicationLogUrl = (id: number, medicationId: number) => {
+  return `/api/children/${id}/medications/${medicationId}/logs`;
+};
+
+export const createMedicationLog = async (
+  id: number,
+  medicationId: number,
+  medicationLogPayload: MedicationLogPayload,
+  options?: RequestInit,
+): Promise<MedicationLog> => {
+  return customFetch<MedicationLog>(
+    getCreateMedicationLogUrl(id, medicationId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(medicationLogPayload),
+    },
+  );
+};
+
+export const getCreateMedicationLogMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createMedicationLog>>,
+    TError,
+    { id: number; medicationId: number; data: BodyType<MedicationLogPayload> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createMedicationLog>>,
+  TError,
+  { id: number; medicationId: number; data: BodyType<MedicationLogPayload> },
+  TContext
+> => {
+  const mutationKey = ["createMedicationLog"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createMedicationLog>>,
+    { id: number; medicationId: number; data: BodyType<MedicationLogPayload> }
+  > = (props) => {
+    const { id, medicationId, data } = props ?? {};
+
+    return createMedicationLog(id, medicationId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateMedicationLogMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createMedicationLog>>
+>;
+export type CreateMedicationLogMutationBody = BodyType<MedicationLogPayload>;
+export type CreateMedicationLogMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Record a medication administration
+ */
+export const useCreateMedicationLog = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createMedicationLog>>,
+    TError,
+    { id: number; medicationId: number; data: BodyType<MedicationLogPayload> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createMedicationLog>>,
+  TError,
+  { id: number; medicationId: number; data: BodyType<MedicationLogPayload> },
+  TContext
+> => {
+  return useMutation(getCreateMedicationLogMutationOptions(options));
+};
+
+/**
+ * @summary Delete a medication log entry
+ */
+export const getDeleteMedicationLogUrl = (
+  id: number,
+  medicationId: number,
+  logId: number,
+) => {
+  return `/api/children/${id}/medications/${medicationId}/logs/${logId}`;
+};
+
+export const deleteMedicationLog = async (
+  id: number,
+  medicationId: number,
+  logId: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteMedicationLogUrl(id, medicationId, logId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteMedicationLogMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMedicationLog>>,
+    TError,
+    { id: number; medicationId: number; logId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteMedicationLog>>,
+  TError,
+  { id: number; medicationId: number; logId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteMedicationLog"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteMedicationLog>>,
+    { id: number; medicationId: number; logId: number }
+  > = (props) => {
+    const { id, medicationId, logId } = props ?? {};
+
+    return deleteMedicationLog(id, medicationId, logId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteMedicationLogMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteMedicationLog>>
+>;
+
+export type DeleteMedicationLogMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a medication log entry
+ */
+export const useDeleteMedicationLog = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMedicationLog>>,
+    TError,
+    { id: number; medicationId: number; logId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteMedicationLog>>,
+  TError,
+  { id: number; medicationId: number; logId: number },
+  TContext
+> => {
+  return useMutation(getDeleteMedicationLogMutationOptions(options));
+};
+
+/**
+ * @summary List all medication logs for the authenticated guardian's children
+ */
+export const getListGuardianMedicationLogsUrl = () => {
+  return `/api/guardian/medication-logs`;
+};
+
+export const listGuardianMedicationLogs = async (
+  options?: RequestInit,
+): Promise<GuardianMedicationLog[]> => {
+  return customFetch<GuardianMedicationLog[]>(
+    getListGuardianMedicationLogsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListGuardianMedicationLogsQueryKey = () => {
+  return [`/api/guardian/medication-logs`] as const;
+};
+
+export const getListGuardianMedicationLogsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGuardianMedicationLogs>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGuardianMedicationLogs>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListGuardianMedicationLogsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listGuardianMedicationLogs>>
+  > = ({ signal }) => listGuardianMedicationLogs({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listGuardianMedicationLogs>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListGuardianMedicationLogsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listGuardianMedicationLogs>>
+>;
+export type ListGuardianMedicationLogsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all medication logs for the authenticated guardian's children
+ */
+
+export function useListGuardianMedicationLogs<
+  TData = Awaited<ReturnType<typeof listGuardianMedicationLogs>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGuardianMedicationLogs>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListGuardianMedicationLogsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}

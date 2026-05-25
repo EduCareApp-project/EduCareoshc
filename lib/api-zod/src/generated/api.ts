@@ -3113,3 +3113,125 @@ export const UpdateNotificationSettingsBody = zod.array(
 export const UpdateNotificationSettingsResponse = zod.object({
   ok: zod.boolean(),
 });
+
+/**
+ * @summary List medication slots for a child (always returns up to 4)
+ */
+export const ListChildMedicationsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListChildMedicationsResponseItem = zod.object({
+  id: zod.number(),
+  childId: zod.number(),
+  slot: zod.number(),
+  name: zod.string(),
+  lastAdministered: zod.string().nullish(),
+  toBeAdministeredBy: zod.string().nullish(),
+  dosage: zod.string().nullish(),
+  methodOfAdministration: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListChildMedicationsResponse = zod.array(
+  ListChildMedicationsResponseItem,
+);
+
+/**
+ * @summary Create or update a medication slot (1–4)
+ */
+export const UpsertChildMedicationParams = zod.object({
+  id: zod.coerce.number(),
+  slot: zod.coerce.number(),
+});
+
+export const UpsertChildMedicationBody = zod.object({
+  name: zod.string(),
+  lastAdministered: zod.string().optional(),
+  toBeAdministeredBy: zod.string().optional(),
+  dosage: zod.string().optional(),
+  methodOfAdministration: zod.string().optional(),
+});
+
+export const UpsertChildMedicationResponse = zod.object({
+  id: zod.number(),
+  childId: zod.number(),
+  slot: zod.number(),
+  name: zod.string(),
+  lastAdministered: zod.string().nullish(),
+  toBeAdministeredBy: zod.string().nullish(),
+  dosage: zod.string().nullish(),
+  methodOfAdministration: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary List administration logs for a medication
+ */
+export const ListMedicationLogsParams = zod.object({
+  id: zod.coerce.number(),
+  medicationId: zod.coerce.number(),
+});
+
+export const ListMedicationLogsResponseItem = zod.object({
+  id: zod.number(),
+  medicationId: zod.number(),
+  childId: zod.number(),
+  administeredAt: zod.coerce.date(),
+  dosageAdministered: zod.string(),
+  methodOfAdministration: zod.string(),
+  administeredById: zod.number(),
+  administeredByName: zod.string().nullish(),
+  witnessId: zod.number().nullish(),
+  witnessName: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListMedicationLogsResponse = zod.array(
+  ListMedicationLogsResponseItem,
+);
+
+/**
+ * @summary Record a medication administration
+ */
+export const CreateMedicationLogParams = zod.object({
+  id: zod.coerce.number(),
+  medicationId: zod.coerce.number(),
+});
+
+export const CreateMedicationLogBody = zod.object({
+  administeredAt: zod.coerce.date(),
+  dosageAdministered: zod.string(),
+  methodOfAdministration: zod.string(),
+  administeredById: zod.number(),
+  witnessId: zod.number().nullish(),
+});
+
+/**
+ * @summary Delete a medication log entry
+ */
+export const DeleteMedicationLogParams = zod.object({
+  id: zod.coerce.number(),
+  medicationId: zod.coerce.number(),
+  logId: zod.coerce.number(),
+});
+
+/**
+ * @summary List all medication logs for the authenticated guardian's children
+ */
+export const ListGuardianMedicationLogsResponseItem = zod.object({
+  id: zod.number(),
+  medicationId: zod.number(),
+  childId: zod.number(),
+  childName: zod.string(),
+  medicationName: zod.string(),
+  administeredAt: zod.coerce.date(),
+  dosageAdministered: zod.string(),
+  methodOfAdministration: zod.string(),
+  administeredByName: zod.string(),
+  witnessName: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListGuardianMedicationLogsResponse = zod.array(
+  ListGuardianMedicationLogsResponseItem,
+);

@@ -1767,6 +1767,72 @@ export interface NotificationSetting {
   advanceDays?: number | null;
 }
 
+export interface ChildMedication {
+  id: number;
+  childId: number;
+  slot: number;
+  name: string;
+  /** @nullable */
+  lastAdministered?: string | null;
+  /** @nullable */
+  toBeAdministeredBy?: string | null;
+  /** @nullable */
+  dosage?: string | null;
+  /** @nullable */
+  methodOfAdministration?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MedicationSlotPayload {
+  name: string;
+  lastAdministered?: string;
+  toBeAdministeredBy?: string;
+  dosage?: string;
+  methodOfAdministration?: string;
+}
+
+export interface MedicationLog {
+  id: number;
+  medicationId: number;
+  childId: number;
+  administeredAt: string;
+  dosageAdministered: string;
+  methodOfAdministration: string;
+  administeredById: number;
+  /** @nullable */
+  administeredByName?: string | null;
+  /** @nullable */
+  witnessId?: number | null;
+  /** @nullable */
+  witnessName?: string | null;
+  createdAt: string;
+}
+
+export interface MedicationLogPayload {
+  administeredAt: string;
+  dosageAdministered: string;
+  methodOfAdministration: string;
+  administeredById: number;
+  /** @nullable */
+  witnessId?: number | null;
+}
+
+export interface GuardianMedicationLog {
+  id: number;
+  medicationId: number;
+  childId: number;
+  childName: string;
+  medicationName: string;
+  administeredAt: string;
+  dosageAdministered: string;
+  methodOfAdministration: string;
+  administeredByName: string;
+  /** @nullable */
+  witnessName?: string | null;
+  createdAt: string;
+}
+
 /**
  * Derived from qualifications: cannot_work if WWCC/CPR/First Aid expired; responsible_person if all required quals current; educator if core three current; incomplete otherwise.
  */

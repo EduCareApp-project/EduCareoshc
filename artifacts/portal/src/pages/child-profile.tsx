@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { melbourneDateTimeStr } from "@/lib/timezone";
 import {
@@ -9,6 +9,10 @@ import {
   useListStaff, useListJottings, useListPlanningExperiences, useListPosts,
   useListChildDocuments, useCreateChildDocument, useDeleteChildDocument,
   useGetChildSettings, getGetChildSettingsQueryKey,
+  useListChildMedications, useUpsertChildMedication,
+  useListMedicationLogs, getListMedicationLogsQueryKey,
+  useCreateMedicationLog, useDeleteMedicationLog,
+  getListChildMedicationsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
@@ -30,8 +34,9 @@ import {
   ArrowLeft, Edit, Plus, Trash2, User, Users, Phone, Mail, FileText,
   Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2,
   ShieldAlert, AlertTriangle, Paperclip, X, Lock, Pencil, StickyNote, Newspaper,
-  Upload, FolderOpen,
+  Upload, FolderOpen, Pill, ChevronDown, ChevronUp, ClipboardList,
 } from "lucide-react";
+import { useAuth } from "@/contexts/auth";
 import { useUpload } from "@workspace/object-storage-web";
 import { useToast } from "@/hooks/use-toast";
 
@@ -64,12 +69,232 @@ const EMPTY_WELFARE_FORM = {
   confidentialNotes: "",
 };
 
+// ── Medications Tab ────────────────────────────────────────────────────────────
+
+const EMPTY_SLOT_FORM = { name: "", lastAdministered: "", toBeAdministeredBy: "", dosage: "", methodOfAdministration: "" };
+const EMPTY_LOG_FORM = { administeredAt: "", dosageAdministered: "", methodOfAdministration: "", administeredById: 0, witnessId: null as number | null };
+
+type StaffList = NonNullable<ReturnType<typeof useListStaff>["data"]>;
+
+function MedicationsTab({ childId, staffList, currentUserId }: { childId: number; staffList: StaffList; currentUserId: number }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: medications = [] } = useListChildMedications(childId);
+
+  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  const [editingSlot, setEditingSlot] = useState<number | null>(null);
+  const [slotForm, setSlotForm] = useState(EMPTY_SLOT_FORM);
+  const [logForm, setLogForm] = useState({ ...EMPTY_LOG_FORM, administeredById: currentUserId });
+  const [addingLog, setAddingLog] = useState(false);
+
+  const selectedMed = medications.find(m => m.slot === selectedSlot) ?? null;
+
+  const { data: logs = [], isLoading: logsLoading } = useListMedicationLogs(
+    childId,
+    selectedMed?.id ?? 0,
+    { query: { enabled: !!selectedMed?.id } }
+  );
+
+  useEffect(() => {
+    if (selectedMed) {
+      setLogForm({
+        administeredAt: melbourneDateTimeStr(),
+        dosageAdministered: selectedMed.dosage ?? "",
+        methodOfAdministration: selectedMed.methodOfAdministration ?? "",
+        administeredById: currentUserId,
+        witnessId: null,
+      });
+      setAddingLog(false);
+    }
+  }, [selectedSlot]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const upsertMedMutation = useUpsertChildMedication();
+  const createLogMutation = useCreateMedicationLog();
+  const deleteLogMutation = useDeleteMedicationLog();
+
+  function startEdit(slot: number) {
+    const med = medications.find(m => m.slot === slot);
+    setSlotForm({ name: med?.name ?? "", lastAdministered: med?.lastAdministered ?? "", toBeAdministeredBy: med?.toBeAdministeredBy ?? "", dosage: med?.dosage ?? "", methodOfAdministration: med?.methodOfAdministration ?? "" });
+    setEditingSlot(slot);
+  }
+
+  function saveSlot(e: React.FormEvent, slot: number) {
+    e.preventDefault();
+    upsertMedMutation.mutate(
+      { id: childId, slot, data: slotForm },
+      {
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListChildMedicationsQueryKey(childId) }); setEditingSlot(null); toast({ title: "Medication saved" }); },
+        onError: () => toast({ title: "Failed to save medication", variant: "destructive" }),
+      }
+    );
+  }
+
+  function submitLog(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedMed?.id) return;
+    createLogMutation.mutate(
+      { id: childId, medicationId: selectedMed.id, data: logForm },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListMedicationLogsQueryKey(childId, selectedMed.id) });
+          queryClient.invalidateQueries({ queryKey: getListChildMedicationsQueryKey(childId) });
+          setAddingLog(false);
+          toast({ title: "Log entry added" });
+        },
+        onError: () => toast({ title: "Failed to add log", variant: "destructive" }),
+      }
+    );
+  }
+
+  function handleDeleteLog(logId: number) {
+    if (!confirm("Delete this log entry?")) return;
+    deleteLogMutation.mutate(
+      { id: childId, medicationId: selectedMed!.id, logId },
+      { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListMedicationLogsQueryKey(childId, selectedMed!.id) }); toast({ title: "Deleted" }); } }
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {[1, 2, 3, 4].map((slot) => {
+          const med = medications.find(m => m.slot === slot);
+          const isSelected = selectedSlot === slot;
+          const isEditing = editingSlot === slot;
+
+          if (isEditing) return (
+            <Card key={slot} className="border-blue-200 dark:border-blue-800">
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Pill className="h-4 w-4 text-blue-500" />Slot {slot} — Edit</CardTitle></CardHeader>
+              <CardContent>
+                <form onSubmit={(e) => saveSlot(e, slot)} className="space-y-3">
+                  <div className="space-y-1"><Label className="text-xs">Medication Name *</Label><Input value={slotForm.name} onChange={(e) => setSlotForm(p => ({ ...p, name: e.target.value }))} required /></div>
+                  <div className="space-y-1"><Label className="text-xs">Dosage</Label><Input value={slotForm.dosage} onChange={(e) => setSlotForm(p => ({ ...p, dosage: e.target.value }))} placeholder="e.g. 5ml" /></div>
+                  <div className="space-y-1"><Label className="text-xs">Method of Administration</Label><Input value={slotForm.methodOfAdministration} onChange={(e) => setSlotForm(p => ({ ...p, methodOfAdministration: e.target.value }))} placeholder="e.g. Oral" /></div>
+                  <div className="space-y-1"><Label className="text-xs">To Be Administered By</Label><Input value={slotForm.toBeAdministeredBy} onChange={(e) => setSlotForm(p => ({ ...p, toBeAdministeredBy: e.target.value }))} placeholder="e.g. Educator" /></div>
+                  <div className="space-y-1"><Label className="text-xs">Last Administered</Label><Input value={slotForm.lastAdministered} onChange={(e) => setSlotForm(p => ({ ...p, lastAdministered: e.target.value }))} placeholder="e.g. 25/05/2026" /></div>
+                  <div className="flex gap-2 pt-1">
+                    <Button type="submit" size="sm" disabled={upsertMedMutation.isPending}>Save</Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setEditingSlot(null)}>Cancel</Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          );
+
+          if (!med) return (
+            <Card key={slot} className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+                <Pill className="h-6 w-6 mb-2 opacity-30" />
+                <p className="text-sm">Slot {slot} — Empty</p>
+                <Button size="sm" variant="ghost" className="mt-2" onClick={() => startEdit(slot)}>
+                  <Plus className="h-3.5 w-3.5 mr-1" />Add Medication
+                </Button>
+              </CardContent>
+            </Card>
+          );
+
+          return (
+            <Card key={slot} className={`cursor-pointer transition-all ${isSelected ? "ring-2 ring-blue-500" : "hover:shadow-md"}`} onClick={() => setSelectedSlot(isSelected ? null : slot)}>
+              <CardHeader className="pb-1 pt-4 px-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm flex items-center gap-2"><Pill className="h-4 w-4 text-blue-500" />{med.name}</CardTitle>
+                  <div className="flex items-center gap-1">
+                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); startEdit(slot); }}><Pencil className="h-3 w-3" /></Button>
+                    {isSelected ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 space-y-1.5 text-xs text-muted-foreground">
+                {med.dosage && <p><span className="font-medium text-foreground">Dosage:</span> {med.dosage}</p>}
+                {med.methodOfAdministration && <p><span className="font-medium text-foreground">Method:</span> {med.methodOfAdministration}</p>}
+                {med.toBeAdministeredBy && <p><span className="font-medium text-foreground">By:</span> {med.toBeAdministeredBy}</p>}
+                {med.lastAdministered && <p><span className="font-medium text-foreground">Last admin:</span> {med.lastAdministered}</p>}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {selectedSlot !== null && selectedMed && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2"><ClipboardList className="h-4 w-4" />Administration Log — {selectedMed.name}</CardTitle>
+              <Button size="sm" onClick={() => setAddingLog(!addingLog)}><Plus className="h-3.5 w-3.5 mr-1" />Add Entry</Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {addingLog && (
+              <form onSubmit={submitLog} className="border rounded-lg p-4 space-y-3 bg-muted/30">
+                <p className="text-sm font-medium">New Log Entry</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2 space-y-1"><Label className="text-xs">Date &amp; Time *</Label><Input type="datetime-local" value={logForm.administeredAt} onChange={(e) => setLogForm(p => ({ ...p, administeredAt: e.target.value }))} required /></div>
+                  <div className="space-y-1"><Label className="text-xs">Dosage Administered *</Label><Input value={logForm.dosageAdministered} onChange={(e) => setLogForm(p => ({ ...p, dosageAdministered: e.target.value }))} required placeholder={selectedMed.dosage ?? ""} /></div>
+                  <div className="space-y-1"><Label className="text-xs">Method *</Label><Input value={logForm.methodOfAdministration} onChange={(e) => setLogForm(p => ({ ...p, methodOfAdministration: e.target.value }))} required placeholder={selectedMed.methodOfAdministration ?? ""} /></div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Administered By *</Label>
+                    <Select value={String(logForm.administeredById || "")} onValueChange={(v) => setLogForm(p => ({ ...p, administeredById: Number(v) }))}>
+                      <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
+                      <SelectContent>{staffList.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Witness</Label>
+                    <Select value={logForm.witnessId ? String(logForm.witnessId) : "none"} onValueChange={(v) => setLogForm(p => ({ ...p, witnessId: v === "none" ? null : Number(v) }))}>
+                      <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {staffList.filter(s => s.id !== logForm.administeredById).map(s => <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button type="submit" size="sm" disabled={createLogMutation.isPending}>{createLogMutation.isPending ? "Saving…" : "Save Entry"}</Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setAddingLog(false)}>Cancel</Button>
+                </div>
+              </form>
+            )}
+            {logsLoading ? (
+              <div className="space-y-2">{[1, 2].map(i => <Skeleton key={i} className="h-14 w-full" />)}</div>
+            ) : logs.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No administration records yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {logs.map(log => {
+                  const byStaff = staffList.find(s => s.id === log.administeredById);
+                  const wStaff = log.witnessId ? staffList.find(s => s.id === log.witnessId) : null;
+                  return (
+                    <div key={log.id} className="flex items-start justify-between gap-4 rounded-md border px-4 py-3 text-sm">
+                      <div className="space-y-0.5">
+                        <p className="font-medium">{format(new Date(log.administeredAt), "dd/MM/yyyy 'at' h:mm a")}</p>
+                        <p className="text-muted-foreground text-xs">
+                          {log.dosageAdministered} · {log.methodOfAdministration}
+                          {byStaff && ` · ${byStaff.firstName} ${byStaff.lastName}`}
+                          {wStaff && ` · Witnessed by ${wStaff.firstName} ${wStaff.lastName}`}
+                        </p>
+                      </div>
+                      <button onClick={() => handleDeleteLog(log.id)} className="text-muted-foreground hover:text-destructive shrink-0 mt-0.5"><Trash2 className="h-3.5 w-3.5" /></button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 export default function ChildProfile() {
   const params = useParams();
   const id = parseInt(params.id || "0");
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { isEducatorRole, canDelete } = usePermissions();
+  const { user } = useAuth();
 
   const [, navigate] = useLocation();
 
@@ -442,6 +667,7 @@ export default function ChildProfile() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="childdata">Child's Data</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="medications" className="flex items-center gap-1.5"><Pill className="h-3.5 w-3.5" />Medications</TabsTrigger>
         </TabsList>
 
         {/* ── Overview ── */}
@@ -1002,6 +1228,11 @@ export default function ChildProfile() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ── Medications ── */}
+        <TabsContent value="medications">
+          <MedicationsTab childId={id} staffList={staff ?? []} currentUserId={user?.id ?? 0} />
         </TabsContent>
 
       </Tabs>

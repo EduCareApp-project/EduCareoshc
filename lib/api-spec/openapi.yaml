@@ -32,6 +32,7 @@ tags:
   - name: sites
   - name: notifications
   - name: notification-settings
+  - name: medications
 paths:
   /healthz:
     get:
@@ -2580,6 +2581,151 @@ paths:
                 properties:
                   ok:
                     type: boolean
+
+  /children/{id}/medications:
+    get:
+      tags: [medications]
+      summary: List medication slots for a child (always returns up to 4)
+      operationId: listChildMedications
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChildMedication"
+
+  /children/{id}/medications/{slot}:
+    put:
+      tags: [medications]
+      summary: Create or update a medication slot (1–4)
+      operationId: upsertChildMedication
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: slot
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MedicationSlotPayload"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChildMedication"
+
+  /children/{id}/medications/{medicationId}/logs:
+    get:
+      tags: [medications]
+      summary: List administration logs for a medication
+      operationId: listMedicationLogs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: medicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MedicationLog"
+    post:
+      tags: [medications]
+      summary: Record a medication administration
+      operationId: createMedicationLog
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: medicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MedicationLogPayload"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MedicationLog"
+
+  /children/{id}/medications/{medicationId}/logs/{logId}:
+    delete:
+      tags: [medications]
+      summary: Delete a medication log entry
+      operationId: deleteMedicationLog
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: medicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: logId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /guardian/medication-logs:
+    get:
+      tags: [medications]
+      summary: List all medication logs for the authenticated guardian's children
+      operationId: listGuardianMedicationLogs
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GuardianMedicationLog"
 
 components:
   schemas:
@@ -5136,6 +5282,122 @@ components:
           type: boolean
         advanceDays:
           type: ["integer", "null"]
+
+    ChildMedication:
+      type: object
+      required: [id, childId, slot, name, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        childId:
+          type: integer
+        slot:
+          type: integer
+        name:
+          type: string
+        lastAdministered:
+          type: ["string", "null"]
+        toBeAdministeredBy:
+          type: ["string", "null"]
+        dosage:
+          type: ["string", "null"]
+        methodOfAdministration:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    MedicationSlotPayload:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        lastAdministered:
+          type: string
+        toBeAdministeredBy:
+          type: string
+        dosage:
+          type: string
+        methodOfAdministration:
+          type: string
+
+    MedicationLog:
+      type: object
+      required: [id, medicationId, childId, administeredAt, dosageAdministered, methodOfAdministration, administeredById, createdAt]
+      properties:
+        id:
+          type: integer
+        medicationId:
+          type: integer
+        childId:
+          type: integer
+        administeredAt:
+          type: string
+          format: date-time
+        dosageAdministered:
+          type: string
+        methodOfAdministration:
+          type: string
+        administeredById:
+          type: integer
+        administeredByName:
+          type: ["string", "null"]
+        witnessId:
+          type: ["integer", "null"]
+        witnessName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    MedicationLogPayload:
+      type: object
+      required: [administeredAt, dosageAdministered, methodOfAdministration, administeredById]
+      properties:
+        administeredAt:
+          type: string
+          format: date-time
+        dosageAdministered:
+          type: string
+        methodOfAdministration:
+          type: string
+        administeredById:
+          type: integer
+        witnessId:
+          type: ["integer", "null"]
+
+    GuardianMedicationLog:
+      type: object
+      required: [id, medicationId, childId, childName, medicationName, administeredAt, dosageAdministered, methodOfAdministration, administeredByName, createdAt]
+      properties:
+        id:
+          type: integer
+        medicationId:
+          type: integer
+        childId:
+          type: integer
+        childName:
+          type: string
+        medicationName:
+          type: string
+        administeredAt:
+          type: string
+          format: date-time
+        dosageAdministered:
+          type: string
+        methodOfAdministration:
+          type: string
+        administeredByName:
+          type: string
+        witnessName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
 
     StaffComplianceReport:
       type: object

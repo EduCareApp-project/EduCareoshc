@@ -15,6 +15,7 @@ import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import GuardianHome from "@/pages/guardian-home";
 import GuardianNotices from "@/pages/guardian-notices";
+import GuardianMedicationLogs from "@/pages/guardian-medication-logs";
 
 import Dashboard from "@/pages/dashboard";
 import ChildrenList from "@/pages/children-list";
@@ -111,6 +112,7 @@ function GuardianRoutes() {
       <Switch>
         <Route path="/" component={GuardianHome} />
         <Route path="/notices" component={GuardianNotices} />
+        <Route path="/medication-logs" component={GuardianMedicationLogs} />
 
         <Route component={NotFound} />
       </Switch>

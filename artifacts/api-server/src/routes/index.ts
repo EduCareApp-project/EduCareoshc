@@ -41,6 +41,7 @@ import notificationsRouter from "./notifications";
 import settingsChildrenRouter from "./settings-children";
 import settingsFeaturesRouter from "./settings-features";
 import dataImportRouter from "./data-import";
+import medicationsRouter from "./medications";
 
 const router: IRouter = Router();
 
@@ -108,5 +109,6 @@ router.use(notificationsRouter);
 router.use(settingsChildrenRouter);
 router.use(settingsFeaturesRouter);
 router.use(dataImportRouter);
+router.use(medicationsRouter);
 
 export default router;

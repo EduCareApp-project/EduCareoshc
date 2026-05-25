@@ -13,7 +13,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recha
 import { RichTextEditor, RichTextView } from "@/components/rich-text-editor";
 import {
   Baby, Users, BookOpen, ClipboardList, ShieldCheck, Bell, Trash2, Plus,
-  AlertTriangle, CheckCircle2, Clock, FileText, Calendar, PenLine,
+  AlertTriangle, CheckCircle2, Clock, FileText, Calendar, PenLine, ShoppingCart,
   Layers, Image, ChevronLeft, ChevronRight, GraduationCap, Paperclip, X, XCircle, Upload, Newspaper, Pencil, ExternalLink, ClipboardCheck,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1086,6 +1086,18 @@ function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
           </Card>
         )}
       </div>
+
+      {/* Groceries button */}
+      <a
+        href="https://forms.gle/cDKqSt4pd7Xfvpww7"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center gap-3 w-full rounded-xl border-2 border-green-300 bg-green-50 hover:bg-green-100 text-green-800 font-semibold text-lg transition-colors"
+        style={{ minHeight: "6rem" }}
+      >
+        <ShoppingCart className="h-6 w-6" />
+        Groceries
+      </a>
     </div>
   );
 }

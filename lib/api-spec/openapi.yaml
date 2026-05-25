@@ -3285,7 +3285,7 @@ components:
 
     DashboardSummary:
       type: object
-      required: [totalChildren, activeChildren, totalStaff, totalObservations, observationsLast7Days, totalPrograms, activePrograms, nqsMeetingCount, sitesWithPublishedPlan, totalSites, staffWithExpiringQuals]
+      required: [totalChildren, activeChildren, totalStaff, totalObservations, observationsLast7Days, totalPrograms, activePrograms, nqsMeetingCount, sitesWithPublishedPlan, totalSites, staffWithExpiringQuals, postsLast7Days, jottingsLast7Days]
       properties:
         totalChildren:
           type: integer
@@ -3310,6 +3310,10 @@ components:
         staffWithExpiringQuals:
           type: integer
           description: Number of staff with at least one qualification expiring within the next 30 days
+        postsLast7Days:
+          type: integer
+        jottingsLast7Days:
+          type: integer
 
     ActivityItem:
       type: object

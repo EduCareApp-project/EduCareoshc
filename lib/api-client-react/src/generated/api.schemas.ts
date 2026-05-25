@@ -400,6 +400,8 @@ export interface DashboardSummary {
   totalSites: number;
   /** Number of staff with at least one qualification expiring within the next 30 days */
   staffWithExpiringQuals: number;
+  postsLast7Days: number;
+  jottingsLast7Days: number;
 }
 
 export type ActivityItemType =

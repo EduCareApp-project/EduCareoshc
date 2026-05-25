@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, gte, count, desc, isNotNull, and, lte } from "drizzle-orm";
-import { db, childrenTable, staffTable, observationsTable, programsTable, nqsAreasTable, outcomesTable, postsTable, incidentsTable, conditionReportsTable, sitesTable, planningExperiencesTable, staffQualificationsTable } from "@workspace/db";
+import { db, childrenTable, staffTable, observationsTable, programsTable, nqsAreasTable, outcomesTable, postsTable, incidentsTable, conditionReportsTable, sitesTable, planningExperiencesTable, staffQualificationsTable, jottingsTable } from "@workspace/db";
 import {
   GetDashboardSummaryResponse,
   GetRecentObservationsResponse,
@@ -78,6 +78,16 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
       .map((q) => q.staffId)
   );
 
+  const [last7PostsResult] = await db
+    .select({ count: count() })
+    .from(postsTable)
+    .where(gte(postsTable.createdAt, sevenDaysAgo));
+
+  const [last7JottingsResult] = await db
+    .select({ count: count() })
+    .from(jottingsTable)
+    .where(gte(jottingsTable.createdAt, sevenDaysAgo));
+
   const summary = {
     totalChildren: totalChildrenResult?.count ?? 0,
     activeChildren: activeChildrenResult?.count ?? 0,
@@ -90,6 +100,8 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
     sitesWithPublishedPlan: publishedPlans.length,
     totalSites: allSites.length,
     staffWithExpiringQuals: expiringStaffIds.size,
+    postsLast7Days: last7PostsResult?.count ?? 0,
+    jottingsLast7Days: last7JottingsResult?.count ?? 0,
   };
 
   res.json(GetDashboardSummaryResponse.parse(summary));

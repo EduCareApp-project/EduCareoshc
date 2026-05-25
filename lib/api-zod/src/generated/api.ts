@@ -653,6 +653,8 @@ export const GetDashboardSummaryResponse = zod.object({
     .describe(
       "Number of staff with at least one qualification expiring within the next 30 days",
     ),
+  postsLast7Days: zod.number(),
+  jottingsLast7Days: zod.number(),
 });
 
 export const getRecentObservationsResponseOutcomeIdsDefault = [];

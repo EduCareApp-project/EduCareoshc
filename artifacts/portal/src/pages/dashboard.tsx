@@ -13,7 +13,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recha
 import { RichTextEditor, RichTextView } from "@/components/rich-text-editor";
 import {
   Baby, Users, BookOpen, ClipboardList, ShieldCheck, Bell, Trash2, Plus,
-  AlertTriangle, CheckCircle2, Clock, FileText, Calendar,
+  AlertTriangle, CheckCircle2, Clock, FileText, Calendar, PenLine,
   Layers, Image, ChevronLeft, ChevronRight, GraduationCap, Paperclip, X, XCircle, Upload, Newspaper, Pencil, ExternalLink, ClipboardCheck,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -665,7 +665,7 @@ function LeadershipDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <MetricCard title="Active Children" value={summary?.activeChildren} icon={Baby} loading={loadingSummary} href="/children" />
         <MetricCard
           title="Staff Compliance"
@@ -682,6 +682,8 @@ function LeadershipDashboard() {
           href="/staff"
         />
         <MetricCard title="Observations (7 days)" value={summary?.observationsLast7Days} icon={BookOpen} loading={loadingSummary} href="/observations" />
+        <MetricCard title="Posts (7 days)" value={summary?.postsLast7Days} icon={FileText} loading={loadingSummary} href="/posts" />
+        <MetricCard title="Jottings (7 days)" value={summary?.jottingsLast7Days} icon={PenLine} loading={loadingSummary} href="/jottings" />
         <MetricCard
           title="Weekly Plans Published"
           label={summary ? `${summary.sitesWithPublishedPlan} / ${summary.totalSites}` : undefined}

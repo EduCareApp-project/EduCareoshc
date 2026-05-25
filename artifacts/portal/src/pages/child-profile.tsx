@@ -316,80 +316,109 @@ function MedicationsTab({ childId, staffList, currentUserId }: { childId: number
     );
   }
 
+  function addNewMedication() {
+    const usedSlots = medications.map(m => m.slot);
+    const nextSlot = [1, 2, 3, 4].find(s => !usedSlots.includes(s));
+    if (nextSlot) startEdit(nextSlot);
+  }
+
+  const editForm = (slot: number) => (
+    <Card key={slot} className="border-primary/30 col-span-1 sm:col-span-2 lg:col-span-2">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Pill className="h-4 w-4 text-primary" />
+          {medications.find(m => m.slot === slot) ? "Edit Medication" : "New Medication"}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={(e) => saveSlot(e, slot)} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1 sm:col-span-2"><Label className="text-xs">Medication Name *</Label><Input value={slotForm.name} onChange={(e) => setSlotForm(p => ({ ...p, name: e.target.value }))} required autoFocus /></div>
+          <div className="space-y-1"><Label className="text-xs">Dosage</Label><Input value={slotForm.dosage} onChange={(e) => setSlotForm(p => ({ ...p, dosage: e.target.value }))} placeholder="e.g. 5ml" /></div>
+          <div className="space-y-1"><Label className="text-xs">Method of Administration</Label><Input value={slotForm.methodOfAdministration} onChange={(e) => setSlotForm(p => ({ ...p, methodOfAdministration: e.target.value }))} placeholder="e.g. Oral" /></div>
+          <div className="space-y-1">
+            <Label className="text-xs">Frequency</Label>
+            <Select value={slotForm.frequency || "_none"} onValueChange={(v) => setSlotForm(p => ({ ...p, frequency: v === "_none" ? "" : v }))}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select frequency" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none"><span className="text-muted-foreground">— not set —</span></SelectItem>
+                {FREQUENCY_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Administration Time</Label>
+            <Input type="time" value={slotForm.administrationTime} onChange={(e) => setSlotForm(p => ({ ...p, administrationTime: e.target.value }))} className="h-9" />
+          </div>
+          <div className="space-y-1 sm:col-span-2"><Label className="text-xs">Last Administered</Label><Input value={slotForm.lastAdministered} onChange={(e) => setSlotForm(p => ({ ...p, lastAdministered: e.target.value }))} placeholder="e.g. 25/05/2026" /></div>
+          <div className="flex gap-2 pt-1 sm:col-span-2">
+            <Button type="submit" size="sm" disabled={upsertMedMutation.isPending}>Save</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => setEditingSlot(null)}>Cancel</Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {[1, 2, 3, 4].map((slot) => {
-          const med = medications.find(m => m.slot === slot);
-          const isSelected = selectedSlot === slot;
-          const isEditing = editingSlot === slot;
-
-          if (isEditing) return (
-            <Card key={slot} className="border-blue-200 dark:border-blue-800">
-              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Pill className="h-4 w-4 text-blue-500" />Slot {slot} — Edit</CardTitle></CardHeader>
-              <CardContent>
-                <form onSubmit={(e) => saveSlot(e, slot)} className="space-y-3">
-                  <div className="space-y-1"><Label className="text-xs">Medication Name *</Label><Input value={slotForm.name} onChange={(e) => setSlotForm(p => ({ ...p, name: e.target.value }))} required /></div>
-                  <div className="space-y-1"><Label className="text-xs">Dosage</Label><Input value={slotForm.dosage} onChange={(e) => setSlotForm(p => ({ ...p, dosage: e.target.value }))} placeholder="e.g. 5ml" /></div>
-                  <div className="space-y-1"><Label className="text-xs">Method of Administration</Label><Input value={slotForm.methodOfAdministration} onChange={(e) => setSlotForm(p => ({ ...p, methodOfAdministration: e.target.value }))} placeholder="e.g. Oral" /></div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Frequency</Label>
-                    <Select value={slotForm.frequency || "_none"} onValueChange={(v) => setSlotForm(p => ({ ...p, frequency: v === "_none" ? "" : v }))}>
-                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select frequency" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_none"><span className="text-muted-foreground">— not set —</span></SelectItem>
-                        {FREQUENCY_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Administration Time</Label>
-                    <Input type="time" value={slotForm.administrationTime} onChange={(e) => setSlotForm(p => ({ ...p, administrationTime: e.target.value }))} className="h-9" />
-                  </div>
-                  <div className="space-y-1"><Label className="text-xs">Last Administered</Label><Input value={slotForm.lastAdministered} onChange={(e) => setSlotForm(p => ({ ...p, lastAdministered: e.target.value }))} placeholder="e.g. 25/05/2026" /></div>
-                  <div className="flex gap-2 pt-1">
-                    <Button type="submit" size="sm" disabled={upsertMedMutation.isPending}>Save</Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => setEditingSlot(null)}>Cancel</Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          );
-
-          if (!med) return (
-            <Card key={slot} className="border-dashed">
-              <CardContent className="flex flex-col items-center justify-center h-32 text-muted-foreground">
-                <Pill className="h-6 w-6 mb-2 opacity-30" />
-                <p className="text-sm">Slot {slot} — Empty</p>
-                <Button size="sm" variant="ghost" className="mt-2" onClick={() => startEdit(slot)}>
-                  <Plus className="h-3.5 w-3.5 mr-1" />Add Medication
-                </Button>
-              </CardContent>
-            </Card>
-          );
-
-          return (
-            <Card key={slot} className={`cursor-pointer transition-all ${isSelected ? "ring-2 ring-blue-500" : "hover:shadow-md"}`} onClick={() => setSelectedSlot(isSelected ? null : slot)}>
-              <CardHeader className="pb-1 pt-4 px-4">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm flex items-center gap-2"><Pill className="h-4 w-4 text-blue-500" />{med.name}</CardTitle>
-                  <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); startEdit(slot); }}><Pencil className="h-3 w-3" /></Button>
-                    {isSelected ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 space-y-1.5 text-xs text-muted-foreground">
-                {med.dosage && <p><span className="font-medium text-foreground">Dosage:</span> {med.dosage}</p>}
-                {med.methodOfAdministration && <p><span className="font-medium text-foreground">Method:</span> {med.methodOfAdministration}</p>}
-                {med.frequency && <p><span className="font-medium text-foreground">Frequency:</span> {med.frequency}</p>}
-                {med.administrationTime && <p><span className="font-medium text-foreground">Time:</span> {med.administrationTime}</p>}
-                {med.lastAdministered && <p><span className="font-medium text-foreground">Last admin:</span> {med.lastAdministered}</p>}
-              </CardContent>
-            </Card>
-          );
-        })}
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold">Medications</h3>
+          <p className="text-sm text-muted-foreground">Up to 4 medications can be tracked for this child.</p>
+        </div>
+        {medications.length < 4 && editingSlot === null && (
+          <Button size="sm" onClick={addNewMedication}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" />Add Medication
+          </Button>
+        )}
       </div>
+
+      {/* Cards grid — only filled slots + inline edit form */}
+      {(medications.length > 0 || editingSlot !== null) ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((slot) => {
+            const med = medications.find(m => m.slot === slot);
+            const isSelected = selectedSlot === slot;
+
+            if (editingSlot === slot) return editForm(slot);
+            if (!med) return null;
+
+            return (
+              <Card key={slot} className={`cursor-pointer transition-all ${isSelected ? "ring-2 ring-primary" : "hover:shadow-md"}`} onClick={() => setSelectedSlot(isSelected ? null : slot)}>
+                <CardHeader className="pb-1 pt-4 px-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm flex items-center gap-2 min-w-0">
+                      <Pill className="h-4 w-4 text-primary shrink-0" />
+                      <span className="truncate">{med.name}</span>
+                    </CardTitle>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); startEdit(slot); }}><Pencil className="h-3 w-3" /></Button>
+                      {isSelected ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-4 pb-4 space-y-1 text-xs text-muted-foreground">
+                  {med.dosage && <p><span className="font-medium text-foreground">Dosage:</span> {med.dosage}</p>}
+                  {med.methodOfAdministration && <p><span className="font-medium text-foreground">Method:</span> {med.methodOfAdministration}</p>}
+                  {med.frequency && <p><span className="font-medium text-foreground">Frequency:</span> {med.frequency}</p>}
+                  {med.administrationTime && <p><span className="font-medium text-foreground">Time:</span> {med.administrationTime}</p>}
+                  {med.lastAdministered && <p><span className="font-medium text-foreground">Last admin:</span> {med.lastAdministered}</p>}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-14 text-center text-muted-foreground">
+            <Pill className="h-8 w-8 mb-2 opacity-25" />
+            <p className="font-medium">No medications added yet</p>
+            <p className="text-sm mt-1">Use "Add Medication" to track a medication for this child.</p>
+          </CardContent>
+        </Card>
+      )}
+
 
       {selectedSlot !== null && selectedMed && (
         <Card>

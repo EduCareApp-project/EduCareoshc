@@ -54,7 +54,7 @@ export default function ViewObservation() {
     if (!obs) return;
     setEditForm({
       staffId: String(obs.staffId),
-      observationDate: obs.observationDate,
+      observationDate: format(new Date(obs.observationDate as unknown as string), "yyyy-MM-dd"),
       description: obs.description,
       commentPlan: obs.commentPlan ?? "",
       actionNotes: obs.actionNotes ?? "",

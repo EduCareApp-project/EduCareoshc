@@ -174,8 +174,8 @@ export default function ChildProfile() {
     setForm({
       firstName: child.firstName,
       lastName: child.lastName,
-      dateOfBirth: child.dateOfBirth,
-      enrollmentDate: child.enrollmentDate,
+      dateOfBirth: format(new Date(child.dateOfBirth as unknown as string), "yyyy-MM-dd"),
+      enrollmentDate: format(new Date(child.enrollmentDate as unknown as string), "yyyy-MM-dd"),
       status: child.status,
       guardianName: child.guardianName,
       guardianEmail: child.guardianEmail,

@@ -423,7 +423,7 @@ export default function Dashboard() {
           </TabsContent>
         )}
         <TabsContent value="educator" className="mt-6">
-          <EducatorDashboard />
+          <EducatorDashboard selectedSiteId={selectedSiteId || (sites?.[0] ? String(sites[0].id) : "")} />
         </TabsContent>
         <TabsContent value="guardian" className="mt-6">
           <GuardianDashboard siteFilter={guardianSiteId} />
@@ -877,11 +877,11 @@ const CHECKLIST_FREQ_COLORS: Record<ChecklistFreq, string> = {
   annual: "bg-rose-100 text-rose-800",
 };
 
-function EducatorDashboard() {
-  const { ownSiteId } = usePermissions();
-  const siteParam = ownSiteId ? { siteId: ownSiteId } : undefined;
+function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
+  const numericSiteId = selectedSiteId ? Number(selectedSiteId) : null;
+  const siteParam = numericSiteId ? { siteId: numericSiteId } : undefined;
 
-  const { data: service, isLoading: loadingService } = useGetServiceComplianceReport();
+  const { data: service, isLoading: loadingService } = useGetServiceComplianceReport(siteParam);
   const { data: learning, isLoading: loadingLearning } = useGetLearningStoriesReport(siteParam);
   const { data: summary, isLoading: loadingSummary } = useGetDashboardSummary();
   const { data: routines, isLoading: loadingRoutines } = useListChecklistRoutines();
@@ -889,9 +889,9 @@ function EducatorDashboard() {
 
   const evacOk = service?.evacuationStatus?.lastConducted && !service?.evacuationStatus?.isOverdue;
 
-  // Build a set of child IDs at the educator's home site for fast lookup
-  const siteChildIds = ownSiteId
-    ? new Set((children ?? []).filter((c) => c.siteId === ownSiteId).map((c) => c.id))
+  // Build a set of child IDs at the selected site for fast lookup
+  const siteChildIds = numericSiteId
+    ? new Set((children ?? []).filter((c) => c.siteId === numericSiteId).map((c) => c.id))
     : null;
 
   const childrenWithNoObs = (learning?.byChild ?? []).filter(
@@ -900,9 +900,11 @@ function EducatorDashboard() {
 
   const today = format(new Date(), "yyyy-MM-dd");
 
-  // Only show routines that are repeating or upcoming (not historical one-offs)
+  // Only show routines that are repeating or upcoming, filtered to the selected site
   const activeRoutines = (routines ?? []).filter(
-    (r) => r.isRepeating || (r.targetDate && String(r.targetDate).slice(0, 10) >= today)
+    (r) =>
+      (numericSiteId === null || r.siteId === numericSiteId) &&
+      (r.isRepeating || (r.targetDate && String(r.targetDate).slice(0, 10) >= today))
   );
 
   // Group by the four frequencies we show

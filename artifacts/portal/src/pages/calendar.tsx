@@ -408,7 +408,9 @@ export default function Calendar() {
     queryClient.invalidateQueries({ queryKey: getListPlanningExperiencesQueryKey() });
   }
 
-  const activeThisMonth = filteredPlanning.filter((p) => p.stage === "planned" || p.stage === "published");
+  const activeThisMonth = filteredPlanning.filter((p) =>
+    p.weeklyPlanData == null && (p.stage === "planned" || p.stage === "published")
+  );
 
   function handleSaved() {
     queryClient.invalidateQueries({ queryKey: getListPlanningExperiencesQueryKey() });

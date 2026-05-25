@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { usePermissions } from "@/hooks/use-permissions";
-import { melbourneDateTimeStr, toMelbourneDate } from "@/lib/timezone";
+import { melbourneDateTimeStr, toMelbourneDate, melbourneLocalToUTCISO } from "@/lib/timezone";
 import {
   useGetChild, useUpdateChild, useDeleteChild,
   useGetChildObservations, useListSites,
@@ -295,7 +295,7 @@ function MedicationsTab({ childId, staffList, currentUserId }: { childId: number
     e.preventDefault();
     if (!selectedMed?.id) return;
     createLogMutation.mutate(
-      { id: childId, medicationId: selectedMed.id, data: logForm },
+      { id: childId, medicationId: selectedMed.id, data: { ...logForm, administeredAt: melbourneLocalToUTCISO(logForm.administeredAt) } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListMedicationLogsQueryKey(childId, selectedMed.id) });

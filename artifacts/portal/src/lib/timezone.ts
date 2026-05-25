@@ -20,6 +20,25 @@ export function melbourneDate(): Date {
 }
 
 /**
+ * Converts a datetime-local string that represents Melbourne time into
+ * a proper UTC ISO string, safe to send to the server.
+ *
+ * Example: "2026-05-25T23:04" (11 pm Melbourne AEST) → "2026-05-25T13:04:00.000Z"
+ */
+export function melbourneLocalToUTCISO(localDT: string): string {
+  // Treat the string as if it were UTC to get a numeric reference point
+  const utcGuess = new Date(localDT + "Z");
+  // Ask Intl what Melbourne's clock reads at that UTC instant
+  const melbStr = utcGuess.toLocaleString("sv", { timeZone: TZ }); // "YYYY-MM-DD HH:MM:SS"
+  // Parse that Melbourne reading back as UTC to measure the offset
+  const melbAsUTC = new Date(melbStr.replace(" ", "T") + "Z").getTime();
+  // offset = how many ms Melbourne is ahead of UTC at this moment
+  const offsetMs = melbAsUTC - utcGuess.getTime();
+  // Subtract the offset from our UTC guess to get the true UTC instant
+  return new Date(utcGuess.getTime() - offsetMs).toISOString();
+}
+
+/**
  * Converts any Date or UTC ISO string to a "fake" local Date whose
  * year/month/day/hour/minute match Melbourne time. Pass the result to
  * date-fns format() to get Melbourne-correct display everywhere.

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, staffTable, staffAppraisalsTable } from "@workspace/db";
+import { db, staffTable } from "@workspace/db";
 import {
   CreateStaffBody,
   GetStaffParams,
@@ -38,18 +38,6 @@ router.post("/staff", async (req, res): Promise<void> => {
     return;
   }
   const [member] = await db.insert(staffTable).values(parsed.data).returning();
-
-  // Auto-create an initial appraisal for the new staff member (due in 12 months)
-  const due = new Date();
-  due.setFullYear(due.getFullYear() + 1);
-  const dueDate = due.toISOString().split("T")[0];
-  await db.insert(staffAppraisalsTable).values({
-    staffId: member.id,
-    type: "educator_appraisal",
-    status: "stage1",
-    dueDate: dueDate as any,
-  } as any);
-
   res.status(201).json(GetStaffResponse.parse(member));
 });
 

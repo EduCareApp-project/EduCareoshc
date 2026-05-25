@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useListStaff } from "@workspace/api-client-react";
@@ -151,18 +151,6 @@ export default function Appraisals() {
     queryKey: ["/api/appraisals"],
     queryFn: () => fetchAppraisals(),
   });
-
-  // Backfill: ensure every active staff member has at least one appraisal record
-  useEffect(() => {
-    fetch("/api/appraisals/backfill", { method: "POST" })
-      .then((r) => r.json())
-      .then((json: { created: number }) => {
-        if (json.created > 0) {
-          queryClient.invalidateQueries({ queryKey: ["/api/appraisals"] });
-        }
-      })
-      .catch(() => {});
-  }, [queryClient]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {

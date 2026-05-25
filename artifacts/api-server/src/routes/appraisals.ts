@@ -48,42 +48,6 @@ router.get("/appraisals", async (req, res): Promise<void> => {
   res.json(rows.map((r) => enrichAppraisal(r, staffMap)));
 });
 
-// ─── Backfill ─────────────────────────────────────────────────────────────────
-// Creates an initial appraisal for every active staff member that has none yet.
-
-router.post("/appraisals/backfill", async (req, res): Promise<void> => {
-  const allActive = await db
-    .select({ id: staffTable.id })
-    .from(staffTable)
-    .where(eq(staffTable.status, "active"));
-
-  const existing = await db
-    .select({ staffId: staffAppraisalsTable.staffId })
-    .from(staffAppraisalsTable);
-  const coveredIds = new Set(existing.map((r) => r.staffId));
-
-  const missing = allActive.filter((s) => !coveredIds.has(s.id));
-  if (missing.length === 0) {
-    res.json({ created: 0 });
-    return;
-  }
-
-  const due = new Date();
-  due.setFullYear(due.getFullYear() + 1);
-  const dueDate = due.toISOString().split("T")[0];
-
-  await db.insert(staffAppraisalsTable).values(
-    missing.map((s) => ({
-      staffId: s.id,
-      type: "educator_appraisal",
-      status: "stage1",
-      dueDate: dueDate as any,
-    } as any))
-  );
-
-  res.json({ created: missing.length });
-});
-
 // ─── Create ───────────────────────────────────────────────────────────────────
 
 router.post("/appraisals", async (req, res): Promise<void> => {

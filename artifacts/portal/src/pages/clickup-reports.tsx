@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, XCircle, Minus, ExternalLink, ChevronDown, ChevronUp, ClipboardList } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth";
+import { Redirect } from "wouter";
 
 interface ClickUpReport {
   id: string;
@@ -129,6 +131,11 @@ function ReportCard({ report }: { report: ClickUpReport }) {
 }
 
 export default function ClickUpReports() {
+  const { user } = useAuth();
+  if (!user || user.type !== "staff" || user.role !== "admin") {
+    return <Redirect to="/" />;
+  }
+
   const { data: reports, isLoading, error, refetch } = useQuery<ClickUpReport[]>({
     queryKey: ["clickup-service-reports"],
     queryFn: async () => {

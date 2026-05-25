@@ -321,6 +321,7 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
 
   const isEducatorRole = ["educator", "coordinator"].includes(user?.role ?? "");
   const EDUCATOR_HIDDEN = new Set(["/guardians", "/settings", "/reports/service", "/reports/staff", "/reports/system-access", "/appraisals"]);
+  const ADMIN_ONLY = new Set(["/clickup-reports"]);
   const ownProfileOnly = !isAdmin && !disabledHrefs.includes("staff_own_profile");
 
   let finalGroups = isEducatorRole
@@ -331,6 +332,15 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
         }))
         .filter((group) => group.items.length > 0)
     : visibleGroups;
+
+  if (!isAdmin) {
+    finalGroups = finalGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => !ADMIN_ONLY.has(item.href)),
+      }))
+      .filter((group) => group.items.length > 0);
+  }
 
   if (ownProfileOnly && user?.id) {
     finalGroups = finalGroups.map((group) => ({

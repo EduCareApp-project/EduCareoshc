@@ -35,6 +35,11 @@ function extractDate(taskName: string, dateCreatedMs: string): string {
 }
 
 router.get("/clickup/service-reports", async (req, res): Promise<void> => {
+  const user = req.session?.user;
+  if (!user || user.type !== "staff" || user.role !== "admin") {
+    res.status(403).json({ error: "Admin access only." });
+    return;
+  }
   try {
     const token = getToken();
     const url = `${CLICKUP_API_BASE}/list/${CLICKUP_LIST_ID}/task?archived=false&include_closed=true&page=0&order_by=created&reverse=true`;

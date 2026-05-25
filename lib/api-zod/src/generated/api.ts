@@ -648,6 +648,11 @@ export const GetDashboardSummaryResponse = zod.object({
   nqsMeetingCount: zod.number(),
   sitesWithPublishedPlan: zod.number(),
   totalSites: zod.number(),
+  staffWithExpiringQuals: zod
+    .number()
+    .describe(
+      "Number of staff with at least one qualification expiring within the next 30 days",
+    ),
 });
 
 export const getRecentObservationsResponseOutcomeIdsDefault = [];

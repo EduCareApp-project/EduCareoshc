@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, gte, count, desc, isNotNull, and, lte } from "drizzle-orm";
-import { db, childrenTable, staffTable, observationsTable, programsTable, nqsAreasTable, outcomesTable, postsTable, incidentsTable, conditionReportsTable, sitesTable, planningExperiencesTable } from "@workspace/db";
+import { db, childrenTable, staffTable, observationsTable, programsTable, nqsAreasTable, outcomesTable, postsTable, incidentsTable, conditionReportsTable, sitesTable, planningExperiencesTable, staffQualificationsTable } from "@workspace/db";
 import {
   GetDashboardSummaryResponse,
   GetRecentObservationsResponse,
@@ -62,6 +62,22 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
       lte(planningExperiencesTable.startDate as any, weekEndStr),
     ));
 
+  // Staff with at least one qualification expiring within the next 30 days
+  const thirtyDaysOut = new Date(now);
+  thirtyDaysOut.setDate(now.getDate() + 30);
+  const todayStr = now.toISOString().split("T")[0];
+  const thirtyDaysOutStr = thirtyDaysOut.toISOString().split("T")[0];
+  const allQuals = await db.select({ staffId: staffQualificationsTable.staffId, expiryDate: staffQualificationsTable.expiryDate }).from(staffQualificationsTable);
+  const expiringStaffIds = new Set(
+    allQuals
+      .filter((q) => {
+        if (!q.expiryDate) return false;
+        const d = typeof q.expiryDate === "string" ? q.expiryDate : (q.expiryDate as Date).toISOString().split("T")[0];
+        return d >= todayStr && d <= thirtyDaysOutStr;
+      })
+      .map((q) => q.staffId)
+  );
+
   const summary = {
     totalChildren: totalChildrenResult?.count ?? 0,
     activeChildren: activeChildrenResult?.count ?? 0,
@@ -73,6 +89,7 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
     nqsMeetingCount,
     sitesWithPublishedPlan: publishedPlans.length,
     totalSites: allSites.length,
+    staffWithExpiringQuals: expiringStaffIds.size,
   };
 
   res.json(GetDashboardSummaryResponse.parse(summary));

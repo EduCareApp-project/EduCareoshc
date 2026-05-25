@@ -667,7 +667,20 @@ function LeadershipDashboard() {
     <div className="space-y-8">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard title="Active Children" value={summary?.activeChildren} icon={Baby} loading={loadingSummary} href="/children" />
-        <MetricCard title="Staff Members" value={summary?.totalStaff} icon={Users} loading={loadingSummary} href="/staff" />
+        <MetricCard
+          title="Staff Compliance"
+          value={summary?.totalStaff}
+          subtitle={
+            summary
+              ? summary.staffWithExpiringQuals > 0
+                ? `${summary.staffWithExpiringQuals} qualification expiry notice${summary.staffWithExpiringQuals === 1 ? "" : "s"}`
+                : "No expiry notices"
+              : undefined
+          }
+          icon={Users}
+          loading={loadingSummary}
+          href="/staff"
+        />
         <MetricCard title="Observations (7 days)" value={summary?.observationsLast7Days} icon={BookOpen} loading={loadingSummary} href="/observations" />
         <MetricCard
           title="Weekly Plans Published"

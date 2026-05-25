@@ -398,6 +398,8 @@ export interface DashboardSummary {
   nqsMeetingCount: number;
   sitesWithPublishedPlan: number;
   totalSites: number;
+  /** Number of staff with at least one qualification expiring within the next 30 days */
+  staffWithExpiringQuals: number;
 }
 
 export type ActivityItemType =

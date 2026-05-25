@@ -19,6 +19,26 @@ export function melbourneDate(): Date {
   return new Date(`${p.year}-${p.month}-${p.day}T${hour}:${p.minute}:${p.second}`);
 }
 
+/**
+ * Converts any Date or UTC ISO string to a "fake" local Date whose
+ * year/month/day/hour/minute match Melbourne time. Pass the result to
+ * date-fns format() to get Melbourne-correct display everywhere.
+ */
+export function toMelbourneDate(input: Date | string): Date {
+  const d = typeof input === "string" ? new Date(input) : input;
+  const formatter = new Intl.DateTimeFormat("en-AU", {
+    timeZone: TZ,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(d);
+  const p: Record<string, string> = {};
+  parts.forEach(({ type, value }) => { p[type] = value; });
+  const hour = p.hour === "24" ? "00" : p.hour;
+  return new Date(`${p.year}-${p.month}-${p.day}T${hour}:${p.minute}:${p.second}`);
+}
+
 /** Returns the current date in Melbourne as a "yyyy-MM-dd" string, suitable for <input type="date"> */
 export function melbourneDateStr(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: TZ });

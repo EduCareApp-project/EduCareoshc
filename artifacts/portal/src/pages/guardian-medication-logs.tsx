@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
+import { toMelbourneDate } from "@/lib/timezone";
 
 function formatDT(iso: string) {
   try {
-    return format(new Date(iso), "dd/MM/yyyy 'at' h:mm a");
+    return format(toMelbourneDate(iso), "dd/MM/yyyy 'at' h:mm a");
   } catch {
     return iso;
   }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { usePermissions } from "@/hooks/use-permissions";
-import { melbourneDateTimeStr } from "@/lib/timezone";
+import { melbourneDateTimeStr, toMelbourneDate } from "@/lib/timezone";
 import {
   useGetChild, useUpdateChild, useDeleteChild,
   useGetChildObservations, useListSites,
@@ -472,7 +472,7 @@ function MedicationsTab({ childId, staffList, currentUserId }: { childId: number
                   return (
                     <div key={log.id} className="flex items-start justify-between gap-4 rounded-md border px-4 py-3 text-sm">
                       <div className="space-y-0.5">
-                        <p className="font-medium">{format(new Date(log.administeredAt), "dd/MM/yyyy 'at' h:mm a")}</p>
+                        <p className="font-medium">{format(toMelbourneDate(log.administeredAt), "dd/MM/yyyy 'at' h:mm a")}</p>
                         <p className="text-muted-foreground text-xs">
                           {log.dosageAdministered} · {log.methodOfAdministration}
                           {byStaff && ` · ${byStaff.firstName} ${byStaff.lastName}`}

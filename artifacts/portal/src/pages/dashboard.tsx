@@ -665,33 +665,36 @@ function LeadershipDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <MetricCard title="Active Children" value={summary?.activeChildren} icon={Baby} loading={loadingSummary} href="/children" />
-        <MetricCard
-          title="Staff Compliance"
-          value={summary?.totalStaff}
-          subtitle={
-            summary
-              ? summary.staffWithExpiringQuals > 0
-                ? `${summary.staffWithExpiringQuals} qualification expiry notice${summary.staffWithExpiringQuals === 1 ? "" : "s"}`
-                : "No expiry notices"
-              : undefined
-          }
-          icon={Users}
-          loading={loadingSummary}
-          href="/staff"
-        />
-        <MetricCard title="Observations (7 days)" value={summary?.observationsLast7Days} icon={BookOpen} loading={loadingSummary} href="/observations" />
-        <MetricCard title="Posts (7 days)" value={summary?.postsLast7Days} icon={FileText} loading={loadingSummary} href="/posts" />
-        <MetricCard title="Jottings (7 days)" value={summary?.jottingsLast7Days} icon={PenLine} loading={loadingSummary} href="/jottings" />
-        <MetricCard
-          title="Weekly Plans Published"
-          label={summary ? `${summary.sitesWithPublishedPlan} / ${summary.totalSites}` : undefined}
-          subtitle={summary ? (summary.sitesWithPublishedPlan === summary.totalSites && summary.totalSites > 0 ? "All sites covered this week" : `${summary.totalSites - summary.sitesWithPublishedPlan} site${summary.totalSites - summary.sitesWithPublishedPlan === 1 ? "" : "s"} missing a plan`) : undefined}
-          icon={ClipboardList}
-          loading={loadingSummary}
-          href="/planning"
-        />
+      <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <MetricCard
+            title="Staff Compliance"
+            value={summary?.totalStaff}
+            subtitle={
+              summary
+                ? summary.staffWithExpiringQuals > 0
+                  ? `${summary.staffWithExpiringQuals} qualification expiry notice${summary.staffWithExpiringQuals === 1 ? "" : "s"}`
+                  : "No expiry notices"
+                : undefined
+            }
+            icon={Users}
+            loading={loadingSummary}
+            href="/staff"
+          />
+          <MetricCard
+            title="Weekly Plans Published"
+            label={summary ? `${summary.sitesWithPublishedPlan} / ${summary.totalSites}` : undefined}
+            subtitle={summary ? (summary.sitesWithPublishedPlan === summary.totalSites && summary.totalSites > 0 ? "All sites covered this week" : `${summary.totalSites - summary.sitesWithPublishedPlan} site${summary.totalSites - summary.sitesWithPublishedPlan === 1 ? "" : "s"} missing a plan`) : undefined}
+            icon={ClipboardList}
+            loading={loadingSummary}
+            href="/planning"
+          />
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <MetricCard title="Posts (7 days)" value={summary?.postsLast7Days} icon={FileText} loading={loadingSummary} href="/posts" />
+          <MetricCard title="Jottings (7 days)" value={summary?.jottingsLast7Days} icon={PenLine} loading={loadingSummary} href="/jottings" />
+          <MetricCard title="Observations (7 days)" value={summary?.observationsLast7Days} icon={BookOpen} loading={loadingSummary} href="/observations" />
+        </div>
       </div>
 
       <NoticeBoard canManage audience="leadership" />

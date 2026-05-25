@@ -40,6 +40,7 @@ export * from "./childSettingsChildDisplayMode";
 export * from "./childStatus";
 export * from "./childUpdate";
 export * from "./childUpdateStatus";
+export * from "./clickUpServiceReport";
 export * from "./conditionReport";
 export * from "./conditionReportInput";
 export * from "./conditionReportStatus";

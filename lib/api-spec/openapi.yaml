@@ -33,6 +33,7 @@ tags:
   - name: notifications
   - name: notification-settings
   - name: medications
+  - name: clickup
 paths:
   /healthz:
     get:
@@ -2711,6 +2712,21 @@ paths:
       responses:
         "204":
           description: Deleted
+
+  /clickup/service-reports:
+    get:
+      operationId: getClickUpServiceReports
+      tags: [clickup]
+      summary: List service walkthrough reports from ClickUp
+      responses:
+        "200":
+          description: List of service reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClickUpServiceReport"
 
   /children/{id}/behavioural-notifications:
     get:
@@ -5532,6 +5548,46 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    ClickUpServiceReport:
+      type: object
+      required: [id, date, status, service, staffOnTime, staffUniform, plannedProgram, childrenEngaged, enoughResources, phonesCorrect, concerns, leisureReview, goals, programCompliance, prescribedInfoSighted, clickupUrl]
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+          format: date
+        status:
+          type: string
+        service:
+          type: ["string", "null"]
+        staffOnTime:
+          type: ["string", "null"]
+        staffUniform:
+          type: ["string", "null"]
+        plannedProgram:
+          type: ["string", "null"]
+        childrenEngaged:
+          type: ["string", "null"]
+        enoughResources:
+          type: ["string", "null"]
+        phonesCorrect:
+          type: ["string", "null"]
+        concerns:
+          type: ["string", "null"]
+        leisureReview:
+          type: ["string", "null"]
+        goals:
+          type: ["string", "null"]
+        programCompliance:
+          type: ["string", "null"]
+        prescribedInfoSighted:
+          type: array
+          items:
+            type: string
+        clickupUrl:
+          type: string
 
     BehaviouralNotificationInput:
       type: object

@@ -3230,6 +3230,31 @@ export const DeleteMedicationLogParams = zod.object({
 });
 
 /**
+ * @summary List service walkthrough reports from ClickUp
+ */
+export const GetClickUpServiceReportsResponseItem = zod.object({
+  id: zod.string(),
+  date: zod.coerce.date(),
+  status: zod.string(),
+  service: zod.string().nullable(),
+  staffOnTime: zod.string().nullable(),
+  staffUniform: zod.string().nullable(),
+  plannedProgram: zod.string().nullable(),
+  childrenEngaged: zod.string().nullable(),
+  enoughResources: zod.string().nullable(),
+  phonesCorrect: zod.string().nullable(),
+  concerns: zod.string().nullable(),
+  leisureReview: zod.string().nullable(),
+  goals: zod.string().nullable(),
+  programCompliance: zod.string().nullable(),
+  prescribedInfoSighted: zod.array(zod.string()),
+  clickupUrl: zod.string(),
+});
+export const GetClickUpServiceReportsResponse = zod.array(
+  GetClickUpServiceReportsResponseItem,
+);
+
+/**
  * @summary List behavioural notifications sent for a child
  */
 export const ListChildBehaviouralNotificationsParams = zod.object({

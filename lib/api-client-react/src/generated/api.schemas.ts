@@ -1886,6 +1886,36 @@ export interface BehaviouralNotification {
   createdAt: string;
 }
 
+export interface ClickUpServiceReport {
+  id: string;
+  date: string;
+  status: string;
+  /** @nullable */
+  service: string | null;
+  /** @nullable */
+  staffOnTime: string | null;
+  /** @nullable */
+  staffUniform: string | null;
+  /** @nullable */
+  plannedProgram: string | null;
+  /** @nullable */
+  childrenEngaged: string | null;
+  /** @nullable */
+  enoughResources: string | null;
+  /** @nullable */
+  phonesCorrect: string | null;
+  /** @nullable */
+  concerns: string | null;
+  /** @nullable */
+  leisureReview: string | null;
+  /** @nullable */
+  goals: string | null;
+  /** @nullable */
+  programCompliance: string | null;
+  prescribedInfoSighted: string[];
+  clickupUrl: string;
+}
+
 export interface BehaviouralNotificationInput {
   behaviourDescription: string;
   supportRequest: string;

@@ -82,6 +82,7 @@ import SettingsEvacuationConfig from "@/pages/settings-evacuation-config";
 import SettingsPoliciesConfig from "@/pages/settings-policies-config";
 import Appraisals from "@/pages/appraisals";
 import AppraisalDetail from "@/pages/appraisal-detail";
+import ClickUpReports from "@/pages/clickup-reports";
 import AppraisalStage1 from "@/pages/appraisal-stage1";
 import AppraisalStage2 from "@/pages/appraisal-stage2";
 import AppraisalStage3 from "@/pages/appraisal-stage3";
@@ -176,6 +177,7 @@ function StaffRoutes() {
         <Route path="/reports/service" component={ReportsService} />
         <Route path="/reports/staff" component={ReportsStaff} />
         <Route path="/reports/system-access" component={ReportsSystemAccess} />
+        <Route path="/clickup-reports" component={ClickUpReports} />
 
         <Route path="/appraisals" component={Appraisals} />
         <Route path="/appraisals/:id/stage1" component={AppraisalStage1} />

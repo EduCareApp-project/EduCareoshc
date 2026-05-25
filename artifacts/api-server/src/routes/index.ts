@@ -43,6 +43,7 @@ import settingsFeaturesRouter from "./settings-features";
 import dataImportRouter from "./data-import";
 import medicationsRouter from "./medications";
 import behaviouralNotificationsRouter from "./behavioural-notifications";
+import clickupRouter from "./clickup";
 
 const router: IRouter = Router();
 
@@ -112,5 +113,6 @@ router.use(settingsFeaturesRouter);
 router.use(dataImportRouter);
 router.use(medicationsRouter);
 router.use(behaviouralNotificationsRouter);
+router.use(clickupRouter);
 
 export default router;

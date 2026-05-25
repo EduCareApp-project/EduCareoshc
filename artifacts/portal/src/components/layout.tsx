@@ -31,6 +31,7 @@ import {
   Check,
   CheckCheck,
   ExternalLink,
+  ClipboardList,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "./ui/button";
@@ -93,6 +94,7 @@ const NAV_GROUPS = [
       { href: "/reports/staff", label: "Staff Compliance", icon: UserCheck },
       { href: "/reports/system-access", label: "System Access", icon: UserCog },
       { href: "/appraisals", label: "Appraisals", icon: Star },
+      { href: "/clickup-reports", label: "Walkthrough Reports", icon: ClipboardList },
     ]
   },
   {

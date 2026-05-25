@@ -36,6 +36,7 @@ import type {
   ChildMedication,
   ChildSettings,
   ChildUpdate,
+  ClickUpServiceReport,
   ConditionReport,
   ConditionReportInput,
   ConditionReportUpdate,
@@ -12056,6 +12057,82 @@ export const useDeleteMedicationLog = <
 > => {
   return useMutation(getDeleteMedicationLogMutationOptions(options));
 };
+
+/**
+ * @summary List service walkthrough reports from ClickUp
+ */
+export const getGetClickUpServiceReportsUrl = () => {
+  return `/api/clickup/service-reports`;
+};
+
+export const getClickUpServiceReports = async (
+  options?: RequestInit,
+): Promise<ClickUpServiceReport[]> => {
+  return customFetch<ClickUpServiceReport[]>(getGetClickUpServiceReportsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetClickUpServiceReportsQueryKey = () => {
+  return [`/api/clickup/service-reports`] as const;
+};
+
+export const getGetClickUpServiceReportsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getClickUpServiceReports>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getClickUpServiceReports>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetClickUpServiceReportsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getClickUpServiceReports>>
+  > = ({ signal }) => getClickUpServiceReports({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getClickUpServiceReports>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetClickUpServiceReportsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getClickUpServiceReports>>
+>;
+export type GetClickUpServiceReportsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List service walkthrough reports from ClickUp
+ */
+
+export function useGetClickUpServiceReports<
+  TData = Awaited<ReturnType<typeof getClickUpServiceReports>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getClickUpServiceReports>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetClickUpServiceReportsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary List behavioural notifications sent for a child

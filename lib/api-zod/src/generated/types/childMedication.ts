@@ -16,6 +16,10 @@ export interface ChildMedication {
   /** @nullable */
   toBeAdministeredBy?: string | null;
   /** @nullable */
+  frequency?: string | null;
+  /** @nullable */
+  administrationTime?: string | null;
+  /** @nullable */
   dosage?: string | null;
   /** @nullable */
   methodOfAdministration?: string | null;

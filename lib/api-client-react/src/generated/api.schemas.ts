@@ -1777,6 +1777,10 @@ export interface ChildMedication {
   /** @nullable */
   toBeAdministeredBy?: string | null;
   /** @nullable */
+  frequency?: string | null;
+  /** @nullable */
+  administrationTime?: string | null;
+  /** @nullable */
   dosage?: string | null;
   /** @nullable */
   methodOfAdministration?: string | null;
@@ -1788,6 +1792,8 @@ export interface MedicationSlotPayload {
   name: string;
   lastAdministered?: string;
   toBeAdministeredBy?: string;
+  frequency?: string;
+  administrationTime?: string;
   dosage?: string;
   methodOfAdministration?: string;
 }

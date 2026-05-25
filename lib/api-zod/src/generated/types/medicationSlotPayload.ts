@@ -10,6 +10,8 @@ export interface MedicationSlotPayload {
   name: string;
   lastAdministered?: string;
   toBeAdministeredBy?: string;
+  frequency?: string;
+  administrationTime?: string;
   dosage?: string;
   methodOfAdministration?: string;
 }

@@ -58,7 +58,7 @@ router.put("/children/:id/medications/:slot", async (req, res): Promise<void> =>
     res.status(400).json({ error: "Invalid id or slot (must be 1–4)" }); return;
   }
 
-  const { name, lastAdministered, toBeAdministeredBy, dosage, methodOfAdministration } = req.body as Record<string, string>;
+  const { name, lastAdministered, toBeAdministeredBy, frequency, administrationTime, dosage, methodOfAdministration } = req.body as Record<string, string>;
 
   const [row] = await db
     .insert(childMedicationsTable)
@@ -68,6 +68,8 @@ router.put("/children/:id/medications/:slot", async (req, res): Promise<void> =>
       name: name ?? "",
       lastAdministered: lastAdministered ?? null,
       toBeAdministeredBy: toBeAdministeredBy ?? null,
+      frequency: frequency ?? null,
+      administrationTime: administrationTime ?? null,
       dosage: dosage ?? null,
       methodOfAdministration: methodOfAdministration ?? null,
     })
@@ -77,6 +79,8 @@ router.put("/children/:id/medications/:slot", async (req, res): Promise<void> =>
         name: name ?? "",
         lastAdministered: lastAdministered ?? null,
         toBeAdministeredBy: toBeAdministeredBy ?? null,
+        frequency: frequency ?? null,
+        administrationTime: administrationTime ?? null,
         dosage: dosage ?? null,
         methodOfAdministration: methodOfAdministration ?? null,
         updatedAt: new Date(),

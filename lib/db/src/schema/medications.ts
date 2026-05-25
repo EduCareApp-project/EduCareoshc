@@ -9,6 +9,8 @@ export const childMedicationsTable = pgTable("child_medications", {
   name: text("name").notNull().default(""),
   lastAdministered: text("last_administered"),
   toBeAdministeredBy: text("to_be_administered_by"),
+  frequency: text("frequency"),
+  administrationTime: text("administration_time"),
   dosage: text("dosage"),
   methodOfAdministration: text("method_of_administration"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -5364,6 +5364,10 @@ components:
           type: ["string", "null"]
         toBeAdministeredBy:
           type: ["string", "null"]
+        frequency:
+          type: ["string", "null"]
+        administrationTime:
+          type: ["string", "null"]
         dosage:
           type: ["string", "null"]
         methodOfAdministration:
@@ -5384,6 +5388,10 @@ components:
         lastAdministered:
           type: string
         toBeAdministeredBy:
+          type: string
+        frequency:
+          type: string
+        administrationTime:
           type: string
         dosage:
           type: string

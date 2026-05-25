@@ -220,7 +220,19 @@ function BehaviourTab({ childId }: { childId: number }) {
 
 // ── Medications Tab ────────────────────────────────────────────────────────────
 
-const EMPTY_SLOT_FORM = { name: "", lastAdministered: "", toBeAdministeredBy: "", dosage: "", methodOfAdministration: "" };
+const FREQUENCY_OPTIONS = [
+  "Once daily",
+  "Twice daily",
+  "Three times daily",
+  "Four times daily",
+  "As needed (PRN)",
+  "Weekly",
+  "With food",
+  "Before food",
+  "After food",
+];
+
+const EMPTY_SLOT_FORM = { name: "", lastAdministered: "", toBeAdministeredBy: "", frequency: "", administrationTime: "", dosage: "", methodOfAdministration: "" };
 const EMPTY_LOG_FORM = { administeredAt: "", dosageAdministered: "", methodOfAdministration: "", administeredById: 0, witnessId: null as number | null };
 
 type StaffList = NonNullable<ReturnType<typeof useListStaff>["data"]>;
@@ -264,7 +276,7 @@ function MedicationsTab({ childId, staffList, currentUserId }: { childId: number
 
   function startEdit(slot: number) {
     const med = medications.find(m => m.slot === slot);
-    setSlotForm({ name: med?.name ?? "", lastAdministered: med?.lastAdministered ?? "", toBeAdministeredBy: med?.toBeAdministeredBy ?? "", dosage: med?.dosage ?? "", methodOfAdministration: med?.methodOfAdministration ?? "" });
+    setSlotForm({ name: med?.name ?? "", lastAdministered: med?.lastAdministered ?? "", toBeAdministeredBy: med?.toBeAdministeredBy ?? "", frequency: med?.frequency ?? "", administrationTime: med?.administrationTime ?? "", dosage: med?.dosage ?? "", methodOfAdministration: med?.methodOfAdministration ?? "" });
     setEditingSlot(slot);
   }
 
@@ -320,7 +332,20 @@ function MedicationsTab({ childId, staffList, currentUserId }: { childId: number
                   <div className="space-y-1"><Label className="text-xs">Medication Name *</Label><Input value={slotForm.name} onChange={(e) => setSlotForm(p => ({ ...p, name: e.target.value }))} required /></div>
                   <div className="space-y-1"><Label className="text-xs">Dosage</Label><Input value={slotForm.dosage} onChange={(e) => setSlotForm(p => ({ ...p, dosage: e.target.value }))} placeholder="e.g. 5ml" /></div>
                   <div className="space-y-1"><Label className="text-xs">Method of Administration</Label><Input value={slotForm.methodOfAdministration} onChange={(e) => setSlotForm(p => ({ ...p, methodOfAdministration: e.target.value }))} placeholder="e.g. Oral" /></div>
-                  <div className="space-y-1"><Label className="text-xs">To Be Administered By</Label><Input value={slotForm.toBeAdministeredBy} onChange={(e) => setSlotForm(p => ({ ...p, toBeAdministeredBy: e.target.value }))} placeholder="e.g. Educator" /></div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Frequency</Label>
+                    <Select value={slotForm.frequency || "_none"} onValueChange={(v) => setSlotForm(p => ({ ...p, frequency: v === "_none" ? "" : v }))}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select frequency" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none"><span className="text-muted-foreground">— not set —</span></SelectItem>
+                        {FREQUENCY_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Administration Time</Label>
+                    <Input type="time" value={slotForm.administrationTime} onChange={(e) => setSlotForm(p => ({ ...p, administrationTime: e.target.value }))} className="h-9" />
+                  </div>
                   <div className="space-y-1"><Label className="text-xs">Last Administered</Label><Input value={slotForm.lastAdministered} onChange={(e) => setSlotForm(p => ({ ...p, lastAdministered: e.target.value }))} placeholder="e.g. 25/05/2026" /></div>
                   <div className="flex gap-2 pt-1">
                     <Button type="submit" size="sm" disabled={upsertMedMutation.isPending}>Save</Button>
@@ -357,7 +382,8 @@ function MedicationsTab({ childId, staffList, currentUserId }: { childId: number
               <CardContent className="px-4 pb-4 space-y-1.5 text-xs text-muted-foreground">
                 {med.dosage && <p><span className="font-medium text-foreground">Dosage:</span> {med.dosage}</p>}
                 {med.methodOfAdministration && <p><span className="font-medium text-foreground">Method:</span> {med.methodOfAdministration}</p>}
-                {med.toBeAdministeredBy && <p><span className="font-medium text-foreground">By:</span> {med.toBeAdministeredBy}</p>}
+                {med.frequency && <p><span className="font-medium text-foreground">Frequency:</span> {med.frequency}</p>}
+                {med.administrationTime && <p><span className="font-medium text-foreground">Time:</span> {med.administrationTime}</p>}
                 {med.lastAdministered && <p><span className="font-medium text-foreground">Last admin:</span> {med.lastAdministered}</p>}
               </CardContent>
             </Card>

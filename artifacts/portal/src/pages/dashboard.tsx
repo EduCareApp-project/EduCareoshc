@@ -694,8 +694,6 @@ function LeadershipDashboard() {
 
       <NoticeBoard canManage audience="leadership" />
 
-      <RollSubmissionChecklist />
-
       <Card>
         <CardHeader>
           <CardTitle className="flex justify-between items-center text-lg">
@@ -750,6 +748,8 @@ function LeadershipDashboard() {
           )}
         </CardContent>
       </Card>
+
+      <RollSubmissionChecklist />
 
       <Card>
         <CardHeader>

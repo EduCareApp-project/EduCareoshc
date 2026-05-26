@@ -1,6 +1,8 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, welfareNotesTable, staffTable } from "@workspace/db";
+import { db, welfareNotesTable, staffTable, childrenTable } from "@workspace/db";
+import { createNotificationsForRoles } from "../lib/notify";
+import { logger } from "../lib/logger";
 import {
   GetChildWelfareNotesParams,
   GetChildWelfareNotesResponse,
@@ -52,6 +54,28 @@ router.post("/welfare-notes", async (req, res): Promise<void> => {
   res.status(201).json(
     GetChildWelfareNotesResponseItem.parse({ ...note, staffName: staff ? `${staff.firstName} ${staff.lastName}` : null })
   );
+
+  if (note.mandatoryReportRequired) {
+    setImmediate(async () => {
+      try {
+        const [child] = await db.select({ firstName: childrenTable.firstName, lastName: childrenTable.lastName })
+          .from(childrenTable).where(eq(childrenTable.id, note.childId));
+        const childName = child ? `${child.firstName} ${child.lastName}` : `Child #${note.childId}`;
+        await createNotificationsForRoles({
+          roles: ["admin", "coordinator", "educational_leader"],
+          type: "welfare_mandatory_report",
+          title: `Mandatory report submitted — ${childName}`,
+          body: note.mandatoryReportNotes ?? undefined,
+          href: `/children/${note.childId}`,
+          referenceId: note.childId,
+          referenceType: "child",
+          dedupeKeyPrefix: `welfare_mandatory_report:${note.id}`,
+        });
+      } catch (err) {
+        logger.warn({ err }, "Failed to send mandatory report notification");
+      }
+    });
+  }
 });
 
 router.patch("/welfare-notes/:id", async (req, res): Promise<void> => {
@@ -79,6 +103,28 @@ router.patch("/welfare-notes/:id", async (req, res): Promise<void> => {
   res.json(
     GetChildWelfareNotesResponseItem.parse({ ...note, staffName: staff ? `${staff.firstName} ${staff.lastName}` : null })
   );
+
+  if (note.mandatoryReportRequired) {
+    setImmediate(async () => {
+      try {
+        const [child] = await db.select({ firstName: childrenTable.firstName, lastName: childrenTable.lastName })
+          .from(childrenTable).where(eq(childrenTable.id, note.childId));
+        const childName = child ? `${child.firstName} ${child.lastName}` : `Child #${note.childId}`;
+        await createNotificationsForRoles({
+          roles: ["admin", "coordinator", "educational_leader"],
+          type: "welfare_mandatory_report",
+          title: `Mandatory report submitted — ${childName}`,
+          body: note.mandatoryReportNotes ?? undefined,
+          href: `/children/${note.childId}`,
+          referenceId: note.childId,
+          referenceType: "child",
+          dedupeKeyPrefix: `welfare_mandatory_report:${note.id}`,
+        });
+      } catch (err) {
+        logger.warn({ err }, "Failed to send mandatory report notification");
+      }
+    });
+  }
 });
 
 router.delete("/welfare-notes/:id", async (req, res): Promise<void> => {

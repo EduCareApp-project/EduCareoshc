@@ -55,12 +55,21 @@ router.post("/welfare-notes", async (req, res): Promise<void> => {
     GetChildWelfareNotesResponseItem.parse({ ...note, staffName: staff ? `${staff.firstName} ${staff.lastName}` : null })
   );
 
-  if (note.mandatoryReportRequired) {
-    setImmediate(async () => {
-      try {
-        const [child] = await db.select({ firstName: childrenTable.firstName, lastName: childrenTable.lastName })
-          .from(childrenTable).where(eq(childrenTable.id, note.childId));
-        const childName = child ? `${child.firstName} ${child.lastName}` : `Child #${note.childId}`;
+  setImmediate(async () => {
+    try {
+      const [child] = await db.select({ firstName: childrenTable.firstName, lastName: childrenTable.lastName })
+        .from(childrenTable).where(eq(childrenTable.id, note.childId));
+      const childName = child ? `${child.firstName} ${child.lastName}` : `Child #${note.childId}`;
+      await createNotificationsForRoles({
+        roles: ["admin"],
+        type: "welfare_note_submitted",
+        title: `Welfare note added — ${childName}`,
+        href: `/children/${note.childId}`,
+        referenceId: note.childId,
+        referenceType: "child",
+        dedupeKeyPrefix: `welfare_note_submitted:${note.id}`,
+      });
+      if (note.mandatoryReportRequired) {
         await createNotificationsForRoles({
           roles: ["admin", "coordinator", "educational_leader"],
           type: "welfare_mandatory_report",
@@ -71,11 +80,11 @@ router.post("/welfare-notes", async (req, res): Promise<void> => {
           referenceType: "child",
           dedupeKeyPrefix: `welfare_mandatory_report:${note.id}`,
         });
-      } catch (err) {
-        logger.warn({ err }, "Failed to send mandatory report notification");
       }
-    });
-  }
+    } catch (err) {
+      logger.warn({ err }, "Failed to send welfare note notification");
+    }
+  });
 });
 
 router.patch("/welfare-notes/:id", async (req, res): Promise<void> => {
@@ -104,27 +113,35 @@ router.patch("/welfare-notes/:id", async (req, res): Promise<void> => {
     GetChildWelfareNotesResponseItem.parse({ ...note, staffName: staff ? `${staff.firstName} ${staff.lastName}` : null })
   );
 
-  if (note.mandatoryReportRequired) {
-    setImmediate(async () => {
-      try {
-        const [child] = await db.select({ firstName: childrenTable.firstName, lastName: childrenTable.lastName })
-          .from(childrenTable).where(eq(childrenTable.id, note.childId));
-        const childName = child ? `${child.firstName} ${child.lastName}` : `Child #${note.childId}`;
+  setImmediate(async () => {
+    try {
+      const [child] = await db.select({ firstName: childrenTable.firstName, lastName: childrenTable.lastName })
+        .from(childrenTable).where(eq(childrenTable.id, note.childId));
+      const childName = child ? `${child.firstName} ${child.lastName}` : `Child #${note.childId}`;
+      await createNotificationsForRoles({
+        roles: ["admin"],
+        type: "welfare_note_submitted",
+        title: `Welfare note updated — ${childName}`,
+        href: `/children/${note.childId}`,
+        referenceId: note.childId,
+        referenceType: "child",
+      });
+      if (note.mandatoryReportRequired) {
         await createNotificationsForRoles({
           roles: ["admin", "coordinator", "educational_leader"],
           type: "welfare_mandatory_report",
-          title: `Mandatory report submitted — ${childName}`,
+          title: `Mandatory report updated — ${childName}`,
           body: note.mandatoryReportNotes ?? undefined,
           href: `/children/${note.childId}`,
           referenceId: note.childId,
           referenceType: "child",
           dedupeKeyPrefix: `welfare_mandatory_report:${note.id}`,
         });
-      } catch (err) {
-        logger.warn({ err }, "Failed to send mandatory report notification");
       }
-    });
-  }
+    } catch (err) {
+      logger.warn({ err }, "Failed to send welfare note notification");
+    }
+  });
 });
 
 router.delete("/welfare-notes/:id", async (req, res): Promise<void> => {

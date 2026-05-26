@@ -100,6 +100,12 @@ const SETTING_META: Record<string, { label: string; description: string; hasAdva
     hasAdvanceDays: false,
     group: "Guardian Emails",
   },
+  welfare_note_submitted: {
+    label: "Welfare note added or updated",
+    description: "Notify Admins whenever any welfare note is created or edited for a child.",
+    hasAdvanceDays: false,
+    group: "Events",
+  },
   welfare_mandatory_report: {
     label: "Mandatory report submitted",
     description: "Notify Admins, Coordinators and Educational Leaders when a welfare note flagged as a mandatory report is created or updated.",

@@ -34,6 +34,8 @@ async function seedNotificationSettings(): Promise<void> {
     { type: "weekly_plan_missing",       label: "No published plan for week",       enabled: true,  advanceDays: null },
     { type: "staff_qualification_expiry",label: "Staff qualification expiring",     enabled: true,  advanceDays: 30  },
     { type: "checklist_overdue",         label: "Checklist overdue",                enabled: true,  advanceDays: 3   },
+    { type: "welfare_note_submitted",    label: "Welfare note submitted",           enabled: true,  advanceDays: null },
+    { type: "welfare_mandatory_report",  label: "Mandatory report submitted",       enabled: true,  advanceDays: null },
   ];
 
   for (const row of defaults) {

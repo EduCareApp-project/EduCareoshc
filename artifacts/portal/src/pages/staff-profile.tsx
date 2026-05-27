@@ -880,7 +880,7 @@ export default function StaffProfile() {
                 </div>
                 <div className="flex items-start gap-3">
                   <Badge className="bg-green-100 text-green-800 border-green-200 shrink-0 mt-0.5" variant="outline">Responsible Person</Badge>
-                  <span>All required qualifications are current — includes Education Qualifications, First Aid, CPR Renewal, Food Safety, Responsible Person Declaration, Risk Management (DET), Staff Details (DET), History &amp; Compliance, Resume, WWCC, and both Child Safety modules</span>
+                  <span>All required qualifications are current — includes Education Qualifications, First Aid, CPR Renewal, Food Safety, Responsible Person Declaration, Risk Management (DET), Staff Details (DET), History &amp; Compliance, WWCC, and Child Safety — Mandatory Reporting</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <Badge className="bg-blue-100 text-blue-800 border-blue-200 shrink-0 mt-0.5" variant="outline">Educator</Badge>

@@ -5,7 +5,6 @@ export const EDUCATOR_QUALS = [
 ];
 
 export const RP_QUALS = [
-  "Child Safety - Foundation Child Safety Training (GECCKO)",
   "Child Safety - Mandatory Reporting and Other Obligations",
   "CPR Renewal",
   "Education Qualifications",
@@ -13,7 +12,6 @@ export const RP_QUALS = [
   "Food Safety",
   "History & Compliance",
   "Responsible Person Declaration",
-  "Resume",
   "Risk Management (DET)",
   "Staff Details (DET)",
   "WWCC",

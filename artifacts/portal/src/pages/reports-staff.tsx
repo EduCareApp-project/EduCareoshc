@@ -133,7 +133,7 @@ export default function ReportsStaff() {
 
       <div className="text-xs text-muted-foreground space-y-1">
         <p><span className="font-medium text-foreground">Cannot Work</span> — WWCC, CPR Renewal, or First Aid is expired.</p>
-        <p><span className="font-medium text-foreground">Responsible Person</span> — All required qualifications current (WWCC, First Aid, CPR, Food Safety, Responsible Person Declaration, Staff Details, Education Qualifications, Child Safety modules, History &amp; Compliance).</p>
+        <p><span className="font-medium text-foreground">Responsible Person</span> — All required qualifications current (WWCC, First Aid, CPR, Food Safety, Responsible Person Declaration, Staff Details, Education Qualifications, Child Safety — Mandatory Reporting, History &amp; Compliance).</p>
         <p><span className="font-medium text-foreground">Educator</span> — Core three current: WWCC, Staff Details (DET), and Child Safety — Mandatory Reporting.</p>
         <p><span className="font-medium text-foreground">Incomplete</span> — One or more core qualifications missing or not yet recorded.</p>
       </div>

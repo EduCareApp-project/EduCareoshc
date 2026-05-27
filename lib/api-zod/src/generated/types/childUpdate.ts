@@ -16,6 +16,12 @@ export interface ChildUpdate {
   guardianName?: string;
   guardianEmail?: string;
   guardianPhone?: string;
+  /** @nullable */
+  guardian2Name?: string | null;
+  /** @nullable */
+  guardian2Email?: string | null;
+  /** @nullable */
+  guardian2Phone?: string | null;
   medicalNotes?: string;
   likes?: string;
   dislikes?: string;

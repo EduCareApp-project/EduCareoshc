@@ -10,10 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronLeft, ChevronRight, Layers, ArrowRight, CheckCircle2, Plus, X, Send, AlertTriangle, CopyCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Layers, ArrowRight, CheckCircle2, Plus, X, Send, AlertTriangle, CopyCheck, ClipboardList } from "lucide-react";
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-  addMonths, subMonths, format, parseISO, isBefore, isAfter, addDays,
+  addMonths, subMonths, format, parseISO, isBefore, isAfter, addDays, startOfToday,
 } from "date-fns";
 import { Link, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
@@ -412,6 +412,16 @@ export default function Calendar() {
     p.weeklyPlanData == null && (p.stage === "planned" || p.stage === "published")
   );
 
+  const today = startOfToday();
+  const pastPublishedWeeks = filteredPlanning
+    .filter((p) => {
+      if (p.weeklyPlanData == null) return false;
+      if (p.stage !== "published") return false;
+      if (!p.startDate) return false;
+      return isBefore(parseISO(p.startDate.slice(0, 10)), today);
+    })
+    .sort((a, b) => (b.startDate ?? "").localeCompare(a.startDate ?? ""));
+
   function handleSaved() {
     queryClient.invalidateQueries({ queryKey: getListPlanningExperiencesQueryKey() });
   }
@@ -565,6 +575,41 @@ export default function Calendar() {
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground text-sm">
             No published learning programs for this month.
+          </CardContent>
+        </Card>
+      )}
+
+      {!isGuardianMode && !isLoading && pastPublishedWeeks.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-base">Weekly Review</CardTitle>
+              <Badge variant="secondary" className="text-xs">{pastPublishedWeeks.length}</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              Past published weeks — weekly review coming soon.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-0 p-0">
+            <div className="divide-y">
+              {pastPublishedWeeks.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between py-3 px-6 opacity-70"
+                >
+                  <div>
+                    <p className="text-sm font-medium">{p.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {p.startDate ? `Week of ${format(parseISO(p.startDate.slice(0, 10)), "dd/MM/yyyy")}` : ""}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-xs text-muted-foreground">
+                    Past
+                  </Badge>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}

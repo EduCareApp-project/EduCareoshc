@@ -45,6 +45,7 @@ export default function Planning() {
 
   const filtered = (experiences ?? []).filter((exp) => {
     if (exp.weeklyPlanData != null) return false; // calendar weekly plans — not planning cycles
+    if (exp.stage === "published") return false; // published = on the calendar, not in planning cycle tab
     if (siteFilter === "templates") return exp.isTemplate === true;
     if (exp.isTemplate) return false; // exclude templates from all other views
     if (siteFilter === "all") return true;

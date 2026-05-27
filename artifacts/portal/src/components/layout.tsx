@@ -94,7 +94,7 @@ const NAV_GROUPS = [
       { href: "/reports/staff", label: "Staff Compliance", icon: UserCheck },
       { href: "/reports/system-access", label: "System Access", icon: UserCog },
       { href: "/appraisals", label: "Appraisals", icon: Star },
-      { href: "/clickup-reports", label: "Walkthrough Reports", icon: ClipboardList },
+      { href: "/clickup-reports", label: "Site Visits", icon: ClipboardList },
     ]
   },
   {

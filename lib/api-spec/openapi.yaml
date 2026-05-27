@@ -1182,6 +1182,12 @@ paths:
     get:
       operationId: listQipStrengths
       tags: [qip]
+      parameters:
+        - name: siteId
+          in: query
+          required: false
+          schema:
+            type: integer
       responses:
         "200":
           description: OK
@@ -3903,6 +3909,8 @@ components:
       properties:
         id:
           type: integer
+        siteId:
+          type: ["integer", "null"]
         qualityArea:
           type: string
         content:
@@ -3917,6 +3925,8 @@ components:
       properties:
         content:
           type: string
+        siteId:
+          type: ["integer", "null"]
 
     ChildDocument:
       type: object

@@ -8,4 +8,6 @@
 
 export interface QipStrengthUpdate {
   content: string;
+  /** @nullable */
+  siteId?: number | null;
 }

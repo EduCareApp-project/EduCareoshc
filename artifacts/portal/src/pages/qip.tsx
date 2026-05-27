@@ -270,15 +270,23 @@ function ItemForm({
   );
 }
 
-function StrengthsEditor({ qualityArea, colour }: { qualityArea: string; colour: { light: string; strengthsText: string; bg: string } }) {
+function StrengthsEditor({ qualityArea, colour, siteId }: { qualityArea: string; colour: { light: string; strengthsText: string; bg: string }; siteId: number | null }) {
   const queryClient = useQueryClient();
   const { data: strengths } = useListQipStrengths();
   const upsertMutation = useUpsertQipStrength();
   const { toast } = useToast();
 
-  const existing = strengths?.find((s) => s.qualityArea === qualityArea);
+  const existing = strengths?.find((s) =>
+    s.qualityArea === qualityArea &&
+    (siteId != null ? s.siteId === siteId : s.siteId == null)
+  );
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
+
+  useEffect(() => {
+    setEditing(false);
+    setDraft(existing?.content ?? "");
+  }, [siteId, qualityArea]);
 
   useEffect(() => {
     if (existing && !editing) setDraft(existing.content);
@@ -291,7 +299,7 @@ function StrengthsEditor({ qualityArea, colour }: { qualityArea: string; colour:
 
   function save() {
     upsertMutation.mutate(
-      { qualityArea, data: { content: draft } },
+      { qualityArea, data: { content: draft, siteId } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["/api/qip-strengths"] });
@@ -809,7 +817,7 @@ export default function Qip() {
                   <h2 className="text-lg font-semibold">{a.label}</h2>
                 </div>
 
-                <StrengthsEditor qualityArea={a.key} colour={QA_COLOURS[a.key]} />
+                <StrengthsEditor qualityArea={a.key} colour={QA_COLOURS[a.key]} siteId={siteFilter === "__all__" ? null : Number(siteFilter)} />
 
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Improvement Items ({activeItems.length})</h3>

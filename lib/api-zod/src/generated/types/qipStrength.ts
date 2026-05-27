@@ -8,6 +8,8 @@
 
 export interface QipStrength {
   id: number;
+  /** @nullable */
+  siteId?: number | null;
   qualityArea: string;
   content: string;
   updatedAt: Date;

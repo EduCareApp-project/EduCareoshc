@@ -67,6 +67,7 @@ import type {
   LearningStoriesReport,
   ListJottingsParams,
   ListNoticesParams,
+  ListQipStrengthsParams,
   ListRoutineItemCompletionsParams,
   MarkAllNotificationsRead200,
   MarkNotificationRead200,
@@ -5335,41 +5336,60 @@ export const useDeleteQipSource = <
   return useMutation(getDeleteQipSourceMutationOptions(options));
 };
 
-export const getListQipStrengthsUrl = () => {
-  return `/api/qip-strengths`;
+export const getListQipStrengthsUrl = (params?: ListQipStrengthsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/qip-strengths?${stringifiedParams}`
+    : `/api/qip-strengths`;
 };
 
 export const listQipStrengths = async (
+  params?: ListQipStrengthsParams,
   options?: RequestInit,
 ): Promise<QipStrength[]> => {
-  return customFetch<QipStrength[]>(getListQipStrengthsUrl(), {
+  return customFetch<QipStrength[]>(getListQipStrengthsUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getListQipStrengthsQueryKey = () => {
-  return [`/api/qip-strengths`] as const;
+export const getListQipStrengthsQueryKey = (
+  params?: ListQipStrengthsParams,
+) => {
+  return [`/api/qip-strengths`, ...(params ? [params] : [])] as const;
 };
 
 export const getListQipStrengthsQueryOptions = <
   TData = Awaited<ReturnType<typeof listQipStrengths>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listQipStrengths>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: ListQipStrengthsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listQipStrengths>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getListQipStrengthsQueryKey();
+  const queryKey =
+    queryOptions?.queryKey ?? getListQipStrengthsQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof listQipStrengths>>
-  > = ({ signal }) => listQipStrengths({ signal, ...requestOptions });
+  > = ({ signal }) => listQipStrengths(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listQipStrengths>>,
@@ -5386,15 +5406,18 @@ export type ListQipStrengthsQueryError = ErrorType<unknown>;
 export function useListQipStrengths<
   TData = Awaited<ReturnType<typeof listQipStrengths>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listQipStrengths>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListQipStrengthsQueryOptions(options);
+>(
+  params?: ListQipStrengthsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listQipStrengths>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListQipStrengthsQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

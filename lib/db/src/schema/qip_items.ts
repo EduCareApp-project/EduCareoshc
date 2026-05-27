@@ -30,7 +30,8 @@ export const qipSourcesTable = pgTable("qip_sources", {
 
 export const qipStrengthsTable = pgTable("qip_strengths", {
   id: serial("id").primaryKey(),
-  qualityArea: text("quality_area").notNull().unique(),  // "1" through "7"
+  siteId: integer("site_id"),
+  qualityArea: text("quality_area").notNull(),           // "1" through "7"
   content: text("content").notNull().default(""),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

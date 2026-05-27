@@ -1203,8 +1203,13 @@ export const DeleteQipSourceParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const ListQipStrengthsQueryParams = zod.object({
+  siteId: zod.coerce.number().optional(),
+});
+
 export const ListQipStrengthsResponseItem = zod.object({
   id: zod.number(),
+  siteId: zod.number().nullish(),
   qualityArea: zod.string(),
   content: zod.string(),
   updatedAt: zod.coerce.date(),
@@ -1217,10 +1222,12 @@ export const UpsertQipStrengthParams = zod.object({
 
 export const UpsertQipStrengthBody = zod.object({
   content: zod.string(),
+  siteId: zod.number().nullish(),
 });
 
 export const UpsertQipStrengthResponse = zod.object({
   id: zod.number(),
+  siteId: zod.number().nullish(),
   qualityArea: zod.string(),
   content: zod.string(),
   updatedAt: zod.coerce.date(),

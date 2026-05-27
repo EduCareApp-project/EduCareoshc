@@ -82,6 +82,7 @@ export * from "./learningStoriesReportUnderRepresentedOutcomesItem";
 export * from "./listJottingsParams";
 export * from "./listNoticesAudience";
 export * from "./listNoticesParams";
+export * from "./listQipStrengthsParams";
 export * from "./listRoutineItemCompletionsParams";
 export * from "./markAllNotificationsRead200";
 export * from "./markNotificationRead200";

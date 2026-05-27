@@ -123,9 +123,13 @@ router.delete("/qip-sources/:id", async (req, res): Promise<void> => {
 
 // ── QIP Strengths ──────────────────────────────────────────────────────────────
 
-router.get("/qip-strengths", async (_req, res): Promise<void> => {
+router.get("/qip-strengths", async (req, res): Promise<void> => {
+  const siteId = req.query.siteId ? Number(req.query.siteId) : null;
   const rows = await db.select().from(qipStrengthsTable).orderBy(qipStrengthsTable.qualityArea);
-  res.json(ListQipStrengthsResponse.parse(rows));
+  const filtered = siteId != null
+    ? rows.filter((r) => r.siteId === siteId)
+    : rows;
+  res.json(ListQipStrengthsResponse.parse(filtered));
 });
 
 router.put("/qip-strengths/:qualityArea", async (req, res): Promise<void> => {
@@ -133,14 +137,30 @@ router.put("/qip-strengths/:qualityArea", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = UpsertQipStrengthBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [strength] = await db
-    .insert(qipStrengthsTable)
-    .values({ qualityArea: params.data.qualityArea, content: parsed.data.content })
-    .onConflictDoUpdate({
-      target: qipStrengthsTable.qualityArea,
-      set: { content: parsed.data.content, updatedAt: new Date() },
-    })
-    .returning();
+
+  const qa = params.data.qualityArea;
+  const siteId: number | null = typeof parsed.data.siteId === "number" ? parsed.data.siteId : null;
+  const content: string = parsed.data.content;
+
+  const [existing] = await db.select()
+    .from(qipStrengthsTable)
+    .where(siteId != null
+      ? and(eq(qipStrengthsTable.qualityArea, qa), eq(qipStrengthsTable.siteId, siteId))
+      : and(eq(qipStrengthsTable.qualityArea, qa), isNull(qipStrengthsTable.siteId))
+    );
+
+  let strength;
+  if (existing) {
+    [strength] = await db.update(qipStrengthsTable)
+      .set({ content, updatedAt: new Date() })
+      .where(eq(qipStrengthsTable.id, existing.id))
+      .returning();
+  } else {
+    [strength] = await db.insert(qipStrengthsTable)
+      .values({ qualityArea: qa, siteId, content })
+      .returning();
+  }
+
   res.json(UpsertQipStrengthResponse.parse(strength));
 });
 

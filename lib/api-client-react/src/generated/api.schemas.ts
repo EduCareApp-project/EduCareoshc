@@ -860,6 +860,8 @@ export interface QipSourceUpdate {
 
 export interface QipStrength {
   id: number;
+  /** @nullable */
+  siteId?: number | null;
   qualityArea: string;
   content: string;
   updatedAt: string;
@@ -867,6 +869,8 @@ export interface QipStrength {
 
 export interface QipStrengthUpdate {
   content: string;
+  /** @nullable */
+  siteId?: number | null;
 }
 
 export interface ChildDocument {
@@ -1936,6 +1940,10 @@ export const ListNoticesAudience = {
 
 export type ListJottingsParams = {
   includeArchived?: boolean;
+};
+
+export type ListQipStrengthsParams = {
+  siteId?: number;
 };
 
 export type ListRoutineItemCompletionsParams = {

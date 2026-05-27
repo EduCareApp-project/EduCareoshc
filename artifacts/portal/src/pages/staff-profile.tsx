@@ -42,6 +42,9 @@ import {
   computeQualLevel,
   QUAL_LEVEL_LABELS,
   QUAL_LEVEL_STYLES,
+  RP_QUALS,
+  EDUCATOR_QUALS,
+  CANNOT_WORK_QUALS,
 } from "@/lib/qual-level";
 
 const ROLE_LABELS: Record<string, string> = { admin: "Admin", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
@@ -853,21 +856,33 @@ export default function StaffProfile() {
             </div>
           )}
 
-          {!loadingQuals && missingQualNames.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Not yet recorded</p>
-              <div className="flex flex-wrap gap-1.5">
-                {missingQualNames.map((name) => (
-                  <span
-                    key={name}
-                    className="inline-flex items-center px-2.5 py-1 rounded-md text-xs border border-dashed border-muted-foreground/30 text-muted-foreground/70 bg-muted/20"
-                  >
-                    {name}
-                  </span>
-                ))}
+          {!loadingQuals && missingQualNames.length > 0 && (() => {
+            const statusDependentNames = new Set([...RP_QUALS, ...EDUCATOR_QUALS, ...CANNOT_WORK_QUALS]);
+            return (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Not yet recorded</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {missingQualNames.map((name) => (
+                    statusDependentNames.has(name) ? (
+                      <span
+                        key={name}
+                        className="inline-flex items-center px-2.5 py-1 rounded-md text-xs border border-dashed border-orange-300 text-orange-700 bg-orange-50"
+                      >
+                        {name}
+                      </span>
+                    ) : (
+                      <span
+                        key={name}
+                        className="inline-flex items-center px-2.5 py-1 rounded-md text-xs border border-dashed border-muted-foreground/30 text-muted-foreground/70 bg-muted/20"
+                      >
+                        {name}
+                      </span>
+                    )
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Status logic legend */}
           <Card className="border-dashed bg-muted/30">

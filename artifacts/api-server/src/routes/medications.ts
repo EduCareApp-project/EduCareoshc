@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { db, childMedicationsTable, medicationLogsTable, childrenTable, staffTable, parentAccountsTable } from "@workspace/db";
 import { sendMedicationLogEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
@@ -102,7 +102,7 @@ router.get("/children/:id/medications/:medicationId/logs", async (req, res): Pro
 
   const rows = await db.select().from(medicationLogsTable)
     .where(eq(medicationLogsTable.medicationId, medicationId))
-    .orderBy(medicationLogsTable.administeredAt);
+    .orderBy(desc(medicationLogsTable.administeredAt));
 
   const enriched = await Promise.all(rows.map(enrichLog));
   res.json(enriched);
@@ -227,7 +227,7 @@ router.get("/guardian/medication-logs", async (req, res): Promise<void> => {
     for (const med of meds) {
       const logs = await db.select().from(medicationLogsTable)
         .where(eq(medicationLogsTable.medicationId, med.id))
-        .orderBy(medicationLogsTable.administeredAt);
+        .orderBy(desc(medicationLogsTable.administeredAt));
 
       for (const log of logs) {
         const enriched = await enrichLog(log);

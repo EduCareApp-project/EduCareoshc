@@ -226,7 +226,7 @@ export default function ReportsLearning() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Learning Stories</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Learning Compliance</h1>
         <p className="text-muted-foreground mt-1">
           Track posts, jottings, observations and planning cycle outcomes by site and time period.
         </p>
@@ -423,7 +423,7 @@ export default function ReportsLearning() {
                 <tr className="border-b bg-muted/40">
                   <th className="text-left px-6 py-3 font-medium text-muted-foreground">Child</th>
                   <th className="text-center px-4 py-3 font-medium text-muted-foreground">Jottings</th>
-                  <th className="text-center px-4 py-3 font-medium text-muted-foreground">Learning Stories</th>
+                  <th className="text-center px-4 py-3 font-medium text-muted-foreground">Observations</th>
                   <th className="text-center px-4 py-3 font-medium text-muted-foreground">Posts</th>
                 </tr>
               </thead>

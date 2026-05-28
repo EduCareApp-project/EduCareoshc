@@ -521,6 +521,7 @@ export default function ChildProfile() {
   const deleteConfidentialMutation = useDeleteConfidentialNote();
 
   const [editOpen, setEditOpen] = useState(false);
+  const [guardianView, setGuardianView] = useState<1 | 2>(1);
   const [welfareOpen, setWelfareOpen] = useState(false);
   const [welfareForm, setWelfareForm] = useState(EMPTY_WELFARE_FORM);
   const [editingWelfareNoteId, setEditingWelfareNoteId] = useState<number | null>(null);
@@ -911,36 +912,61 @@ export default function ChildProfile() {
                 <p className="font-medium">{safeDate(child.dateOfBirth, "dd/MM/yyyy")}</p>
               </div>
               <Separator />
-              <div className="space-y-1">
-                <div className="text-sm text-muted-foreground flex items-center gap-2"><User className="h-4 w-4" />Guardian 1</div>
-                <p className="font-medium">{child.guardianName}</p>
+              {/* Guardian toggle */}
+              <div className="flex items-center gap-1 p-0.5 bg-muted rounded-md w-fit">
+                <button
+                  type="button"
+                  onClick={() => setGuardianView(1)}
+                  className={`text-xs px-2.5 py-1 rounded transition-colors font-medium ${guardianView === 1 ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Guardian 1
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGuardianView(2)}
+                  className={`text-xs px-2.5 py-1 rounded transition-colors font-medium ${guardianView === 2 ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Guardian 2
+                </button>
               </div>
-              <div className="space-y-1">
-                <div className="text-sm text-muted-foreground flex items-center gap-2"><Phone className="h-4 w-4" />Phone</div>
-                <p className="font-medium">{child.guardianPhone}</p>
-              </div>
-              <div className="space-y-1">
-                <div className="text-sm text-muted-foreground flex items-center gap-2"><Mail className="h-4 w-4" />Email</div>
-                <p className="font-medium">{child.guardianEmail}</p>
-              </div>
-              {child.guardian2Name && (
+              {guardianView === 1 ? (
                 <>
-                  <Separator />
                   <div className="space-y-1">
-                    <div className="text-sm text-muted-foreground flex items-center gap-2"><User className="h-4 w-4" />Guardian 2</div>
-                    <p className="font-medium">{child.guardian2Name}</p>
+                    <div className="text-sm text-muted-foreground flex items-center gap-2"><User className="h-4 w-4" />Name</div>
+                    <p className="font-medium">{child.guardianName}</p>
                   </div>
-                  {child.guardian2Phone && (
-                    <div className="space-y-1">
-                      <div className="text-sm text-muted-foreground flex items-center gap-2"><Phone className="h-4 w-4" />Phone</div>
-                      <p className="font-medium">{child.guardian2Phone}</p>
-                    </div>
-                  )}
-                  {child.guardian2Email && (
-                    <div className="space-y-1">
-                      <div className="text-sm text-muted-foreground flex items-center gap-2"><Mail className="h-4 w-4" />Email</div>
-                      <p className="font-medium">{child.guardian2Email}</p>
-                    </div>
+                  <div className="space-y-1">
+                    <div className="text-sm text-muted-foreground flex items-center gap-2"><Phone className="h-4 w-4" />Phone</div>
+                    <p className="font-medium">{child.guardianPhone}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-sm text-muted-foreground flex items-center gap-2"><Mail className="h-4 w-4" />Email</div>
+                    <p className="font-medium">{child.guardianEmail}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {child.guardian2Name ? (
+                    <>
+                      <div className="space-y-1">
+                        <div className="text-sm text-muted-foreground flex items-center gap-2"><User className="h-4 w-4" />Name</div>
+                        <p className="font-medium">{child.guardian2Name}</p>
+                      </div>
+                      {child.guardian2Phone && (
+                        <div className="space-y-1">
+                          <div className="text-sm text-muted-foreground flex items-center gap-2"><Phone className="h-4 w-4" />Phone</div>
+                          <p className="font-medium">{child.guardian2Phone}</p>
+                        </div>
+                      )}
+                      {child.guardian2Email && (
+                        <div className="space-y-1">
+                          <div className="text-sm text-muted-foreground flex items-center gap-2"><Mail className="h-4 w-4" />Email</div>
+                          <p className="font-medium">{child.guardian2Email}</p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">No second guardian recorded. Edit the profile to add one.</p>
                   )}
                 </>
               )}

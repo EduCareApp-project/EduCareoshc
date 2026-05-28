@@ -49,6 +49,8 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     await new Promise<void>((resolve, reject) =>
       req.session.save((err) => (err ? reject(err) : resolve()))
     );
+    // Update last login timestamp
+    await db.update(staffTable).set({ lastLoginAt: new Date() as any }).where(eq(staffTable.id, staff.id));
     res.json({ user: req.session.user });
     return;
   }

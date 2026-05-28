@@ -62,7 +62,7 @@ router.get("/reports/system-access", async (_req, res): Promise<void> => {
     status: s.status,
     isConnected: !!s.passwordHash,
     blockedAt: s.blockedAt,
-    lastLoginAt: null as null,
+    lastLoginAt: s.lastLoginAt,
     createdAt: s.createdAt,
   }));
 

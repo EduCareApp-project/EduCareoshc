@@ -20,6 +20,7 @@ export const staffTable = pgTable("staff", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   blockedAt: timestamp("blocked_at", { withTimezone: true }),
   passwordHash: text("password_hash"),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
 });
 
 export const insertStaffSchema = createInsertSchema(staffTable).omit({ id: true, createdAt: true });

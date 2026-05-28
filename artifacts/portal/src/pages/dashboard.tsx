@@ -1044,25 +1044,6 @@ function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
                   <span className="text-sm font-medium">Observations (last 7 days)</span>
                   <span className="text-lg font-bold text-primary">{summary?.observationsLast7Days ?? 0}</span>
                 </div>
-                {learning?.underRepresentedOutcomes && learning.underRepresentedOutcomes.length > 0 ? (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Under-represented MTOP outcomes</p>
-                    <div className="space-y-1.5">
-                      {learning.underRepresentedOutcomes.map((o) => (
-                        <div key={o.outcomeId} className="flex items-center gap-2 text-sm">
-                          <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                          <span className="font-medium">Outcome {o.outcomeNumber}</span>
-                          <span className="text-muted-foreground">{o.outcomeTitle}</span>
-                          <Badge className="ml-auto bg-amber-100 text-amber-800 text-xs border-none">{o.count}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-sm text-green-700">
-                    <CheckCircle2 className="h-4 w-4" /> All MTOP outcomes are well represented
-                  </div>
-                )}
                 <OutcomePieChart outcomes={learning?.byOutcome ?? []} />
               </div>
             )}

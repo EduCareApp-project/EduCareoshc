@@ -17,7 +17,7 @@ import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
-import { BookMarked, AlertCircle, FileText, StickyNote, Eye } from "lucide-react";
+import { BookMarked, FileText, StickyNote, Eye } from "lucide-react";
 import { melbourneDate } from "@/lib/timezone";
 import { subDays, subMonths, parseISO, isAfter } from "date-fns";
 
@@ -94,20 +94,92 @@ function StatTile({
   );
 }
 
-// ── Custom donut label ────────────────────────────────────────────────────────
+// ── MTOP Wheel Card ───────────────────────────────────────────────────────────
 
-function DonutLabel({ cx, cy, total }: { cx: number; cy: number; total: number }) {
+function MtopWheelCard({
+  title,
+  subtitle,
+  data,
+  loading,
+}: {
+  title: string;
+  subtitle: string;
+  data: Array<{ name: string; fullName: string; count: number; color: string }>;
+  loading?: boolean;
+}) {
+  const total = data.reduce((s, d) => s + d.count, 0);
   return (
-    <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central">
-      <tspan x={cx} dy="-0.4em" className="text-2xl font-bold" style={{ fontSize: 24, fontWeight: 700, fill: "hsl(var(--foreground))" }}>
-        {total}
-      </tspan>
-      <tspan x={cx} dy="1.4em" style={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}>
-        linked
-      </tspan>
-    </text>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">{title}</CardTitle>
+        <p className="text-xs text-muted-foreground">{subtitle}</p>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <Skeleton className="h-52 w-full" />
+        ) : total === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
+            <BookMarked className="h-7 w-7" />
+            <p className="text-sm">No outcomes recorded in this period.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3">
+            <ResponsiveContainer width="100%" height={190}>
+              <PieChart>
+                <Pie
+                  data={data}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={56}
+                  outerRadius={84}
+                  dataKey="count"
+                  nameKey="name"
+                  paddingAngle={2}
+                  label={false}
+                >
+                  {data.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} opacity={entry.count === 0 ? 0.15 : 1} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value, _name, props) => [
+                    `${value} linked`,
+                    props.payload?.fullName ?? "",
+                  ]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="space-y-1.5 w-full">
+              {data.map((d) => (
+                <div key={d.name} className="flex items-center gap-2">
+                  <span
+                    className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold text-white"
+                    style={{ background: d.color, opacity: d.count === 0 ? 0.3 : 1 }}
+                  >
+                    {d.name}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-foreground truncate">{d.fullName.split("— ")[1]}</p>
+                      <span className="text-xs font-semibold tabular-nums shrink-0">{d.count}</span>
+                    </div>
+                    <div className="h-1 w-full bg-muted rounded-full mt-0.5 overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${total > 0 ? (d.count / total) * 100 : 0}%`, background: d.color }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
+
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
@@ -176,8 +248,8 @@ export default function ReportsLearning() {
     });
   }, [planning, cutoff, selectedSite]);
 
-  // MTOP outcome counts from filtered planning, observations and posts
-  const mtopWheelData = useMemo(() => {
+  // MTOP outcome counts — observations + posts
+  const mtopObsPostsData = useMemo(() => {
     const counts = [0, 0, 0, 0, 0];
     const tally = (ids: (number | string)[] | null | undefined) => {
       for (const id of ids ?? []) {
@@ -185,7 +257,6 @@ export default function ReportsLearning() {
         if (n >= 1 && n <= 5) counts[n - 1]++;
       }
     };
-    for (const exp of filteredPlanning)     tally(exp.outcomeIds);
     for (const obs of filteredObservations) tally(obs.outcomeIds);
     for (const post of filteredPosts)       tally(post.outcomeIds);
     return counts.map((count, i) => ({
@@ -194,10 +265,24 @@ export default function ReportsLearning() {
       count,
       color: MTOP_COLORS[i],
     }));
-  }, [filteredPlanning, filteredObservations, filteredPosts]);
+  }, [filteredObservations, filteredPosts]);
 
-  const mtopTotal = mtopWheelData.reduce((s, d) => s + d.count, 0);
-  const hasWheel = mtopTotal > 0;
+  // MTOP outcome counts — planning experiences
+  const mtopPlanningData = useMemo(() => {
+    const counts = [0, 0, 0, 0, 0];
+    for (const exp of filteredPlanning) {
+      for (const id of exp.outcomeIds ?? []) {
+        const n = typeof id === "string" ? parseInt(id, 10) : id;
+        if (n >= 1 && n <= 5) counts[n - 1]++;
+      }
+    }
+    return counts.map((count, i) => ({
+      name: `O${i + 1}`,
+      fullName: `Outcome ${i + 1} — ${MTOP_SHORT[i]}`,
+      count,
+      color: MTOP_COLORS[i],
+    }));
+  }, [filteredPlanning]);
 
   const isLoadingCounts = postsLoading || jottingsLoading || observationsLoading;
   const isLoadingMtop = planningLoading || observationsLoading || postsLoading;
@@ -294,113 +379,21 @@ export default function ReportsLearning() {
       </div>
       </div>
 
-      {/* MTOP Outcome row — donut + stat tile */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* Donut chart */}
-        <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle className="text-base">MTOP Outcome</CardTitle>
-          <p className="text-xs text-muted-foreground">Outcome coverage across planning cycles, observations and posts — {periodLabel.toLowerCase()}</p>
-        </CardHeader>
-        <CardContent>
-          {isLoadingMtop ? (
-            <Skeleton className="h-60 w-full" />
-          ) : !hasWheel ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
-              <BookMarked className="h-8 w-8" />
-              <p className="text-sm">No planning cycles with linked outcomes in this period.</p>
-            </div>
-          ) : (
-            <div className="flex flex-col lg:flex-row items-center gap-6">
-              {/* Donut */}
-              <div className="w-full lg:w-64 shrink-0">
-                <ResponsiveContainer width="100%" height={240}>
-                  <PieChart>
-                    <Pie
-                      data={mtopWheelData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={68}
-                      outerRadius={100}
-                      dataKey="count"
-                      nameKey="name"
-                      paddingAngle={2}
-                      label={false}
-                    >
-                      {mtopWheelData.map((entry, i) => (
-                        <Cell key={i} fill={entry.color} opacity={entry.count === 0 ? 0.15 : 1} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value, _name, props) => [
-                        `${value} linked`,
-                        props.payload?.fullName ?? "",
-                      ]}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                {/* Centre label overlaid via absolute positioning trick is not needed — using svg text approach */}
-              </div>
-
-              {/* Legend / breakdown */}
-              <div className="flex-1 space-y-2 w-full">
-                {mtopWheelData.map((d) => (
-                  <div key={d.name} className="flex items-center gap-3">
-                    <span
-                      className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold text-white"
-                      style={{ background: d.color, opacity: d.count === 0 ? 0.3 : 1 }}
-                    >
-                      {d.name}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground truncate">{d.fullName.split("— ")[1]}</p>
-                      <div className="h-1.5 w-full bg-muted rounded-full mt-1 overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{
-                            width: `${mtopTotal > 0 ? (d.count / mtopTotal) * 100 : 0}%`,
-                            background: d.color,
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <span className="text-sm font-semibold tabular-nums w-5 text-right">{d.count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-        </Card>
-
-        {/* Active Jottings tile */}
-        <div className="flex flex-col">
-          <StatTile
-            icon={<StickyNote className="h-5 w-5" />}
-            label="Active Jottings"
-            count={filteredJottings.length}
-            sub="In this period"
-            loading={isLoadingCounts}
-          />
-        </div>
+      {/* MTOP Outcome — two wheels */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <MtopWheelCard
+          title="Observations & Posts"
+          subtitle={`Outcome coverage across observations and posts — ${periodLabel.toLowerCase()}`}
+          data={mtopObsPostsData}
+          loading={isLoadingMtop}
+        />
+        <MtopWheelCard
+          title="Planning"
+          subtitle={`Outcome coverage across planning experiences — ${periodLabel.toLowerCase()}`}
+          data={mtopPlanningData}
+          loading={planningLoading}
+        />
       </div>
-
-      {/* Under-represented outcomes alert */}
-      {(report?.underRepresentedOutcomes ?? []).length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-          <div>
-            <p className="font-medium text-amber-800">Observations needing more outcome coverage</p>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {report?.underRepresentedOutcomes.map((o) => (
-                <Badge key={o.outcomeId} className="bg-amber-100 text-amber-800 border-amber-300">
-                  Outcome {o.outcomeNumber} ({o.count})
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Data per Child */}
       <Card>

@@ -461,28 +461,41 @@ function MedicationsTab({ childId, staffList, currentUserId }: { childId: number
               </form>
             )}
             {logsLoading ? (
-              <div className="space-y-2">{[1, 2].map(i => <Skeleton key={i} className="h-14 w-full" />)}</div>
+              <div className="space-y-2">{[1, 2].map(i => <Skeleton key={i} className="h-10 w-full" />)}</div>
             ) : logs.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">No administration records yet.</p>
             ) : (
-              <div className="space-y-2">
-                {logs.map(log => {
-                  const byStaff = staffList.find(s => s.id === log.administeredById);
-                  const wStaff = log.witnessId ? staffList.find(s => s.id === log.witnessId) : null;
-                  return (
-                    <div key={log.id} className="flex items-start justify-between gap-4 rounded-md border px-4 py-3 text-sm">
-                      <div className="space-y-0.5">
-                        <p className="font-medium">{format(toMelbourneDate(log.administeredAt), "dd/MM/yyyy 'at' h:mm a")}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {log.dosageAdministered} · {log.methodOfAdministration}
-                          {byStaff && ` · ${byStaff.firstName} ${byStaff.lastName}`}
-                          {wStaff && ` · Witnessed by ${wStaff.firstName} ${wStaff.lastName}`}
-                        </p>
-                      </div>
-                      <button onClick={() => handleDeleteLog(log.id)} className="text-muted-foreground hover:text-destructive shrink-0 mt-0.5"><Trash2 className="h-3.5 w-3.5" /></button>
-                    </div>
-                  );
-                })}
+              <div className="overflow-x-auto rounded-md border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/40 text-xs text-muted-foreground uppercase tracking-wide">
+                      <th className="text-left px-3 py-2 font-medium">Date &amp; Time</th>
+                      <th className="text-left px-3 py-2 font-medium">Dosage</th>
+                      <th className="text-left px-3 py-2 font-medium">Method</th>
+                      <th className="text-left px-3 py-2 font-medium">Administered By</th>
+                      <th className="text-left px-3 py-2 font-medium">Witness</th>
+                      <th className="px-3 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {logs.map(log => {
+                      const byStaff = staffList.find(s => s.id === log.administeredById);
+                      const wStaff = log.witnessId ? staffList.find(s => s.id === log.witnessId) : null;
+                      return (
+                        <tr key={log.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-3 py-2 whitespace-nowrap font-medium">{format(toMelbourneDate(log.administeredAt), "dd/MM/yy h:mm a")}</td>
+                          <td className="px-3 py-2 whitespace-nowrap">{log.dosageAdministered}</td>
+                          <td className="px-3 py-2 whitespace-nowrap">{log.methodOfAdministration}</td>
+                          <td className="px-3 py-2 whitespace-nowrap">{byStaff ? `${byStaff.firstName} ${byStaff.lastName}` : "—"}</td>
+                          <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">{wStaff ? `${wStaff.firstName} ${wStaff.lastName}` : "—"}</td>
+                          <td className="px-3 py-2 text-right">
+                            <button onClick={() => handleDeleteLog(log.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>

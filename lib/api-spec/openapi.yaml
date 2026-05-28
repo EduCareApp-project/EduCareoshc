@@ -797,6 +797,28 @@ paths:
                 $ref: "#/components/schemas/Jotting"
 
   /jottings/{id}:
+    patch:
+      operationId: updateJotting
+      tags: [jottings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JottingInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Jotting"
     delete:
       operationId: deleteJotting
       tags: [jottings]

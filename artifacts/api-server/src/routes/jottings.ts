@@ -58,6 +58,27 @@ router.patch("/jottings/:id/archive", async (req, res): Promise<void> => {
   }));
 });
 
+router.patch("/jottings/:id", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const { content } = req.body as { content?: string };
+  if (!content?.trim()) { res.status(400).json({ error: "content is required" }); return; }
+  const [jotting] = await db.update(jottingsTable)
+    .set({ content: content.trim() })
+    .where(eq(jottingsTable.id, id))
+    .returning();
+  if (!jotting) { res.status(404).json({ error: "Jotting not found" }); return; }
+  const childList = await db.select().from(childrenTable);
+  const staffList = await db.select().from(staffTable);
+  const child = childList.find((c) => c.id === jotting.childId);
+  const staff = staffList.find((s) => s.id === jotting.staffId);
+  res.json(ListJottingsResponseItem.parse({
+    ...jotting,
+    childName: child ? `${child.firstName} ${child.lastName}` : null,
+    staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
+  }));
+});
+
 router.delete("/jottings/:id", async (req, res): Promise<void> => {
   const params = DeleteJottingParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }

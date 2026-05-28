@@ -3565,6 +3565,87 @@ export const useCreateJotting = <
   return useMutation(getCreateJottingMutationOptions(options));
 };
 
+export const getUpdateJottingUrl = (id: number) => {
+  return `/api/jottings/${id}`;
+};
+
+export const updateJotting = async (
+  id: number,
+  jottingInput: JottingInput,
+  options?: RequestInit,
+): Promise<Jotting> => {
+  return customFetch<Jotting>(getUpdateJottingUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(jottingInput),
+  });
+};
+
+export const getUpdateJottingMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateJotting>>,
+    TError,
+    { id: number; data: BodyType<JottingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateJotting>>,
+  TError,
+  { id: number; data: BodyType<JottingInput> },
+  TContext
+> => {
+  const mutationKey = ["updateJotting"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateJotting>>,
+    { id: number; data: BodyType<JottingInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateJotting(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateJottingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateJotting>>
+>;
+export type UpdateJottingMutationBody = BodyType<JottingInput>;
+export type UpdateJottingMutationError = ErrorType<unknown>;
+
+export const useUpdateJotting = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateJotting>>,
+    TError,
+    { id: number; data: BodyType<JottingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateJotting>>,
+  TError,
+  { id: number; data: BodyType<JottingInput> },
+  TContext
+> => {
+  return useMutation(getUpdateJottingMutationOptions(options));
+};
+
 export const getDeleteJottingUrl = (id: number) => {
   return `/api/jottings/${id}`;
 };

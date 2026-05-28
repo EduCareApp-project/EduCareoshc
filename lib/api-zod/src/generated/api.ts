@@ -790,6 +790,27 @@ export const CreateJottingBody = zod.object({
   staffId: zod.number().optional(),
 });
 
+export const UpdateJottingParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateJottingBody = zod.object({
+  content: zod.string(),
+  childId: zod.number().optional(),
+  staffId: zod.number().optional(),
+});
+
+export const UpdateJottingResponse = zod.object({
+  id: zod.number(),
+  content: zod.string(),
+  childId: zod.number().nullish(),
+  childName: zod.string().nullish(),
+  staffId: zod.number().nullish(),
+  staffName: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  archivedAt: zod.coerce.date().nullish(),
+});
+
 export const DeleteJottingParams = zod.object({
   id: zod.coerce.number(),
 });

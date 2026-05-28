@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { useListJottings, useCreateJotting, useDeleteJotting, useArchiveJotting, useListChildren, useListSites } from "@workspace/api-client-react";
+import { useListJottings, useCreateJotting, useDeleteJotting, useArchiveJotting, useUpdateJotting, useListChildren, useListSites } from "@workspace/api-client-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, StickyNote, CheckCheck } from "lucide-react";
+import { Trash2, StickyNote, CheckCheck, Pencil, X, Check } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,12 +19,16 @@ export default function Jottings() {
   const { data: children } = useListChildren();
   const { data: sites } = useListSites();
   const { canDelete, isEducatorRole, ownSiteId } = usePermissions();
+  const canEdit = !isEducatorRole;
   const createMutation = useCreateJotting();
   const deleteMutation = useDeleteJotting();
   const archiveMutation = useArchiveJotting();
+  const updateMutation = useUpdateJotting();
 
   const [content, setContent] = useState("");
   const [childId, setChildId] = useState<string>("none");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState("");
   const [captureSite, setCaptureSite] = useState<string>(() =>
     isEducatorRole && ownSiteId ? String(ownSiteId) : "all"
   );
@@ -75,6 +80,27 @@ export default function Jottings() {
     archiveMutation.mutate({ id }, {
       onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/jottings"] }),
       onError: () => toast({ title: "Failed to archive jotting", variant: "destructive" }),
+    });
+  }
+
+  function startEdit(id: number, current: string) {
+    setEditingId(id);
+    setEditContent(current);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditContent("");
+  }
+
+  function handleSaveEdit(id: number) {
+    if (!editContent.trim()) return;
+    updateMutation.mutate({ id, data: { content: editContent.trim() } }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/jottings"] });
+        cancelEdit();
+      },
+      onError: () => toast({ title: "Failed to update jotting", variant: "destructive" }),
     });
   }
 
@@ -163,31 +189,59 @@ export default function Jottings() {
           </CardContent></Card>
         ) : sorted.map((j) => (
           <Card key={j.id}>
-            <CardContent className="py-2.5 flex items-center gap-4">
-              <span className="shrink-0 text-xs text-muted-foreground w-36">
-                {format(new Date(j.createdAt), "dd/MM/yyyy h:mm a")}
-              </span>
-              <span className="shrink-0 text-xs font-medium text-foreground/70 w-32 truncate">
-                {j.childName ?? <span className="text-muted-foreground italic">No child</span>}
-              </span>
-              <p className="flex-1 text-sm truncate">{j.content}</p>
-              <div className="flex items-center gap-1 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs gap-1.5 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800"
-                  onClick={() => handleArchive(j.id)}
-                  disabled={archiveMutation.isPending}
-                >
-                  <CheckCheck className="h-3.5 w-3.5" />
-                  Actioned
-                </Button>
-                {canDelete && (
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(j.id)}>
-                    <Trash2 className="h-4 w-4" />
+            <CardContent className="py-2.5">
+              {editingId === j.id ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="flex-1 h-8 text-sm"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSaveEdit(j.id);
+                      if (e.key === "Escape") cancelEdit();
+                    }}
+                  />
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-emerald-700" onClick={() => handleSaveEdit(j.id)} disabled={updateMutation.isPending}>
+                    <Check className="h-4 w-4" />
                   </Button>
-                )}
-              </div>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground" onClick={cancelEdit}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <span className="shrink-0 text-xs text-muted-foreground w-36">
+                    {format(new Date(j.createdAt), "dd/MM/yyyy h:mm a")}
+                  </span>
+                  <span className="shrink-0 text-xs font-medium text-foreground/70 w-32 truncate">
+                    {j.childName ?? <span className="text-muted-foreground italic">No child</span>}
+                  </span>
+                  <p className="flex-1 text-sm truncate">{j.content}</p>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs gap-1.5 text-emerald-700 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800"
+                      onClick={() => handleArchive(j.id)}
+                      disabled={archiveMutation.isPending}
+                    >
+                      <CheckCheck className="h-3.5 w-3.5" />
+                      Actioned
+                    </Button>
+                    {canEdit && (
+                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" onClick={() => startEdit(j.id, j.content)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(j.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}

@@ -647,14 +647,14 @@ function ChecklistDoDialog({
   const periodKey = getPeriodKey(currentDate, freq);
   const periodLabel = getPeriodLabel(currentDate, freq);
 
+  const qKey = getListRoutineItemCompletionsQueryKey({ routineId: routine.id, periodKey });
+
   const { data: completions, isLoading } = useListRoutineItemCompletions(
     { routineId: routine.id, periodKey },
-    { query: { enabled: open } }
+    { query: { queryKey: qKey, enabled: open } }
   );
   const createMutation = useCreateRoutineItemCompletion();
   const deleteMutation = useDeleteRoutineItemCompletion();
-
-  const qKey = getListRoutineItemCompletionsQueryKey({ routineId: routine.id, periodKey });
 
   function getCompletion(si: number, ii: number) {
     return completions?.find((c) => c.sectionIndex === si && c.itemIndex === ii);

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db, qipItemsTable, qipSourcesTable, qipStrengthsTable, childrenTable, sitesTable } from "@workspace/db";
 import {
   CreateQipItemBody, UpdateQipItemParams, UpdateQipItemBody, UpdateQipItemResponse,

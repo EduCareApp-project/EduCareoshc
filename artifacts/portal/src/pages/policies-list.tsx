@@ -2,8 +2,9 @@ import { useRef, useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
   useListPolicies, useCreatePolicy, useUpdatePolicy, useDeletePolicy,
-  useAcknowledgePolicy, useGetPolicyAcknowledgments, useListStaff,
+  useAcknowledgePolicy, useGetPolicyAcknowledgments, getGetPolicyAcknowledgmentsQueryKey, useListStaff,
 } from "@workspace/api-client-react";
+import type { Policy } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -76,7 +77,7 @@ function PolicyRow({
   const [expanded, setExpanded] = useState(false);
 
   const { data: acks } = useGetPolicyAcknowledgments(policy.id, {
-    query: { enabled: expanded || !!selectedStaffId },
+    query: { queryKey: getGetPolicyAcknowledgmentsQueryKey(policy.id), enabled: expanded || !!selectedStaffId },
   });
 
   const notifyRoles = policy.notifyRoles ? policy.notifyRoles.split(",").map((r) => r.trim()).filter(Boolean) : [];
@@ -271,7 +272,7 @@ export default function PoliciesList() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { upload, uploading } = useUpload();
+  const { uploadFile, isUploading } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: policies, isLoading } = useListPolicies();
@@ -327,7 +328,7 @@ export default function PoliciesList() {
     setShowForm(true);
   }
 
-  function openEdit(p: NonNullable<ReturnType<typeof useListPolicies>["data"]>[number]) {
+  function openEdit(p: Policy) {
     setForm({
       policyNumber: p.policyNumber != null ? String(p.policyNumber) : "",
       title: p.title,
@@ -364,13 +365,13 @@ export default function PoliciesList() {
     let docPath = existingDocPath;
     let docName = existingDocName;
     if (selectedFile) {
-      try {
-        docPath = await upload(selectedFile, { prefix: "policy-docs/" });
-        docName = selectedFile.name;
-      } catch {
+      const result = await uploadFile(selectedFile);
+      if (!result) {
         toast({ title: "File upload failed", variant: "destructive" });
         return;
       }
+      docPath = result.objectPath;
+      docName = selectedFile.name;
     }
 
     const payload: Record<string, unknown> = {
@@ -414,7 +415,7 @@ export default function PoliciesList() {
     }
   }
 
-  const isSaving = createMutation.isPending || updateMutation.isPending || uploading;
+  const isSaving = createMutation.isPending || updateMutation.isPending || isUploading;
 
   // ── Form view ────────────────────────────────────────────────────────────────
   if (showForm) {
@@ -542,7 +543,7 @@ export default function PoliciesList() {
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingId(null); }}>Cancel</Button>
             <Button type="submit" disabled={isSaving}>
-              {uploading ? "Uploading…" : isSaving ? "Saving…" : editingId ? "Save Changes" : "Add Policy"}
+              {isUploading ? "Uploading…" : isSaving ? "Saving…" : editingId ? "Save Changes" : "Add Policy"}
             </Button>
           </div>
         </form>

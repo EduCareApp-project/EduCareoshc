@@ -38,7 +38,7 @@ router.post("/evacuations", async (req, res): Promise<void> => {
   const data: Record<string, unknown> = { ...parsed.data };
 
   // Compute nextDueAt: evacuation drills are always 90 days; other types use validDays (default 365)
-  const conducted = new Date(parsed.data.conductedAt as string);
+  const conducted = new Date(String(parsed.data.conductedAt));
   const nextDue = new Date(conducted);
   const days = parsed.data.drillType === "evacuation" ? 90 : ((parsed.data as any).validDays ?? 365);
   nextDue.setDate(nextDue.getDate() + days);
@@ -66,7 +66,7 @@ router.patch("/evacuations/:id", async (req, res): Promise<void> => {
 
   // Recompute nextDueAt from conductedAt + validDays
   if (parsed.data.conductedAt) {
-    const conducted = new Date(parsed.data.conductedAt as string);
+    const conducted = new Date(String(parsed.data.conductedAt));
     const nextDue = new Date(conducted);
     const days = parsed.data.drillType === "evacuation" ? 90 : ((parsed.data as any).validDays ?? 365);
     nextDue.setDate(nextDue.getDate() + days);

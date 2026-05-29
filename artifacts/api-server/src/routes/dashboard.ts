@@ -138,7 +138,7 @@ router.get("/dashboard/outcome-counts", async (_req, res): Promise<void> => {
   const observations = await db.select().from(observationsTable);
 
   const counts = outcomes.map((outcome) => {
-    const cnt = observations.filter((obs) => obs.outcomeIds.includes(outcome.id)).length;
+    const cnt = observations.filter((obs) => obs.outcomeIds.includes(String(outcome.id))).length;
     return {
       outcomeId: outcome.id,
       outcomeTitle: outcome.title,

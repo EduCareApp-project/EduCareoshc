@@ -2,14 +2,14 @@ import { useState } from "react";
 import { useParams, Link, useLocation, Redirect } from "wouter";
 import { usePermissions } from "@/hooks/use-permissions";
 import {
-  useGetStaff,
+  useGetStaff, getGetStaffQueryKey,
   useUpdateStaff,
   useDeleteStaff,
   useListSites,
-  useGetStaffProfessionalDevelopment,
+  useGetStaffProfessionalDevelopment, getGetStaffProfessionalDevelopmentQueryKey,
   useCreateProfessionalDevelopment,
   useDeleteProfessionalDevelopment,
-  useGetStaffQualifications,
+  useGetStaffQualifications, getGetStaffQualificationsQueryKey,
   useCreateStaffQualification,
   useUpdateStaffQualification,
   useDeleteStaffQualification,
@@ -105,9 +105,9 @@ export default function StaffProfile() {
   const { toast } = useToast();
   const { isEducatorRole, canManageQualifications, ownId } = usePermissions();
 
-  const { data: staff, isLoading: loadingStaff } = useGetStaff(staffId, { query: { enabled: !!staffId } });
-  const { data: pdList, isLoading: loadingPd } = useGetStaffProfessionalDevelopment(staffId, { query: { enabled: !!staffId } });
-  const { data: qualifications, isLoading: loadingQuals } = useGetStaffQualifications(staffId, { query: { enabled: !!staffId } });
+  const { data: staff, isLoading: loadingStaff } = useGetStaff(staffId, { query: { queryKey: getGetStaffQueryKey(staffId), enabled: !!staffId } });
+  const { data: pdList, isLoading: loadingPd } = useGetStaffProfessionalDevelopment(staffId, { query: { queryKey: getGetStaffProfessionalDevelopmentQueryKey(staffId), enabled: !!staffId } });
+  const { data: qualifications, isLoading: loadingQuals } = useGetStaffQualifications(staffId, { query: { queryKey: getGetStaffQualificationsQueryKey(staffId), enabled: !!staffId } });
 
   const [, navigate] = useLocation();
   const { data: sites } = useListSites();
@@ -276,8 +276,8 @@ export default function StaffProfile() {
   function openEditQual(q: NonNullable<typeof qualifications>[number]) {
     let expiryStr = "";
     if (q.expiryDate) {
-      const d = q.expiryDate instanceof Date ? q.expiryDate : new Date(String(q.expiryDate));
-      if (!isNaN(d.getTime())) expiryStr = format(d, "yyyy-MM-dd");
+      const d = q.expiryDate ? new Date(String(q.expiryDate)) : null;
+      if (d && !isNaN(d.getTime())) expiryStr = format(d, "yyyy-MM-dd");
     }
     const activeDoc = (q as any).documents?.find((d: any) => d.active) ?? null;
     setQualForm({
@@ -731,14 +731,14 @@ export default function StaffProfile() {
               {[...(qualifications ?? [])].sort((a, b) => {
                 const now = new Date();
                 const isExpired = (q: typeof a) => {
-                  const d = q.expiryDate instanceof Date ? q.expiryDate : q.expiryDate ? new Date(String(q.expiryDate)) : null;
+                  const d = q.expiryDate ? new Date(String(q.expiryDate)) : null;
                   return (d && !isNaN(d.getTime()) && d < now) || q.status === "expired";
                 };
                 if (isExpired(a) && !isExpired(b)) return -1;
                 if (!isExpired(a) && isExpired(b)) return 1;
                 return QUALIFICATION_NAMES.indexOf(a.name) - QUALIFICATION_NAMES.indexOf(b.name);
               }).map((q) => {
-                const expiry = q.expiryDate instanceof Date ? q.expiryDate : q.expiryDate ? new Date(String(q.expiryDate)) : null;
+                const expiry = q.expiryDate ? new Date(String(q.expiryDate)) : null;
                 const expiryValid = expiry && !isNaN(expiry.getTime());
                 const isDateExpired = expiryValid && expiry! < new Date();
                 const effectiveStatus = isDateExpired ? "expired" : q.status;

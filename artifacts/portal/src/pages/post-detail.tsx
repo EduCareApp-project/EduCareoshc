@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
 import {
-  useGetPost, useDeletePost, getListPostsQueryKey,
+  useGetPost, getGetPostQueryKey, useDeletePost, getListPostsQueryKey,
   useListPostComments, useCreatePostComment, useDeletePostComment,
   getListPostCommentsQueryKey,
 } from "@workspace/api-client-react";
@@ -161,7 +161,7 @@ export default function PostDetail() {
 
   const id = params?.id ? parseInt(params.id) : 0;
   const backPath = new URLSearchParams(window.location.search).get("back") ?? "/posts";
-  const { data: post, isLoading } = useGetPost(id, { query: { enabled: id > 0 } });
+  const { data: post, isLoading } = useGetPost(id, { query: { queryKey: getGetPostQueryKey(id), enabled: id > 0 } });
   const deleteMutation = useDeletePost();
   const { canDelete, canEditPost } = usePermissions();
 

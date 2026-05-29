@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, childrenTable, staffTable, observationsTable, outcomesTable, evacuationsTable, incidentsTable, conditionReportsTable, qipItemsTable, checklistsTable, professionalDevelopmentTable, staffQualificationsTable, postsTable } from "@workspace/db";
+import { db, childrenTable, staffTable, observationsTable, outcomesTable, evacuationsTable, incidentsTable, conditionReportsTable, qipItemsTable, checklistRoutinesTable, professionalDevelopmentTable, staffQualificationsTable, postsTable } from "@workspace/db";
 import { GetLearningStoriesReportResponse, GetServiceComplianceReportResponse, GetStaffComplianceReportResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -27,8 +27,8 @@ router.get("/reports/learning-stories", async (req, res): Promise<void> => {
     outcomeTitle: o.title,
     outcomeNumber: o.number,
     count:
-      observations.filter((obs) => obs.outcomeIds.includes(o.id)).length +
-      posts.filter((p) => p.outcomeIds.includes(o.id as any)).length,
+      observations.filter((obs) => obs.outcomeIds.includes(String(o.id))).length +
+      posts.filter((p) => p.outcomeIds.includes(String(o.id))).length,
   }));
 
   const byChild = filteredChildren.map((c) => ({
@@ -63,7 +63,7 @@ router.get("/reports/service-compliance", async (req, res): Promise<void> => {
   const filteredQipItems = siteId ? allQipItems.filter((q) => q.siteId === siteId) : allQipItems;
   const openQipItems = filteredQipItems.length;
 
-  const allChecklists = await db.select().from(checklistsTable);
+  const allChecklists = await db.select().from(checklistRoutinesTable);
   const filteredChecklists = siteId ? allChecklists.filter((c) => c.siteId === siteId) : allChecklists;
   const activeChecklists = filteredChecklists.length;
 

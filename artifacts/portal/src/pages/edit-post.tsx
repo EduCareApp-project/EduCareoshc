@@ -29,7 +29,7 @@ export default function EditPost() {
 
   const id = params?.id ? parseInt(params.id) : 0;
 
-  const { data: post, isLoading: postLoading } = useGetPost(id, { query: { enabled: id > 0 } });
+  const { data: post, isLoading: postLoading } = useGetPost(id, { query: { queryKey: getGetPostQueryKey(id), enabled: id > 0 } });
   const { data: sites } = useListSites();
   const { data: children } = useListChildren();
   const { data: staff } = useListStaff();
@@ -51,7 +51,7 @@ export default function EditPost() {
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [initialised, setInitialised] = useState(false);
 
-  const { uploadFile } = useUpload({ prefix: "posts/" });
+  const { uploadFile } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

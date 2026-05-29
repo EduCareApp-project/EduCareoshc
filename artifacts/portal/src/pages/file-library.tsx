@@ -27,7 +27,7 @@ export default function FileLibrary() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { upload, uploading } = useUpload();
+  const { uploadFile, isUploading } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: files, isLoading: filesLoading } = useListFileLibrary();
@@ -61,13 +61,12 @@ export default function FileLibrary() {
     e.preventDefault();
     if (!selectedFile) { toast({ title: "Please select a file", variant: "destructive" }); return; }
 
-    let docPath = "";
-    try {
-      docPath = await upload(selectedFile, { prefix: "file-library/" });
-    } catch {
+    const result = await uploadFile(selectedFile);
+    if (!result) {
       toast({ title: "File upload failed", variant: "destructive" });
       return;
     }
+    const docPath = result.objectPath;
 
     const payload: Record<string, unknown> = {
       name: addForm.name || selectedFile.name,
@@ -262,8 +261,8 @@ export default function FileLibrary() {
 
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => { setShowAddFile(false); resetAddForm(); }}>Cancel</Button>
-              <Button type="submit" disabled={!selectedFile || uploading || createFileMutation.isPending}>
-                {uploading ? "Uploading…" : "Add File"}
+              <Button type="submit" disabled={!selectedFile || isUploading || createFileMutation.isPending}>
+                {isUploading ? "Uploading…" : "Add File"}
               </Button>
             </div>
           </form>

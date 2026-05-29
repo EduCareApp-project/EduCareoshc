@@ -1,9 +1,10 @@
+import type React from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { FolderOpen, ChevronRight, ShieldCheck, ClipboardList, FileText, ExternalLink } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 
-const TILES = [
+const TILES: { href: string; icon: React.ElementType; title: string; description: string; external?: boolean }[] = [
   {
     href: "/policies/list",
     icon: ShieldCheck,

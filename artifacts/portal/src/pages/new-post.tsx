@@ -45,7 +45,7 @@ export default function NewPost() {
   const [images, setImages] = useState<string[]>([]);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
 
-  const { uploadFile } = useUpload({ prefix: "posts/" });
+  const { uploadFile } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredChildren = useMemo(() => {

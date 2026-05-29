@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useSearch } from "wouter";
 import {
-  useGetPlanningExperience,
+  useGetPlanningExperience, getGetPlanningExperienceQueryKey,
   useCreatePlanningExperience,
   useUpdatePlanningExperience,
   useDeletePlanningExperience,
@@ -205,7 +205,7 @@ export default function PlanningDetail() {
 
   const { data: experience, isLoading: loadingExp } = useGetPlanningExperience(
     id ?? 0,
-    { query: { enabled: !isNew && id !== null } }
+    { query: { queryKey: getGetPlanningExperienceQueryKey(id ?? 0), enabled: !isNew && id !== null } }
   );
   const { data: allChildren } = useListChildren();
   const { data: sites } = useListSites();

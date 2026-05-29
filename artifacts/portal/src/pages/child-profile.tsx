@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { melbourneDateTimeStr, toMelbourneDate, melbourneLocalToUTCISO } from "@/lib/timezone";
 import {
-  useGetChild, useUpdateChild, useDeleteChild,
-  useGetChildObservations, useListSites,
-  useGetChildWelfareNotes, useCreateWelfareNote, useUpdateWelfareNote, useDeleteWelfareNote,
-  useGetChildConfidentialNotes, useCreateConfidentialNote, useUpdateConfidentialNote, useDeleteConfidentialNote,
+  useGetChild, getGetChildQueryKey, useUpdateChild, useDeleteChild,
+  useGetChildObservations, getGetChildObservationsQueryKey, useListSites,
+  useGetChildWelfareNotes, getGetChildWelfareNotesQueryKey, useCreateWelfareNote, useUpdateWelfareNote, useDeleteWelfareNote,
+  useGetChildConfidentialNotes, getGetChildConfidentialNotesQueryKey, useCreateConfidentialNote, useUpdateConfidentialNote, useDeleteConfidentialNote,
   useListStaff, useListJottings, useListPlanningExperiences, useListPosts,
-  useListChildDocuments, useCreateChildDocument, useDeleteChildDocument,
+  useListChildDocuments, getListChildDocumentsQueryKey, useCreateChildDocument, useDeleteChildDocument,
   useGetChildSettings, getGetChildSettingsQueryKey,
   useListChildMedications, useUpsertChildMedication,
   useListMedicationLogs, getListMedicationLogsQueryKey,
@@ -16,6 +16,7 @@ import {
   useListChildBehaviouralNotifications, useSendBehaviouralNotification,
   getListChildBehaviouralNotificationsQueryKey,
 } from "@workspace/api-client-react";
+import type { Staff } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -235,7 +236,7 @@ const FREQUENCY_OPTIONS = [
 const EMPTY_SLOT_FORM = { name: "", lastAdministered: "", toBeAdministeredBy: "", frequency: "", administrationTime: "", dosage: "", methodOfAdministration: "" };
 const EMPTY_LOG_FORM = { administeredAt: "", dosageAdministered: "", methodOfAdministration: "", administeredById: 0, witnessId: null as number | null };
 
-type StaffList = NonNullable<ReturnType<typeof useListStaff>["data"]>;
+type StaffList = Staff[];
 
 function MedicationsTab({ childId, staffList, currentUserId }: { childId: number; staffList: StaffList; currentUserId: number }) {
   const { toast } = useToast();
@@ -254,7 +255,7 @@ function MedicationsTab({ childId, staffList, currentUserId }: { childId: number
   const { data: logs = [], isLoading: logsLoading } = useListMedicationLogs(
     childId,
     selectedMed?.id ?? 0,
-    { query: { enabled: !!selectedMed?.id } }
+    { query: { queryKey: getListMedicationLogsQueryKey(childId, selectedMed?.id ?? 0), enabled: !!selectedMed?.id } }
   );
 
   useEffect(() => {
@@ -515,12 +516,12 @@ export default function ChildProfile() {
 
   const [, navigate] = useLocation();
 
-  const { data: child, isLoading } = useGetChild(id, { query: { enabled: !!id } });
-  const { data: observations, isLoading: obsLoading } = useGetChildObservations(id, { query: { enabled: !!id } });
+  const { data: child, isLoading } = useGetChild(id, { query: { queryKey: getGetChildQueryKey(id), enabled: !!id } });
+  const { data: observations, isLoading: obsLoading } = useGetChildObservations(id, { query: { queryKey: getGetChildObservationsQueryKey(id), enabled: !!id } });
   const { data: sites } = useListSites();
   const { data: staff } = useListStaff();
-  const { data: welfareNotes, isLoading: welfareLoading } = useGetChildWelfareNotes(id, { query: { enabled: !!id } });
-  const { data: confidentialNotes, isLoading: confidentialLoading } = useGetChildConfidentialNotes(id, { query: { enabled: !!id } });
+  const { data: welfareNotes, isLoading: welfareLoading } = useGetChildWelfareNotes(id, { query: { queryKey: getGetChildWelfareNotesQueryKey(id), enabled: !!id } });
+  const { data: confidentialNotes, isLoading: confidentialLoading } = useGetChildConfidentialNotes(id, { query: { queryKey: getGetChildConfidentialNotesQueryKey(id), enabled: !!id } });
   const { data: allJottings } = useListJottings({ includeArchived: true });
   const { data: allPlanningExperiences } = useListPlanningExperiences();
   const { data: allPosts } = useListPosts();
@@ -568,7 +569,7 @@ export default function ChildProfile() {
     e.target.value = "";
   }
 
-  const { data: childDocuments, isLoading: docsLoading } = useListChildDocuments(id, { query: { enabled: !!id } });
+  const { data: childDocuments, isLoading: docsLoading } = useListChildDocuments(id, { query: { queryKey: getListChildDocumentsQueryKey(id), enabled: !!id } });
   const createDocMutation = useCreateChildDocument();
   const deleteDocMutation = useDeleteChildDocument();
   const { uploadFile: uploadDoc, isUploading: isUploadingDoc } = useUpload({
@@ -1460,7 +1461,7 @@ export default function ChildProfile() {
                       {canDelete && (
                       <button
                         type="button"
-                        onClick={() => handleDocDelete(doc.id, doc.documentName)}
+                        onClick={() => handleDocDelete(doc.id, doc.documentName ?? null)}
                         className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity shrink-0"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

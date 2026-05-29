@@ -58,7 +58,7 @@ const EMPTY_FORM = {
 export default function ConditionReports() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { upload, uploading } = useUpload();
+  const { uploadFile, isUploading } = useUpload();
 
   const { data: reports, isLoading } = useListConditionReports();
   const { data: staffList } = useListStaff();
@@ -130,14 +130,13 @@ export default function ConditionReports() {
     let docName = form.evidenceDocumentName;
 
     if (selectedFile) {
-      try {
-        const path = await upload(selectedFile, { prefix: "condition-evidence/" });
-        docPath = path;
-        docName = selectedFile.name;
-      } catch {
+      const result = await uploadFile(selectedFile);
+      if (!result) {
         toast({ title: "File upload failed", variant: "destructive" });
         return;
       }
+      docPath = result.objectPath;
+      docName = selectedFile.name;
     }
 
     const payload = {
@@ -216,7 +215,7 @@ export default function ConditionReports() {
     setEditingLeadership(false);
   }
 
-  const isSaving = createMutation.isPending || updateMutation.isPending || uploading;
+  const isSaving = createMutation.isPending || updateMutation.isPending || isUploading;
 
   // ── Form view (create or edit) ──────────────────────────────────────────────
   if (showForm) {
@@ -364,7 +363,7 @@ export default function ConditionReports() {
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingExistingId(null); }}>Cancel</Button>
             <Button type="submit" disabled={isSaving}>
-              {uploading ? "Uploading…" : isSaving ? "Saving…" : isEditing ? "Save Changes" : "Submit Report"}
+              {isUploading ? "Uploading…" : isSaving ? "Saving…" : isEditing ? "Save Changes" : "Submit Report"}
             </Button>
           </div>
         </form>

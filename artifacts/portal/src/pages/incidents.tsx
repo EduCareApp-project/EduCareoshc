@@ -344,10 +344,12 @@ function HeadOfficeForm({ incident, onDone }: { incident: any; onDone: () => voi
   const { data: staff } = useListStaff();
 
   const [reportPersonId, setReportPersonId] = useState(incident.reportPersonId ? String(incident.reportPersonId) : "none");
-  const [reportMethod, setReportMethod] = useState(incident.reportMethod ?? "");
-  const [reportMadeAt, setReportMadeAt] = useState(
-    incident.reportMadeAt ? incident.reportMadeAt.slice(0, 16) : ""
-  );
+  const [reportMadeAt, setReportMadeAt] = useState(() => {
+    if (incident.reportMadeAt) return incident.reportMadeAt.slice(0, 16);
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  });
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -355,7 +357,6 @@ function HeadOfficeForm({ incident, onDone }: { incident: any; onDone: () => voi
       id: incident.id,
       data: {
         reportPersonId: reportPersonId !== "none" ? parseInt(reportPersonId) : null,
-        reportMethod: reportMethod || null,
         reportMadeAt: reportMadeAt || null,
       } as any,
     }, {
@@ -371,7 +372,7 @@ function HeadOfficeForm({ incident, onDone }: { incident: any; onDone: () => voi
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="space-y-1">
-        <Label>Person Making Report</Label>
+        <Label>Person Assigned to Review</Label>
         <Select value={reportPersonId} onValueChange={setReportPersonId}>
           <SelectTrigger><SelectValue placeholder="Select staff" /></SelectTrigger>
           <SelectContent>
@@ -379,10 +380,6 @@ function HeadOfficeForm({ incident, onDone }: { incident: any; onDone: () => voi
             {(staff ?? []).map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>)}
           </SelectContent>
         </Select>
-      </div>
-      <div className="space-y-1">
-        <Label>Method</Label>
-        <Input value={reportMethod} onChange={(e) => setReportMethod(e.target.value)} placeholder="e.g. Phone, Email, In person" />
       </div>
       <div className="space-y-1">
         <Label>Date &amp; Time Report Made</Label>
@@ -512,7 +509,7 @@ function IncidentDetail({ incident, onDelete }: { incident: any; onDelete: () =>
   const { canDelete, canEditAfterSubmit } = usePermissions();
   const deleteMutation = useDeleteIncident();
 
-  const hasHeadOffice = !!(incident.reportMadeAt || incident.reportMethod || incident.reportPersonId);
+  const hasHeadOffice = !!(incident.reportMadeAt || incident.reportPersonId);
   const hasRegulatory = incident.regulatoryNotifyRequired !== null && incident.regulatoryNotifyRequired !== undefined;
   const hasReview = !!(incident.reviewNotes || incident.checkInFamily);
 
@@ -625,8 +622,7 @@ function IncidentDetail({ incident, onDelete }: { incident: any; onDelete: () =>
           <HeadOfficeForm incident={incident} onDone={() => setEditingHeadOffice(false)} />
         ) : hasHeadOffice ? (
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Person Making Report" value={incident.reportPersonName} />
-            <Field label="Method" value={incident.reportMethod} />
+            <Field label="Person Assigned to Review" value={incident.reportPersonName} />
             <Field label="Date Report Made" value={incident.reportMadeAt ? fmt(incident.reportMadeAt) : undefined} />
           </div>
         ) : (

@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Send } from "lucide-react";
+import { Send, Printer } from "lucide-react";
 
 // ── Shared types ──────────────────────────────────────────────────────────────
 export type DayKey = "mon" | "tue" | "wed" | "thu" | "fri";
@@ -162,6 +162,13 @@ export function ReadOnlyPlanView({
               <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 border border-blue-300 px-2.5 py-0.5 text-xs font-medium gap-1">
                 <Send className="h-3 w-3" /> Published
               </span>
+              <button
+                onClick={() => window.open(`/planning/print?id=${plan.id}`, "_blank")}
+                className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+              >
+                <Printer className="h-3 w-3" />
+                Print PDF
+              </button>
             </div>
           </div>
         </DialogHeader>

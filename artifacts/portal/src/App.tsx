@@ -37,6 +37,7 @@ import Outcomes from "@/pages/outcomes";
 import Calendar from "@/pages/calendar";
 import Planning from "@/pages/planning";
 import PlanningDetail from "@/pages/planning-detail";
+import WeeklyPlanPrint from "@/pages/weekly-plan-print";
 import Posts from "@/pages/posts";
 import NewPost from "@/pages/new-post";
 import PostDetail from "@/pages/post-detail";
@@ -152,6 +153,7 @@ function StaffRoutes() {
 
         <Route path="/calendar" component={Calendar} />
         <Route path="/planning" component={Planning} />
+        <Route path="/planning/print" component={WeeklyPlanPrint} />
         <Route path="/planning/new" component={PlanningDetail} />
         <Route path="/planning/:id" component={PlanningDetail} />
 

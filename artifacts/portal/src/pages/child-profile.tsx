@@ -15,6 +15,7 @@ import {
   getListChildMedicationsQueryKey,
   useListChildBehaviouralNotifications, useSendBehaviouralNotification, useDeleteBehaviouralNotification,
   getListChildBehaviouralNotificationsQueryKey,
+  useListIncidents, getListIncidentsQueryKey,
 } from "@workspace/api-client-react";
 import type { Staff } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -606,6 +607,7 @@ export default function ChildProfile() {
   const { data: allJottings } = useListJottings({ includeArchived: true });
   const { data: allPlanningExperiences } = useListPlanningExperiences();
   const { data: allPosts } = useListPosts();
+  const { data: allIncidents } = useListIncidents({ query: { queryKey: getListIncidentsQueryKey() } });
   const updateMutation = useUpdateChild();
   const deleteMutation = useDeleteChild();
   const createWelfareMutation = useCreateWelfareNote();
@@ -1365,6 +1367,9 @@ export default function ChildProfile() {
             const childJottings = (allJottings ?? []).filter((j) => j.childId === child.id);
             const childPlanningExps = (allPlanningExperiences ?? []).filter((p) => (p.childIds ?? []).includes(child.id));
             const childPosts = (allPosts ?? []).filter((p) => (p.childIds ?? []).includes(child.id));
+            const childIncidents = [...(allIncidents ?? []).filter((i) => i.childId === child.id)].sort(
+              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+            );
 
             return (
               <>
@@ -1428,6 +1433,55 @@ export default function ChildProfile() {
                             </div>
                           </Link>
                         ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Incident Logs */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <ShieldAlert className="h-5 w-5" />Incident Logs
+                      {childIncidents.length > 0 && (
+                        <Badge variant="secondary" className="text-xs font-normal">{childIncidents.length}</Badge>
+                      )}
+                    </CardTitle>
+                    <Link href="/incidents"><Button size="sm" variant="outline">View all</Button></Link>
+                  </CardHeader>
+                  <CardContent>
+                    {childIncidents.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg text-sm">No incident logs recorded for this child</div>
+                    ) : (
+                      <div className="divide-y">
+                        {childIncidents.map((inc) => {
+                          const isArchived = inc.archived;
+                          const hasReview = !!(inc as any).reviewNotes;
+                          const badgeClass = isArchived
+                            ? "bg-gray-100 text-gray-700 border-gray-200"
+                            : hasReview
+                            ? "bg-green-100 text-green-800 border-green-200"
+                            : "bg-red-100 text-red-800 border-red-200";
+                          const badgeLabel = isArchived ? "Archived" : hasReview ? "Reviewed" : "Open";
+                          return (
+                            <div key={inc.id} className="py-3 px-2 flex items-start gap-3">
+                              <div className="flex-1 min-w-0 space-y-0.5">
+                                <p className="text-sm line-clamp-2 leading-relaxed">{inc.description}</p>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="text-xs text-muted-foreground">
+                                    {inc.incidentDatetime
+                                      ? format(new Date(inc.incidentDatetime as unknown as string), "dd/MM/yyyy 'at' h:mm a")
+                                      : safeDate(inc.createdAt, "dd/MM/yyyy")}
+                                  </p>
+                                  {inc.respondentName && (
+                                    <p className="text-xs text-muted-foreground">· {inc.respondentName}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <Badge className={`text-xs shrink-0 border ${badgeClass}`}>{badgeLabel}</Badge>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </CardContent>

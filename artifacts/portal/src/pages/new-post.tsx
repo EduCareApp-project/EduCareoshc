@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ImagePlus, X, Loader2 } from "lucide-react";
+import { ArrowLeft, ImagePlus, X, Loader2, CameraOff } from "lucide-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { useMemo } from "react";
 import { MtopOutcomePicker } from "@/components/mtop-outcome-picker";
@@ -187,13 +187,16 @@ export default function NewPost() {
                   <div className="flex flex-wrap gap-2">
                     {filteredChildren.map((c) => {
                       const selected = form.childIds.includes(c.id);
+                      const restricted = c.photoRestriction === true;
                       return (
                         <button
                           key={c.id}
                           type="button"
                           onClick={() => toggleChild(c.id)}
-                          className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}
+                          title={restricted ? `${c.firstName} ${c.lastName} — photo restriction` : undefined}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}
                         >
+                          {restricted && <CameraOff className={`h-3 w-3 shrink-0 ${selected ? "text-primary-foreground/80" : "text-amber-500"}`} />}
                           {c.firstName} {c.lastName}
                         </button>
                       );

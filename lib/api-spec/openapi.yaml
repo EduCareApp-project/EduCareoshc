@@ -3114,6 +3114,9 @@ components:
           type: ["integer", "null"]
         profilePicturePath:
           type: ["string", "null"]
+        photoRestriction:
+          type: boolean
+          description: Child has a photo restriction — do not include in published photos
         createdAt:
           type: string
           format: date-time
@@ -3156,6 +3159,9 @@ components:
           type: integer
         profilePicturePath:
           type: string
+        photoRestriction:
+          type: boolean
+          description: Child has a photo restriction — do not include in published photos
 
     ChildUpdate:
       type: object
@@ -3199,6 +3205,9 @@ components:
           type: ["integer", "null"]
         profilePicturePath:
           type: ["string", "null"]
+        photoRestriction:
+          type: boolean
+          description: Child has a photo restriction — do not include in published photos
 
     Staff:
       type: object

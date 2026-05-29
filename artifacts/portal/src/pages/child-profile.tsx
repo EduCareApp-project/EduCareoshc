@@ -32,12 +32,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
 import {
   ArrowLeft, Edit, Plus, Trash2, User, Users, Phone, Mail, FileText,
   Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2,
   ShieldAlert, AlertTriangle, Paperclip, X, Lock, Pencil, StickyNote, Newspaper,
   Upload, FolderOpen, Pill, ChevronDown, ChevronUp, ClipboardList, MessageSquareWarning,
+  CameraOff,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth";
 import { useUpload } from "@workspace/object-storage-web";
@@ -690,6 +692,7 @@ export default function ChildProfile() {
     guardian2Name: "", guardian2Email: "", guardian2Phone: "",
     medicalNotes: "", likes: "", dislikes: "", temperament: "", background: "",
     siteId: "" as string,
+    photoRestriction: false,
   });
 
   function openEdit() {
@@ -712,6 +715,7 @@ export default function ChildProfile() {
       temperament: child.temperament ?? "",
       background: child.background ?? "",
       siteId: child.siteId != null ? String(child.siteId) : "",
+      photoRestriction: child.photoRestriction ?? false,
     });
     setEditOpen(true);
   }
@@ -735,6 +739,7 @@ export default function ChildProfile() {
     if (!data.dislikes) delete data.dislikes;
     if (!data.temperament) delete data.temperament;
     if (!data.background) delete data.background;
+    data.photoRestriction = form.photoRestriction;
     if (!data.guardian2Name) data.guardian2Name = null;
     if (!data.guardian2Email) data.guardian2Email = null;
     if (!data.guardian2Phone) data.guardian2Phone = null;
@@ -1061,6 +1066,18 @@ export default function ChildProfile() {
                   ) : (
                     <p className="text-sm text-muted-foreground italic">No second guardian recorded. Edit the profile to add one.</p>
                   )}
+                </>
+              )}
+              {child.photoRestriction && (
+                <>
+                  <Separator />
+                  <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-md">
+                    <CameraOff className="h-4 w-4 shrink-0" />
+                    <div>
+                      <div className="text-sm font-semibold">Photo Restriction</div>
+                      <p className="text-xs text-amber-700">This child must not appear in published photos or posts.</p>
+                    </div>
+                  </div>
                 </>
               )}
               {child.medicalNotes && (
@@ -1661,6 +1678,16 @@ export default function ChildProfile() {
                   </Select>
                 </div>
                 <div className="space-y-1"><Label>Medical Notes</Label><Textarea value={form.medicalNotes} onChange={(e) => setForm({ ...form, medicalNotes: e.target.value })} rows={3} placeholder="Allergies, conditions, medications..." /></div>
+                <div className="flex items-center justify-between gap-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5">
+                  <div className="space-y-0.5">
+                    <Label className="flex items-center gap-1.5 text-amber-900"><CameraOff className="h-3.5 w-3.5" />Photo Restriction</Label>
+                    <p className="text-xs text-amber-700">This child must not appear in published photos or posts.</p>
+                  </div>
+                  <Switch
+                    checked={form.photoRestriction}
+                    onCheckedChange={(checked) => setForm({ ...form, photoRestriction: checked })}
+                  />
+                </div>
               </TabsContent>
 
               <TabsContent value="guardian" className="space-y-4">

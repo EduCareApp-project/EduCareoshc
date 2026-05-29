@@ -23,4 +23,6 @@ export interface ChildInput {
   background?: string;
   siteId?: number;
   profilePicturePath?: string;
+  /** Child has a photo restriction — do not include in published photos */
+  photoRestriction?: boolean;
 }

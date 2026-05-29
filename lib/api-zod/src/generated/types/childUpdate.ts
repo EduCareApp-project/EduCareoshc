@@ -31,4 +31,6 @@ export interface ChildUpdate {
   siteId?: number | null;
   /** @nullable */
   profilePicturePath?: string | null;
+  /** Child has a photo restriction — do not include in published photos */
+  photoRestriction?: boolean;
 }

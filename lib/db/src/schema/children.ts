@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, date, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, date, integer, boolean } from "drizzle-orm/pg-core";
 import { sitesTable } from "./sites";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -23,6 +23,7 @@ export const childrenTable = pgTable("children", {
   background: text("background"),
   siteId: integer("site_id").references(() => sitesTable.id, { onDelete: "set null" }),
   profilePicturePath: text("profile_picture_path"),
+  photoRestriction: boolean("photo_restriction").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

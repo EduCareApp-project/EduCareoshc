@@ -37,5 +37,7 @@ export interface Child {
   siteId?: number | null;
   /** @nullable */
   profilePicturePath?: string | null;
+  /** Child has a photo restriction — do not include in published photos */
+  photoRestriction?: boolean;
   createdAt?: Date;
 }

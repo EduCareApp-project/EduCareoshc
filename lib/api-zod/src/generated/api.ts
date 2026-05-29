@@ -37,6 +37,12 @@ export const ListChildrenResponseItem = zod.object({
   background: zod.string().nullish(),
   siteId: zod.number().nullish(),
   profilePicturePath: zod.string().nullish(),
+  photoRestriction: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Child has a photo restriction — do not include in published photos",
+    ),
   createdAt: zod.coerce.date().optional(),
 });
 export const ListChildrenResponse = zod.array(ListChildrenResponseItem);
@@ -61,6 +67,12 @@ export const CreateChildBody = zod.object({
   background: zod.string().optional(),
   siteId: zod.number().optional(),
   profilePicturePath: zod.string().optional(),
+  photoRestriction: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Child has a photo restriction — do not include in published photos",
+    ),
 });
 
 export const GetChildParams = zod.object({
@@ -87,6 +99,12 @@ export const GetChildResponse = zod.object({
   background: zod.string().nullish(),
   siteId: zod.number().nullish(),
   profilePicturePath: zod.string().nullish(),
+  photoRestriction: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Child has a photo restriction — do not include in published photos",
+    ),
   createdAt: zod.coerce.date().optional(),
 });
 
@@ -113,6 +131,12 @@ export const UpdateChildBody = zod.object({
   background: zod.string().optional(),
   siteId: zod.number().nullish(),
   profilePicturePath: zod.string().nullish(),
+  photoRestriction: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Child has a photo restriction — do not include in published photos",
+    ),
 });
 
 export const UpdateChildResponse = zod.object({
@@ -135,6 +159,12 @@ export const UpdateChildResponse = zod.object({
   background: zod.string().nullish(),
   siteId: zod.number().nullish(),
   profilePicturePath: zod.string().nullish(),
+  photoRestriction: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Child has a photo restriction — do not include in published photos",
+    ),
   createdAt: zod.coerce.date().optional(),
 });
 

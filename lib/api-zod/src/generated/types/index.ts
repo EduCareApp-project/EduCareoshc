@@ -49,6 +49,7 @@ export * from "./conditionReportUpdateStatus";
 export * from "./confidentialNote";
 export * from "./confidentialNoteInput";
 export * from "./dashboardSummary";
+export * from "./deleteBehaviouralNotification200";
 export * from "./errorEnvelope";
 export * from "./evacuation";
 export * from "./evacuationDrillType";

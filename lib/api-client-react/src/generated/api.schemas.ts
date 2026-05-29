@@ -1986,3 +1986,7 @@ export type MarkNotificationRead200 = {
 export type UpdateNotificationSettings200 = {
   ok: boolean;
 };
+
+export type DeleteBehaviouralNotification200 = {
+  ok: boolean;
+};

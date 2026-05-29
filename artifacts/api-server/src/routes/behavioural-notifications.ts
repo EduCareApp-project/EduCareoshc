@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, or, inArray, sql } from "drizzle-orm";
+import { eq, desc, or, inArray, sql, and } from "drizzle-orm";
 import {
   db,
   behaviouralNotificationsTable,
@@ -98,6 +98,26 @@ router.post("/children/:id/behavioural-notifications", async (req, res): Promise
     sentAt: row.sentAt.toISOString(),
     createdAt: row.createdAt.toISOString(),
   });
+});
+
+// ── DELETE /children/:id/behavioural-notifications/:notifId ────────────────
+router.delete("/children/:id/behavioural-notifications/:notifId", async (req, res): Promise<void> => {
+  const childId = parseInt(req.params.id);
+  const notifId = parseInt(req.params.notifId);
+  if (isNaN(childId) || isNaN(notifId)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [row] = await db.select({ id: behaviouralNotificationsTable.id })
+    .from(behaviouralNotificationsTable)
+    .where(and(
+      eq(behaviouralNotificationsTable.id, notifId),
+      eq(behaviouralNotificationsTable.childId, childId),
+    ));
+  if (!row) { res.status(404).json({ error: "Not found" }); return; }
+
+  await db.delete(behaviouralNotificationsTable)
+    .where(eq(behaviouralNotificationsTable.id, notifId));
+
+  res.json({ ok: true });
 });
 
 // ── GET /guardians/:email/behavioural-notifications ────────────────────────

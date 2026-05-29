@@ -43,6 +43,7 @@ import type {
   ConfidentialNote,
   ConfidentialNoteInput,
   DashboardSummary,
+  DeleteBehaviouralNotification200,
   ErrorEnvelope,
   Evacuation,
   EvacuationInput,
@@ -12422,6 +12423,97 @@ export const useSendBehaviouralNotification = <
   TContext
 > => {
   return useMutation(getSendBehaviouralNotificationMutationOptions(options));
+};
+
+/**
+ * @summary Delete a behavioural notification record
+ */
+export const getDeleteBehaviouralNotificationUrl = (
+  id: number,
+  notifId: number,
+) => {
+  return `/api/children/${id}/behavioural-notifications/${notifId}`;
+};
+
+export const deleteBehaviouralNotification = async (
+  id: number,
+  notifId: number,
+  options?: RequestInit,
+): Promise<DeleteBehaviouralNotification200> => {
+  return customFetch<DeleteBehaviouralNotification200>(
+    getDeleteBehaviouralNotificationUrl(id, notifId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export const getDeleteBehaviouralNotificationMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteBehaviouralNotification>>,
+    TError,
+    { id: number; notifId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteBehaviouralNotification>>,
+  TError,
+  { id: number; notifId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteBehaviouralNotification"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteBehaviouralNotification>>,
+    { id: number; notifId: number }
+  > = (props) => {
+    const { id, notifId } = props ?? {};
+
+    return deleteBehaviouralNotification(id, notifId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteBehaviouralNotificationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteBehaviouralNotification>>
+>;
+
+export type DeleteBehaviouralNotificationMutationError = ErrorType<void>;
+
+/**
+ * @summary Delete a behavioural notification record
+ */
+export const useDeleteBehaviouralNotification = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteBehaviouralNotification>>,
+    TError,
+    { id: number; notifId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteBehaviouralNotification>>,
+  TError,
+  { id: number; notifId: number },
+  TContext
+> => {
+  return useMutation(getDeleteBehaviouralNotificationMutationOptions(options));
 };
 
 /**

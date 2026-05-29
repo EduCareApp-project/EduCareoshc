@@ -13,7 +13,7 @@ import {
   useListMedicationLogs, getListMedicationLogsQueryKey,
   useCreateMedicationLog, useDeleteMedicationLog,
   getListChildMedicationsQueryKey,
-  useListChildBehaviouralNotifications, useSendBehaviouralNotification,
+  useListChildBehaviouralNotifications, useSendBehaviouralNotification, useDeleteBehaviouralNotification,
   getListChildBehaviouralNotificationsQueryKey,
 } from "@workspace/api-client-react";
 import type { Staff } from "@workspace/api-client-react";
@@ -79,9 +79,11 @@ const DEFAULT_SUPPORT = `\u2022 Reinforcing appropriate behaviour expectations a
 function BehaviourTab({ childId }: { childId: number }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { canDelete } = usePermissions();
 
   const { data: notifications = [], isLoading } = useListChildBehaviouralNotifications(childId);
   const sendMutation = useSendBehaviouralNotification();
+  const deleteMutation = useDeleteBehaviouralNotification();
 
   const [composeOpen, setComposeOpen] = useState(false);
   const [behaviourDescription, setBehaviourDescription] = useState("");
@@ -137,8 +139,47 @@ function BehaviourTab({ childId }: { childId: number }) {
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <CardTitle className="text-sm">{n.sentAt ? format(new Date(n.sentAt), "dd/MM/yyyy 'at' h:mm a") : "—"}</CardTitle>
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex items-center flex-wrap gap-1">
                     {n.recipientEmails?.map(e => <Badge key={e} variant="outline" className="text-xs">{e}</Badge>)}
+                    {canDelete && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete this notification record?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently remove the behavioural notification sent on{" "}
+                              {n.sentAt ? format(new Date(n.sentAt), "dd/MM/yyyy") : "this date"}.
+                              The email already delivered to guardians will not be recalled.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              onClick={() =>
+                                deleteMutation.mutate(
+                                  { id: childId, notifId: n.id },
+                                  {
+                                    onSuccess: () => {
+                                      queryClient.invalidateQueries({ queryKey: getListChildBehaviouralNotificationsQueryKey(childId) });
+                                      toast({ title: "Notification record deleted" });
+                                    },
+                                    onError: () => toast({ title: "Failed to delete record", variant: "destructive" }),
+                                  }
+                                )
+                              }
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </div>
                 {n.sentByStaffName && <p className="text-xs text-muted-foreground">Sent by {n.sentByStaffName}</p>}

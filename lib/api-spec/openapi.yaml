@@ -2800,6 +2800,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/BehaviouralNotification"
 
+  /children/{id}/behavioural-notifications/{notifId}:
+    delete:
+      tags: [behavioural]
+      summary: Delete a behavioural notification record
+      operationId: deleteBehaviouralNotification
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: notifId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required: [ok]
+        "404":
+          description: Not found
+
   /guardians/{email}/behavioural-notifications:
     get:
       tags: [behavioural]

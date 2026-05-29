@@ -3321,6 +3321,18 @@ export const SendBehaviouralNotificationBody = zod.object({
 });
 
 /**
+ * @summary Delete a behavioural notification record
+ */
+export const DeleteBehaviouralNotificationParams = zod.object({
+  id: zod.coerce.number(),
+  notifId: zod.coerce.number(),
+});
+
+export const DeleteBehaviouralNotificationResponse = zod.object({
+  ok: zod.boolean(),
+});
+
+/**
  * @summary List behavioural notifications for a guardian (by email)
  */
 export const ListGuardianBehaviouralNotificationsParams = zod.object({

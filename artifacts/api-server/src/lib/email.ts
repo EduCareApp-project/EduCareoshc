@@ -69,11 +69,15 @@ function fromName(branding?: EmailBranding): string {
   return branding?.senderName ?? "EduCare Portal";
 }
 
+function smtpFrom(): string {
+  return (process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@educare.example.com").trim();
+}
+
 function createTransport() {
-  const host = process.env.SMTP_HOST;
+  const host = process.env.SMTP_HOST?.trim();
   const port = parseInt(process.env.SMTP_PORT ?? "587", 10);
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+  const user = process.env.SMTP_USER?.trim();
+  const pass = process.env.SMTP_PASS?.trim();
 
   if (!host || !user || !pass) {
     return null;
@@ -92,10 +96,10 @@ function createTransport() {
  * Confirms whether the SMTP_* env vars are present so missing config is immediately visible in logs.
  */
 export function logEmailConfig(): void {
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const from = process.env.SMTP_FROM;
+  const host = process.env.SMTP_HOST?.trim();
+  const user = process.env.SMTP_USER?.trim();
+  const pass = process.env.SMTP_PASS?.trim();
+  const from = smtpFrom();
   const configured = !!(host && user && pass);
   logger.info(
     { smtp: { host: host ?? "(not set)", user: user ?? "(not set)", from: from ?? "(not set)", configured } },
@@ -104,7 +108,7 @@ export function logEmailConfig(): void {
 }
 
 export async function sendPasswordResetEmail(email: string, resetUrl: string, branding?: EmailBranding): Promise<void> {
-  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@educare.example.com";
+  const from = smtpFrom();
   const transport = createTransport();
 
   if (!transport) {
@@ -166,7 +170,7 @@ export async function sendLoginInstructionsEmail(
   opts: LoginInstructionsEmailOptions,
   branding?: EmailBranding,
 ): Promise<void> {
-  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@educare.example.com";
+  const from = smtpFrom();
   const transport = createTransport();
 
   if (!transport) {
@@ -248,7 +252,7 @@ export async function sendLoginInstructionsEmail(
 
 export async function sendContactEnquiryEmail(opts: ContactEnquiryEmailOptions, branding?: EmailBranding): Promise<void> {
   const to = "system@educareoshc.com.au";
-  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@educare.example.com";
+  const from = smtpFrom();
   const transport = createTransport();
 
   if (!transport) {
@@ -330,7 +334,7 @@ export async function sendGuardianNoticeEmail(
 ): Promise<void> {
   if (recipients.length === 0) return;
 
-  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@educare.example.com";
+  const from = smtpFrom();
   const transport = createTransport();
 
   if (!transport) {
@@ -418,7 +422,7 @@ export async function sendWeeklyPlanPublishedEmail(
 ): Promise<void> {
   if (recipients.length === 0) return;
 
-  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@educare.example.com";
+  const from = smtpFrom();
   const transport = createTransport();
 
   if (!transport) {
@@ -492,7 +496,7 @@ export async function sendPostNotificationEmail(
 ): Promise<void> {
   if (recipients.length === 0) return;
 
-  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@educare.example.com";
+  const from = smtpFrom();
   const transport = createTransport();
 
   if (!transport) {
@@ -577,7 +581,7 @@ export async function sendMedicationLogEmail(
 ): Promise<void> {
   if (recipients.length === 0) return;
 
-  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "noreply@educare.example.com";
+  const from = smtpFrom();
   const transport = createTransport();
 
   if (!transport) {
@@ -660,7 +664,7 @@ export async function sendBehaviouralNotificationEmail(
     return;
   }
 
-  const from = process.env.SMTP_FROM ?? "onboarding@resend.dev";
+  const from = smtpFrom();
   const subject = `Behavioural Notification — ${opts.childName}`;
 
   const esc = (s: string) =>

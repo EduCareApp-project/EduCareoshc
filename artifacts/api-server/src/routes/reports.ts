@@ -53,7 +53,7 @@ router.get("/reports/service-compliance", async (req, res): Promise<void> => {
 
   const allIncidents = await db.select().from(incidentsTable);
   const filteredIncidents = siteId ? allIncidents.filter((i) => i.siteId === siteId) : allIncidents;
-  const openIncidents = filteredIncidents.filter((i) => i.status !== "closed").length;
+  const openIncidents = filteredIncidents.filter((i) => i.status !== "closed" && !i.archived).length;
 
   const allConditionReports = await db.select().from(conditionReportsTable);
   const filteredConditionReports = siteId ? allConditionReports.filter((r) => r.siteId === siteId) : allConditionReports;

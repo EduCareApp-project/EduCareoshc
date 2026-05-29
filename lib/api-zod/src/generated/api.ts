@@ -3318,6 +3318,12 @@ export const SendBehaviouralNotificationParams = zod.object({
 export const SendBehaviouralNotificationBody = zod.object({
   behaviourDescription: zod.string(),
   supportRequest: zod.string(),
+  recipientEmails: zod
+    .array(zod.string())
+    .optional()
+    .describe(
+      "Specific guardian email addresses to notify. Defaults to all guardians on the child's profile if omitted.",
+    ),
 });
 
 /**

@@ -5665,3 +5665,8 @@ components:
           type: string
         supportRequest:
           type: string
+        recipientEmails:
+          type: array
+          items:
+            type: string
+          description: Specific guardian email addresses to notify. Defaults to all guardians on the child's profile if omitted.

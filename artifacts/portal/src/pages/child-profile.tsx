@@ -76,7 +76,9 @@ const EMPTY_WELFARE_FORM = {
 
 const DEFAULT_SUPPORT = `\u2022 Reinforcing appropriate behaviour expectations at home\n\u2022 Discussing respectful and safe choices with your child\n\u2022 Supporting strategies such as [insert relevant strategies if needed]`;
 
-function BehaviourTab({ childId }: { childId: number }) {
+type GuardianOption = { name: string; email: string };
+
+function BehaviourTab({ childId, guardians }: { childId: number; guardians: GuardianOption[] }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { canDelete } = usePermissions();
@@ -88,17 +90,29 @@ function BehaviourTab({ childId }: { childId: number }) {
   const [composeOpen, setComposeOpen] = useState(false);
   const [behaviourDescription, setBehaviourDescription] = useState("");
   const [supportRequest, setSupportRequest] = useState(DEFAULT_SUPPORT);
+  const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
 
   function openCompose() {
     setBehaviourDescription("");
     setSupportRequest(DEFAULT_SUPPORT);
+    setSelectedEmails(guardians.map(g => g.email));
     setComposeOpen(true);
+  }
+
+  function toggleEmail(email: string) {
+    setSelectedEmails(prev =>
+      prev.includes(email) ? prev.filter(e => e !== email) : [...prev, email]
+    );
   }
 
   function handleSend(e: React.FormEvent) {
     e.preventDefault();
+    if (selectedEmails.length === 0) {
+      toast({ title: "Select at least one guardian to notify", variant: "destructive" });
+      return;
+    }
     sendMutation.mutate(
-      { id: childId, data: { behaviourDescription, supportRequest } },
+      { id: childId, data: { behaviourDescription, supportRequest, recipientEmails: selectedEmails } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListChildBehaviouralNotificationsQueryKey(childId) });
@@ -209,6 +223,30 @@ function BehaviourTab({ childId }: { childId: number }) {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSend} className="space-y-4 pt-1">
+            {guardians.length > 0 && (
+              <div className="space-y-2">
+                <Label>Send to</Label>
+                <div className="flex flex-col gap-2">
+                  {guardians.map(g => (
+                    <label key={g.email} className="flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer hover:bg-muted/50 transition-colors">
+                      <Checkbox
+                        checked={selectedEmails.includes(g.email)}
+                        onCheckedChange={() => toggleEmail(g.email)}
+                        id={`guardian-${g.email}`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium leading-none">{g.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">{g.email}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                {selectedEmails.length === 0 && (
+                  <p className="text-xs text-destructive">At least one guardian must be selected.</p>
+                )}
+              </div>
+            )}
+
             <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground space-y-1">
               <p>Dear Parent/Guardian,</p>
               <p>We are writing to inform you that today your child displayed the following behaviour(s):</p>
@@ -1523,7 +1561,17 @@ export default function ChildProfile() {
 
         {/* ── Behaviour ── */}
         <TabsContent value="behaviour">
-          <BehaviourTab childId={id} />
+          <BehaviourTab
+            childId={id}
+            guardians={[
+              child?.guardianName && child?.guardianEmail
+                ? { name: child.guardianName, email: child.guardianEmail }
+                : null,
+              child?.guardian2Name && child?.guardian2Email
+                ? { name: child.guardian2Name, email: child.guardian2Email }
+                : null,
+            ].filter((g): g is GuardianOption => g !== null)}
+          />
         </TabsContent>
 
       </Tabs>

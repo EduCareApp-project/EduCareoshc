@@ -1929,6 +1929,8 @@ export interface ClickUpServiceReport {
 export interface BehaviouralNotificationInput {
   behaviourDescription: string;
   supportRequest: string;
+  /** Specific guardian email addresses to notify. Defaults to all guardians on the child's profile if omitted. */
+  recipientEmails?: string[];
 }
 
 export type ListNoticesParams = {

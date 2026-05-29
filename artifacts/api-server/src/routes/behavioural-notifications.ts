@@ -47,7 +47,7 @@ router.post("/children/:id/behavioural-notifications", async (req, res): Promise
   const childId = parseInt(req.params.id);
   if (isNaN(childId)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  const { behaviourDescription, supportRequest } = req.body as { behaviourDescription?: string; supportRequest?: string };
+  const { behaviourDescription, supportRequest, recipientEmails } = req.body as { behaviourDescription?: string; supportRequest?: string; recipientEmails?: string[] };
   if (!behaviourDescription?.trim() || !supportRequest?.trim()) {
     res.status(400).json({ error: "behaviourDescription and supportRequest are required" }); return;
   }
@@ -55,7 +55,10 @@ router.post("/children/:id/behavioural-notifications", async (req, res): Promise
   const [child] = await db.select().from(childrenTable).where(eq(childrenTable.id, childId));
   if (!child) { res.status(404).json({ error: "Child not found" }); return; }
 
-  const recipients = [child.guardianEmail, child.guardian2Email].filter(Boolean) as string[];
+  const allGuardianEmails = [child.guardianEmail, child.guardian2Email].filter(Boolean) as string[];
+  const recipients = (Array.isArray(recipientEmails) && recipientEmails.length > 0)
+    ? recipientEmails.filter(e => allGuardianEmails.includes(e))
+    : allGuardianEmails;
 
   const sessionUser = req.session?.user;
   const sentByStaffId = sessionUser?.type === "staff" ? sessionUser.id : null;

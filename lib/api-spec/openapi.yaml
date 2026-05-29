@@ -509,6 +509,67 @@ paths:
         "204":
           description: Deleted
 
+  /observations/{id}/comments:
+    get:
+      operationId: listObservationComments
+      tags: [observations]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ObservationComment"
+    post:
+      operationId: createObservationComment
+      tags: [observations]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservationComment"
+
+  /observations/{id}/comments/{commentId}:
+    delete:
+      operationId: deleteObservationComment
+      tags: [observations]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /outcomes:
     get:
       operationId: listOutcomes
@@ -2316,6 +2377,67 @@ paths:
       tags: [planning]
       parameters:
         - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /planning/{id}/comments:
+    get:
+      operationId: listPlanningComments
+      tags: [planning]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlanningComment"
+    post:
+      operationId: createPlanningComment
+      tags: [planning]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanningComment"
+
+  /planning/{id}/comments/{commentId}:
+    delete:
+      operationId: deletePlanningComment
+      tags: [planning]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: commentId
           in: path
           required: true
           schema:
@@ -4724,6 +4846,49 @@ components:
           type: string
         body:
           type: string
+
+    CommentInput:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+
+    PlanningComment:
+      type: object
+      required: [id, planningExperienceId, authorName, body, createdAt]
+      properties:
+        id:
+          type: integer
+        planningExperienceId:
+          type: integer
+        staffId:
+          type: ["integer", "null"]
+        authorName:
+          type: string
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ObservationComment:
+      type: object
+      required: [id, observationId, authorName, body, createdAt]
+      properties:
+        id:
+          type: integer
+        observationId:
+          type: integer
+        staffId:
+          type: ["integer", "null"]
+        authorName:
+          type: string
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
 
     PostInput:
       type: object

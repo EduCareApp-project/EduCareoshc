@@ -37,6 +37,7 @@ import type {
   ChildSettings,
   ChildUpdate,
   ClickUpServiceReport,
+  CommentInput,
   ConditionReport,
   ConditionReportInput,
   ConditionReportUpdate,
@@ -83,11 +84,13 @@ import type {
   NqsArea,
   NqsAreaUpdate,
   Observation,
+  ObservationComment,
   ObservationInput,
   ObservationUpdate,
   Outcome,
   OutcomeCount,
   PatchNoticeBody,
+  PlanningComment,
   PlanningExperience,
   PlanningExperienceInput,
   PlanningExperienceUpdate,
@@ -2273,6 +2276,251 @@ export const useDeleteObservation = <
   TContext
 > => {
   return useMutation(getDeleteObservationMutationOptions(options));
+};
+
+export const getListObservationCommentsUrl = (id: number) => {
+  return `/api/observations/${id}/comments`;
+};
+
+export const listObservationComments = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ObservationComment[]> => {
+  return customFetch<ObservationComment[]>(getListObservationCommentsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListObservationCommentsQueryKey = (id: number) => {
+  return [`/api/observations/${id}/comments`] as const;
+};
+
+export const getListObservationCommentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listObservationComments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listObservationComments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListObservationCommentsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listObservationComments>>
+  > = ({ signal }) =>
+    listObservationComments(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listObservationComments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListObservationCommentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listObservationComments>>
+>;
+export type ListObservationCommentsQueryError = ErrorType<unknown>;
+
+export function useListObservationComments<
+  TData = Awaited<ReturnType<typeof listObservationComments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listObservationComments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListObservationCommentsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateObservationCommentUrl = (id: number) => {
+  return `/api/observations/${id}/comments`;
+};
+
+export const createObservationComment = async (
+  id: number,
+  commentInput: CommentInput,
+  options?: RequestInit,
+): Promise<ObservationComment> => {
+  return customFetch<ObservationComment>(getCreateObservationCommentUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(commentInput),
+  });
+};
+
+export const getCreateObservationCommentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createObservationComment>>,
+    TError,
+    { id: number; data: BodyType<CommentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createObservationComment>>,
+  TError,
+  { id: number; data: BodyType<CommentInput> },
+  TContext
+> => {
+  const mutationKey = ["createObservationComment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createObservationComment>>,
+    { id: number; data: BodyType<CommentInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return createObservationComment(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateObservationCommentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createObservationComment>>
+>;
+export type CreateObservationCommentMutationBody = BodyType<CommentInput>;
+export type CreateObservationCommentMutationError = ErrorType<unknown>;
+
+export const useCreateObservationComment = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createObservationComment>>,
+    TError,
+    { id: number; data: BodyType<CommentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createObservationComment>>,
+  TError,
+  { id: number; data: BodyType<CommentInput> },
+  TContext
+> => {
+  return useMutation(getCreateObservationCommentMutationOptions(options));
+};
+
+export const getDeleteObservationCommentUrl = (
+  id: number,
+  commentId: number,
+) => {
+  return `/api/observations/${id}/comments/${commentId}`;
+};
+
+export const deleteObservationComment = async (
+  id: number,
+  commentId: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteObservationCommentUrl(id, commentId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteObservationCommentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteObservationComment>>,
+    TError,
+    { id: number; commentId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteObservationComment>>,
+  TError,
+  { id: number; commentId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteObservationComment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteObservationComment>>,
+    { id: number; commentId: number }
+  > = (props) => {
+    const { id, commentId } = props ?? {};
+
+    return deleteObservationComment(id, commentId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteObservationCommentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteObservationComment>>
+>;
+
+export type DeleteObservationCommentMutationError = ErrorType<unknown>;
+
+export const useDeleteObservationComment = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteObservationComment>>,
+    TError,
+    { id: number; commentId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteObservationComment>>,
+  TError,
+  { id: number; commentId: number },
+  TContext
+> => {
+  return useMutation(getDeleteObservationCommentMutationOptions(options));
 };
 
 export const getListOutcomesUrl = () => {
@@ -10321,6 +10569,247 @@ export const useDeletePlanningExperience = <
   TContext
 > => {
   return useMutation(getDeletePlanningExperienceMutationOptions(options));
+};
+
+export const getListPlanningCommentsUrl = (id: number) => {
+  return `/api/planning/${id}/comments`;
+};
+
+export const listPlanningComments = async (
+  id: number,
+  options?: RequestInit,
+): Promise<PlanningComment[]> => {
+  return customFetch<PlanningComment[]>(getListPlanningCommentsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListPlanningCommentsQueryKey = (id: number) => {
+  return [`/api/planning/${id}/comments`] as const;
+};
+
+export const getListPlanningCommentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listPlanningComments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listPlanningComments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListPlanningCommentsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listPlanningComments>>
+  > = ({ signal }) => listPlanningComments(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listPlanningComments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListPlanningCommentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listPlanningComments>>
+>;
+export type ListPlanningCommentsQueryError = ErrorType<unknown>;
+
+export function useListPlanningComments<
+  TData = Awaited<ReturnType<typeof listPlanningComments>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listPlanningComments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPlanningCommentsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreatePlanningCommentUrl = (id: number) => {
+  return `/api/planning/${id}/comments`;
+};
+
+export const createPlanningComment = async (
+  id: number,
+  commentInput: CommentInput,
+  options?: RequestInit,
+): Promise<PlanningComment> => {
+  return customFetch<PlanningComment>(getCreatePlanningCommentUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(commentInput),
+  });
+};
+
+export const getCreatePlanningCommentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPlanningComment>>,
+    TError,
+    { id: number; data: BodyType<CommentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createPlanningComment>>,
+  TError,
+  { id: number; data: BodyType<CommentInput> },
+  TContext
+> => {
+  const mutationKey = ["createPlanningComment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createPlanningComment>>,
+    { id: number; data: BodyType<CommentInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return createPlanningComment(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreatePlanningCommentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createPlanningComment>>
+>;
+export type CreatePlanningCommentMutationBody = BodyType<CommentInput>;
+export type CreatePlanningCommentMutationError = ErrorType<unknown>;
+
+export const useCreatePlanningComment = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPlanningComment>>,
+    TError,
+    { id: number; data: BodyType<CommentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createPlanningComment>>,
+  TError,
+  { id: number; data: BodyType<CommentInput> },
+  TContext
+> => {
+  return useMutation(getCreatePlanningCommentMutationOptions(options));
+};
+
+export const getDeletePlanningCommentUrl = (id: number, commentId: number) => {
+  return `/api/planning/${id}/comments/${commentId}`;
+};
+
+export const deletePlanningComment = async (
+  id: number,
+  commentId: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeletePlanningCommentUrl(id, commentId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeletePlanningCommentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deletePlanningComment>>,
+    TError,
+    { id: number; commentId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deletePlanningComment>>,
+  TError,
+  { id: number; commentId: number },
+  TContext
+> => {
+  const mutationKey = ["deletePlanningComment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deletePlanningComment>>,
+    { id: number; commentId: number }
+  > = (props) => {
+    const { id, commentId } = props ?? {};
+
+    return deletePlanningComment(id, commentId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeletePlanningCommentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deletePlanningComment>>
+>;
+
+export type DeletePlanningCommentMutationError = ErrorType<unknown>;
+
+export const useDeletePlanningComment = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deletePlanningComment>>,
+    TError,
+    { id: number; commentId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deletePlanningComment>>,
+  TError,
+  { id: number; commentId: number },
+  TContext
+> => {
+  return useMutation(getDeletePlanningCommentMutationOptions(options));
 };
 
 export const getGetLearningStoriesReportUrl = (

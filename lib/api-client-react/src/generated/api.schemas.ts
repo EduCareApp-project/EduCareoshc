@@ -1337,6 +1337,30 @@ export interface PostCommentInput {
   body: string;
 }
 
+export interface CommentInput {
+  body: string;
+}
+
+export interface PlanningComment {
+  id: number;
+  planningExperienceId: number;
+  /** @nullable */
+  staffId?: number | null;
+  authorName: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface ObservationComment {
+  id: number;
+  observationId: number;
+  /** @nullable */
+  staffId?: number | null;
+  authorName: string;
+  body: string;
+  createdAt: string;
+}
+
 export interface PostInput {
   siteId?: number;
   childIds?: number[];

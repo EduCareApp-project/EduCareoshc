@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { useGetObservation, getGetObservationQueryKey, useUpdateObservation, useDeleteObservation, useListStaff, getListObservationsQueryKey } from "@workspace/api-client-react";
+import {
+  useGetObservation, getGetObservationQueryKey, useUpdateObservation, useDeleteObservation, useListStaff, getListObservationsQueryKey,
+  useListObservationComments, getListObservationCommentsQueryKey,
+  useCreateObservationComment, useDeleteObservationComment,
+} from "@workspace/api-client-react";
 import { Link, useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +20,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { MtopOutcomePicker } from "@/components/mtop-outcome-picker";
 import { bubbleClassForSub, dotClassForSub } from "@/components/read-only-plan-view";
+import { StaffCommentSection } from "@/components/staff-comment-section";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +44,11 @@ export default function ViewObservation() {
   const { data: staff } = useListStaff();
   const deleteObs = useDeleteObservation();
   const updateObs = useUpdateObservation();
+
+  const commentsQueryKey = getListObservationCommentsQueryKey(id);
+  const { data: comments = [] } = useListObservationComments(id, { query: { queryKey: commentsQueryKey, enabled: !!id } });
+  const addComment = useCreateObservationComment();
+  const removeComment = useDeleteObservationComment();
 
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -217,6 +227,23 @@ export default function ViewObservation() {
           </div>
         </CardContent>
       </Card>
+
+      <StaffCommentSection
+        comments={comments}
+        queryKey={commentsQueryKey}
+        onAdd={(body) => new Promise((resolve, reject) =>
+          addComment.mutate({ id, data: { body } }, {
+            onSuccess: () => { queryClient.invalidateQueries({ queryKey: commentsQueryKey }); resolve(); },
+            onError: reject,
+          })
+        )}
+        onDelete={(commentId) => new Promise((resolve, reject) =>
+          removeComment.mutate({ id, commentId }, {
+            onSuccess: () => { queryClient.invalidateQueries({ queryKey: commentsQueryKey }); resolve(); },
+            onError: reject,
+          })
+        )}
+      />
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

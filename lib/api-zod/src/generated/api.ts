@@ -535,6 +535,35 @@ export const DeleteObservationParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const ListObservationCommentsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListObservationCommentsResponseItem = zod.object({
+  id: zod.number(),
+  observationId: zod.number(),
+  staffId: zod.number().nullish(),
+  authorName: zod.string(),
+  body: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListObservationCommentsResponse = zod.array(
+  ListObservationCommentsResponseItem,
+);
+
+export const CreateObservationCommentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CreateObservationCommentBody = zod.object({
+  body: zod.string(),
+});
+
+export const DeleteObservationCommentParams = zod.object({
+  id: zod.coerce.number(),
+  commentId: zod.coerce.number(),
+});
+
 export const ListOutcomesResponseItem = zod.object({
   id: zod.number(),
   number: zod.number(),
@@ -2810,6 +2839,35 @@ export const UpdatePlanningExperienceResponse = zod.object({
 
 export const DeletePlanningExperienceParams = zod.object({
   id: zod.coerce.number(),
+});
+
+export const ListPlanningCommentsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListPlanningCommentsResponseItem = zod.object({
+  id: zod.number(),
+  planningExperienceId: zod.number(),
+  staffId: zod.number().nullish(),
+  authorName: zod.string(),
+  body: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListPlanningCommentsResponse = zod.array(
+  ListPlanningCommentsResponseItem,
+);
+
+export const CreatePlanningCommentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CreatePlanningCommentBody = zod.object({
+  body: zod.string(),
+});
+
+export const DeletePlanningCommentParams = zod.object({
+  id: zod.coerce.number(),
+  commentId: zod.coerce.number(),
 });
 
 export const GetLearningStoriesReportQueryParams = zod.object({

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
-import { db, observationsTable, childrenTable, staffTable, programsTable, sitesTable } from "@workspace/db";
+import { eq, and, desc } from "drizzle-orm";
+import { db, observationsTable, childrenTable, staffTable, programsTable, sitesTable, observationCommentsTable } from "@workspace/db";
 import {
   CreateObservationBody,
   GetObservationParams,
@@ -128,6 +128,55 @@ router.delete("/observations/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Observation not found" });
     return;
   }
+  res.sendStatus(204);
+});
+
+// ── GET /observations/:id/comments ────────────────────────────────────────────
+router.get("/observations/:id/comments", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const rows = await db.select().from(observationCommentsTable)
+    .where(eq(observationCommentsTable.observationId, id))
+    .orderBy(observationCommentsTable.createdAt);
+  res.json(rows);
+});
+
+// ── POST /observations/:id/comments ───────────────────────────────────────────
+router.post("/observations/:id/comments", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const { body } = req.body as { body?: string };
+  if (!body?.trim()) { res.status(400).json({ error: "body is required" }); return; }
+
+  const sessionUser = req.session?.user;
+  let authorName = "Unknown";
+  let staffId: number | null = null;
+  if (sessionUser?.type === "staff") {
+    staffId = sessionUser.id;
+    const [s] = await db.select({ firstName: staffTable.firstName, lastName: staffTable.lastName })
+      .from(staffTable).where(eq(staffTable.id, staffId)).limit(1);
+    if (s) authorName = `${s.firstName} ${s.lastName}`;
+  }
+
+  const [comment] = await db.insert(observationCommentsTable).values({
+    observationId: id,
+    staffId,
+    authorName,
+    body: body.trim(),
+  }).returning();
+
+  res.status(201).json(comment);
+});
+
+// ── DELETE /observations/:id/comments/:commentId ──────────────────────────────
+router.delete("/observations/:id/comments/:commentId", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  const commentId = parseInt(req.params.commentId);
+  if (isNaN(id) || isNaN(commentId)) { res.status(400).json({ error: "Invalid id" }); return; }
+  await db.delete(observationCommentsTable).where(
+    and(eq(observationCommentsTable.id, commentId), eq(observationCommentsTable.observationId, id))
+  );
   res.sendStatus(204);
 });
 

@@ -9,6 +9,8 @@ import {
   useListSites,
   useListStaff,
   useListOutcomes,
+  useListPlanningComments, getListPlanningCommentsQueryKey,
+  useCreatePlanningComment, useDeletePlanningComment,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpload } from "@workspace/object-storage-web";
@@ -23,6 +25,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, Save, Trash2, Users, Upload, FileText, X, Loader2, Copy, Pencil, Link, ExternalLink, Plus, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { StaffCommentSection } from "@/components/staff-comment-section";
 import { format } from "date-fns";
 
 const STAGE_LABELS: Record<string, string> = {
@@ -218,6 +221,11 @@ export default function PlanningDetail() {
   const createMutation = useCreatePlanningExperience();
   const updateMutation = useUpdatePlanningExperience();
   const deleteMutation = useDeletePlanningExperience();
+
+  const commentsQueryKey = getListPlanningCommentsQueryKey(id ?? 0);
+  const { data: planComments = [] } = useListPlanningComments(id ?? 0, { query: { queryKey: commentsQueryKey, enabled: !isNew && id !== null } });
+  const addPlanComment = useCreatePlanningComment();
+  const removePlanComment = useDeletePlanningComment();
 
   const [form, setForm] = useState<FormState>(emptyForm());
   const [savedForm, setSavedForm] = useState<FormState>(emptyForm());
@@ -566,6 +574,26 @@ export default function PlanningDetail() {
           )}
         </div>
       </div>
+
+      {/* Comments */}
+      {!isNew && (
+        <StaffCommentSection
+          comments={planComments}
+          queryKey={commentsQueryKey}
+          onAdd={(body) => new Promise((resolve, reject) =>
+            addPlanComment.mutate({ id: id!, data: { body } }, {
+              onSuccess: () => { queryClient.invalidateQueries({ queryKey: commentsQueryKey }); resolve(); },
+              onError: reject,
+            })
+          )}
+          onDelete={(commentId) => new Promise((resolve, reject) =>
+            removePlanComment.mutate({ id: id!, commentId }, {
+              onSuccess: () => { queryClient.invalidateQueries({ queryKey: commentsQueryKey }); resolve(); },
+              onError: reject,
+            })
+          )}
+        />
+      )}
 
       {/* Tabs — shown when stage is assessment or closed */}
       {showAssessmentTab ? (

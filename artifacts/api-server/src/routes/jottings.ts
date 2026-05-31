@@ -61,10 +61,10 @@ router.patch("/jottings/:id/archive", async (req, res): Promise<void> => {
 router.patch("/jottings/:id", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-  const { content } = req.body as { content?: string };
+  const { content, childId } = req.body as { content?: string; childId?: number | null };
   if (!content?.trim()) { res.status(400).json({ error: "content is required" }); return; }
   const [jotting] = await db.update(jottingsTable)
-    .set({ content: content.trim() })
+    .set({ content: content.trim(), ...("childId" in req.body ? { childId: childId ?? null } : {}) })
     .where(eq(jottingsTable.id, id))
     .returning();
   if (!jotting) { res.status(404).json({ error: "Jotting not found" }); return; }

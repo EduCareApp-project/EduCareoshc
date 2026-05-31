@@ -395,8 +395,8 @@ function CommPlanView({ plan }: { plan: CommunicationPlanData }) {
       {sections.filter(s => s.value).length > 0 && (
         <div className="grid sm:grid-cols-2 gap-3">
           {sections.filter(s => s.value).map(s => (
-            <div key={s.label} className="border-2 border-gray-400 rounded-lg p-3">
-              <p className="text-xs text-muted-foreground font-medium mb-1">{s.label}</p>
+            <div key={s.label} className="border-2 border-orange-300 rounded-lg p-3 bg-orange-50">
+              <p className="text-xs font-bold mb-1">{s.label}</p>
               <p className="whitespace-pre-wrap text-sm">{s.value}</p>
             </div>
           ))}

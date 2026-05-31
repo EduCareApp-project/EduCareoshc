@@ -335,13 +335,13 @@ function RiskPlanView({ plan }: { plan: MedicalRiskPlanData }) {
   );
 }
 
-function RiskPlanForm({ draft, onChange, onSave, onCancel, saving }: { draft: MedicalRiskPlanData; onChange: (d: MedicalRiskPlanData) => void; onSave: () => void; onCancel: () => void; saving: boolean }) {
+function RiskPlanForm({ draft, onChange, onSave, onCancel, saving, staffList }: { draft: MedicalRiskPlanData; onChange: (d: MedicalRiskPlanData) => void; onSave: () => void; onCancel: () => void; saving: boolean; staffList: StaffList }) {
   function updateCondition(id: string, field: keyof RiskCondition, value: string) { onChange({ ...draft, conditions: draft.conditions.map(c => c.id === id ? { ...c, [field]: value } : c) }); }
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1"><Label className="text-xs">Plan Last Checked</Label><Input type="date" value={draft.planLastChecked} onChange={e => onChange({ ...draft, planLastChecked: e.target.value })} /></div>
-        <div className="space-y-1"><Label className="text-xs">Signed By</Label><Input value={draft.planSignedBy} onChange={e => onChange({ ...draft, planSignedBy: e.target.value })} placeholder="Educator name" /></div>
+        <div className="space-y-1"><Label className="text-xs">Signed By</Label><Select value={draft.planSignedBy} onValueChange={v => onChange({ ...draft, planSignedBy: v })}><SelectTrigger><SelectValue placeholder="Select staff member…" /></SelectTrigger><SelectContent>{staffList.map(s => <SelectItem key={s.id} value={`${s.firstName} ${s.lastName}`}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent></Select></div>
       </div>
       {draft.conditions.map((c, i) => (
         <div key={c.id} className="border rounded-lg p-3 space-y-2 bg-red-50">
@@ -645,7 +645,7 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
             </CardHeader>
             <CardContent>
               {editingRisk
-                ? <RiskPlanForm draft={riskDraft} onChange={setRiskDraft} onSave={saveRisk} onCancel={() => setEditingRisk(false)} saving={updateChildMutation.isPending} />
+                ? <RiskPlanForm draft={riskDraft} onChange={setRiskDraft} onSave={saveRisk} onCancel={() => setEditingRisk(false)} saving={updateChildMutation.isPending} staffList={staffList} />
                 : <RiskPlanView plan={riskPlan} />}
             </CardContent>
           </Card>

@@ -3126,6 +3126,10 @@ components:
         communicationPlan:
           type: ["object", "null"]
           additionalProperties: true
+        approvedPickups:
+          type: ["array", "null"]
+          items:
+            $ref: '#/components/schemas/ApprovedPickup'
         createdAt:
           type: string
           format: date-time
@@ -3179,6 +3183,10 @@ components:
         communicationPlan:
           type: object
           additionalProperties: true
+        approvedPickups:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApprovedPickup'
 
     ChildUpdate:
       type: object
@@ -3233,6 +3241,23 @@ components:
         communicationPlan:
           type: object
           additionalProperties: true
+        approvedPickups:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApprovedPickup'
+
+    ApprovedPickup:
+      type: object
+      required: [id, fullName, phone, relationship]
+      properties:
+        id:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+        relationship:
+          type: string
 
     Staff:
       type: object

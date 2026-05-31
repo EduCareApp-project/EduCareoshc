@@ -325,6 +325,27 @@ router.get("/auth/my-plans", async (req, res): Promise<void> => {
   res.json(enriched);
 });
 
+router.put("/auth/my-children/:id/pickups", async (req, res): Promise<void> => {
+  if (!req.session.user || req.session.user.type !== "guardian") {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+  const childId = Number(req.params.id);
+  if (isNaN(childId)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [child] = await db
+    .select({ id: childrenTable.id })
+    .from(childrenTable)
+    .where(and(eq(childrenTable.id, childId), eq(childrenTable.guardianEmail, req.session.user.email)));
+  if (!child) { res.status(404).json({ error: "Not found" }); return; }
+
+  const pickups = req.body as Array<{ id: string; fullName: string; phone: string; relationship: string }>;
+  if (!Array.isArray(pickups)) { res.status(400).json({ error: "Expected array" }); return; }
+
+  await db.update(childrenTable).set({ approvedPickups: pickups } as any).where(eq(childrenTable.id, childId));
+  res.json({ ok: true });
+});
+
 router.post("/auth/acknowledge-comm-entry", async (req, res): Promise<void> => {
   if (!req.session.user || req.session.user.type !== "guardian") {
     res.status(403).json({ error: "Forbidden" });

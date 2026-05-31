@@ -17,6 +17,7 @@ import GuardianHome from "@/pages/guardian-home";
 import GuardianNotices from "@/pages/guardian-notices";
 import GuardianMedicationLogs from "@/pages/guardian-medication-logs";
 import GuardianMedical from "@/pages/guardian-medical";
+import GuardianPickups from "@/pages/guardian-pickups";
 
 import Dashboard from "@/pages/dashboard";
 import ChildrenList from "@/pages/children-list";
@@ -114,6 +115,7 @@ function GuardianRoutes() {
     <GuardianLayout>
       <Switch>
         <Route path="/" component={GuardianHome} />
+        <Route path="/pickups" component={GuardianPickups} />
         <Route path="/notices" component={GuardianNotices} />
         <Route path="/medical" component={GuardianMedical} />
         <Route path="/medication-logs" component={GuardianMedicationLogs} />

@@ -5,6 +5,7 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+import type { ApprovedPickup } from "./approvedPickup";
 import type { ChildInputCommunicationPlan } from "./childInputCommunicationPlan";
 import type { ChildInputMedicalRiskPlan } from "./childInputMedicalRiskPlan";
 import type { ChildInputStatus } from "./childInputStatus";
@@ -30,4 +31,5 @@ export interface ChildInput {
   hasMedicalCondition?: boolean;
   medicalRiskPlan?: ChildInputMedicalRiskPlan;
   communicationPlan?: ChildInputCommunicationPlan;
+  approvedPickups?: ApprovedPickup[];
 }

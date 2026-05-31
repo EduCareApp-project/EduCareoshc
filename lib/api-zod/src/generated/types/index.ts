@@ -8,6 +8,7 @@
 
 export * from "./activityItem";
 export * from "./activityItemType";
+export * from "./approvedPickup";
 export * from "./assessmentData";
 export * from "./assessmentDataAskTheChildren";
 export * from "./assessmentDataEducatorReview";

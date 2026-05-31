@@ -50,6 +50,16 @@ export const ListChildrenResponseItem = zod.object({
     .default(listChildrenResponseHasMedicalConditionDefault),
   medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
+  approvedPickups: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        fullName: zod.string(),
+        phone: zod.string(),
+        relationship: zod.string(),
+      }),
+    )
+    .nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 export const ListChildrenResponse = zod.array(ListChildrenResponseItem);
@@ -83,6 +93,16 @@ export const CreateChildBody = zod.object({
   hasMedicalCondition: zod.boolean().optional(),
   medicalRiskPlan: zod.record(zod.string(), zod.unknown()).optional(),
   communicationPlan: zod.record(zod.string(), zod.unknown()).optional(),
+  approvedPickups: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        fullName: zod.string(),
+        phone: zod.string(),
+        relationship: zod.string(),
+      }),
+    )
+    .optional(),
 });
 
 export const GetChildParams = zod.object({
@@ -122,6 +142,16 @@ export const GetChildResponse = zod.object({
     .default(getChildResponseHasMedicalConditionDefault),
   medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
+  approvedPickups: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        fullName: zod.string(),
+        phone: zod.string(),
+        relationship: zod.string(),
+      }),
+    )
+    .nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 
@@ -157,6 +187,16 @@ export const UpdateChildBody = zod.object({
   hasMedicalCondition: zod.boolean().optional(),
   medicalRiskPlan: zod.record(zod.string(), zod.unknown()).optional(),
   communicationPlan: zod.record(zod.string(), zod.unknown()).optional(),
+  approvedPickups: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        fullName: zod.string(),
+        phone: zod.string(),
+        relationship: zod.string(),
+      }),
+    )
+    .optional(),
 });
 
 export const updateChildResponseHasMedicalConditionDefault = false;
@@ -192,6 +232,16 @@ export const UpdateChildResponse = zod.object({
     .default(updateChildResponseHasMedicalConditionDefault),
   medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
+  approvedPickups: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        fullName: zod.string(),
+        phone: zod.string(),
+        relationship: zod.string(),
+      }),
+    )
+    .nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 

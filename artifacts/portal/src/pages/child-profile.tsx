@@ -311,7 +311,7 @@ interface CommunicationPlanData { grade: string; medicalCondition: string; medic
 const DEFAULT_RISK_PLAN: MedicalRiskPlanData = { planLastChecked: "", planSignedBy: "", conditions: [] };
 const DEFAULT_COMM_PLAN: CommunicationPlanData = { grade: "", medicalCondition: "", medicationLocation: "", infoProvided: "", staffAwareness: "", parentsInformed: "", emergencyProcedures: "", riskMinimisation: "", communications: [] };
 function newRiskCondition(): RiskCondition { return { id: crypto.randomUUID(), allergyCondition: "", possibleRisks: "", preventionStrategies: "", emergencySteps: "" }; }
-function newCommEntry(): CommEntry { return { id: crypto.randomUUID(), date: "", action: "", educatorSignature: "", guardianSignature: "" }; }
+function newCommEntry(): CommEntry { return { id: crypto.randomUUID(), date: "", action: "", educatorSignature: "" }; }
 
 function RiskPlanView({ plan }: { plan: MedicalRiskPlanData }) {
   if (!plan.planLastChecked && !plan.planSignedBy && plan.conditions.length === 0) {
@@ -899,7 +899,8 @@ export default function ChildProfile() {
   const deleteConfidentialMutation = useDeleteConfidentialNote();
 
   const [editOpen, setEditOpen] = useState(false);
-  const [guardianView, setGuardianView] = useState<1 | 2>(1);
+  const [guardianView, setGuardianView] = useState<string>("g1");
+  const approvedPickups: Array<{ id: string; fullName: string; phone: string; relationship: string }> = (child?.approvedPickups as any) ?? [];
   const [welfareOpen, setWelfareOpen] = useState(false);
   const [welfareForm, setWelfareForm] = useState(EMPTY_WELFARE_FORM);
   const [editingWelfareNoteId, setEditingWelfareNoteId] = useState<number | null>(null);
@@ -1294,23 +1295,33 @@ export default function ChildProfile() {
               </div>
               <Separator />
               {/* Guardian toggle */}
-              <div className="flex items-center gap-1 p-0.5 bg-muted rounded-md w-fit">
+              <div className="flex flex-wrap items-center gap-1 p-0.5 bg-muted rounded-md w-fit">
                 <button
                   type="button"
-                  onClick={() => setGuardianView(1)}
-                  className={`text-xs px-2.5 py-1 rounded transition-colors font-medium ${guardianView === 1 ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => setGuardianView("g1")}
+                  className={`text-xs px-2.5 py-1 rounded transition-colors font-medium ${guardianView === "g1" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   Guardian 1
                 </button>
                 <button
                   type="button"
-                  onClick={() => setGuardianView(2)}
-                  className={`text-xs px-2.5 py-1 rounded transition-colors font-medium ${guardianView === 2 ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => setGuardianView("g2")}
+                  className={`text-xs px-2.5 py-1 rounded transition-colors font-medium ${guardianView === "g2" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   Guardian 2
                 </button>
+                {approvedPickups.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setGuardianView(`p${i}`)}
+                    className={`text-xs px-2.5 py-1 rounded transition-colors font-medium ${guardianView === `p${i}` ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    Pick Up {i + 1}
+                  </button>
+                ))}
               </div>
-              {guardianView === 1 ? (
+              {guardianView === "g1" ? (
                 <>
                   <div className="space-y-1">
                     <div className="text-sm text-muted-foreground flex items-center gap-2"><User className="h-4 w-4" />Name</div>
@@ -1325,7 +1336,7 @@ export default function ChildProfile() {
                     <p className="font-medium">{child.guardianEmail}</p>
                   </div>
                 </>
-              ) : (
+              ) : guardianView === "g2" ? (
                 <>
                   {child.guardian2Name ? (
                     <>
@@ -1350,6 +1361,27 @@ export default function ChildProfile() {
                     <p className="text-sm text-muted-foreground italic">No second guardian recorded. Edit the profile to add one.</p>
                   )}
                 </>
+              ) : (
+                (() => {
+                  const idx = parseInt(guardianView.slice(1));
+                  const pickup = approvedPickups[idx];
+                  return pickup ? (
+                    <>
+                      <div className="space-y-1">
+                        <div className="text-sm text-muted-foreground flex items-center gap-2"><User className="h-4 w-4" />Full Name</div>
+                        <p className="font-medium">{pickup.fullName}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-sm text-muted-foreground flex items-center gap-2"><Phone className="h-4 w-4" />Phone</div>
+                        <p className="font-medium">{pickup.phone}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-sm text-muted-foreground">Relationship</div>
+                        <p className="font-medium">{pickup.relationship}</p>
+                      </div>
+                    </>
+                  ) : null;
+                })()
               )}
               {child.photoRestriction && (
                 <>

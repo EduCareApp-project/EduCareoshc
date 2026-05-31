@@ -3,6 +3,8 @@ import {
   useResetGuardianPassword,
   useListGuardianBehaviouralNotifications,
   getListGuardianBehaviouralNotificationsQueryKey,
+  useListChildren,
+  useUpdateChild,
 } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -11,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft,
@@ -27,10 +30,123 @@ import {
   Check,
   MessageSquareWarning,
   ClipboardList,
+  UserCheck,
+  Plus,
+  Trash2,
+  Pencil,
 } from "lucide-react";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { usePermissions } from "@/hooks/use-permissions";
+
+interface ApprovedPickup { id: string; fullName: string; phone: string; relationship: string; }
+
+function randomId() { return Math.random().toString(36).slice(2); }
+const EMPTY_PU = { fullName: "", phone: "", relationship: "" };
+
+function PickupsSection({ guardian }: { guardian: { childIds: number[]; childNames: string[] } }) {
+  const { isFullAccess } = usePermissions();
+  const canEdit = isFullAccess;
+  const { data: allChildren } = useListChildren();
+  const updateChild = useUpdateChild();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [addingFor, setAddingFor] = useState<number | null>(null);
+  const [form, setForm] = useState(EMPTY_PU);
+
+  const children = (allChildren ?? []).filter((c) => guardian.childIds.includes(c.id));
+
+  function pickups(child: (typeof children)[number]): ApprovedPickup[] {
+    return (child.approvedPickups as unknown as ApprovedPickup[]) ?? [];
+  }
+
+  function save(childId: number, next: ApprovedPickup[]) {
+    updateChild.mutate(
+      { id: childId, data: { approvedPickups: next } as any },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries();
+          toast({ title: "Saved" });
+        },
+        onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+      }
+    );
+  }
+
+  function handleAdd(child: (typeof children)[number]) {
+    if (!form.fullName.trim()) return;
+    const next = [...pickups(child), { id: Math.random().toString(36).slice(2), ...form }];
+    save(child.id, next);
+    setForm(EMPTY_PU);
+    setAddingFor(null);
+  }
+
+  function handleRemove(child: (typeof children)[number], id: string) {
+    save(child.id, pickups(child).filter((p) => p.id !== id));
+  }
+
+  return (
+    <div className="bg-card border rounded-xl p-6 space-y-4">
+      <div>
+        <h2 className="text-base font-semibold flex items-center gap-2">
+          <UserCheck className="h-4 w-4 text-emerald-600" />
+          Approved Pick-Ups
+        </h2>
+        <p className="text-xs text-muted-foreground mt-1">People authorised to collect this guardian's children from the centre.</p>
+      </div>
+
+      {children.map((child) => {
+        const pu = pickups(child);
+        return (
+          <div key={child.id} className="space-y-2">
+            <p className="text-sm font-medium">{child.firstName} {child.lastName}</p>
+            {pu.length === 0 && <p className="text-xs text-muted-foreground italic">No approved pick-ups recorded.</p>}
+            <div className="space-y-1.5">
+              {pu.map((p, i) => (
+                <div key={p.id} className="flex items-center justify-between gap-3 text-sm border rounded-lg px-3 py-2">
+                  <div>
+                    <span className="font-medium">Pick Up {i + 1}: {p.fullName}</span>
+                    <span className="text-muted-foreground ml-2">({p.relationship}) · {p.phone}</span>
+                  </div>
+                  {canEdit && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 text-destructive hover:text-destructive shrink-0"
+                      onClick={() => handleRemove(child, p.id)}
+                      disabled={updateChild.isPending}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {canEdit && addingFor === child.id ? (
+              <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
+                <p className="text-xs font-medium">New Pick Up {pu.length + 1}</p>
+                <div className="grid sm:grid-cols-3 gap-2">
+                  <div><Label className="text-xs">Full Name</Label><Input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} placeholder="Full name" className="h-8 text-sm" /></div>
+                  <div><Label className="text-xs">Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="04xx xxx xxx" className="h-8 text-sm" /></div>
+                  <div><Label className="text-xs">Relationship</Label><Input value={form.relationship} onChange={(e) => setForm({ ...form, relationship: e.target.value })} placeholder="Aunt, Uncle…" className="h-8 text-sm" /></div>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => handleAdd(child)} disabled={!form.fullName.trim() || updateChild.isPending}>Save</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setAddingFor(null); setForm(EMPTY_PU); }}>Cancel</Button>
+                </div>
+              </div>
+            ) : canEdit ? (
+              <Button size="sm" variant="outline" onClick={() => { setAddingFor(child.id); setForm(EMPTY_PU); }}>
+                <Plus className="h-3.5 w-3.5 mr-1" />Add Pick Up
+              </Button>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function initials(name: string) {
   return name
@@ -224,6 +340,9 @@ export default function GuardianDetail() {
           </div>
         </div>
       </div>
+
+      {/* Approved Pick-ups */}
+      <PickupsSection guardian={guardian} />
 
       {/* Behavioural Email Log */}
       <div className="bg-card border rounded-xl p-6">

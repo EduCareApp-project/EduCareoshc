@@ -65,6 +65,13 @@ export type ChildMedicalRiskPlan = { [key: string]: unknown } | null;
  */
 export type ChildCommunicationPlan = { [key: string]: unknown } | null;
 
+export interface ApprovedPickup {
+  id: string;
+  fullName: string;
+  phone: string;
+  relationship: string;
+}
+
 export interface Child {
   id: number;
   firstName: string;
@@ -102,6 +109,8 @@ export interface Child {
   medicalRiskPlan?: ChildMedicalRiskPlan;
   /** @nullable */
   communicationPlan?: ChildCommunicationPlan;
+  /** @nullable */
+  approvedPickups?: ApprovedPickup[] | null;
   createdAt?: string;
 }
 
@@ -139,6 +148,7 @@ export interface ChildInput {
   hasMedicalCondition?: boolean;
   medicalRiskPlan?: ChildInputMedicalRiskPlan;
   communicationPlan?: ChildInputCommunicationPlan;
+  approvedPickups?: ApprovedPickup[];
 }
 
 export type ChildUpdateStatus =
@@ -183,6 +193,7 @@ export interface ChildUpdate {
   hasMedicalCondition?: boolean;
   medicalRiskPlan?: ChildUpdateMedicalRiskPlan;
   communicationPlan?: ChildUpdateCommunicationPlan;
+  approvedPickups?: ApprovedPickup[];
 }
 
 export type StaffRole = (typeof StaffRole)[keyof typeof StaffRole];

@@ -27,6 +27,7 @@ export const childrenTable = pgTable("children", {
   hasMedicalCondition: boolean("has_medical_condition").notNull().default(false),
   medicalRiskPlan: jsonb("medical_risk_plan"),
   communicationPlan: jsonb("communication_plan"),
+  approvedPickups: jsonb("approved_pickups"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

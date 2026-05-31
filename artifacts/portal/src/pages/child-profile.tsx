@@ -320,7 +320,7 @@ function RiskPlanView({ plan }: { plan: MedicalRiskPlanData }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4 text-sm">
-        {plan.planLastChecked && <div><p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-0.5">Plan Last Checked</p><p>{plan.planLastChecked}</p></div>}
+        {plan.planLastChecked && <div><p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-0.5">Plan Last Checked</p><p>{new Date(plan.planLastChecked + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}</p></div>}
         {plan.planSignedBy && <div><p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-0.5">Signed By</p><p>{plan.planSignedBy}</p></div>}
       </div>
       {plan.conditions.map((c, i) => (
@@ -340,7 +340,7 @@ function RiskPlanForm({ draft, onChange, onSave, onCancel, saving }: { draft: Me
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1"><Label className="text-xs">Plan Last Checked</Label><Input value={draft.planLastChecked} onChange={e => onChange({ ...draft, planLastChecked: e.target.value })} placeholder="e.g. 17 Jan 2026" /></div>
+        <div className="space-y-1"><Label className="text-xs">Plan Last Checked</Label><Input type="date" value={draft.planLastChecked} onChange={e => onChange({ ...draft, planLastChecked: e.target.value })} /></div>
         <div className="space-y-1"><Label className="text-xs">Signed By</Label><Input value={draft.planSignedBy} onChange={e => onChange({ ...draft, planSignedBy: e.target.value })} placeholder="Educator name" /></div>
       </div>
       {draft.conditions.map((c, i) => (

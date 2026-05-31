@@ -5,8 +5,11 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+import type { StaffComplianceReportExpiringQualificationsItem } from "./staffComplianceReportExpiringQualificationsItem";
 import type { StaffComplianceReportStaffItem } from "./staffComplianceReportStaffItem";
 
 export interface StaffComplianceReport {
   staff: StaffComplianceReportStaffItem[];
+  /** Qualifications expiring within the next 14 days */
+  expiringQualifications: StaffComplianceReportExpiringQualificationsItem[];
 }

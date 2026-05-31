@@ -2,8 +2,9 @@ import { useGetStaffComplianceReport } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { UserCheck, CheckCircle2, XCircle, AlertCircle, ShieldX } from "lucide-react";
+import { UserCheck, CheckCircle2, XCircle, ShieldX, Clock } from "lucide-react";
 import { useLocation } from "wouter";
+import { format, parseISO } from "date-fns";
 
 const COMPLIANCE_CONFIG: Record<string, { label: string; className: string }> = {
   cannot_work:       { label: "Cannot Work",       className: "bg-red-100 text-red-800 border-red-200" },
@@ -37,6 +38,7 @@ export default function ReportsStaff() {
   }
 
   const staffList = report?.staff ?? [];
+  const expiringQuals = report?.expiringQualifications ?? [];
   const cannotWorkCount = staffList.filter((s) => s.complianceStatus === "cannot_work").length;
   const fullyCompliantCount = staffList.filter((s) => s.complianceStatus === "responsible_person" || s.complianceStatus === "educator").length;
 
@@ -46,6 +48,56 @@ export default function ReportsStaff() {
         <h1 className="text-3xl font-bold tracking-tight">Staff Compliance</h1>
         <p className="text-muted-foreground mt-1">Qualification compliance status for all active staff based on recorded certifications.</p>
       </div>
+
+      {expiringQuals.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50/60">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2 text-amber-900">
+              <Clock className="h-4 w-4 text-amber-600" />
+              Qualifications Expiring Within 14 Days
+              <Badge className="ml-1 bg-amber-200 text-amber-900 border-amber-300">{expiringQuals.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-t border-amber-200 bg-amber-100/60">
+                    <th className="text-left px-6 py-2.5 font-medium text-amber-900">Staff Member</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-amber-900">Qualification</th>
+                    <th className="text-left px-4 py-2.5 font-medium text-amber-900">Expiry Date</th>
+                    <th className="text-right px-6 py-2.5 font-medium text-amber-900">Days Remaining</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-amber-100">
+                  {expiringQuals.map((q) => (
+                    <tr
+                      key={q.qualId}
+                      className="hover:bg-amber-100/50 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/staff/${q.staffId}`)}
+                    >
+                      <td className="px-6 py-3 font-medium text-primary hover:underline">{q.staffName}</td>
+                      <td className="px-4 py-3 text-foreground">{q.qualName}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{format(parseISO(q.expiryDate), "dd/MM/yyyy")}</td>
+                      <td className="px-6 py-3 text-right">
+                        <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                          q.daysUntilExpiry <= 3
+                            ? "bg-red-100 text-red-800"
+                            : q.daysUntilExpiry <= 7
+                            ? "bg-orange-100 text-orange-800"
+                            : "bg-amber-100 text-amber-800"
+                        }`}>
+                          {q.daysUntilExpiry === 0 ? "Today" : q.daysUntilExpiry === 1 ? "1 day" : `${q.daysUntilExpiry} days`}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>

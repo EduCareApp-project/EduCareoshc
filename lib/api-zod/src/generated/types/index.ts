@@ -166,6 +166,7 @@ export * from "./siteInput";
 export * from "./siteUpdate";
 export * from "./staff";
 export * from "./staffComplianceReport";
+export * from "./staffComplianceReportExpiringQualificationsItem";
 export * from "./staffComplianceReportStaffItem";
 export * from "./staffComplianceReportStaffItemComplianceStatus";
 export * from "./staffInput";

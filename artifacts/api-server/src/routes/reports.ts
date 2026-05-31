@@ -161,6 +161,8 @@ router.get("/reports/staff-compliance", async (_req, res): Promise<void> => {
   const allQuals = await db.select().from(staffQualificationsTable);
   const currentYear = new Date().getFullYear();
 
+  const staffById = new Map(allStaff.map((s) => [s.id, s]));
+
   const staffData = allStaff.map((s) => {
     const pdThisYear = allPd.filter((p) => {
       const year = new Date(p.completedAt).getFullYear();
@@ -183,7 +185,41 @@ router.get("/reports/staff-compliance", async (_req, res): Promise<void> => {
     };
   });
 
-  res.json(GetStaffComplianceReportResponse.parse({ staff: staffData }));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split("T")[0];
+  const windowEnd = new Date(today);
+  windowEnd.setDate(today.getDate() + 14);
+  const windowEndStr = windowEnd.toISOString().split("T")[0];
+
+  function toDateStr(v: Date | string | null): string {
+    if (!v) return "";
+    return typeof v === "string" ? v : v.toISOString().split("T")[0];
+  }
+
+  const expiringQualifications = allQuals
+    .filter((q) => {
+      if (!q.expiryDate) return false;
+      const d = toDateStr(q.expiryDate);
+      return d >= todayStr && d <= windowEndStr;
+    })
+    .map((q) => {
+      const expiryStr = toDateStr(q.expiryDate);
+      const ms = new Date(expiryStr).getTime() - today.getTime();
+      const daysUntilExpiry = Math.round(ms / 86_400_000);
+      const member = staffById.get(q.staffId);
+      return {
+        qualId: q.id,
+        staffId: q.staffId,
+        staffName: member ? `${member.firstName} ${member.lastName}` : `Staff #${q.staffId}`,
+        qualName: q.name,
+        expiryDate: expiryStr,
+        daysUntilExpiry,
+      };
+    })
+    .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
+
+  res.json(GetStaffComplianceReportResponse.parse({ staff: staffData, expiringQualifications }));
 });
 
 export default router;

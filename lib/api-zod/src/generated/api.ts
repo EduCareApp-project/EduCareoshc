@@ -3067,6 +3067,18 @@ export const GetStaffComplianceReportResponse = zod.object({
         ),
     }),
   ),
+  expiringQualifications: zod
+    .array(
+      zod.object({
+        qualId: zod.number(),
+        staffId: zod.number(),
+        staffName: zod.string(),
+        qualName: zod.string(),
+        expiryDate: zod.coerce.date(),
+        daysUntilExpiry: zod.number(),
+      }),
+    )
+    .describe("Qualifications expiring within the next 14 days"),
 });
 
 /**

@@ -5796,7 +5796,7 @@ components:
 
     StaffComplianceReport:
       type: object
-      required: [staff]
+      required: [staff, expiringQualifications]
       properties:
         staff:
           type: array
@@ -5818,6 +5818,26 @@ components:
                 type: string
                 enum: [cannot_work, responsible_person, educator, incomplete]
                 description: "Derived from qualifications: cannot_work if WWCC/CPR/First Aid expired; responsible_person if all required quals current; educator if core three current; incomplete otherwise."
+        expiringQualifications:
+          type: array
+          description: Qualifications expiring within the next 14 days
+          items:
+            type: object
+            required: [qualId, staffId, staffName, qualName, expiryDate, daysUntilExpiry]
+            properties:
+              qualId:
+                type: integer
+              staffId:
+                type: integer
+              staffName:
+                type: string
+              qualName:
+                type: string
+              expiryDate:
+                type: string
+                format: date
+              daysUntilExpiry:
+                type: integer
 
     BehaviouralNotification:
       type: object

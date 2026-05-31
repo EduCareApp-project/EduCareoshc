@@ -1949,8 +1949,19 @@ export type StaffComplianceReportStaffItem = {
   complianceStatus: StaffComplianceReportStaffItemComplianceStatus;
 };
 
+export type StaffComplianceReportExpiringQualificationsItem = {
+  qualId: number;
+  staffId: number;
+  staffName: string;
+  qualName: string;
+  expiryDate: string;
+  daysUntilExpiry: number;
+};
+
 export interface StaffComplianceReport {
   staff: StaffComplianceReportStaffItem[];
+  /** Qualifications expiring within the next 14 days */
+  expiringQualifications: StaffComplianceReportExpiringQualificationsItem[];
 }
 
 export interface BehaviouralNotification {

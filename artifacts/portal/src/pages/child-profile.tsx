@@ -1363,12 +1363,17 @@ export default function ChildProfile() {
                   </div>
                 </>
               )}
-              {child.medicalNotes && (
+              {(child.medicalNotes || child.hasMedicalCondition) && (
                 <>
                   <Separator />
-                  <div className="space-y-1 bg-destructive/10 p-3 rounded-md border border-destructive/20 text-destructive">
+                  <div className="space-y-1.5 bg-destructive/10 p-3 rounded-md border border-destructive/20 text-destructive">
                     <div className="text-sm font-semibold">Medical Notes</div>
-                    <p className="text-sm">{child.medicalNotes}</p>
+                    {child.hasMedicalCondition && (child.communicationPlan as any)?.medicalCondition && (
+                      <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-red-200 text-red-900 border border-red-400">
+                        {(child.communicationPlan as any).medicalCondition}
+                      </span>
+                    )}
+                    {child.medicalNotes && <p className="text-sm">{child.medicalNotes}</p>}
                   </div>
                 </>
               )}

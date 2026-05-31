@@ -179,9 +179,21 @@ export default function ChildrenList() {
                     )}
                     <CardTitle className="text-lg leading-tight">{child.firstName} {child.lastName}</CardTitle>
                   </div>
-                  <Badge variant={child.status === 'active' ? 'default' : 'secondary'} className="capitalize ml-2 shrink-0">
-                    {child.status}
-                  </Badge>
+                  <div className="flex flex-col items-end gap-1 ml-2 shrink-0">
+                    <Badge variant={child.status === 'active' ? 'default' : 'secondary'} className="capitalize">
+                      {child.status}
+                    </Badge>
+                    {child.hasMedicalCondition && (child.communicationPlan as any)?.medicalCondition && (
+                      <Badge variant="outline" className="text-xs border-red-300 text-red-700 bg-red-50">
+                        {(child.communicationPlan as any).medicalCondition}
+                      </Badge>
+                    )}
+                    {child.photoRestriction && (
+                      <Badge variant="outline" className="text-xs border-amber-300 text-amber-800 bg-amber-50">
+                        No Photo
+                      </Badge>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm">
@@ -235,6 +247,20 @@ export default function ChildrenList() {
                     <div className="min-w-0">
                       <p className="font-medium text-sm truncate">{child.firstName} {child.lastName}</p>
                       <p className="text-xs text-muted-foreground truncate">{child.guardianName}</p>
+                      {(child.hasMedicalCondition || child.photoRestriction) && (
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          {child.hasMedicalCondition && (child.communicationPlan as any)?.medicalCondition && (
+                            <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-red-300 text-red-700 bg-red-50">
+                              {(child.communicationPlan as any).medicalCondition}
+                            </Badge>
+                          )}
+                          {child.photoRestriction && (
+                            <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-amber-300 text-amber-800 bg-amber-50">
+                              No Photo
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <span className="w-28 text-right text-sm text-muted-foreground hidden sm:block">{age}</span>
                     <span className="w-32 text-right text-sm text-muted-foreground truncate hidden md:block">{siteName ?? "—"}</span>

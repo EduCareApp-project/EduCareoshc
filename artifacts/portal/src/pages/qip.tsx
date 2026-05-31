@@ -668,11 +668,18 @@ export default function Qip() {
   const [activeTab, setActiveTab] = useState("1");
   const [addOpen, setAddOpen] = useState(false);
   const [siteFilter, setSiteFilter] = useState(() =>
-    isEducatorRole && ownSiteId ? String(ownSiteId) : "__all__"
+    ownSiteId ? String(ownSiteId) : ""
   );
 
+  // Default to first site once sites load (if no site is pinned yet)
+  useEffect(() => {
+    if (!siteFilter && sites.length > 0) {
+      setSiteFilter(String(sites[0]!.id));
+    }
+  }, [sites, siteFilter]);
+
   const filteredItems = (items ?? []).filter((item) =>
-    siteFilter === "__all__" ? true : String(item.siteId ?? "") === siteFilter
+    !siteFilter || String(item.siteId ?? "") === siteFilter
   );
 
   const itemsByQA = filteredItems.reduce<Record<string, typeof items>>((acc, item) => {
@@ -684,7 +691,7 @@ export default function Qip() {
 
   const publicPageUrl = (() => {
     const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-    const siteParam = siteFilter !== "__all__" ? `?siteId=${siteFilter}` : "";
+    const siteParam = siteFilter ? `?siteId=${siteFilter}` : "";
     return `${window.location.origin}${base}/qip-public${siteParam}`;
   })();
 
@@ -751,25 +758,24 @@ export default function Qip() {
       </div>
 
       {/* Site filter */}
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-muted-foreground font-medium whitespace-nowrap">Filter by site:</span>
-        <Select value={siteFilter} onValueChange={setSiteFilter}>
-          <SelectTrigger className="w-52">
-            <SelectValue placeholder="All sites" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">All sites</SelectItem>
-            {sites.map((s) => (
-              <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {siteFilter !== "__all__" && (
+      {sites.length > 1 && (
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground font-medium whitespace-nowrap">Site:</span>
+          <Select value={siteFilter} onValueChange={setSiteFilter}>
+            <SelectTrigger className="w-52">
+              <SelectValue placeholder="Select site" />
+            </SelectTrigger>
+            <SelectContent>
+              {sites.map((s) => (
+                <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <span className="text-xs text-muted-foreground italic">
-            Public page will show QIP for {sites.find(s => String(s.id) === siteFilter)?.name ?? "selected site"} only
+            Public page shows QIP for {sites.find(s => String(s.id) === siteFilter)?.name ?? "selected site"} only
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="space-y-3">
@@ -817,7 +823,7 @@ export default function Qip() {
                   <h2 className="text-lg font-semibold">{a.label}</h2>
                 </div>
 
-                <StrengthsEditor qualityArea={a.key} colour={QA_COLOURS[a.key]} siteId={siteFilter === "__all__" ? null : Number(siteFilter)} />
+                <StrengthsEditor qualityArea={a.key} colour={QA_COLOURS[a.key]} siteId={siteFilter ? Number(siteFilter) : null} />
 
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Improvement Items ({activeItems.length})</h3>

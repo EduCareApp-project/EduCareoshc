@@ -88,6 +88,16 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
     .from(jottingsTable)
     .where(gte(jottingsTable.createdAt, sevenDaysAgo));
 
+  const [openIncidentsResult] = await db
+    .select({ count: count() })
+    .from(incidentsTable)
+    .where(eq(incidentsTable.status, "open"));
+
+  const [openConditionReportsResult] = await db
+    .select({ count: count() })
+    .from(conditionReportsTable)
+    .where(eq(conditionReportsTable.status, "open"));
+
   const summary = {
     totalChildren: totalChildrenResult?.count ?? 0,
     activeChildren: activeChildrenResult?.count ?? 0,
@@ -102,6 +112,8 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
     staffWithExpiringQuals: expiringStaffIds.size,
     postsLast7Days: last7PostsResult?.count ?? 0,
     jottingsLast7Days: last7JottingsResult?.count ?? 0,
+    openIncidents: openIncidentsResult?.count ?? 0,
+    openConditionReports: openConditionReportsResult?.count ?? 0,
   };
 
   res.json(GetDashboardSummaryResponse.parse(summary));

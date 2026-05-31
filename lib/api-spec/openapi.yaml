@@ -3499,7 +3499,7 @@ components:
 
     DashboardSummary:
       type: object
-      required: [totalChildren, activeChildren, totalStaff, totalObservations, observationsLast7Days, totalPrograms, activePrograms, nqsMeetingCount, sitesWithPublishedPlan, totalSites, staffWithExpiringQuals, postsLast7Days, jottingsLast7Days]
+      required: [totalChildren, activeChildren, totalStaff, totalObservations, observationsLast7Days, totalPrograms, activePrograms, nqsMeetingCount, sitesWithPublishedPlan, totalSites, staffWithExpiringQuals, postsLast7Days, jottingsLast7Days, openIncidents, openConditionReports]
       properties:
         totalChildren:
           type: integer
@@ -3527,6 +3527,10 @@ components:
         postsLast7Days:
           type: integer
         jottingsLast7Days:
+          type: integer
+        openIncidents:
+          type: integer
+        openConditionReports:
           type: integer
 
     ActivityItem:

@@ -665,8 +665,17 @@ function LeadershipDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2">
+      <div className="space-y-3">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Learning</h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          <MetricCard title="Posts (7 days)" value={summary?.postsLast7Days} icon={FileText} loading={loadingSummary} href="/posts" />
+          <MetricCard title="Jottings (7 days)" value={summary?.jottingsLast7Days} icon={PenLine} loading={loadingSummary} href="/jottings" />
+          <MetricCard title="Observations (7 days)" value={summary?.observationsLast7Days} icon={BookOpen} loading={loadingSummary} href="/observations" />
+        </div>
+      </div>
+      <div className="space-y-3">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Operational</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
             title="Staff Compliance"
             value={summary?.totalStaff}
@@ -682,18 +691,29 @@ function LeadershipDashboard() {
             href="/staff"
           />
           <MetricCard
-            title="Weekly Plans Published"
+            title="Weekly Plans"
             label={summary ? `${summary.sitesWithPublishedPlan} / ${summary.totalSites}` : undefined}
             subtitle={summary ? (summary.sitesWithPublishedPlan === summary.totalSites && summary.totalSites > 0 ? "All sites covered this week" : `${summary.totalSites - summary.sitesWithPublishedPlan} site${summary.totalSites - summary.sitesWithPublishedPlan === 1 ? "" : "s"} missing a plan`) : undefined}
             icon={ClipboardList}
             loading={loadingSummary}
             href="/planning"
           />
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          <MetricCard title="Posts (7 days)" value={summary?.postsLast7Days} icon={FileText} loading={loadingSummary} href="/posts" />
-          <MetricCard title="Jottings (7 days)" value={summary?.jottingsLast7Days} icon={PenLine} loading={loadingSummary} href="/jottings" />
-          <MetricCard title="Observations (7 days)" value={summary?.observationsLast7Days} icon={BookOpen} loading={loadingSummary} href="/observations" />
+          <MetricCard
+            title="Open Incidents"
+            value={summary?.openIncidents}
+            subtitle={summary ? (summary.openIncidents === 0 ? "None open" : `${summary.openIncidents} requiring attention`) : undefined}
+            icon={AlertTriangle}
+            loading={loadingSummary}
+            href="/incidents"
+          />
+          <MetricCard
+            title="Open Condition Reports"
+            value={summary?.openConditionReports}
+            subtitle={summary ? (summary.openConditionReports === 0 ? "None open" : `${summary.openConditionReports} requiring attention`) : undefined}
+            icon={ClipboardCheck}
+            loading={loadingSummary}
+            href="/condition-reports"
+          />
         </div>
       </div>
 

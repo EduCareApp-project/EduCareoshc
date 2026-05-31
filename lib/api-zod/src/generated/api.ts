@@ -731,6 +731,8 @@ export const GetDashboardSummaryResponse = zod.object({
     ),
   postsLast7Days: zod.number(),
   jottingsLast7Days: zod.number(),
+  openIncidents: zod.number(),
+  openConditionReports: zod.number(),
 });
 
 export const getRecentObservationsResponseOutcomeIdsDefault = [];

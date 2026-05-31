@@ -21,4 +21,6 @@ export interface DashboardSummary {
   staffWithExpiringQuals: number;
   postsLast7Days: number;
   jottingsLast7Days: number;
+  openIncidents: number;
+  openConditionReports: number;
 }

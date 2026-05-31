@@ -91,7 +91,7 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
   const [openIncidentsResult] = await db
     .select({ count: count() })
     .from(incidentsTable)
-    .where(eq(incidentsTable.status, "open"));
+    .where(and(eq(incidentsTable.status, "open"), eq(incidentsTable.archived, false)));
 
   const [openConditionReportsResult] = await db
     .select({ count: count() })

@@ -264,11 +264,11 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
                     }
                   </div>
                   <div className="flex-1 min-w-0 space-y-0.5">
-                    <p className={`text-sm leading-snug ${!n.read ? "font-semibold" : "font-medium text-muted-foreground"}`}>
+                    <p className={`text-sm leading-snug break-words ${!n.read ? "font-semibold" : "font-medium text-muted-foreground"}`}>
                       {n.title}
                     </p>
                     {n.body && (
-                      <p className="text-xs text-muted-foreground truncate">{n.body}</p>
+                      <p className="text-xs text-muted-foreground break-words line-clamp-2">{n.body}</p>
                     )}
                     <p className="text-[11px] text-muted-foreground/70">{timeAgo(n.createdAt)}</p>
                   </div>

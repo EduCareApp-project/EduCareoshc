@@ -323,18 +323,27 @@ function RiskPlanView({ plan }: { plan: MedicalRiskPlanData }) {
         {plan.planLastChecked && <div><p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-0.5">Plan Last Checked</p><p>{new Date(plan.planLastChecked + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}</p></div>}
         {plan.planSignedBy && <div><p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-0.5">Signed By</p><p>{plan.planSignedBy}</p></div>}
       </div>
-      {plan.conditions.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
-          {plan.conditions.map((c, i) => (
-            <div key={c.id} className="border-2 border-gray-400 rounded-lg p-4 bg-red-50 space-y-2 text-sm">
-              <p className="font-semibold text-red-800">{c.allergyCondition || `Condition ${i + 1}`}</p>
-              {c.possibleRisks && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Possible Risks / Dangers</p><p className="whitespace-pre-wrap">{c.possibleRisks}</p></div>}
-              {c.preventionStrategies && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Risk Management Strategies</p><p className="whitespace-pre-wrap">{c.preventionStrategies}</p></div>}
-              {c.emergencySteps && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Emergency Steps</p><p className="whitespace-pre-wrap">{c.emergencySteps}</p></div>}
+      {plan.conditions.map((c, i) => (
+        <div key={c.id} className="border-2 border-gray-400 rounded-lg overflow-hidden text-sm">
+          <div className="bg-red-100 px-4 py-2 border-b-2 border-gray-400">
+            <p className="font-semibold text-red-800">{c.allergyCondition || `Condition ${i + 1}`}</p>
+          </div>
+          <div className="grid grid-cols-3 divide-x-2 divide-gray-400">
+            <div className="p-4 space-y-1 bg-red-50">
+              <p className="text-xs font-semibold uppercase tracking-wide text-red-700 mb-2">Possible Risks / Dangers</p>
+              <p className="whitespace-pre-wrap">{c.possibleRisks || <span className="text-muted-foreground italic">—</span>}</p>
             </div>
-          ))}
+            <div className="p-4 space-y-1 bg-red-50">
+              <p className="text-xs font-semibold uppercase tracking-wide text-red-700 mb-2">Risk Management Strategies</p>
+              <p className="whitespace-pre-wrap">{c.preventionStrategies || <span className="text-muted-foreground italic">—</span>}</p>
+            </div>
+            <div className="p-4 space-y-1 bg-red-50">
+              <p className="text-xs font-semibold uppercase tracking-wide text-red-700 mb-2">Emergency Steps</p>
+              <p className="whitespace-pre-wrap">{c.emergencySteps || <span className="text-muted-foreground italic">—</span>}</p>
+            </div>
+          </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }

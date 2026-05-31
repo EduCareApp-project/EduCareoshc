@@ -325,4 +325,32 @@ router.get("/auth/my-plans", async (req, res): Promise<void> => {
   res.json(enriched);
 });
 
+router.post("/auth/acknowledge-comm-entry", async (req, res): Promise<void> => {
+  if (!req.session.user || req.session.user.type !== "guardian") {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+  const { childId, entryId } = req.body as { childId: number; entryId: string };
+  if (!childId || !entryId) { res.status(400).json({ error: "childId and entryId required" }); return; }
+
+  const [child] = await db
+    .select()
+    .from(childrenTable)
+    .where(and(eq(childrenTable.id, childId), eq(childrenTable.guardianEmail, req.session.user.email)));
+  if (!child) { res.status(404).json({ error: "Not found" }); return; }
+
+  const plan = child.communicationPlan as any;
+  if (!plan?.communications) { res.status(400).json({ error: "No communication plan" }); return; }
+
+  const updated = {
+    ...plan,
+    communications: (plan.communications as any[]).map((e: any) =>
+      e.id === entryId ? { ...e, guardianAcknowledgedAt: new Date().toISOString() } : e
+    ),
+  };
+
+  await db.update(childrenTable).set({ communicationPlan: updated } as any).where(eq(childrenTable.id, childId));
+  res.json({ ok: true });
+});
+
 export default router;

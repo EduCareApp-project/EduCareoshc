@@ -1,5 +1,5 @@
 import { type ReactNode, useState, useEffect, useRef } from "react";
-import { LogOut, Menu, Home, Bell, BellOff, Newspaper, CalendarDays, Pill } from "lucide-react";
+import { LogOut, Menu, Home, Bell, BellOff, Newspaper, CalendarDays, Pill, HeartPulse } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home", icon: Home },
+  { href: "/medical", label: "Medical Plans", icon: HeartPulse },
   { href: "/medication-logs", label: "Medication Logs", icon: Pill },
 ];
 

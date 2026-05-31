@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, count } from "drizzle-orm";
 import { db, observationsTable, childrenTable, staffTable, programsTable, sitesTable, observationCommentsTable } from "@workspace/db";
+import { createNotification } from "../lib/notify";
 import {
   CreateObservationBody,
   GetObservationParams,
@@ -38,12 +39,17 @@ router.get("/observations", async (_req, res): Promise<void> => {
     .from(observationsTable)
     .orderBy(desc(observationsTable.observationDate));
 
-  const [childList, staffList, programList, siteList] = await Promise.all([
+  const [childList, staffList, programList, siteList, commentCounts] = await Promise.all([
     db.select().from(childrenTable),
     db.select().from(staffTable),
     db.select().from(programsTable),
     db.select().from(sitesTable),
+    db.select({ observationId: observationCommentsTable.observationId, count: count() })
+      .from(observationCommentsTable)
+      .groupBy(observationCommentsTable.observationId),
   ]);
+
+  const countMap = new Map(commentCounts.map((r) => [r.observationId, r.count]));
 
   const enriched = rows.map((obs) => {
     const child = childList.find((c) => c.id === obs.childId);
@@ -56,6 +62,7 @@ router.get("/observations", async (_req, res): Promise<void> => {
       staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
       siteName: site ? site.name : null,
       programName: program ? program.title : null,
+      commentCount: countMap.get(obs.id) ?? 0,
     };
   });
 
@@ -165,6 +172,38 @@ router.post("/observations/:id/comments", async (req, res): Promise<void> => {
     authorName,
     body: body.trim(),
   }).returning();
+
+  // Notify observation author + prior commenters (fire-and-forget)
+  (async () => {
+    try {
+      const [obs] = await db.select({ staffId: observationsTable.staffId })
+        .from(observationsTable).where(eq(observationsTable.id, id)).limit(1);
+      const allPriorCommenters = await db.select({ staffId: observationCommentsTable.staffId })
+        .from(observationCommentsTable)
+        .where(eq(observationCommentsTable.observationId, id));
+
+      const recipientIds = new Set<number>();
+      if (obs?.staffId) recipientIds.add(obs.staffId);
+      for (const c of allPriorCommenters) {
+        if (c.staffId) recipientIds.add(c.staffId);
+      }
+      // Don't notify the person who just commented
+      if (staffId) recipientIds.delete(staffId);
+
+      for (const rid of recipientIds) {
+        await createNotification({
+          staffId: rid,
+          type: "observation_comment",
+          title: `New comment on an observation by ${authorName}`,
+          body: body.trim().slice(0, 120),
+          href: `/observations/${id}`,
+          referenceId: id,
+          referenceType: "observation",
+          dedupeKey: `observation_comment:${id}:${comment.id}:${rid}`,
+        });
+      }
+    } catch (_) { /* non-critical */ }
+  })();
 
   res.status(201).json(comment);
 });

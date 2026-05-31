@@ -3331,6 +3331,9 @@ components:
           type: ["string", "null"]
         actionNotes:
           type: ["string", "null"]
+        commentCount:
+          type: integer
+          default: 0
         createdAt:
           type: string
           format: date-time

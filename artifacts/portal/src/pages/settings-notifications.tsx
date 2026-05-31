@@ -76,6 +76,12 @@ const SETTING_META: Record<string, { label: string; description: string; hasAdva
     hasAdvanceDays: false,
     group: "Events",
   },
+  observation_comment: {
+    label: "Comment on an observation",
+    description: "Notify the observation author and prior commenters when a new comment is added.",
+    hasAdvanceDays: false,
+    group: "Events",
+  },
   appraisal_submitted: {
     label: "Appraisal stage submitted",
     description: "Notify the relevant party when an appraisal stage is submitted (employee → reviewer, reviewer → employee, completion).",

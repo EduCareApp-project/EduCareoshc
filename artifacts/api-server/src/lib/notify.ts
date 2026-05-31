@@ -3,6 +3,7 @@ import { eq, and, inArray } from "drizzle-orm";
 
 export type NotificationType =
   | "post_comment"
+  | "observation_comment"
   | "appraisal_submitted"
   | "incident_submitted"
   | "incident_closed"

@@ -177,6 +177,7 @@ export const GetChildObservationsParams = zod.object({
 });
 
 export const getChildObservationsResponseOutcomeIdsDefault = [];
+export const getChildObservationsResponseCommentCountDefault = 0;
 
 export const GetChildObservationsResponseItem = zod.object({
   id: zod.number(),
@@ -192,6 +193,9 @@ export const GetChildObservationsResponseItem = zod.object({
     .default(getChildObservationsResponseOutcomeIdsDefault),
   commentPlan: zod.string().nullish(),
   actionNotes: zod.string().nullish(),
+  commentCount: zod
+    .number()
+    .default(getChildObservationsResponseCommentCountDefault),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -470,6 +474,7 @@ export const GetStaffProfessionalDevelopmentResponse = zod.array(
 );
 
 export const listObservationsResponseOutcomeIdsDefault = [];
+export const listObservationsResponseCommentCountDefault = 0;
 
 export const ListObservationsResponseItem = zod.object({
   id: zod.number(),
@@ -485,6 +490,9 @@ export const ListObservationsResponseItem = zod.object({
     .default(listObservationsResponseOutcomeIdsDefault),
   commentPlan: zod.string().nullish(),
   actionNotes: zod.string().nullish(),
+  commentCount: zod
+    .number()
+    .default(listObservationsResponseCommentCountDefault),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -509,6 +517,7 @@ export const GetObservationParams = zod.object({
 });
 
 export const getObservationResponseOutcomeIdsDefault = [];
+export const getObservationResponseCommentCountDefault = 0;
 
 export const GetObservationResponse = zod.object({
   id: zod.number(),
@@ -524,6 +533,7 @@ export const GetObservationResponse = zod.object({
     .default(getObservationResponseOutcomeIdsDefault),
   commentPlan: zod.string().nullish(),
   actionNotes: zod.string().nullish(),
+  commentCount: zod.number().default(getObservationResponseCommentCountDefault),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -542,6 +552,7 @@ export const UpdateObservationBody = zod.object({
 });
 
 export const updateObservationResponseOutcomeIdsDefault = [];
+export const updateObservationResponseCommentCountDefault = 0;
 
 export const UpdateObservationResponse = zod.object({
   id: zod.number(),
@@ -557,6 +568,9 @@ export const UpdateObservationResponse = zod.object({
     .default(updateObservationResponseOutcomeIdsDefault),
   commentPlan: zod.string().nullish(),
   actionNotes: zod.string().nullish(),
+  commentCount: zod
+    .number()
+    .default(updateObservationResponseCommentCountDefault),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -720,6 +734,7 @@ export const GetDashboardSummaryResponse = zod.object({
 });
 
 export const getRecentObservationsResponseOutcomeIdsDefault = [];
+export const getRecentObservationsResponseCommentCountDefault = 0;
 
 export const GetRecentObservationsResponseItem = zod.object({
   id: zod.number(),
@@ -735,6 +750,9 @@ export const GetRecentObservationsResponseItem = zod.object({
     .default(getRecentObservationsResponseOutcomeIdsDefault),
   commentPlan: zod.string().nullish(),
   actionNotes: zod.string().nullish(),
+  commentCount: zod
+    .number()
+    .default(getRecentObservationsResponseCommentCountDefault),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });

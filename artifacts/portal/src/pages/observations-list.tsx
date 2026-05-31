@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, FileText, Calendar, User, Clock } from "lucide-react";
+import { Plus, Search, FileText, Calendar, User, Clock, MessageCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, isEqual } from "date-fns";
 import { useState, useMemo } from "react";
@@ -97,11 +97,19 @@ export default function ObservationsList() {
                     <span>Last edited {format(new Date(obs.updatedAt), "dd/MM/yyyy, h:mm a")}</span>
                   </div>
 
-                  {obs.actionNotes && (
-                    <div className="text-xs bg-primary/5 border border-primary/20 rounded px-2.5 py-1.5 text-primary">
-                      Action notes recorded
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {obs.actionNotes && (
+                      <div className="text-xs bg-primary/5 border border-primary/20 rounded px-2.5 py-1.5 text-primary">
+                        Action notes recorded
+                      </div>
+                    )}
+                    {(obs.commentCount ?? 0) > 0 && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted rounded px-2 py-1">
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        <span>{obs.commentCount}</span>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </Link>

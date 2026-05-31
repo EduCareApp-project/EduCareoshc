@@ -21,6 +21,7 @@ if (Number.isNaN(port) || port <= 0) {
 async function seedNotificationSettings(): Promise<void> {
   const defaults = [
     { type: "post_comment",              label: "Post comment",                     enabled: true,  advanceDays: null },
+    { type: "observation_comment",       label: "Observation comment",              enabled: true,  advanceDays: null },
     { type: "appraisal_submitted",       label: "Appraisal stage submitted",        enabled: true,  advanceDays: null },
     { type: "incident_submitted",        label: "Incident log submitted",           enabled: true,  advanceDays: null },
     { type: "incident_closed",           label: "Incident log closed",              enabled: true,  advanceDays: null },

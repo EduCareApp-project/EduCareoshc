@@ -324,7 +324,7 @@ function RiskPlanView({ plan }: { plan: MedicalRiskPlanData }) {
         {plan.planSignedBy && <div><p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-0.5">Signed By</p><p>{plan.planSignedBy}</p></div>}
       </div>
       {plan.conditions.length > 0 && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {plan.conditions.map((c, i) => (
             <div key={c.id} className="border-2 border-gray-400 rounded-lg p-4 bg-red-50 space-y-2 text-sm">
               <p className="font-semibold text-red-800">{c.allergyCondition || `Condition ${i + 1}`}</p>

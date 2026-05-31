@@ -324,7 +324,7 @@ function RiskPlanView({ plan }: { plan: MedicalRiskPlanData }) {
         {plan.planSignedBy && <div><p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-0.5">Signed By</p><p>{plan.planSignedBy}</p></div>}
       </div>
       {plan.conditions.length > 0 && (
-        <div className="grid sm:grid-cols-2 gap-3">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {plan.conditions.map((c, i) => (
             <div key={c.id} className="border-2 border-gray-400 rounded-lg p-4 bg-red-50 space-y-2 text-sm">
               <p className="font-semibold text-red-800">{c.allergyCondition || `Condition ${i + 1}`}</p>
@@ -500,6 +500,8 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
   });
   const [editingComm, setEditingComm] = useState(false);
   const [commDraft, setCommDraft] = useState<CommunicationPlanData>({ ...DEFAULT_COMM_PLAN });
+  const [addingCommEntry, setAddingCommEntry] = useState(false);
+  const [quickEntry, setQuickEntry] = useState<CommEntry>(newCommEntry);
 
   function toggleMedical(val: boolean) {
     setHasMedical(val);
@@ -519,6 +521,13 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
   function saveComm() {
     updateChildMutation.mutate({ id: childId, data: { communicationPlan: commDraft } as any }, {
       onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetChildQueryKey(childId) }); setCommPlan(commDraft); setEditingComm(false); toast({ title: "Communication plan saved" }); },
+      onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+    });
+  }
+  function saveQuickEntry() {
+    const updated: CommunicationPlanData = { ...commPlan, communications: [...commPlan.communications, quickEntry] };
+    updateChildMutation.mutate({ id: childId, data: { communicationPlan: updated } as any }, {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetChildQueryKey(childId) }); setCommPlan(updated); setAddingCommEntry(false); setQuickEntry(newCommEntry()); toast({ title: "Communication entry added" }); },
       onError: () => toast({ title: "Failed to save", variant: "destructive" }),
     });
   }
@@ -675,13 +684,31 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2"><ClipboardList className="h-5 w-5 text-blue-600" />Medical Condition Communication Plan</CardTitle>
-                {!editingComm && <Button size="sm" variant="outline" onClick={startEditComm}><Pencil className="h-3.5 w-3.5 mr-1.5" />Edit</Button>}
+                {!editingComm && (
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => { setQuickEntry(newCommEntry()); setAddingCommEntry(true); }} disabled={addingCommEntry}><Plus className="h-3.5 w-3.5 mr-1.5" />Add Communication</Button>
+                    <Button size="sm" variant="outline" onClick={startEditComm}><Pencil className="h-3.5 w-3.5 mr-1.5" />Edit Plan</Button>
+                  </div>
+                )}
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               {editingComm
                 ? <CommPlanForm draft={commDraft} onChange={setCommDraft} onSave={saveComm} onCancel={() => setEditingComm(false)} saving={updateChildMutation.isPending} />
-                : <CommPlanView plan={commPlan} />}
+                : <>
+                    <CommPlanView plan={commPlan} />
+                    {addingCommEntry && (
+                      <div className="border-2 border-blue-300 rounded-lg p-4 bg-blue-50/50 space-y-3">
+                        <p className="text-sm font-semibold text-blue-800">New Communication Entry</p>
+                        <div className="grid grid-cols-[1fr_2fr_1fr] gap-3">
+                          <div className="space-y-1"><Label className="text-xs">Date</Label><Input type="date" value={quickEntry.date} onChange={e => setQuickEntry(p => ({ ...p, date: e.target.value }))} /></div>
+                          <div className="space-y-1"><Label className="text-xs">Action / Notes</Label><Textarea value={quickEntry.action} onChange={e => setQuickEntry(p => ({ ...p, action: e.target.value }))} rows={2} placeholder="Describe the communication or change…" /></div>
+                          <div className="space-y-1"><Label className="text-xs">Educator Signature</Label><Input value={quickEntry.educatorSignature} onChange={e => setQuickEntry(p => ({ ...p, educatorSignature: e.target.value }))} placeholder="Name" /></div>
+                        </div>
+                        <div className="flex gap-2"><Button size="sm" onClick={saveQuickEntry} disabled={updateChildMutation.isPending}>Save Entry</Button><Button size="sm" variant="outline" onClick={() => setAddingCommEntry(false)}>Cancel</Button></div>
+                      </div>
+                    )}
+                  </>}
             </CardContent>
           </Card>
         </>

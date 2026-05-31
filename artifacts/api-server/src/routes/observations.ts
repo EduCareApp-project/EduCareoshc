@@ -36,7 +36,7 @@ router.get("/observations", async (_req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(observationsTable)
-    .orderBy(observationsTable.observationDate);
+    .orderBy(desc(observationsTable.observationDate));
 
   const [childList, staffList, programList, siteList] = await Promise.all([
     db.select().from(childrenTable),

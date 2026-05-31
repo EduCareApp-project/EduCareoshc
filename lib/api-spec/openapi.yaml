@@ -3117,6 +3117,15 @@ components:
         photoRestriction:
           type: boolean
           description: Child has a photo restriction — do not include in published photos
+        hasMedicalCondition:
+          type: boolean
+          default: false
+        medicalRiskPlan:
+          type: ["object", "null"]
+          additionalProperties: true
+        communicationPlan:
+          type: ["object", "null"]
+          additionalProperties: true
         createdAt:
           type: string
           format: date-time
@@ -3162,6 +3171,14 @@ components:
         photoRestriction:
           type: boolean
           description: Child has a photo restriction — do not include in published photos
+        hasMedicalCondition:
+          type: boolean
+        medicalRiskPlan:
+          type: object
+          additionalProperties: true
+        communicationPlan:
+          type: object
+          additionalProperties: true
 
     ChildUpdate:
       type: object
@@ -3208,6 +3225,14 @@ components:
         photoRestriction:
           type: boolean
           description: Child has a photo restriction — do not include in published photos
+        hasMedicalCondition:
+          type: boolean
+        medicalRiskPlan:
+          type: object
+          additionalProperties: true
+        communicationPlan:
+          type: object
+          additionalProperties: true
 
     Staff:
       type: object

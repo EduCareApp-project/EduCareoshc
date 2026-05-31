@@ -17,6 +17,8 @@ export const HealthCheckResponse = zod.object({
 /**
  * @summary List all enrolled children
  */
+export const listChildrenResponseHasMedicalConditionDefault = false;
+
 export const ListChildrenResponseItem = zod.object({
   id: zod.number(),
   firstName: zod.string(),
@@ -43,6 +45,11 @@ export const ListChildrenResponseItem = zod.object({
     .describe(
       "Child has a photo restriction — do not include in published photos",
     ),
+  hasMedicalCondition: zod
+    .boolean()
+    .default(listChildrenResponseHasMedicalConditionDefault),
+  medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
+  communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 export const ListChildrenResponse = zod.array(ListChildrenResponseItem);
@@ -73,11 +80,16 @@ export const CreateChildBody = zod.object({
     .describe(
       "Child has a photo restriction — do not include in published photos",
     ),
+  hasMedicalCondition: zod.boolean().optional(),
+  medicalRiskPlan: zod.record(zod.string(), zod.unknown()).optional(),
+  communicationPlan: zod.record(zod.string(), zod.unknown()).optional(),
 });
 
 export const GetChildParams = zod.object({
   id: zod.coerce.number(),
 });
+
+export const getChildResponseHasMedicalConditionDefault = false;
 
 export const GetChildResponse = zod.object({
   id: zod.number(),
@@ -105,6 +117,11 @@ export const GetChildResponse = zod.object({
     .describe(
       "Child has a photo restriction — do not include in published photos",
     ),
+  hasMedicalCondition: zod
+    .boolean()
+    .default(getChildResponseHasMedicalConditionDefault),
+  medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
+  communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 
@@ -137,7 +154,12 @@ export const UpdateChildBody = zod.object({
     .describe(
       "Child has a photo restriction — do not include in published photos",
     ),
+  hasMedicalCondition: zod.boolean().optional(),
+  medicalRiskPlan: zod.record(zod.string(), zod.unknown()).optional(),
+  communicationPlan: zod.record(zod.string(), zod.unknown()).optional(),
 });
+
+export const updateChildResponseHasMedicalConditionDefault = false;
 
 export const UpdateChildResponse = zod.object({
   id: zod.number(),
@@ -165,6 +187,11 @@ export const UpdateChildResponse = zod.object({
     .describe(
       "Child has a photo restriction — do not include in published photos",
     ),
+  hasMedicalCondition: zod
+    .boolean()
+    .default(updateChildResponseHasMedicalConditionDefault),
+  medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
+  communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   createdAt: zod.coerce.date().optional(),
 });
 

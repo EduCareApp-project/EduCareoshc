@@ -55,6 +55,16 @@ export const ChildStatus = {
   waitlist: "waitlist",
 } as const;
 
+/**
+ * @nullable
+ */
+export type ChildMedicalRiskPlan = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type ChildCommunicationPlan = { [key: string]: unknown } | null;
+
 export interface Child {
   id: number;
   firstName: string;
@@ -87,6 +97,11 @@ export interface Child {
   profilePicturePath?: string | null;
   /** Child has a photo restriction — do not include in published photos */
   photoRestriction?: boolean;
+  hasMedicalCondition?: boolean;
+  /** @nullable */
+  medicalRiskPlan?: ChildMedicalRiskPlan;
+  /** @nullable */
+  communicationPlan?: ChildCommunicationPlan;
   createdAt?: string;
 }
 
@@ -98,6 +113,10 @@ export const ChildInputStatus = {
   inactive: "inactive",
   waitlist: "waitlist",
 } as const;
+
+export type ChildInputMedicalRiskPlan = { [key: string]: unknown };
+
+export type ChildInputCommunicationPlan = { [key: string]: unknown };
 
 export interface ChildInput {
   firstName: string;
@@ -117,6 +136,9 @@ export interface ChildInput {
   profilePicturePath?: string;
   /** Child has a photo restriction — do not include in published photos */
   photoRestriction?: boolean;
+  hasMedicalCondition?: boolean;
+  medicalRiskPlan?: ChildInputMedicalRiskPlan;
+  communicationPlan?: ChildInputCommunicationPlan;
 }
 
 export type ChildUpdateStatus =
@@ -127,6 +149,10 @@ export const ChildUpdateStatus = {
   inactive: "inactive",
   waitlist: "waitlist",
 } as const;
+
+export type ChildUpdateMedicalRiskPlan = { [key: string]: unknown };
+
+export type ChildUpdateCommunicationPlan = { [key: string]: unknown };
 
 export interface ChildUpdate {
   firstName?: string;
@@ -154,6 +180,9 @@ export interface ChildUpdate {
   profilePicturePath?: string | null;
   /** Child has a photo restriction — do not include in published photos */
   photoRestriction?: boolean;
+  hasMedicalCondition?: boolean;
+  medicalRiskPlan?: ChildUpdateMedicalRiskPlan;
+  communicationPlan?: ChildUpdateCommunicationPlan;
 }
 
 export type StaffRole = (typeof StaffRole)[keyof typeof StaffRole];

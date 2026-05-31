@@ -301,7 +301,146 @@ function BehaviourTab({ childId, guardians }: { childId: number; guardians: Guar
   );
 }
 
-// ── Medications Tab ────────────────────────────────────────────────────────────
+// ── Medical Plan Types ────────────────────────────────────────────────────────
+
+interface RiskCondition { id: string; allergyCondition: string; possibleRisks: string; preventionStrategies: string; emergencySteps: string; }
+interface MedicalRiskPlanData { planLastChecked: string; planSignedBy: string; conditions: RiskCondition[]; }
+interface CommEntry { id: string; date: string; action: string; educatorSignature: string; guardianSignature: string; }
+interface CommunicationPlanData { grade: string; medicalCondition: string; medicationLocation: string; infoProvided: string; staffAwareness: string; parentsInformed: string; emergencyProcedures: string; riskMinimisation: string; communications: CommEntry[]; }
+
+const DEFAULT_RISK_PLAN: MedicalRiskPlanData = { planLastChecked: "", planSignedBy: "", conditions: [] };
+const DEFAULT_COMM_PLAN: CommunicationPlanData = { grade: "", medicalCondition: "", medicationLocation: "", infoProvided: "", staffAwareness: "", parentsInformed: "", emergencyProcedures: "", riskMinimisation: "", communications: [] };
+function newRiskCondition(): RiskCondition { return { id: crypto.randomUUID(), allergyCondition: "", possibleRisks: "", preventionStrategies: "", emergencySteps: "" }; }
+function newCommEntry(): CommEntry { return { id: crypto.randomUUID(), date: "", action: "", educatorSignature: "", guardianSignature: "" }; }
+
+function RiskPlanView({ plan }: { plan: MedicalRiskPlanData }) {
+  if (!plan.planLastChecked && !plan.planSignedBy && plan.conditions.length === 0) {
+    return <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg text-sm">No risk plan recorded yet — click Edit to create one.</div>;
+  }
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4 text-sm">
+        {plan.planLastChecked && <div><p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-0.5">Plan Last Checked</p><p>{plan.planLastChecked}</p></div>}
+        {plan.planSignedBy && <div><p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-0.5">Signed By</p><p>{plan.planSignedBy}</p></div>}
+      </div>
+      {plan.conditions.map((c, i) => (
+        <div key={c.id} className="border rounded-lg p-3 bg-red-50 space-y-2 text-sm">
+          <p className="font-semibold text-red-800">{c.allergyCondition || `Condition ${i + 1}`}</p>
+          {c.possibleRisks && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Possible Risks / Dangers</p><p className="whitespace-pre-wrap">{c.possibleRisks}</p></div>}
+          {c.preventionStrategies && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Risk Management Strategies</p><p className="whitespace-pre-wrap">{c.preventionStrategies}</p></div>}
+          {c.emergencySteps && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Emergency Steps</p><p className="whitespace-pre-wrap">{c.emergencySteps}</p></div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RiskPlanForm({ draft, onChange, onSave, onCancel, saving }: { draft: MedicalRiskPlanData; onChange: (d: MedicalRiskPlanData) => void; onSave: () => void; onCancel: () => void; saving: boolean }) {
+  function updateCondition(id: string, field: keyof RiskCondition, value: string) { onChange({ ...draft, conditions: draft.conditions.map(c => c.id === id ? { ...c, [field]: value } : c) }); }
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1"><Label className="text-xs">Plan Last Checked</Label><Input value={draft.planLastChecked} onChange={e => onChange({ ...draft, planLastChecked: e.target.value })} placeholder="e.g. 17 Jan 2026" /></div>
+        <div className="space-y-1"><Label className="text-xs">Signed By</Label><Input value={draft.planSignedBy} onChange={e => onChange({ ...draft, planSignedBy: e.target.value })} placeholder="Educator name" /></div>
+      </div>
+      {draft.conditions.map((c, i) => (
+        <div key={c.id} className="border rounded-lg p-3 space-y-2 bg-red-50">
+          <div className="flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-wide text-red-700">Condition {i + 1}</p><Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground" onClick={() => onChange({ ...draft, conditions: draft.conditions.filter(c2 => c2.id !== c.id) })}><X className="h-3.5 w-3.5" /></Button></div>
+          <div className="space-y-1"><Label className="text-xs">Allergy / Condition</Label><Input value={c.allergyCondition} onChange={e => updateCondition(c.id, "allergyCondition", e.target.value)} placeholder="e.g. Allergy – Anaphylaxis" /></div>
+          <div className="space-y-1"><Label className="text-xs">Possible Risks / Dangers (People, Environment, Equipment)</Label><Textarea value={c.possibleRisks} onChange={e => updateCondition(c.id, "possibleRisks", e.target.value)} rows={2} placeholder="Describe possible risks..." /></div>
+          <div className="space-y-1"><Label className="text-xs">Risk Management Strategies</Label><Textarea value={c.preventionStrategies} onChange={e => updateCondition(c.id, "preventionStrategies", e.target.value)} rows={2} placeholder="How to minimise or prevent risks..." /></div>
+          <div className="space-y-1"><Label className="text-xs">Steps in an Emergency</Label><Textarea value={c.emergencySteps} onChange={e => updateCondition(c.id, "emergencySteps", e.target.value)} rows={2} placeholder="Steps to take in the event of an emergency..." /></div>
+        </div>
+      ))}
+      <Button type="button" variant="outline" size="sm" onClick={() => onChange({ ...draft, conditions: [...draft.conditions, newRiskCondition()] })}><Plus className="h-3.5 w-3.5 mr-1.5" />Add Condition</Button>
+      <div className="flex gap-2 pt-1"><Button type="button" size="sm" disabled={saving} onClick={onSave}>Save Plan</Button><Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button></div>
+    </div>
+  );
+}
+
+function CommPlanView({ plan }: { plan: CommunicationPlanData }) {
+  const hasContent = plan.grade || plan.medicalCondition || plan.medicationLocation || plan.infoProvided || plan.staffAwareness || plan.parentsInformed || plan.emergencyProcedures || plan.riskMinimisation;
+  if (!hasContent && plan.communications.length === 0) {
+    return <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg text-sm">No communication plan recorded yet — click Edit to create one.</div>;
+  }
+  const sections = [
+    { label: "What information has been provided about the medical condition?", value: plan.infoProvided },
+    { label: "How will staff be made aware of the condition?", value: plan.staffAwareness },
+    { label: "How will we keep parents informed?", value: plan.parentsInformed },
+    { label: "How will staff know what to do in an emergency?", value: plan.emergencyProcedures },
+    { label: "How will we minimise the risk?", value: plan.riskMinimisation },
+  ];
+  return (
+    <div className="space-y-4 text-sm">
+      {(plan.grade || plan.medicalCondition || plan.medicationLocation) && (
+        <div className="grid sm:grid-cols-3 gap-3">
+          {plan.grade && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Grade / Year</p><p>{plan.grade}</p></div>}
+          {plan.medicalCondition && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Medical Condition</p><p>{plan.medicalCondition}</p></div>}
+          {plan.medicationLocation && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Location of Medication</p><p>{plan.medicationLocation}</p></div>}
+        </div>
+      )}
+      {sections.filter(s => s.value).map(s => (
+        <div key={s.label}><p className="text-xs text-muted-foreground font-medium mb-0.5">{s.label}</p><p className="whitespace-pre-wrap">{s.value}</p></div>
+      ))}
+      {plan.communications.length > 0 && (
+        <div>
+          <p className="text-xs text-muted-foreground font-medium mb-1.5">Communication and/or Changes to Medical Condition</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border rounded-lg overflow-hidden">
+              <thead className="bg-muted/50"><tr>{["Date", "Action", "Educator Signature", "Guardian Signature"].map(h => <th key={h} className="px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">{h}</th>)}</tr></thead>
+              <tbody>{plan.communications.map(e => <tr key={e.id} className="border-t"><td className="px-3 py-2 whitespace-nowrap">{e.date}</td><td className="px-3 py-2">{e.action}</td><td className="px-3 py-2">{e.educatorSignature}</td><td className="px-3 py-2">{e.guardianSignature}</td></tr>)}</tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CommPlanForm({ draft, onChange, onSave, onCancel, saving }: { draft: CommunicationPlanData; onChange: (d: CommunicationPlanData) => void; onSave: () => void; onCancel: () => void; saving: boolean }) {
+  function updateEntry(id: string, field: keyof CommEntry, value: string) { onChange({ ...draft, communications: draft.communications.map(e => e.id === id ? { ...e, [field]: value } : e) }); }
+  const sections: { key: keyof CommunicationPlanData; label: string; placeholder: string }[] = [
+    { key: "infoProvided", label: "What information has been provided about the medical condition?", placeholder: "e.g. Parent has provided an allergy action plan and medication." },
+    { key: "staffAwareness", label: "How will staff be made aware of the condition?", placeholder: "e.g. During orientation and review periods, staff will read the child's enrolment form..." },
+    { key: "parentsInformed", label: "How will we keep parents informed?", placeholder: "e.g. Parents will receive a copy of this plan and be encouraged to speak with staff at drop-off/pick-up." },
+    { key: "emergencyProcedures", label: "How will staff know what to do in an emergency?", placeholder: "e.g. Staff will read relevant documentation and study signage and displays." },
+    { key: "riskMinimisation", label: "How will we minimise the risk?", placeholder: "e.g. Staff will plan meals with the child's condition in mind..." },
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="grid sm:grid-cols-3 gap-3">
+        <div className="space-y-1"><Label className="text-xs">Grade / Year</Label><Input value={draft.grade} onChange={e => onChange({ ...draft, grade: e.target.value })} placeholder="e.g. Grade 1" /></div>
+        <div className="space-y-1"><Label className="text-xs">Medical Condition</Label><Input value={draft.medicalCondition} onChange={e => onChange({ ...draft, medicalCondition: e.target.value })} placeholder="e.g. Allergy – Anaphylaxis" /></div>
+        <div className="space-y-1"><Label className="text-xs">Location of Medication</Label><Input value={draft.medicationLocation} onChange={e => onChange({ ...draft, medicationLocation: e.target.value })} placeholder="e.g. OSHC cabinet in the office" /></div>
+      </div>
+      {sections.map(s => (
+        <div key={s.key} className="space-y-1"><Label className="text-xs">{s.label}</Label><Textarea value={draft[s.key] as string} onChange={e => onChange({ ...draft, [s.key]: e.target.value })} rows={2} placeholder={s.placeholder} /></div>
+      ))}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <Label className="text-xs">Communication and/or Changes to Medical Condition</Label>
+          <Button type="button" size="sm" variant="outline" onClick={() => onChange({ ...draft, communications: [...draft.communications, newCommEntry()] })}><Plus className="h-3 w-3 mr-1" />Add Entry</Button>
+        </div>
+        {draft.communications.length > 0 && (
+          <div className="space-y-2">
+            {draft.communications.map((e, i) => (
+              <div key={e.id} className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-2 items-start border rounded-lg p-2 bg-muted/30">
+                <span className="pt-2 text-xs text-muted-foreground font-medium">{i + 1}.</span>
+                <div className="space-y-0.5"><Label className="text-xs text-muted-foreground">Date</Label><Input value={e.date} onChange={ev => updateEntry(e.id, "date", ev.target.value)} className="h-7 text-xs" /></div>
+                <div className="space-y-0.5"><Label className="text-xs text-muted-foreground">Action</Label><Textarea value={e.action} onChange={ev => updateEntry(e.id, "action", ev.target.value)} className="text-xs" rows={1} /></div>
+                <div className="space-y-0.5"><Label className="text-xs text-muted-foreground">Educator Signature</Label><Input value={e.educatorSignature} onChange={ev => updateEntry(e.id, "educatorSignature", ev.target.value)} className="h-7 text-xs" /></div>
+                <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0 mt-5 text-muted-foreground" onClick={() => onChange({ ...draft, communications: draft.communications.filter(e2 => e2.id !== e.id) })}><X className="h-3 w-3" /></Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="flex gap-2 pt-1"><Button type="button" size="sm" disabled={saving} onClick={onSave}>Save Plan</Button><Button type="button" size="sm" variant="outline" onClick={onCancel}>Cancel</Button></div>
+    </div>
+  );
+}
+
+// ── Medical Tab ────────────────────────────────────────────────────────────────
 
 const FREQUENCY_OPTIONS = [
   "Once daily",
@@ -320,9 +459,47 @@ const EMPTY_LOG_FORM = { administeredAt: "", dosageAdministered: "", methodOfAdm
 
 type StaffList = Staff[];
 
-function MedicationsTab({ childId, staffList, currentUserId }: { childId: number; staffList: StaffList; currentUserId: number }) {
+function MedicalTab({ childId, child, staffList, currentUserId }: { childId: number; child: { hasMedicalCondition?: boolean; medicalRiskPlan?: unknown; communicationPlan?: unknown }; staffList: StaffList; currentUserId: number }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const updateChildMutation = useUpdateChild();
+
+  // Medical condition state
+  const [hasMedical, setHasMedical] = useState<boolean>((child as any).hasMedicalCondition ?? false);
+  const [riskPlan, setRiskPlan] = useState<MedicalRiskPlanData>(() => {
+    const raw = (child as any).medicalRiskPlan;
+    return raw ? (raw as MedicalRiskPlanData) : { ...DEFAULT_RISK_PLAN };
+  });
+  const [editingRisk, setEditingRisk] = useState(false);
+  const [riskDraft, setRiskDraft] = useState<MedicalRiskPlanData>({ ...DEFAULT_RISK_PLAN });
+  const [commPlan, setCommPlan] = useState<CommunicationPlanData>(() => {
+    const raw = (child as any).communicationPlan;
+    return raw ? (raw as CommunicationPlanData) : { ...DEFAULT_COMM_PLAN };
+  });
+  const [editingComm, setEditingComm] = useState(false);
+  const [commDraft, setCommDraft] = useState<CommunicationPlanData>({ ...DEFAULT_COMM_PLAN });
+
+  function toggleMedical(val: boolean) {
+    setHasMedical(val);
+    updateChildMutation.mutate({ id: childId, data: { hasMedicalCondition: val } as any }, {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetChildQueryKey(childId) }); toast({ title: val ? "Medical condition recorded" : "Medical condition removed" }); },
+      onError: () => { setHasMedical(!val); toast({ title: "Failed to update", variant: "destructive" }); },
+    });
+  }
+  function startEditRisk() { setRiskDraft({ ...riskPlan, conditions: riskPlan.conditions.map(c => ({ ...c })) }); setEditingRisk(true); }
+  function saveRisk() {
+    updateChildMutation.mutate({ id: childId, data: { medicalRiskPlan: riskDraft } as any }, {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetChildQueryKey(childId) }); setRiskPlan(riskDraft); setEditingRisk(false); toast({ title: "Risk plan saved" }); },
+      onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+    });
+  }
+  function startEditComm() { setCommDraft({ ...commPlan, communications: commPlan.communications.map(e => ({ ...e })) }); setEditingComm(true); }
+  function saveComm() {
+    updateChildMutation.mutate({ id: childId, data: { communicationPlan: commDraft } as any }, {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetChildQueryKey(childId) }); setCommPlan(commDraft); setEditingComm(false); toast({ title: "Communication plan saved" }); },
+      onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+    });
+  }
 
   const { data: medications = [] } = useListChildMedications(childId);
 
@@ -444,7 +621,53 @@ function MedicationsTab({ childId, staffList, currentUserId }: { childId: number
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Medical Condition Question */}
+      <Card>
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <p className="font-medium">Does this child have a medical condition?</p>
+              <p className="text-sm text-muted-foreground">Enabling this records a Risk Minimisation Plan and Communication Plan for the child.</p>
+            </div>
+            <Switch checked={hasMedical} onCheckedChange={toggleMedical} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {hasMedical && (
+        <>
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2"><ShieldAlert className="h-5 w-5 text-red-600" />Individual Medical Risk Minimisation Plan</CardTitle>
+                {!editingRisk && <Button size="sm" variant="outline" onClick={startEditRisk}><Pencil className="h-3.5 w-3.5 mr-1.5" />Edit</Button>}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {editingRisk
+                ? <RiskPlanForm draft={riskDraft} onChange={setRiskDraft} onSave={saveRisk} onCancel={() => setEditingRisk(false)} saving={updateChildMutation.isPending} />
+                : <RiskPlanView plan={riskPlan} />}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2"><ClipboardList className="h-5 w-5 text-blue-600" />Medical Condition Communication Plan</CardTitle>
+                {!editingComm && <Button size="sm" variant="outline" onClick={startEditComm}><Pencil className="h-3.5 w-3.5 mr-1.5" />Edit</Button>}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {editingComm
+                ? <CommPlanForm draft={commDraft} onChange={setCommDraft} onSave={saveComm} onCancel={() => setEditingComm(false)} saving={updateChildMutation.isPending} />
+                : <CommPlanView plan={commPlan} />}
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      <Separator />
+
+      {/* Medications */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-semibold">Medications</h3>
@@ -972,7 +1195,7 @@ export default function ChildProfile() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="childdata">Child's Data</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="medications" className="flex items-center gap-1.5"><Pill className="h-3.5 w-3.5" />Medications</TabsTrigger>
+          <TabsTrigger value="medications" className="flex items-center gap-1.5"><Pill className="h-3.5 w-3.5" />Medical</TabsTrigger>
           <TabsTrigger value="behaviour" className="flex items-center gap-1.5"><MessageSquareWarning className="h-3.5 w-3.5" />Behaviour</TabsTrigger>
         </TabsList>
 
@@ -1627,7 +1850,7 @@ export default function ChildProfile() {
 
         {/* ── Medications ── */}
         <TabsContent value="medications">
-          <MedicationsTab childId={id} staffList={staff ?? []} currentUserId={user?.id ?? 0} />
+          {child && <MedicalTab childId={id} child={child} staffList={staff ?? []} currentUserId={user?.id ?? 0} />}
         </TabsContent>
 
         {/* ── Behaviour ── */}

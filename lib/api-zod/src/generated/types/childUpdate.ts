@@ -5,6 +5,8 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+import type { ChildUpdateCommunicationPlan } from "./childUpdateCommunicationPlan";
+import type { ChildUpdateMedicalRiskPlan } from "./childUpdateMedicalRiskPlan";
 import type { ChildUpdateStatus } from "./childUpdateStatus";
 
 export interface ChildUpdate {
@@ -33,4 +35,7 @@ export interface ChildUpdate {
   profilePicturePath?: string | null;
   /** Child has a photo restriction — do not include in published photos */
   photoRestriction?: boolean;
+  hasMedicalCondition?: boolean;
+  medicalRiskPlan?: ChildUpdateMedicalRiskPlan;
+  communicationPlan?: ChildUpdateCommunicationPlan;
 }

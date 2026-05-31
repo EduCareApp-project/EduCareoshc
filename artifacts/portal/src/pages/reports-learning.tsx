@@ -193,7 +193,7 @@ export default function ReportsLearning() {
   const { data: sites } = useListSites();
   const { data: children, isLoading: childrenLoading } = useListChildren();
   const { data: posts, isLoading: postsLoading } = useListPosts();
-  const { data: jottings, isLoading: jottingsLoading } = useListJottings();
+  const { data: jottings, isLoading: jottingsLoading } = useListJottings({ includeArchived: true });
   const { data: observations, isLoading: observationsLoading } = useListObservations();
   const { data: planning, isLoading: planningLoading } = useListPlanningExperiences();
   const { data: report, isLoading: reportLoading } = useGetLearningStoriesReport();
@@ -230,7 +230,6 @@ export default function ReportsLearning() {
   const filteredJottings = useMemo(() => {
     if (!jottings) return [];
     return jottings.filter((j) => {
-      if (j.archivedAt) return false;
       const inPeriod = afterCutoff(j.createdAt, cutoff);
       const inSite = childIdsInSite === null || (j.childId != null && childIdsInSite.has(j.childId));
       return inPeriod && inSite;

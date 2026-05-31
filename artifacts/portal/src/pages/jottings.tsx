@@ -29,6 +29,7 @@ export default function Jottings() {
   const [childId, setChildId] = useState<string>("none");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
+  const [editChildId, setEditChildId] = useState<string>("none");
   const [captureSite, setCaptureSite] = useState<string>(() =>
     isEducatorRole && ownSiteId ? String(ownSiteId) : "all"
   );
@@ -83,19 +84,27 @@ export default function Jottings() {
     });
   }
 
-  function startEdit(id: number, current: string) {
+  function startEdit(id: number, current: string, currentChildId: number | null | undefined) {
     setEditingId(id);
     setEditContent(current);
+    setEditChildId(currentChildId ? String(currentChildId) : "none");
   }
 
   function cancelEdit() {
     setEditingId(null);
     setEditContent("");
+    setEditChildId("none");
   }
 
   function handleSaveEdit(id: number) {
     if (!editContent.trim()) return;
-    updateMutation.mutate({ id, data: { content: editContent.trim() } }, {
+    updateMutation.mutate({
+      id,
+      data: {
+        content: editContent.trim(),
+        childId: editChildId !== "none" ? parseInt(editChildId) : null,
+      } as any,
+    }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/jottings"] });
         cancelEdit();
@@ -191,23 +200,36 @@ export default function Jottings() {
           <Card key={j.id}>
             <CardContent className="py-2.5">
               {editingId === j.id ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="flex-1 h-8 text-sm"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleSaveEdit(j.id);
-                      if (e.key === "Escape") cancelEdit();
-                    }}
-                  />
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-emerald-700" onClick={() => handleSaveEdit(j.id)} disabled={updateMutation.isPending}>
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground" onClick={cancelEdit}>
-                    <X className="h-4 w-4" />
-                  </Button>
+                <div className="flex flex-col gap-2">
+                  <Select value={editChildId} onValueChange={setEditChildId}>
+                    <SelectTrigger className="h-8 text-sm w-56">
+                      <SelectValue placeholder="Link to a child (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No child linked</SelectItem>
+                      {(children ?? []).filter((c) => c.status === "active").map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>{c.firstName} {c.lastName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="flex-1 h-8 text-sm"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSaveEdit(j.id);
+                        if (e.key === "Escape") cancelEdit();
+                      }}
+                    />
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-emerald-700" onClick={() => handleSaveEdit(j.id)} disabled={updateMutation.isPending}>
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground" onClick={cancelEdit}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-4">
@@ -230,7 +252,7 @@ export default function Jottings() {
                       Actioned
                     </Button>
                     {canEdit && (
-                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" onClick={() => startEdit(j.id, j.content)}>
+                      <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" onClick={() => startEdit(j.id, j.content, j.childId)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                     )}

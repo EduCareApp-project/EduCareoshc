@@ -305,7 +305,7 @@ function BehaviourTab({ childId, guardians }: { childId: number; guardians: Guar
 
 interface RiskCondition { id: string; allergyCondition: string; possibleRisks: string; preventionStrategies: string; emergencySteps: string; }
 interface MedicalRiskPlanData { planLastChecked: string; planSignedBy: string; conditions: RiskCondition[]; }
-interface CommEntry { id: string; date: string; action: string; educatorSignature: string; guardianSignature: string; }
+interface CommEntry { id: string; date: string; action: string; educatorSignature: string; guardianAcknowledgedAt?: string; }
 interface CommunicationPlanData { grade: string; medicalCondition: string; medicationLocation: string; infoProvided: string; staffAwareness: string; parentsInformed: string; emergencyProcedures: string; riskMinimisation: string; communications: CommEntry[]; }
 
 const DEFAULT_RISK_PLAN: MedicalRiskPlanData = { planLastChecked: "", planSignedBy: "", conditions: [] };
@@ -323,14 +323,18 @@ function RiskPlanView({ plan }: { plan: MedicalRiskPlanData }) {
         {plan.planLastChecked && <div><p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-0.5">Plan Last Checked</p><p>{new Date(plan.planLastChecked + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}</p></div>}
         {plan.planSignedBy && <div><p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-0.5">Signed By</p><p>{plan.planSignedBy}</p></div>}
       </div>
-      {plan.conditions.map((c, i) => (
-        <div key={c.id} className="border rounded-lg p-3 bg-red-50 space-y-2 text-sm">
-          <p className="font-semibold text-red-800">{c.allergyCondition || `Condition ${i + 1}`}</p>
-          {c.possibleRisks && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Possible Risks / Dangers</p><p className="whitespace-pre-wrap">{c.possibleRisks}</p></div>}
-          {c.preventionStrategies && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Risk Management Strategies</p><p className="whitespace-pre-wrap">{c.preventionStrategies}</p></div>}
-          {c.emergencySteps && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Emergency Steps</p><p className="whitespace-pre-wrap">{c.emergencySteps}</p></div>}
+      {plan.conditions.length > 0 && (
+        <div className="grid sm:grid-cols-2 gap-3">
+          {plan.conditions.map((c, i) => (
+            <div key={c.id} className="border-2 border-gray-400 rounded-lg p-4 bg-red-50 space-y-2 text-sm">
+              <p className="font-semibold text-red-800">{c.allergyCondition || `Condition ${i + 1}`}</p>
+              {c.possibleRisks && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Possible Risks / Dangers</p><p className="whitespace-pre-wrap">{c.possibleRisks}</p></div>}
+              {c.preventionStrategies && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Risk Management Strategies</p><p className="whitespace-pre-wrap">{c.preventionStrategies}</p></div>}
+              {c.emergencySteps && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Emergency Steps</p><p className="whitespace-pre-wrap">{c.emergencySteps}</p></div>}
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -379,16 +383,34 @@ function CommPlanView({ plan }: { plan: CommunicationPlanData }) {
           {plan.medicationLocation && <div><p className="text-xs text-muted-foreground font-medium mb-0.5">Location of Medication</p><p>{plan.medicationLocation}</p></div>}
         </div>
       )}
-      {sections.filter(s => s.value).map(s => (
-        <div key={s.label}><p className="text-xs text-muted-foreground font-medium mb-0.5">{s.label}</p><p className="whitespace-pre-wrap">{s.value}</p></div>
-      ))}
+      {sections.filter(s => s.value).length > 0 && (
+        <div className="grid sm:grid-cols-2 gap-3">
+          {sections.filter(s => s.value).map(s => (
+            <div key={s.label} className="border-2 border-gray-400 rounded-lg p-3">
+              <p className="text-xs text-muted-foreground font-medium mb-1">{s.label}</p>
+              <p className="whitespace-pre-wrap text-sm">{s.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
       {plan.communications.length > 0 && (
         <div>
           <p className="text-xs text-muted-foreground font-medium mb-1.5">Communication and/or Changes to Medical Condition</p>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs border rounded-lg overflow-hidden">
-              <thead className="bg-muted/50"><tr>{["Date", "Action", "Educator Signature", "Guardian Signature"].map(h => <th key={h} className="px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">{h}</th>)}</tr></thead>
-              <tbody>{plan.communications.map(e => <tr key={e.id} className="border-t"><td className="px-3 py-2 whitespace-nowrap">{e.date}</td><td className="px-3 py-2">{e.action}</td><td className="px-3 py-2">{e.educatorSignature}</td><td className="px-3 py-2">{e.guardianSignature}</td></tr>)}</tbody>
+            <table className="w-full text-xs border-2 border-gray-400 rounded-lg overflow-hidden">
+              <thead className="bg-muted/50"><tr>{["Date", "Action", "Educator Signature", "Guardian Acknowledgement"].map(h => <th key={h} className="px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">{h}</th>)}</tr></thead>
+              <tbody>{plan.communications.map(e => (
+                <tr key={e.id} className="border-t">
+                  <td className="px-3 py-2 whitespace-nowrap">{e.date ? new Date(e.date + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }) : ""}</td>
+                  <td className="px-3 py-2">{e.action}</td>
+                  <td className="px-3 py-2">{e.educatorSignature}</td>
+                  <td className="px-3 py-2">
+                    {e.guardianAcknowledgedAt
+                      ? <span className="inline-flex items-center gap-1 text-green-700 font-medium">✓ {new Date(e.guardianAcknowledgedAt).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}</span>
+                      : <span className="text-muted-foreground italic">Pending</span>}
+                  </td>
+                </tr>
+              ))}</tbody>
             </table>
           </div>
         </div>
@@ -424,9 +446,9 @@ function CommPlanForm({ draft, onChange, onSave, onCancel, saving }: { draft: Co
         {draft.communications.length > 0 && (
           <div className="space-y-2">
             {draft.communications.map((e, i) => (
-              <div key={e.id} className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-2 items-start border rounded-lg p-2 bg-muted/30">
+              <div key={e.id} className="grid grid-cols-[auto_1fr_2fr_1fr_auto] gap-2 items-start border rounded-lg p-2 bg-muted/30">
                 <span className="pt-2 text-xs text-muted-foreground font-medium">{i + 1}.</span>
-                <div className="space-y-0.5"><Label className="text-xs text-muted-foreground">Date</Label><Input value={e.date} onChange={ev => updateEntry(e.id, "date", ev.target.value)} className="h-7 text-xs" /></div>
+                <div className="space-y-0.5"><Label className="text-xs text-muted-foreground">Date</Label><Input type="date" value={e.date} onChange={ev => updateEntry(e.id, "date", ev.target.value)} className="h-7 text-xs" /></div>
                 <div className="space-y-0.5"><Label className="text-xs text-muted-foreground">Action</Label><Textarea value={e.action} onChange={ev => updateEntry(e.id, "action", ev.target.value)} className="text-xs" rows={1} /></div>
                 <div className="space-y-0.5"><Label className="text-xs text-muted-foreground">Educator Signature</Label><Input value={e.educatorSignature} onChange={ev => updateEntry(e.id, "educatorSignature", ev.target.value)} className="h-7 text-xs" /></div>
                 <Button type="button" size="sm" variant="ghost" className="h-6 w-6 p-0 mt-5 text-muted-foreground" onClick={() => onChange({ ...draft, communications: draft.communications.filter(e2 => e2.id !== e.id) })}><X className="h-3 w-3" /></Button>

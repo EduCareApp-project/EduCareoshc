@@ -8,14 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, StickyNote, CheckCheck, Pencil, X, Check } from "lucide-react";
+import { Trash2, StickyNote, CheckCheck, Pencil, X, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Jottings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { data: jottings, isLoading } = useListJottings();
+  const { data: jottings, isLoading } = useListJottings({ includeArchived: true });
   const { data: children } = useListChildren();
   const { data: sites } = useListSites();
   const { canDelete, isEducatorRole, ownSiteId } = usePermissions();
@@ -36,6 +36,7 @@ export default function Jottings() {
   const [listSiteFilter, setListSiteFilter] = useState<string>(() =>
     isEducatorRole && ownSiteId ? String(ownSiteId) : "all"
   );
+  const [showActioned, setShowActioned] = useState(false);
 
   // Map childId → siteId for client-side filtering
   const childSiteMap = new Map((children ?? []).map((c) => [c.id, c.siteId ?? null]));
@@ -50,11 +51,15 @@ export default function Jottings() {
     setChildId("none"); // reset child when site changes
   }
 
-  const sorted = [...(jottings ?? [])].reverse().filter((j) => {
+  function matchesSiteFilter(j: { childId?: number | null }) {
     if (listSiteFilter === "all") return true;
     if (!j.childId) return listSiteFilter === "none";
     return listSiteFilter === "none" ? false : childSiteMap.get(j.childId) === parseInt(listSiteFilter);
-  });
+  }
+
+  const allSorted = [...(jottings ?? [])].reverse();
+  const sorted = allSorted.filter((j) => !j.archivedAt && matchesSiteFilter(j));
+  const actionedItems = allSorted.filter((j) => !!j.archivedAt && matchesSiteFilter(j));
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -268,6 +273,55 @@ export default function Jottings() {
           </Card>
         ))}
       </div>
+
+      {/* Actioned / archived section */}
+      {!isLoading && (
+        <div className="pt-2">
+          <button
+            onClick={() => setShowActioned((v) => !v)}
+            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group"
+          >
+            {showActioned ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            <CheckCheck className="h-4 w-4 text-emerald-600" />
+            Actioned
+            <span className="ml-0.5 text-xs font-normal text-muted-foreground">({actionedItems.length})</span>
+          </button>
+
+          {showActioned && (
+            <div className="mt-3 space-y-2">
+              {actionedItems.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic pl-1">No actioned jottings yet.</p>
+              ) : actionedItems.map((j) => (
+                <Card key={j.id} className="border-dashed opacity-75">
+                  <CardContent className="py-2.5">
+                    <div className="flex items-center gap-4">
+                      <span className="shrink-0 text-xs text-muted-foreground w-36">
+                        {format(new Date(j.createdAt), "dd/MM/yyyy h:mm a")}
+                      </span>
+                      <span className="shrink-0 text-xs font-medium text-foreground/70 w-32 truncate">
+                        {j.childName ?? <span className="text-muted-foreground italic">No child</span>}
+                      </span>
+                      <p className="flex-1 text-sm truncate text-muted-foreground line-through">{j.content}</p>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {j.archivedAt && (
+                          <span className="text-xs text-muted-foreground mr-1">
+                            Actioned {format(new Date(j.archivedAt), "dd/MM/yy")}
+                          </span>
+                        )}
+                        {canDelete && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(j.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1383,29 +1383,30 @@ export default function ChildProfile() {
                   ) : null;
                 })()
               )}
-              {child.photoRestriction && (
+              {(child.photoRestriction || child.medicalNotes || child.hasMedicalCondition) && (
                 <>
                   <Separator />
-                  <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-md">
-                    <CameraOff className="h-4 w-4 shrink-0" />
-                    <div>
-                      <div className="text-sm font-semibold">Photo Restriction</div>
-                      <p className="text-xs text-amber-700">This child must not appear in published photos or posts.</p>
-                    </div>
-                  </div>
-                </>
-              )}
-              {(child.medicalNotes || child.hasMedicalCondition) && (
-                <>
-                  <Separator />
-                  <div className="space-y-1.5 bg-destructive/10 p-3 rounded-md border border-destructive/20 text-destructive">
-                    <div className="text-sm font-semibold">Medical Notes</div>
-                    {child.hasMedicalCondition && (child.communicationPlan as any)?.medicalCondition && (
-                      <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-red-200 text-red-900 border border-red-400">
-                        {(child.communicationPlan as any).medicalCondition}
-                      </span>
+                  <div className="flex gap-2">
+                    {child.photoRestriction && (
+                      <div className="flex-1 flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-md">
+                        <CameraOff className="h-4 w-4 shrink-0 mt-0.5" />
+                        <div>
+                          <div className="text-sm font-semibold">Photo Restriction</div>
+                          <p className="text-xs text-amber-700">Must not appear in published photos or posts.</p>
+                        </div>
+                      </div>
                     )}
-                    {child.medicalNotes && <p className="text-sm">{child.medicalNotes}</p>}
+                    {(child.medicalNotes || child.hasMedicalCondition) && (
+                      <div className="flex-1 space-y-1.5 bg-destructive/10 p-3 rounded-md border border-destructive/20 text-destructive">
+                        <div className="text-sm font-semibold">Medical Notes</div>
+                        {child.hasMedicalCondition && (child.communicationPlan as any)?.medicalCondition && (
+                          <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-red-200 text-red-900 border border-red-400">
+                            {(child.communicationPlan as any).medicalCondition}
+                          </span>
+                        )}
+                        {child.medicalNotes && <p className="text-sm">{child.medicalNotes}</p>}
+                      </div>
+                    )}
                   </div>
                 </>
               )}

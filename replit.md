@@ -66,8 +66,7 @@ Transactional emails (password reset, login instructions, post notifications) ar
 - Provider: Resend (resend.com) — free tier, 3,000 emails/month
 - SMTP relay: `smtp.resend.com`, port `465`, SSL/TLS
 - `SMTP_USER` = `resend` (literal), `SMTP_PASS` = Resend API key (starts with `re_`)
-- `SMTP_FROM` = `onboarding@resend.dev` (Resend sandbox sender — pre-authorised for testing)
-- **To send from `system@educareoshc.com.au`**: verify the domain at resend.com/domains, add the DNS records in Crazy Domains, then update the `SMTP_FROM` secret to `system@educareoshc.com.au`
+- `SMTP_FROM` = `system@educareoshc.com.au` (domain verified at resend.com — Tokyo/ap-northeast-1)
 - Implementation: `artifacts/api-server/src/lib/email.ts` — uses nodemailer; logs a warning and skips if `SMTP_HOST`/`SMTP_USER`/`SMTP_PASS` are absent
 - The `RESEND_API_KEY` secret is also present but not used by the app — it can be removed
 

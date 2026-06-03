@@ -18,7 +18,7 @@ import {
   useListIncidents, getListIncidentsQueryKey,
 } from "@workspace/api-client-react";
 import type { Staff } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +40,7 @@ import {
   Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2,
   ShieldAlert, AlertTriangle, Paperclip, X, Lock, Pencil, StickyNote, Newspaper,
   Upload, FolderOpen, Pill, ChevronDown, ChevronUp, ClipboardList, MessageSquareWarning,
-  CameraOff,
+  CameraOff, Archive,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth";
 import { useUpload } from "@workspace/object-storage-web";
@@ -891,6 +891,19 @@ export default function ChildProfile() {
   const { data: allIncidents } = useListIncidents({ query: { queryKey: getListIncidentsQueryKey() } });
   const updateMutation = useUpdateChild();
   const deleteMutation = useDeleteChild();
+
+  const archiveJottingMutation = useMutation({
+    mutationFn: async (jottingId: number) => {
+      const res = await fetch(`/api/jottings/${jottingId}/archive`, { method: "PATCH" });
+      if (!res.ok) throw new Error("Failed to archive jotting");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jottings"] });
+      toast({ title: "Jotting archived" });
+    },
+    onError: () => toast({ title: "Failed to archive", variant: "destructive" }),
+  });
+
   const createWelfareMutation = useCreateWelfareNote();
   const updateWelfareMutation = useUpdateWelfareNote();
   const deleteWelfareMutation = useDeleteWelfareNote();
@@ -1716,6 +1729,18 @@ export default function ChildProfile() {
                               </div>
                               <p className="text-xs text-muted-foreground mt-1">{safeDate(j.createdAt, "dd/MM/yyyy")}{j.staffName ? ` · ${j.staffName}` : ""}</p>
                             </div>
+                            {!j.archivedAt && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+                                title="Mark as actioned"
+                                disabled={archiveJottingMutation.isPending}
+                                onClick={() => archiveJottingMutation.mutate(j.id)}
+                              >
+                                <Archive className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
                           </div>
                         ))}
                       </div>

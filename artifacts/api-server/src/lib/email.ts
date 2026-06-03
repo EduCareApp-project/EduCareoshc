@@ -677,7 +677,7 @@ export async function sendBehaviouralNotificationEmail(
     ``,
     opts.behaviourDescription,
     ``,
-    `At Elysium OSHC, we work closely with families to support positive behaviour and wellbeing for all students. We are hoping you can assist us with:`,
+    `At Elysium OSHC, we work closely with families to support positive behaviour and wellbeing for all children. We are hoping you can assist us with:`,
     ``,
     opts.supportRequest,
     ``,
@@ -698,7 +698,7 @@ export async function sendBehaviouralNotificationEmail(
     <p style="margin:0 0 12px;">Dear Parent/Guardian,</p>
     <p style="margin:0 0 8px;">We are writing to inform you that today your child displayed the following behaviour(s):</p>
     <div style="background:#fef2f2; border-left:4px solid #dc2626; padding:14px 18px; margin:16px 0; white-space:pre-wrap; line-height:1.6;">${esc(opts.behaviourDescription)}</div>
-    <p style="margin:0 0 8px;">At Elysium OSHC, we work closely with families to support positive behaviour and wellbeing for all students. We are hoping you can assist us with:</p>
+    <p style="margin:0 0 8px;">At Elysium OSHC, we work closely with families to support positive behaviour and wellbeing for all children. We are hoping you can assist us with:</p>
     <div style="background:#f0fdf4; border-left:4px solid #16a34a; padding:14px 18px; margin:16px 0; white-space:pre-wrap; line-height:1.6;">${esc(opts.supportRequest)}</div>
     <p style="margin:0 0 20px;">We appreciate your partnership and support in helping your child make positive choices. If you would like to discuss this matter further, please feel free to contact us.</p>
     <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />

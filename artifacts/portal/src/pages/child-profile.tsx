@@ -268,7 +268,7 @@ function BehaviourTab({ childId, guardians }: { childId: number; guardians: Guar
             </div>
 
             <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-              <p>At Elysium OSHC, we work closely with families to support positive behaviour and wellbeing for all students. We are hoping you can assist us with:</p>
+              <p>At Elysium OSHC, we work closely with families to support positive behaviour and wellbeing for all children. We are hoping you can assist us with:</p>
             </div>
 
             <div className="space-y-1">

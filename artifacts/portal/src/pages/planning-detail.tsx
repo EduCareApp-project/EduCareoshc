@@ -509,7 +509,7 @@ export default function PlanningDetail() {
     form.assessmentDocuments.length > 0;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-16">
+    <div className="max-w-6xl mx-auto space-y-6 pb-16">
       {/* Print-only header */}
       <div className="hidden print:flex items-center gap-3 pb-4 border-b border-gray-200 mb-2">
         <img src="/educare-logo.png" alt="EduCare" className="h-10 w-10 object-contain" />
@@ -575,77 +575,84 @@ export default function PlanningDetail() {
         </div>
       </div>
 
-      {/* Comments */}
-      {!isNew && (
-        <StaffCommentSection
-          comments={planComments}
-          queryKey={commentsQueryKey}
-          onAdd={(body) => new Promise((resolve, reject) =>
-            addPlanComment.mutate({ id: id!, data: { body } }, {
-              onSuccess: () => { queryClient.invalidateQueries({ queryKey: commentsQueryKey }); resolve(); },
-              onError: reject,
-            })
-          )}
-          onDelete={(commentId) => new Promise((resolve, reject) =>
-            removePlanComment.mutate({ id: id!, commentId }, {
-              onSuccess: () => { queryClient.invalidateQueries({ queryKey: commentsQueryKey }); resolve(); },
-              onError: reject,
-            })
-          )}
-        />
-      )}
+      {/* Main content + side comments panel */}
+      <div className="flex gap-6 items-start">
+        <div className="flex-1 min-w-0 space-y-6">
+          {/* Tabs — shown when stage is assessment or closed */}
+          {showAssessmentTab ? (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+              <TabsList className="print:hidden">
+                <TabsTrigger value="planning">Planning Cycle</TabsTrigger>
+                <TabsTrigger value="assessment">Assessment</TabsTrigger>
+              </TabsList>
 
-      {/* Tabs — shown when stage is assessment or closed */}
-      {showAssessmentTab ? (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="print:hidden">
-            <TabsTrigger value="planning">Planning Cycle</TabsTrigger>
-            <TabsTrigger value="assessment">Assessment</TabsTrigger>
-          </TabsList>
+              <TabsContent value="planning" className="space-y-6 mt-0 print:!block">
+                {isEditing ? <PlanningEditContent {...{ form, set, sites, allChildren, visibleChildren, isTemplateMode, handleSiteChange, toggleChild, fileInputRef, handleFileSelect, removeDocument, isUploading, activeStaff, showLinkForm, setShowLinkForm, linkUrl, setLinkUrl, linkName, setLinkName, handleAddLink }} />
+                  : <PlanningViewContent {...{ form, siteName, focusChildrenNames }} />}
+                {isEditing && (
+                  <div className="print:hidden flex justify-end gap-3">
+                    {!isNew && <Button variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>}
+                    <Button onClick={handleSave} disabled={isSaving} size="lg">
+                      <Save className="h-4 w-4 mr-1.5" />{isSaving ? "Saving…" : "Save"}
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
 
-          <TabsContent value="planning" className="space-y-6 mt-0 print:!block">
-            {isEditing ? <PlanningEditContent {...{ form, set, sites, allChildren, visibleChildren, isTemplateMode, handleSiteChange, toggleChild, fileInputRef, handleFileSelect, removeDocument, isUploading, activeStaff, showLinkForm, setShowLinkForm, linkUrl, setLinkUrl, linkName, setLinkName, handleAddLink }} />
-              : <PlanningViewContent {...{ form, siteName, focusChildrenNames }} />}
-            {isEditing && (
-              <div className="print:hidden flex justify-end gap-3">
-                {!isNew && <Button variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>}
-                <Button onClick={handleSave} disabled={isSaving} size="lg">
-                  <Save className="h-4 w-4 mr-1.5" />{isSaving ? "Saving…" : "Save"}
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="assessment" className="space-y-6 mt-0 print:!block">
-            {isEditing ? (
-              <AssessmentEditContent ad={ad} setMtop={setMtop} setEducatorReview={setEducatorReview} setAskChildren={setAskChildren} assessmentDocuments={form.assessmentDocuments} assessmentFileInputRef={assessmentFileInputRef} handleAssessmentFileSelect={handleAssessmentFileSelect} removeAssessmentDocument={removeAssessmentDocument} isAssessmentUploading={isAssessmentUploading} showAssessmentLinkForm={showAssessmentLinkForm} setShowAssessmentLinkForm={setShowAssessmentLinkForm} assessmentLinkUrl={assessmentLinkUrl} setAssessmentLinkUrl={setAssessmentLinkUrl} assessmentLinkName={assessmentLinkName} setAssessmentLinkName={setAssessmentLinkName} handleAddAssessmentLink={handleAddAssessmentLink} />
-            ) : (
-              <AssessmentViewContent ad={ad} hasContent={hasAssessmentContent} assessmentDocuments={form.assessmentDocuments} />
-            )}
-            {isEditing && (
-              <div className="print:hidden flex justify-end gap-3">
-                {!isNew && <Button variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>}
-                <Button onClick={handleSave} disabled={isSaving} size="lg">
-                  <Save className="h-4 w-4 mr-1.5" />{isSaving ? "Saving…" : "Save"}
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <div className="space-y-6">
-          {isEditing ? <PlanningEditContent {...{ form, set, sites, allChildren, visibleChildren, isTemplateMode, handleSiteChange, toggleChild, fileInputRef, handleFileSelect, removeDocument, isUploading, activeStaff, showLinkForm, setShowLinkForm, linkUrl, setLinkUrl, linkName, setLinkName, handleAddLink }} />
-            : <PlanningViewContent {...{ form, siteName, focusChildrenNames }} />}
-          {isEditing && (
-            <div className="print:hidden flex justify-end gap-3">
-              {!isNew && <Button variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>}
-              <Button onClick={handleSave} disabled={isSaving} size="lg">
-                <Save className="h-4 w-4 mr-1.5" />{isSaving ? "Saving…" : "Save"}
-              </Button>
+              <TabsContent value="assessment" className="space-y-6 mt-0 print:!block">
+                {isEditing ? (
+                  <AssessmentEditContent ad={ad} setMtop={setMtop} setEducatorReview={setEducatorReview} setAskChildren={setAskChildren} assessmentDocuments={form.assessmentDocuments} assessmentFileInputRef={assessmentFileInputRef} handleAssessmentFileSelect={handleAssessmentFileSelect} removeAssessmentDocument={removeAssessmentDocument} isAssessmentUploading={isAssessmentUploading} showAssessmentLinkForm={showAssessmentLinkForm} setShowAssessmentLinkForm={setShowAssessmentLinkForm} assessmentLinkUrl={assessmentLinkUrl} setAssessmentLinkUrl={setAssessmentLinkUrl} assessmentLinkName={assessmentLinkName} setAssessmentLinkName={setAssessmentLinkName} handleAddAssessmentLink={handleAddAssessmentLink} />
+                ) : (
+                  <AssessmentViewContent ad={ad} hasContent={hasAssessmentContent} assessmentDocuments={form.assessmentDocuments} />
+                )}
+                {isEditing && (
+                  <div className="print:hidden flex justify-end gap-3">
+                    {!isNew && <Button variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>}
+                    <Button onClick={handleSave} disabled={isSaving} size="lg">
+                      <Save className="h-4 w-4 mr-1.5" />{isSaving ? "Saving…" : "Save"}
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className="space-y-6">
+              {isEditing ? <PlanningEditContent {...{ form, set, sites, allChildren, visibleChildren, isTemplateMode, handleSiteChange, toggleChild, fileInputRef, handleFileSelect, removeDocument, isUploading, activeStaff, showLinkForm, setShowLinkForm, linkUrl, setLinkUrl, linkName, setLinkName, handleAddLink }} />
+                : <PlanningViewContent {...{ form, siteName, focusChildrenNames }} />}
+              {isEditing && (
+                <div className="print:hidden flex justify-end gap-3">
+                  {!isNew && <Button variant="outline" onClick={handleCancel} disabled={isSaving}>Cancel</Button>}
+                  <Button onClick={handleSave} disabled={isSaving} size="lg">
+                    <Save className="h-4 w-4 mr-1.5" />{isSaving ? "Saving…" : "Save"}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
+
+        {/* Comments side panel */}
+        {!isNew && (
+          <div className="w-72 shrink-0 print:hidden sticky top-6">
+            <StaffCommentSection
+              comments={planComments}
+              queryKey={commentsQueryKey}
+              onAdd={(body) => new Promise((resolve, reject) =>
+                addPlanComment.mutate({ id: id!, data: { body } }, {
+                  onSuccess: () => { queryClient.invalidateQueries({ queryKey: commentsQueryKey }); resolve(); },
+                  onError: reject,
+                })
+              )}
+              onDelete={(commentId) => new Promise((resolve, reject) =>
+                removePlanComment.mutate({ id: id!, commentId }, {
+                  onSuccess: () => { queryClient.invalidateQueries({ queryKey: commentsQueryKey }); resolve(); },
+                  onError: reject,
+                })
+              )}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

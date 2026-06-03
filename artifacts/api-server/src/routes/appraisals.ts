@@ -33,15 +33,12 @@ router.get("/appraisals", async (req, res): Promise<void> => {
   const isEduRole = user && EDUCATOR_ROLES.includes(user.role as (typeof EDUCATOR_ROLES)[number]);
 
   let rows = await db.select().from(staffAppraisalsTable).orderBy(desc(staffAppraisalsTable.createdAt));
-  if (staffIdParam) rows = rows.filter((r) => r.staffId === staffIdParam);
 
-  if (isEduRole && user?.siteId != null) {
-    const siteStaff = await db
-      .select({ id: staffTable.id })
-      .from(staffTable)
-      .where(eq(staffTable.siteId, user.siteId));
-    const siteStaffIds = new Set(siteStaff.map((s) => s.id));
-    rows = rows.filter((r) => siteStaffIds.has(r.staffId));
+  if (isEduRole && user) {
+    // Educators and coordinators can only see their own appraisals
+    rows = rows.filter((r) => r.staffId === user.id);
+  } else if (staffIdParam) {
+    rows = rows.filter((r) => r.staffId === staffIdParam);
   }
 
   const staffMap = await buildStaffMap();
@@ -77,8 +74,13 @@ router.post("/appraisals", async (req, res): Promise<void> => {
 
 router.get("/appraisals/:id", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
+  const user = req.session?.user;
+  const isEduRole = user && EDUCATOR_ROLES.includes(user.role as (typeof EDUCATOR_ROLES)[number]);
   const [row] = await db.select().from(staffAppraisalsTable).where(eq(staffAppraisalsTable.id, id));
   if (!row) { res.status(404).json({ error: "Appraisal not found" }); return; }
+  if (isEduRole && user && row.staffId !== user.id) {
+    res.status(403).json({ error: "Not permitted" }); return;
+  }
   const staffMap = await buildStaffMap();
   res.json(enrichAppraisal(row, staffMap));
 });

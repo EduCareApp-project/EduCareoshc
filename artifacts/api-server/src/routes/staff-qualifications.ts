@@ -8,7 +8,7 @@ import {
   CreateStaffQualificationBody,
   UpdateStaffQualificationParams,
   UpdateStaffQualificationBody,
-  DeleteStaffQualificationParams,
+  ArchiveStaffQualificationParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -115,8 +115,21 @@ router.delete("/qualification-documents/:id", async (req, res): Promise<void> =>
   res.sendStatus(204);
 });
 
+router.patch("/qualifications/:id/archive", async (req, res): Promise<void> => {
+  const params = ArchiveStaffQualificationParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const [row] = await db
+    .update(staffQualificationsTable)
+    .set({ archivedAt: new Date() as any })
+    .where(eq(staffQualificationsTable.id, params.data.id))
+    .returning();
+  if (!row) { res.status(404).json({ error: "Qualification not found" }); return; }
+  const [withDocs] = await attachDocuments([row]);
+  res.json(withDocs);
+});
+
 router.delete("/qualifications/:id", async (req, res): Promise<void> => {
-  const params = DeleteStaffQualificationParams.safeParse(req.params);
+  const params = ArchiveStaffQualificationParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const [row] = await db
     .delete(staffQualificationsTable)

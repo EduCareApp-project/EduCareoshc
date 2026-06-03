@@ -467,6 +467,7 @@ export const GetStaffQualificationsResponseItem = zod.object({
       }),
     )
     .optional(),
+  archivedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const GetStaffQualificationsResponse = zod.array(
@@ -525,11 +526,39 @@ export const UpdateStaffQualificationResponse = zod.object({
       }),
     )
     .optional(),
+  archivedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
 });
 
-export const DeleteStaffQualificationParams = zod.object({
+/**
+ * @summary Archive a staff qualification
+ */
+export const ArchiveStaffQualificationParams = zod.object({
   id: zod.coerce.number(),
+});
+
+export const ArchiveStaffQualificationResponse = zod.object({
+  id: zod.number(),
+  staffId: zod.number(),
+  name: zod.string(),
+  status: zod.string(),
+  referenceNumber: zod.string().nullish(),
+  expiryDate: zod.coerce.date().nullish(),
+  documentPath: zod.string().nullish(),
+  documents: zod
+    .array(
+      zod.object({
+        id: zod.number(),
+        qualificationId: zod.number(),
+        documentPath: zod.string(),
+        documentName: zod.string().nullish(),
+        active: zod.boolean(),
+        uploadedAt: zod.coerce.date(),
+      }),
+    )
+    .optional(),
+  archivedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
 });
 
 export const GetStaffProfessionalDevelopmentParams = zod.object({

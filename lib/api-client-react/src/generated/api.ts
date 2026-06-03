@@ -1725,38 +1725,41 @@ export const useUpdateStaffQualification = <
   return useMutation(getUpdateStaffQualificationMutationOptions(options));
 };
 
-export const getDeleteStaffQualificationUrl = (id: number) => {
-  return `/api/qualifications/${id}`;
+/**
+ * @summary Archive a staff qualification
+ */
+export const getArchiveStaffQualificationUrl = (id: number) => {
+  return `/api/qualifications/${id}/archive`;
 };
 
-export const deleteStaffQualification = async (
+export const archiveStaffQualification = async (
   id: number,
   options?: RequestInit,
-): Promise<void> => {
-  return customFetch<void>(getDeleteStaffQualificationUrl(id), {
+): Promise<StaffQualification> => {
+  return customFetch<StaffQualification>(getArchiveStaffQualificationUrl(id), {
     ...options,
-    method: "DELETE",
+    method: "PATCH",
   });
 };
 
-export const getDeleteStaffQualificationMutationOptions = <
+export const getArchiveStaffQualificationMutationOptions = <
   TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof deleteStaffQualification>>,
+    Awaited<ReturnType<typeof archiveStaffQualification>>,
     TError,
     { id: number },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<
-  Awaited<ReturnType<typeof deleteStaffQualification>>,
+  Awaited<ReturnType<typeof archiveStaffQualification>>,
   TError,
   { id: number },
   TContext
 > => {
-  const mutationKey = ["deleteStaffQualification"];
+  const mutationKey = ["archiveStaffQualification"];
   const { mutation: mutationOptions, request: requestOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -1766,41 +1769,44 @@ export const getDeleteStaffQualificationMutationOptions = <
     : { mutation: { mutationKey }, request: undefined };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof deleteStaffQualification>>,
+    Awaited<ReturnType<typeof archiveStaffQualification>>,
     { id: number }
   > = (props) => {
     const { id } = props ?? {};
 
-    return deleteStaffQualification(id, requestOptions);
+    return archiveStaffQualification(id, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type DeleteStaffQualificationMutationResult = NonNullable<
-  Awaited<ReturnType<typeof deleteStaffQualification>>
+export type ArchiveStaffQualificationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof archiveStaffQualification>>
 >;
 
-export type DeleteStaffQualificationMutationError = ErrorType<unknown>;
+export type ArchiveStaffQualificationMutationError = ErrorType<unknown>;
 
-export const useDeleteStaffQualification = <
+/**
+ * @summary Archive a staff qualification
+ */
+export const useArchiveStaffQualification = <
   TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof deleteStaffQualification>>,
+    Awaited<ReturnType<typeof archiveStaffQualification>>,
     TError,
     { id: number },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<
-  Awaited<ReturnType<typeof deleteStaffQualification>>,
+  Awaited<ReturnType<typeof archiveStaffQualification>>,
   TError,
   { id: number },
   TContext
 > => {
-  return useMutation(getDeleteStaffQualificationMutationOptions(options));
+  return useMutation(getArchiveStaffQualificationMutationOptions(options));
 };
 
 export const getGetStaffProfessionalDevelopmentUrl = (id: number) => {

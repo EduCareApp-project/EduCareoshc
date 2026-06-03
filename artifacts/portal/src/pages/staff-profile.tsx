@@ -12,10 +12,10 @@ import {
   useGetStaffQualifications, getGetStaffQualificationsQueryKey,
   useCreateStaffQualification,
   useUpdateStaffQualification,
-  useDeleteStaffQualification,
   useDeleteQualificationDocument,
+  useArchiveStaffQualification,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useUpload } from "@workspace/object-storage-web";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Plus, Trash2, GraduationCap, User, Award, Paperclip, X, Pencil, FileText, AlertTriangle, Camera, Check, ClipboardList, FolderDown } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, GraduationCap, User, Award, Paperclip, X, Pencil, FileText, AlertTriangle, Camera, Check, ClipboardList, FolderDown, Archive, ChevronDown } from "lucide-react";
 import AppraisalsTab from "./appraisals-tab";
 import { format, parseISO, isValid } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -117,8 +117,14 @@ export default function StaffProfile() {
   const deletePdMutation = useDeleteProfessionalDevelopment();
   const createQualMutation = useCreateStaffQualification();
   const updateQualMutation = useUpdateStaffQualification();
-  const deleteQualMutation = useDeleteStaffQualification();
+  const deleteQualMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/qualifications/${id}`, { method: "DELETE" });
+      if (!res.ok && res.status !== 204) throw new Error("Failed to delete qualification");
+    },
+  });
   const deleteQualDocMutation = useDeleteQualificationDocument();
+  const archiveQualMutation = useArchiveStaffQualification();
 
   const [pdOpen, setPdOpen] = useState(false);
   const [pdForm, setPdForm] = useState({ title: "", provider: "", completedAt: "", hoursEarned: "", notes: "" });
@@ -361,12 +367,22 @@ export default function StaffProfile() {
   }
 
   function handleDeleteQual(qualId: number) {
-    deleteQualMutation.mutate({ id: qualId }, {
+    deleteQualMutation.mutate(qualId, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}/qualifications`] });
         toast({ title: "Qualification removed" });
       },
       onError: () => toast({ title: "Failed to remove qualification", variant: "destructive" }),
+    });
+  }
+
+  function handleArchiveQual(qualId: number) {
+    archiveQualMutation.mutate({ id: qualId }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}/qualifications`] });
+        toast({ title: "Qualification archived — a new record can now be added" });
+      },
+      onError: () => toast({ title: "Failed to archive qualification", variant: "destructive" }),
     });
   }
 
@@ -750,44 +766,43 @@ export default function StaffProfile() {
 
           {loadingQuals ? (
             <div className="space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
-          ) : (qualifications ?? []).length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
-                <Award className="h-10 w-10 mb-2 opacity-20" />
-                <p>No qualifications recorded yet.</p>
-                {canManageQualifications && (
-                  <Button variant="outline" size="sm" onClick={openAddQual} className="mt-2">
-                    <Plus className="h-4 w-4 mr-1" />Add first qualification
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {[...(qualifications ?? [])].sort((a, b) => {
+          ) : (() => {
+            const allQuals = qualifications ?? [];
+            const activeQuals = allQuals.filter((q) => !(q as any).archivedAt);
+            const archivedQuals = allQuals.filter((q) => !!(q as any).archivedAt);
+
+            const sortQuals = <T extends typeof allQuals[number]>(list: T[]) =>
+              [...list].sort((a, b) => {
                 const now = new Date();
-                const isExpired = (q: typeof a) => {
+                const isExp = (q: typeof a) => {
                   const d = q.expiryDate ? new Date(String(q.expiryDate)) : null;
                   return (d && !isNaN(d.getTime()) && d < now) || q.status === "expired";
                 };
-                if (isExpired(a) && !isExpired(b)) return -1;
-                if (!isExpired(a) && isExpired(b)) return 1;
+                if (isExp(a) && !isExp(b)) return -1;
+                if (!isExp(a) && isExp(b)) return 1;
                 return QUALIFICATION_NAMES.indexOf(a.name) - QUALIFICATION_NAMES.indexOf(b.name);
-              }).map((q) => {
-                const expiry = q.expiryDate ? new Date(String(q.expiryDate)) : null;
-                const expiryValid = expiry && !isNaN(expiry.getTime());
-                const isDateExpired = expiryValid && expiry! < new Date();
-                const effectiveStatus = isDateExpired ? "expired" : q.status;
+              });
 
-                return <Card key={q.id}>
+            const renderQualCard = (q: typeof allQuals[number], isArchived: boolean) => {
+              const expiry = q.expiryDate ? new Date(String(q.expiryDate)) : null;
+              const expiryValid = expiry && !isNaN(expiry.getTime());
+              const isDateExpired = expiryValid && expiry! < new Date();
+              const effectiveStatus = isDateExpired ? "expired" : q.status;
+              return (
+                <Card key={q.id} className={isArchived ? "opacity-60" : undefined}>
                   <CardContent className="py-4 flex items-start justify-between gap-4">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-3 flex-wrap">
                         <p className="font-medium">{q.name}</p>
-                        <Badge className={`text-xs border ${STATUS_STYLES[effectiveStatus] ?? ""}`} variant="outline">
-                          {STATUS_OPTIONS.find((s) => s.value === effectiveStatus)?.label ?? effectiveStatus}
-                        </Badge>
-                        {effectiveStatus === "expired" && (
+                        {isArchived
+                          ? <Badge variant="secondary" className="text-xs">Previously held</Badge>
+                          : (
+                            <Badge className={`text-xs border ${STATUS_STYLES[effectiveStatus] ?? ""}`} variant="outline">
+                              {STATUS_OPTIONS.find((s) => s.value === effectiveStatus)?.label ?? effectiveStatus}
+                            </Badge>
+                          )
+                        }
+                        {!isArchived && effectiveStatus === "expired" && (
                           <span className="flex items-center gap-1 text-xs text-red-600">
                             <AlertTriangle className="h-3 w-3" />{isDateExpired ? "Date passed" : "Expired"}
                           </span>
@@ -798,7 +813,7 @@ export default function StaffProfile() {
                           <span>Ref: <span className="font-mono text-foreground">{q.referenceNumber}</span></span>
                         )}
                         {expiryValid && (
-                          <span>Expires: <span className={`font-medium ${isDateExpired ? "text-red-600" : "text-foreground"}`}>
+                          <span>{isArchived ? "Expired" : "Expires"}: <span className={`font-medium ${isDateExpired && !isArchived ? "text-red-600" : "text-foreground"}`}>
                             {format(expiry!, "dd/MM/yyyy")}
                           </span></span>
                         )}
@@ -811,10 +826,7 @@ export default function StaffProfile() {
                           const docName = activeDoc?.documentName ?? docPath.split("/").pop() ?? "View document";
                           return (
                             <>
-                              <a
-                                href={storageUrl(docPath)}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              <a href={storageUrl(docPath)} target="_blank" rel="noopener noreferrer"
                                 className="flex items-center gap-1 text-primary hover:underline"
                                 onClick={(e) => e.stopPropagation()}
                               >
@@ -828,25 +840,23 @@ export default function StaffProfile() {
                                   <div className="mt-1 pl-2 border-l space-y-1">
                                     {[...inactiveDocs].reverse().map((d) => (
                                       <div key={d.id} className="flex items-center gap-1 group">
-                                        <a
-                                          href={storageUrl(d.documentPath)}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
+                                        <a href={storageUrl(d.documentPath)} target="_blank" rel="noopener noreferrer"
                                           className="flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline line-through decoration-muted-foreground/40 flex-1 min-w-0"
                                           onClick={(e) => e.stopPropagation()}
                                         >
                                           <FileText className="h-3 w-3 shrink-0" />
                                           <span className="truncate">{d.documentName ?? d.documentPath.split("/").pop() ?? "Document"}</span>
                                         </a>
-                                        <button
-                                          type="button"
-                                          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-muted-foreground hover:text-destructive shrink-0"
-                                          title="Delete archived document"
-                                          onClick={(e) => { e.stopPropagation(); handleDeleteArchivedDoc(d.id); }}
-                                          disabled={deleteQualDocMutation.isPending}
-                                        >
-                                          <Trash2 className="h-3 w-3" />
-                                        </button>
+                                        {!isArchived && (
+                                          <button type="button"
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-muted-foreground hover:text-destructive shrink-0"
+                                            title="Delete archived document"
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteArchivedDoc(d.id); }}
+                                            disabled={deleteQualDocMutation.isPending}
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </button>
+                                        )}
                                       </div>
                                     ))}
                                   </div>
@@ -857,40 +867,95 @@ export default function StaffProfile() {
                         })()}
                       </div>
                     </div>
-                    {canManageQualifications && <div className="flex gap-1 shrink-0">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openEditQual(q)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Remove qualification?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will permanently remove "{q.name}" from this staff member's record.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              onClick={() => handleDeleteQual(q.id)}
+                    {canManageQualifications && !isArchived && (
+                      <div className="flex gap-1 shrink-0">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Edit" onClick={() => openEditQual(q)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-amber-600" title="Archive record"
+                              disabled={archiveQualMutation.isPending}
                             >
-                              Remove
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>}
+                              <Archive className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Archive this qualification?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                "{q.name}" will be stored as a previously held record. You can then add an updated record for this qualification.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleArchiveQual(q.id)}>Archive</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title="Remove permanently">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remove qualification?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently remove "{q.name}" from this staff member's record.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => handleDeleteQual(q.id)}
+                              >
+                                Remove
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    )}
                   </CardContent>
-                </Card>;
-              })}
-            </div>
-          )}
+                </Card>
+              );
+            };
+
+            return (
+              <div className="space-y-3">
+                {activeQuals.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
+                      <Award className="h-10 w-10 mb-2 opacity-20" />
+                      <p>No active qualifications recorded yet.</p>
+                      {canManageQualifications && (
+                        <Button variant="outline" size="sm" onClick={openAddQual} className="mt-2">
+                          <Plus className="h-4 w-4 mr-1" />Add first qualification
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : (
+                  sortQuals(activeQuals).map((q) => renderQualCard(q, false))
+                )}
+
+                {archivedQuals.length > 0 && (
+                  <details className="group">
+                    <summary className="flex items-center gap-2 cursor-pointer select-none text-sm text-muted-foreground hover:text-foreground py-1 list-none">
+                      <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                      {archivedQuals.length} previously held {archivedQuals.length === 1 ? "qualification" : "qualifications"}
+                    </summary>
+                    <div className="mt-2 space-y-2">
+                      {sortQuals(archivedQuals).map((q) => renderQualCard(q, true))}
+                    </div>
+                  </details>
+                )}
+              </div>
+            );
+          })()}
 
           {!loadingQuals && missingQualNames.length > 0 && (() => {
             const statusDependentNames = new Set([...RP_QUALS, ...EDUCATOR_QUALS, ...CANNOT_WORK_QUALS]);

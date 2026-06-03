@@ -394,9 +394,11 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StaffQualification"
-    delete:
-      operationId: deleteStaffQualification
+  /qualifications/{id}/archive:
+    patch:
+      operationId: archiveStaffQualification
       tags: [qualifications]
+      summary: Archive a staff qualification
       parameters:
         - name: id
           in: path
@@ -404,8 +406,12 @@ paths:
           schema:
             type: integer
       responses:
-        "204":
-          description: Deleted
+        "200":
+          description: Archived
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffQualification"
 
   /staff/{id}/professional-development:
     get:
@@ -5077,6 +5083,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/QualificationDocument"
+        archivedAt:
+          type: ["string", "null"]
+          format: date-time
         createdAt:
           type: string
           format: date-time

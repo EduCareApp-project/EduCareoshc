@@ -19,5 +19,7 @@ export interface StaffQualification {
   /** @nullable */
   documentPath?: string | null;
   documents?: QualificationDocument[];
+  /** @nullable */
+  archivedAt?: Date | null;
   createdAt: Date;
 }

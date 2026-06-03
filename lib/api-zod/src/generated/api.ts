@@ -443,6 +443,27 @@ export const DeleteStaffParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const ArchiveStaffParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ArchiveStaffResponse = zod.object({
+  id: zod.number(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  email: zod.string(),
+  role: zod.enum(["admin", "educational_leader", "coordinator", "educator"]),
+  qualifications: zod.string(),
+  status: zod.enum(["active", "inactive"]),
+  phone: zod.string().nullish(),
+  wwccNumber: zod.string().nullish(),
+  bio: zod.string().nullish(),
+  profilePicturePath: zod.string().nullish(),
+  employmentNotes: zod.string().nullish(),
+  siteId: zod.number().nullish(),
+  createdAt: zod.coerce.date().optional(),
+});
+
 export const GetStaffQualificationsParams = zod.object({
   id: zod.coerce.number(),
 });

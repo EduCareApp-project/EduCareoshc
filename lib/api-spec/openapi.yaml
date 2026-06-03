@@ -315,6 +315,24 @@ paths:
         "204":
           description: No Content
 
+  /staff/{id}/archive:
+    patch:
+      operationId: archiveStaff
+      tags: [staff]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Staff"
+
   /staff/{id}/qualifications:
     get:
       operationId: getStaffQualifications

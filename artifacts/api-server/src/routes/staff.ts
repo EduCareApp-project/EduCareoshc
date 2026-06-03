@@ -83,6 +83,29 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
   res.json(UpdateStaffResponse.parse(member));
 });
 
+router.patch("/staff/:id/archive", async (req, res): Promise<void> => {
+  const user = req.session?.user;
+  if (isEducatorRole(user?.role)) {
+    res.status(403).json({ error: "Not permitted" });
+    return;
+  }
+  const params = GetStaffParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const [member] = await db
+    .update(staffTable)
+    .set({ status: "inactive", blockedAt: new Date() } as any)
+    .where(eq(staffTable.id, params.data.id))
+    .returning();
+  if (!member) {
+    res.status(404).json({ error: "Staff member not found" });
+    return;
+  }
+  res.json(GetStaffResponse.parse(member));
+});
+
 router.delete("/staff/:id", async (req, res): Promise<void> => {
   const user = req.session?.user;
   if (isEducatorRole(user?.role)) {

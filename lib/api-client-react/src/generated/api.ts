@@ -1402,6 +1402,84 @@ export const useDeleteStaff = <
   return useMutation(getDeleteStaffMutationOptions(options));
 };
 
+export const getArchiveStaffUrl = (id: number) => {
+  return `/api/staff/${id}/archive`;
+};
+
+export const archiveStaff = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Staff> => {
+  return customFetch<Staff>(getArchiveStaffUrl(id), {
+    ...options,
+    method: "PATCH",
+  });
+};
+
+export const getArchiveStaffMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof archiveStaff>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof archiveStaff>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["archiveStaff"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof archiveStaff>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return archiveStaff(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ArchiveStaffMutationResult = NonNullable<
+  Awaited<ReturnType<typeof archiveStaff>>
+>;
+
+export type ArchiveStaffMutationError = ErrorType<unknown>;
+
+export const useArchiveStaff = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof archiveStaff>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof archiveStaff>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getArchiveStaffMutationOptions(options));
+};
+
 export const getGetStaffQualificationsUrl = (id: number) => {
   return `/api/staff/${id}/qualifications`;
 };

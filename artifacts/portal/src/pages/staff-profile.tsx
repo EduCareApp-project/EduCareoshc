@@ -14,6 +14,7 @@ import {
   useUpdateStaffQualification,
   useDeleteQualificationDocument,
   useArchiveStaffQualification,
+  useArchiveStaff,
 } from "@workspace/api-client-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useUpload } from "@workspace/object-storage-web";
@@ -113,6 +114,7 @@ export default function StaffProfile() {
   const { data: sites } = useListSites();
   const updateStaffMutation = useUpdateStaff();
   const deleteStaffMutation = useDeleteStaff();
+  const archiveStaffMutation = useArchiveStaff();
   const createPdMutation = useCreateProfessionalDevelopment();
   const deletePdMutation = useDeleteProfessionalDevelopment();
   const createQualMutation = useCreateStaffQualification();
@@ -459,6 +461,42 @@ export default function StaffProfile() {
         <Link href="/staff">
           <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 mr-1" />Back to Staff</Button>
         </Link>
+        <div className="flex items-center gap-2">
+        {!isEducatorRole && staff.status === "active" && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="text-amber-600 border-amber-400/50 hover:bg-amber-50">
+                <Archive className="h-4 w-4 mr-1" />Archive Staff
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Archive {staff.firstName} {staff.lastName}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will mark the record as archived and remove their login access immediately. All qualifications, professional development, and appraisal records are preserved for future reference. You can restore their access later by editing the profile.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-amber-600 text-white hover:bg-amber-700"
+                  onClick={() => {
+                    archiveStaffMutation.mutate({ id: staffId }, {
+                      onSuccess: () => {
+                        queryClient.invalidateQueries({ queryKey: getGetStaffQueryKey(staffId) });
+                        toast({ title: `${staff.firstName} ${staff.lastName} has been archived` });
+                      },
+                      onError: () => toast({ title: "Failed to archive staff member", variant: "destructive" }),
+                    });
+                  }}
+                  disabled={archiveStaffMutation.isPending}
+                >
+                  {archiveStaffMutation.isPending ? "Archiving…" : "Archive"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
         {!isEducatorRole && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -486,6 +524,7 @@ export default function StaffProfile() {
             </AlertDialogContent>
           </AlertDialog>
         )}
+        </div>
       </div>
 
       <div className="flex items-center gap-4">
@@ -504,7 +543,9 @@ export default function StaffProfile() {
           <h1 className="text-3xl font-bold tracking-tight">{staff.firstName} {staff.lastName}</h1>
           <div className="flex items-center gap-2 mt-1">
             <Badge>{ROLE_LABELS[staff.role] || staff.role}</Badge>
-            <Badge variant={staff.status === "active" ? "default" : "secondary"}>{staff.status}</Badge>
+            <Badge variant={staff.status === "active" ? "default" : "secondary"}>
+              {staff.status === "active" ? "Active" : "Archived"}
+            </Badge>
           </div>
         </div>
       </div>

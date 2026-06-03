@@ -32,7 +32,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Plus, Trash2, GraduationCap, User, Award, Paperclip, X, Pencil, FileText, AlertTriangle, Camera, Check, ClipboardList } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, GraduationCap, User, Award, Paperclip, X, Pencil, FileText, AlertTriangle, Camera, Check, ClipboardList, FolderDown } from "lucide-react";
 import AppraisalsTab from "./appraisals-tab";
 import { format, parseISO, isValid } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -103,7 +103,7 @@ export default function StaffProfile() {
   const staffId = parseInt(id ?? "0");
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { isEducatorRole, canManageQualifications, ownId } = usePermissions();
+  const { isEducatorRole, canManageQualifications, isAdminOrEL, ownId } = usePermissions();
 
   const { data: staff, isLoading: loadingStaff } = useGetStaff(staffId, { query: { queryKey: getGetStaffQueryKey(staffId), enabled: !!staffId } });
   const { data: pdList, isLoading: loadingPd } = useGetStaffProfessionalDevelopment(staffId, { query: { queryKey: getGetStaffProfessionalDevelopmentQueryKey(staffId), enabled: !!staffId } });
@@ -271,6 +271,35 @@ export default function StaffProfile() {
     setQualDocName(null);
     setEditingQualId(null);
     setQualOpen(true);
+  }
+
+  function downloadAllDocuments() {
+    type QualDoc = { id: number; documentPath: string; documentName: string | null; active: boolean };
+    const docs = (qualifications ?? []).flatMap((q) => {
+      const allDocs = (q as any).documents as QualDoc[] | undefined;
+      const activeDoc = allDocs?.find((d) => d.active);
+      const docPath = activeDoc?.documentPath ?? q.documentPath ?? null;
+      if (!docPath) return [];
+      const docName = activeDoc?.documentName ?? q.name ?? docPath.split("/").pop() ?? "document";
+      return [{ url: storageUrl(docPath), name: docName }];
+    });
+
+    if (docs.length === 0) {
+      toast({ title: "No documents", description: "This staff member has no uploaded documents." });
+      return;
+    }
+
+    toast({ title: `Downloading ${docs.length} document${docs.length === 1 ? "" : "s"}` });
+    docs.forEach(({ url, name }, i) => {
+      setTimeout(() => {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }, i * 350);
+    });
   }
 
   function openEditQual(q: NonNullable<typeof qualifications>[number]) {
@@ -705,11 +734,18 @@ export default function StaffProfile() {
               <h2 className="font-semibold">Qualifications &amp; Certifications</h2>
               <p className="text-sm text-muted-foreground">Licences, certifications, and compliance documents.</p>
             </div>
-            {canManageQualifications && (
-              <Button size="sm" onClick={openAddQual}>
-                <Plus className="h-4 w-4 mr-1" />Add Qualification
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {isAdminOrEL && !loadingQuals && (qualifications ?? []).length > 0 && (
+                <Button size="sm" variant="outline" onClick={downloadAllDocuments}>
+                  <FolderDown className="h-4 w-4 mr-1" />Download All
+                </Button>
+              )}
+              {canManageQualifications && (
+                <Button size="sm" onClick={openAddQual}>
+                  <Plus className="h-4 w-4 mr-1" />Add Qualification
+                </Button>
+              )}
+            </div>
           </div>
 
           {loadingQuals ? (

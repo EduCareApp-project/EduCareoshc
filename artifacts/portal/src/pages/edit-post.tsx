@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ImagePlus, X, Loader2 } from "lucide-react";
+import { ArrowLeft, ImagePlus, X, Loader2, Paperclip, FileText } from "lucide-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { useMemo } from "react";
 import { MtopOutcomePicker } from "@/components/mtop-outcome-picker";
@@ -47,12 +47,15 @@ export default function EditPost() {
     outcomeIds: [] as string[],
   });
   const [images, setImages] = useState<string[]>([]);
+  const [documents, setDocuments] = useState<{ path: string; name: string }[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
   const [initialised, setInitialised] = useState(false);
 
   const { uploadFile } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const docFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (post && !initialised) {
@@ -68,6 +71,9 @@ export default function EditPost() {
         outcomeIds: (post.outcomeIds ?? []).map(String),
       });
       setImages(post.images ?? []);
+      const paths = post.documentPaths ?? [];
+      const names = post.documentNames ?? [];
+      setDocuments(paths.map((p, i) => ({ path: p, name: names[i] ?? p.split("/").pop() ?? p })));
       setInitialised(true);
     }
   }, [post, initialised]);
@@ -115,6 +121,25 @@ export default function EditPost() {
     setImages((prev) => prev.filter((_, i) => i !== idx));
   }
 
+  async function handleDocPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingDoc(true);
+    try {
+      const response = await uploadFile(file);
+      if (response) setDocuments((prev) => [...prev, { path: response.objectPath, name: file.name }]);
+    } catch {
+      toast({ title: "Document upload failed", variant: "destructive" });
+    } finally {
+      setUploadingDoc(false);
+      if (docFileRef.current) docFileRef.current.value = "";
+    }
+  }
+
+  function removeDoc(idx: number) {
+    setDocuments((prev) => prev.filter((_, i) => i !== idx));
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
@@ -123,6 +148,8 @@ export default function EditPost() {
       title: form.title,
       date: form.date,
       images,
+      documentPaths: documents.map((d) => d.path),
+      documentNames: documents.map((d) => d.name),
       childIds: form.childIds,
       outcomeIds: form.outcomeIds,
     };
@@ -306,6 +333,37 @@ export default function EditPost() {
         </Card>
 
         <Card>
+          <CardHeader><CardTitle className="text-base">Documents</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            {documents.map((doc, idx) => (
+              <div key={idx} className="flex items-center gap-2 p-2 rounded-lg border bg-muted/40">
+                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="flex-1 text-sm truncate">{doc.name}</span>
+                <button type="button" onClick={() => removeDoc(idx)} className="p-0.5 rounded text-muted-foreground hover:text-destructive">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+            {uploadingDoc && (
+              <div className="flex items-center gap-2 p-2 rounded-lg border bg-muted/40">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Uploading…</span>
+              </div>
+            )}
+            <button
+              type="button"
+              disabled={uploadingDoc}
+              onClick={() => docFileRef.current?.click()}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground border border-dashed rounded-lg px-3 py-2 w-full transition-colors hover:border-primary disabled:opacity-50"
+            >
+              <Paperclip className="h-4 w-4" />
+              Attach a document
+            </button>
+            <input ref={docFileRef} type="file" className="hidden" onChange={handleDocPick} />
+          </CardContent>
+        </Card>
+
+        <Card>
           <CardHeader><CardTitle className="text-base">Content</CardTitle></CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-1.5">
@@ -353,7 +411,7 @@ export default function EditPost() {
 
         <div className="flex items-center justify-end gap-3 pb-8">
           <Button type="button" variant="outline" onClick={() => setLocation(`/posts/${id}`)}>Cancel</Button>
-          <Button type="submit" disabled={updatePost.isPending || uploadingIndex !== null}>
+          <Button type="submit" disabled={updatePost.isPending || uploadingIndex !== null || uploadingDoc}>
             {updatePost.isPending ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving…</>
             ) : "Save Changes"}

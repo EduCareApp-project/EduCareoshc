@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Trash2, Pencil, User, CalendarDays, GraduationCap, Building2, MessageCircle, Send } from "lucide-react";
+import { ArrowLeft, Trash2, Pencil, User, CalendarDays, GraduationCap, Building2, MessageCircle, Send, FileText } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -277,6 +277,31 @@ export default function PostDetail() {
                 />
               </div>
             ))}
+          </div>
+        )}
+
+        {post.documentPaths && post.documentPaths.length > 0 && (
+          <div className="space-y-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Attachments</h2>
+            <div className="space-y-1.5">
+              {post.documentPaths.map((path, idx) => {
+                const name = post.documentNames?.[idx] ?? path.split("/").pop() ?? `Document ${idx + 1}`;
+                const stripped = path.replace(/^\/objects\//, "");
+                const url = `/api/storage/objects/${stripped}`;
+                return (
+                  <a
+                    key={idx}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 p-2.5 rounded-lg border bg-muted/40 hover:bg-muted transition-colors text-sm"
+                  >
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="flex-1 truncate">{name}</span>
+                  </a>
+                );
+              })}
+            </div>
           </div>
         )}
 

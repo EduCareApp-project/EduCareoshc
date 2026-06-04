@@ -1356,6 +1356,8 @@ export interface Post {
   date?: string | null;
   /** @maxItems 3 */
   images: string[];
+  documentPaths?: string[];
+  documentNames?: string[];
   outcomeIds: string[];
   /** @nullable */
   description?: string | null;

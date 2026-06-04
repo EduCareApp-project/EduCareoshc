@@ -13,6 +13,8 @@ export const postsTable = pgTable("posts", {
   date: date("date"),
   staffId: integer("staff_id").references(() => staffTable.id, { onDelete: "set null" }),
   images: text("images").array().notNull().default([]),
+  documentPaths: text("document_paths").array().notNull().default([]),
+  documentNames: text("document_names").array().notNull().default([]),
   outcomeIds: text("outcome_ids").array().notNull().default([]),
   description: text("description"),
   learning: text("learning"),

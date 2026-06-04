@@ -4891,6 +4891,16 @@ components:
           items:
             type: string
           maxItems: 3
+        documentPaths:
+          type: array
+          items:
+            type: string
+          default: []
+        documentNames:
+          type: array
+          items:
+            type: string
+          default: []
         outcomeIds:
           type: array
           items:

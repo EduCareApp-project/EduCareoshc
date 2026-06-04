@@ -2148,6 +2148,8 @@ export const DeleteRoutineItemCompletionParams = zod.object({
 
 export const listPostsResponseImagesMax = 3;
 
+export const listPostsResponseDocumentPathsDefault = [];
+export const listPostsResponseDocumentNamesDefault = [];
 export const listPostsResponseOutcomeIdsDefault = [];
 
 export const ListPostsResponseItem = zod.object({
@@ -2161,6 +2163,12 @@ export const ListPostsResponseItem = zod.object({
   title: zod.string(),
   date: zod.coerce.date().nullish(),
   images: zod.array(zod.string()).max(listPostsResponseImagesMax),
+  documentPaths: zod
+    .array(zod.string())
+    .default(listPostsResponseDocumentPathsDefault),
+  documentNames: zod
+    .array(zod.string())
+    .default(listPostsResponseDocumentNamesDefault),
   outcomeIds: zod
     .array(zod.string())
     .default(listPostsResponseOutcomeIdsDefault),
@@ -2206,6 +2214,8 @@ export const GetPostParams = zod.object({
 
 export const getPostResponseImagesMax = 3;
 
+export const getPostResponseDocumentPathsDefault = [];
+export const getPostResponseDocumentNamesDefault = [];
 export const getPostResponseOutcomeIdsDefault = [];
 
 export const GetPostResponse = zod.object({
@@ -2219,6 +2229,12 @@ export const GetPostResponse = zod.object({
   title: zod.string(),
   date: zod.coerce.date().nullish(),
   images: zod.array(zod.string()).max(getPostResponseImagesMax),
+  documentPaths: zod
+    .array(zod.string())
+    .default(getPostResponseDocumentPathsDefault),
+  documentNames: zod
+    .array(zod.string())
+    .default(getPostResponseDocumentNamesDefault),
   outcomeIds: zod.array(zod.string()).default(getPostResponseOutcomeIdsDefault),
   description: zod.string().nullish(),
   learning: zod.string().nullish(),
@@ -2267,6 +2283,8 @@ export const UpdatePostBody = zod.object({
 
 export const updatePostResponseImagesMax = 3;
 
+export const updatePostResponseDocumentPathsDefault = [];
+export const updatePostResponseDocumentNamesDefault = [];
 export const updatePostResponseOutcomeIdsDefault = [];
 
 export const UpdatePostResponse = zod.object({
@@ -2280,6 +2298,12 @@ export const UpdatePostResponse = zod.object({
   title: zod.string(),
   date: zod.coerce.date().nullish(),
   images: zod.array(zod.string()).max(updatePostResponseImagesMax),
+  documentPaths: zod
+    .array(zod.string())
+    .default(updatePostResponseDocumentPathsDefault),
+  documentNames: zod
+    .array(zod.string())
+    .default(updatePostResponseDocumentNamesDefault),
   outcomeIds: zod
     .array(zod.string())
     .default(updatePostResponseOutcomeIdsDefault),

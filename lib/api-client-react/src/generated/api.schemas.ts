@@ -516,10 +516,8 @@ export interface Notice {
   content: string;
   priority: NoticePriority;
   audience: NoticeAudience;
-  /** @nullable */
-  documentUrl?: string | null;
-  /** @nullable */
-  documentName?: string | null;
+  documentPaths?: string[] | null;
+  documentNames?: string[] | null;
   /** @nullable */
   expiresAt?: string | null;
   createdAt: string;
@@ -549,8 +547,8 @@ export interface NoticeInput {
   content: string;
   priority?: NoticeInputPriority;
   audience?: NoticeInputAudience;
-  documentUrl?: string;
-  documentName?: string;
+  documentPaths?: string[];
+  documentNames?: string[];
   expiresAt?: string;
 }
 
@@ -578,10 +576,8 @@ export interface PatchNoticeBody {
   content?: string;
   priority?: PatchNoticeBodyPriority;
   audience?: PatchNoticeBodyAudience;
-  /** @nullable */
-  documentUrl?: string | null;
-  /** @nullable */
-  documentName?: string | null;
+  documentPaths?: string[] | null;
+  documentNames?: string[] | null;
 }
 
 export interface Jotting {

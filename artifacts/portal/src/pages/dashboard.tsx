@@ -41,7 +41,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 type NoticeAudience = "leadership" | "educator" | "guardian";
 
 // ─── Shared Notice Board ─────────────────────────────────────────────────────
-type NoticeItem = { id: number; title: string; content: string; priority: string; audience: string; createdAt: string; documentUrl?: string | null; documentName?: string | null };
+type NoticeItem = { id: number; title: string; content: string; priority: string; audience: string; createdAt: string; documentPaths?: string[] | null; documentNames?: string[] | null };
 
 function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: NoticeAudience }) {
   const queryClient = useQueryClient();
@@ -55,7 +55,8 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [priority, setPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
-  const [docFile, setDocFile] = useState<File | null>(null);
+  const [documents, setDocuments] = useState<{ path: string; name: string }[]>([]);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
 
@@ -65,6 +66,9 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
   const [editContent, setEditContent] = useState("");
   const [editPriority, setEditPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
   const [editAudience, setEditAudience] = useState<NoticeAudience>("leadership");
+  const [editDocuments, setEditDocuments] = useState<{ path: string; name: string }[]>([]);
+  const [uploadingEditDoc, setUploadingEditDoc] = useState(false);
+  const editFileRef = useRef<HTMLInputElement>(null);
 
   const openEdit = (notice: NoticeItem) => {
     setEditingNotice(notice);
@@ -72,15 +76,27 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
     setEditContent(notice.content);
     setEditPriority(notice.priority as any);
     setEditAudience(notice.audience as any);
+    setEditDocuments(
+      (notice.documentPaths ?? []).map((p, i) => ({ path: p, name: notice.documentNames?.[i] ?? p.split("/").pop() ?? `Document ${i + 1}` }))
+    );
   };
 
   const handleUpdate = () => {
     if (!editingNotice || !editTitle || !editContent) return;
     updateNotice.mutate(
-      { id: editingNotice.id, data: { title: editTitle, content: editContent, priority: editPriority as any, audience: editAudience as any } },
+      {
+        id: editingNotice.id,
+        data: {
+          title: editTitle,
+          content: editContent,
+          priority: editPriority as any,
+          audience: editAudience as any,
+          documentPaths: editDocuments.map((d) => d.path),
+          documentNames: editDocuments.map((d) => d.name),
+        },
+      },
       {
         onSuccess: () => {
-          // Invalidate all audience tabs since audience may have changed
           queryClient.invalidateQueries({ queryKey: ["listNotices"] });
           setEditingNotice(null);
         },
@@ -88,31 +104,52 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
     );
   };
 
-  const { uploadFile, isUploading } = useUpload({
+  const { uploadFile } = useUpload({
     onError: () => alert("Document upload failed — please try again."),
   });
 
+  const handleDocPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingDoc(true);
+    try {
+      const result = await uploadFile(file);
+      if (result) setDocuments((prev) => [...prev, { path: result.objectPath, name: file.name }]);
+    } finally {
+      setUploadingDoc(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const handleEditDocPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingEditDoc(true);
+    try {
+      const result = await uploadFile(file);
+      if (result) setEditDocuments((prev) => [...prev, { path: result.objectPath, name: file.name }]);
+    } finally {
+      setUploadingEditDoc(false);
+      if (editFileRef.current) editFileRef.current.value = "";
+    }
+  };
+
   const resetForm = () => {
-    setTitle(""); setContent(""); setPriority("normal"); setDocFile(null);
+    setTitle(""); setContent(""); setPriority("normal"); setDocuments([]);
     setShowForm(false);
     if (fileRef.current) fileRef.current.value = "";
   };
 
   const handlePost = async () => {
     if (!title || !content) return;
-
-    let documentUrl: string | undefined;
-    let documentName: string | undefined;
-
-    if (docFile) {
-      const result = await uploadFile(docFile);
-      if (!result) return; // upload failed
-      documentUrl = `/api/storage/objects/${result.objectPath.replace(/^\/?(objects\/)?/, "")}`;
-      documentName = docFile.name;
-    }
-
     createNotice.mutate(
-      { data: { title, content, priority: priority as any, audience: audience as any, documentUrl, documentName } },
+      {
+        data: {
+          title, content, priority: priority as any, audience: audience as any,
+          documentPaths: documents.map((d) => d.path),
+          documentNames: documents.map((d) => d.name),
+        },
+      },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListNoticesQueryKey(params) });
@@ -126,7 +163,7 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
     deleteNotice.mutate({ id }, { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListNoticesQueryKey(params) }) });
   };
 
-  const isSaving = createNotice.isPending || isUploading;
+  const isSaving = createNotice.isPending || uploadingDoc;
 
   return (
     <Card className="border-l-4 border-l-primary">
@@ -162,40 +199,40 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
 
             <RichTextEditor value={content} onChange={setContent} placeholder="Notice content…" />
 
-            {/* Document upload */}
-            <div>
-              {docFile ? (
-                <div className="flex items-center gap-2 text-sm bg-muted rounded-md px-3 py-2">
+            {/* Document upload — multiple */}
+            <div className="space-y-1.5">
+              {documents.map((doc, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-sm bg-muted rounded-md px-3 py-2">
                   <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="flex-1 truncate">{docFile.name}</span>
+                  <span className="flex-1 truncate">{doc.name}</span>
                   <button
                     className="text-muted-foreground hover:text-destructive"
-                    onClick={() => { setDocFile(null); if (fileRef.current) fileRef.current.value = ""; }}
+                    onClick={() => setDocuments((prev) => prev.filter((_, i) => i !== idx))}
                   >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  className="flex items-center gap-2 text-sm text-muted-foreground border border-dashed rounded-md px-3 py-2 w-full hover:bg-muted/40 transition-colors"
-                  onClick={() => fileRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4" />
-                  Attach a document (optional)
-                </button>
+              ))}
+              {uploadingDoc && (
+                <div className="flex items-center gap-2 text-sm bg-muted rounded-md px-3 py-2 text-muted-foreground">
+                  <Upload className="h-4 w-4 animate-pulse shrink-0" />
+                  Uploading…
+                </div>
               )}
-              <input
-                ref={fileRef}
-                type="file"
-                className="hidden"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
-              />
+              <button
+                type="button"
+                disabled={uploadingDoc}
+                className="flex items-center gap-2 text-sm text-muted-foreground border border-dashed rounded-md px-3 py-2 w-full hover:bg-muted/40 transition-colors disabled:opacity-50"
+                onClick={() => fileRef.current?.click()}
+              >
+                <Upload className="h-4 w-4" />
+                Attach a document (optional)
+              </button>
+              <input ref={fileRef} type="file" className="hidden" onChange={handleDocPick} />
             </div>
 
-            <Button className="w-full" onClick={handlePost} disabled={isSaving || !title || !content}>
-              {isUploading ? "Uploading document…" : isSaving ? "Posting…" : "Post Notice"}
+            <Button className="w-full" onClick={handlePost} disabled={isSaving || uploadingDoc || !title || !content}>
+              {isSaving ? "Posting…" : "Post Notice"}
             </Button>
           </div>
         )}
@@ -242,10 +279,10 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
                   <h4 className="font-semibold text-sm text-white">{notice.title}</h4>
                   <RichTextView html={notice.content} className="text-white/85 line-clamp-3" />
 
-                  {notice.documentUrl && (
+                  {notice.documentPaths && notice.documentPaths.length > 0 && (
                     <div className="mt-1 flex items-center gap-1.5 text-xs text-white/80">
                       <Paperclip className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{notice.documentName ?? "Attached document"}</span>
+                      <span>{notice.documentPaths.length === 1 ? notice.documentNames?.[0] ?? "1 attachment" : `${notice.documentPaths.length} attachments`}</span>
                     </div>
                   )}
                 </div>
@@ -294,9 +331,42 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
               </div>
             </div>
             <RichTextEditor value={editContent} onChange={setEditContent} placeholder="Notice content…" />
+
+            {/* Edit attachments */}
+            <div className="space-y-1.5">
+              {editDocuments.map((doc, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-sm bg-muted rounded-md px-3 py-2">
+                  <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="flex-1 truncate">{doc.name}</span>
+                  <button
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={() => setEditDocuments((prev) => prev.filter((_, i) => i !== idx))}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+              {uploadingEditDoc && (
+                <div className="flex items-center gap-2 text-sm bg-muted rounded-md px-3 py-2 text-muted-foreground">
+                  <Upload className="h-4 w-4 animate-pulse shrink-0" />
+                  Uploading…
+                </div>
+              )}
+              <button
+                type="button"
+                disabled={uploadingEditDoc}
+                className="flex items-center gap-2 text-sm text-muted-foreground border border-dashed rounded-md px-3 py-2 w-full hover:bg-muted/40 transition-colors disabled:opacity-50"
+                onClick={() => editFileRef.current?.click()}
+              >
+                <Upload className="h-4 w-4" />
+                Attach a document
+              </button>
+              <input ref={editFileRef} type="file" className="hidden" onChange={handleEditDocPick} />
+            </div>
+
             <div className="flex justify-end gap-2 pt-1">
               <Button variant="outline" onClick={() => setEditingNotice(null)}>Cancel</Button>
-              <Button onClick={handleUpdate} disabled={updateNotice.isPending || !editTitle || !editContent}>
+              <Button onClick={handleUpdate} disabled={updateNotice.isPending || uploadingEditDoc || !editTitle || !editContent}>
                 {updateNotice.isPending ? "Saving…" : "Save changes"}
               </Button>
             </div>
@@ -324,17 +394,26 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
               <RichTextView html={selectedNotice.content} className="text-foreground" />
             )}
 
-            {selectedNotice?.documentUrl && (
-              <div className="pt-3 border-t">
-                <a
-                  href={selectedNotice.documentUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-primary hover:underline font-medium"
-                >
-                  <Paperclip className="h-4 w-4 shrink-0" />
-                  {selectedNotice.documentName ?? "Attached document"}
-                </a>
+            {selectedNotice?.documentPaths && selectedNotice.documentPaths.length > 0 && (
+              <div className="pt-3 border-t space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Attachments</p>
+                {selectedNotice.documentPaths.map((path, idx) => {
+                  const name = selectedNotice.documentNames?.[idx] ?? path.split("/").pop() ?? `Document ${idx + 1}`;
+                  const stripped = path.replace(/^\/?(objects\/)?/, "");
+                  const url = `/api/storage/objects/${stripped}`;
+                  return (
+                    <a
+                      key={idx}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-primary hover:underline font-medium"
+                    >
+                      <FileText className="h-4 w-4 shrink-0" />
+                      {name}
+                    </a>
+                  );
+                })}
               </div>
             )}
 

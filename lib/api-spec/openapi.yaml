@@ -3659,10 +3659,16 @@ components:
         audience:
           type: string
           enum: [leadership, educator, guardian]
-        documentUrl:
-          type: ["string", "null"]
-        documentName:
-          type: ["string", "null"]
+        documentPaths:
+          type: array
+          items:
+            type: string
+          nullable: true
+        documentNames:
+          type: array
+          items:
+            type: string
+          nullable: true
         expiresAt:
           type: ["string", "null"]
           format: date-time
@@ -3686,10 +3692,14 @@ components:
           type: string
           enum: [leadership, educator, guardian]
           default: leadership
-        documentUrl:
-          type: string
-        documentName:
-          type: string
+        documentPaths:
+          type: array
+          items:
+            type: string
+        documentNames:
+          type: array
+          items:
+            type: string
         expiresAt:
           type: string
           format: date-time
@@ -3707,10 +3717,16 @@ components:
         audience:
           type: string
           enum: [leadership, educator, guardian]
-        documentUrl:
-          type: ["string", "null"]
-        documentName:
-          type: ["string", "null"]
+        documentPaths:
+          type: array
+          items:
+            type: string
+          nullable: true
+        documentNames:
+          type: array
+          items:
+            type: string
+          nullable: true
 
     Jotting:
       type: object

@@ -13,7 +13,7 @@ export interface NoticeInput {
   content: string;
   priority?: NoticeInputPriority;
   audience?: NoticeInputAudience;
-  documentUrl?: string;
-  documentName?: string;
+  documentPaths?: string[];
+  documentNames?: string[];
   expiresAt?: Date;
 }

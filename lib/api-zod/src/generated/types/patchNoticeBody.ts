@@ -13,8 +13,6 @@ export interface PatchNoticeBody {
   content?: string;
   priority?: PatchNoticeBodyPriority;
   audience?: PatchNoticeBodyAudience;
-  /** @nullable */
-  documentUrl?: string | null;
-  /** @nullable */
-  documentName?: string | null;
+  documentPaths?: string[] | null;
+  documentNames?: string[] | null;
 }

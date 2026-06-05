@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, isNull, and } from "drizzle-orm";
 import { db, nqsElementsTable } from "@workspace/db";
 import {
   ListNqsElementsResponse,
@@ -81,10 +81,27 @@ const DEFAULT_ELEMENTS: { code: string; label: string; descriptor: string; isHea
   { code: "7.2.3", label: "Development of professionals",    descriptor: "Educators, coordinators and staff members' performance is regularly evaluated, and individual plans are in place to support learning and development.",                                                                                             isHeader: false, sortOrder: 153 },
 ];
 
+let descriptorsFilled = false;
+
 async function ensureSeeded() {
   const count = await db.$count(nqsElementsTable);
   if (count === 0) {
     await db.insert(nqsElementsTable).values(DEFAULT_ELEMENTS);
+    descriptorsFilled = true;
+    return;
+  }
+  // Back-fill descriptors for any existing rows that have them null (e.g. after a schema migration)
+  if (!descriptorsFilled) {
+    const nullCount = await db.$count(nqsElementsTable, isNull(nqsElementsTable.descriptor));
+    if (nullCount > 0) {
+      for (const el of DEFAULT_ELEMENTS) {
+        await db
+          .update(nqsElementsTable)
+          .set({ descriptor: el.descriptor })
+          .where(and(eq(nqsElementsTable.code, el.code), isNull(nqsElementsTable.descriptor)));
+      }
+    }
+    descriptorsFilled = true;
   }
 }
 

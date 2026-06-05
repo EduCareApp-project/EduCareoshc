@@ -237,14 +237,14 @@ export default function Jottings() {
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-4">
-                  <span className="shrink-0 text-xs text-muted-foreground w-36">
+                <div className="flex items-start gap-4">
+                  <span className="shrink-0 text-xs text-muted-foreground w-36 pt-0.5">
                     {format(new Date(j.createdAt), "dd/MM/yyyy h:mm a")}
                   </span>
-                  <span className="shrink-0 text-xs font-medium text-foreground/70 w-32 truncate">
+                  <span className="shrink-0 text-xs font-medium text-foreground/70 w-32 pt-0.5 truncate">
                     {j.childName ?? <span className="text-muted-foreground italic">No child</span>}
                   </span>
-                  <p className="flex-1 text-sm truncate">{j.content}</p>
+                  <p className="flex-1 text-sm break-words">{j.content}</p>
                   <div className="flex items-center gap-1 shrink-0">
                     <Button
                       variant="outline"
@@ -294,14 +294,14 @@ export default function Jottings() {
               ) : actionedItems.map((j) => (
                 <Card key={j.id} className="border-dashed opacity-75">
                   <CardContent className="py-2.5">
-                    <div className="flex items-center gap-4">
-                      <span className="shrink-0 text-xs text-muted-foreground w-36">
+                    <div className="flex items-start gap-4">
+                      <span className="shrink-0 text-xs text-muted-foreground w-36 pt-0.5">
                         {format(new Date(j.createdAt), "dd/MM/yyyy h:mm a")}
                       </span>
-                      <span className="shrink-0 text-xs font-medium text-foreground/70 w-32 truncate">
+                      <span className="shrink-0 text-xs font-medium text-foreground/70 w-32 pt-0.5 truncate">
                         {j.childName ?? <span className="text-muted-foreground italic">No child</span>}
                       </span>
-                      <p className="flex-1 text-sm truncate text-muted-foreground line-through">{j.content}</p>
+                      <p className="flex-1 text-sm break-words text-muted-foreground line-through">{j.content}</p>
                       <div className="flex items-center gap-1 shrink-0">
                         {j.archivedAt && (
                           <span className="text-xs text-muted-foreground mr-1">

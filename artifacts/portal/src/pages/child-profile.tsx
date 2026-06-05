@@ -1724,7 +1724,7 @@ export default function ChildProfile() {
                           <div key={j.id} className={`flex items-start gap-3 p-3 rounded-lg border text-sm ${j.archivedAt ? "bg-muted/40 opacity-70" : "bg-green-50"}`}>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <p className="leading-relaxed line-clamp-2 flex-1">{j.content}</p>
+                                <p className="leading-relaxed break-words flex-1">{j.content}</p>
                                 {j.archivedAt && <Badge variant="secondary" className="text-xs shrink-0">Actioned</Badge>}
                               </div>
                               <p className="text-xs text-muted-foreground mt-1">{safeDate(j.createdAt, "dd/MM/yyyy")}{j.staffName ? ` · ${j.staffName}` : ""}</p>

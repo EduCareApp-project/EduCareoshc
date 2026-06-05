@@ -8,8 +8,8 @@ export const noticesTable = pgTable("notices", {
   content: text("content").notNull(),
   priority: text("priority").notNull().default("normal"),
   audience: text("audience").notNull().default("leadership"),
-  documentPaths: text("document_paths").array(),
-  documentNames: text("document_names").array(),
+  documentPaths: text("notice_document_paths").array(),
+  documentNames: text("notice_document_names").array(),
   expiresAt: timestamp("expires_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

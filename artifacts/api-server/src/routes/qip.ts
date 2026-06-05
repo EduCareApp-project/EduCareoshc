@@ -17,11 +17,16 @@ const router: IRouter = Router();
 router.get("/qip/public", async (req, res): Promise<void> => {
   const siteId = req.query.siteId ? Number(req.query.siteId) : null;
 
-  const [children, strengths, sitesRows] = await Promise.all([
+  const [children, allStrengths, sitesRows] = await Promise.all([
     db.select({ firstName: childrenTable.firstName, lastName: childrenTable.lastName }).from(childrenTable),
     db.select().from(qipStrengthsTable).orderBy(qipStrengthsTable.qualityArea),
     db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable),
   ]);
+
+  // Filter strengths to the requested site (or fall back to null-site global entries)
+  const strengths = siteId != null
+    ? allStrengths.filter((s) => s.siteId === siteId)
+    : allStrengths.filter((s) => s.siteId == null);
 
   const allItems = siteId
     ? await db.select().from(qipItemsTable).where(eq(qipItemsTable.siteId, siteId))

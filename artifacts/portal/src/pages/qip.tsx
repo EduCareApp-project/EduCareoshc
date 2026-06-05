@@ -62,6 +62,7 @@ const NQS_ELEMENTS: { value: string; label: string }[] = [
   { value: "2.2", label: "Standard 2.2 – Healthy eating and physical activity" },
   { value: "2.2.1", label: "2.2.1 – Healthy eating is promoted" },
   { value: "2.2.2", label: "2.2.2 – Physical activity is promoted" },
+  { value: "2.2.3", label: "2.2.3 – Community collaboration for health and wellbeing" },
   { value: "2.3", label: "Standard 2.3 – Each child is protected" },
   { value: "2.3.1", label: "2.3.1 – Children are adequately supervised" },
   { value: "2.3.2", label: "2.3.2 – Children protected from harm and hazards" },

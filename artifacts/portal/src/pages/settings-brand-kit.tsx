@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { ArrowLeft, Copy, Check } from "lucide-react";
+import { ArrowLeft, Copy, Check, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -138,9 +138,12 @@ export default function SettingsBrandKit() {
 
   return (
     <div className="space-y-12 max-w-4xl">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between no-print">
         <Button variant="ghost" size="sm" onClick={() => navigate("/settings")}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Settings
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => window.print()}>
+          <Download className="h-4 w-4 mr-1.5" /> Download as PDF
         </Button>
       </div>
 

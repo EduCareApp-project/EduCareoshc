@@ -220,6 +220,9 @@
   main { overflow: visible !important; padding: 0 !important; }
   main > div { max-width: 100% !important; }
 
+  /* Hide elements marked as screen-only */
+  .no-print { display: none !important; }
+
   /* Force colours to print legibly */
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 

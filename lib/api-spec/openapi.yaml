@@ -715,6 +715,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NqsElement"
+    delete:
+      operationId: deleteNqsElement
+      tags: [nqs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
 
   /nqs:
     get:

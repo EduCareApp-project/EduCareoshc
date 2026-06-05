@@ -3135,6 +3135,84 @@ export const useUpdateNqsElement = <
   return useMutation(getUpdateNqsElementMutationOptions(options));
 };
 
+export const getDeleteNqsElementUrl = (id: number) => {
+  return `/api/nqs-elements/${id}`;
+};
+
+export const deleteNqsElement = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteNqsElementUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteNqsElementMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteNqsElement>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteNqsElement>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteNqsElement"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteNqsElement>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteNqsElement(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteNqsElementMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteNqsElement>>
+>;
+
+export type DeleteNqsElementMutationError = ErrorType<unknown>;
+
+export const useDeleteNqsElement = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteNqsElement>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteNqsElement>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteNqsElementMutationOptions(options));
+};
+
 export const getListNqsAreasUrl = () => {
   return `/api/nqs`;
 };

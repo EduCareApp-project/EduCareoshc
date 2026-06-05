@@ -7,11 +7,13 @@ export function usePermissions() {
   const role = user?.role ?? "";
   const isEducatorRole = EDUCATOR_ROLES.includes(role);
 
+  const isAdmin = role === "admin";
   const isAdminOrEL = role === "admin" || role === "educational_leader";
 
   return {
     isEducatorRole,
     isFullAccess: !isEducatorRole,
+    isAdmin,
     isAdminOrEL,
     canDelete: !isEducatorRole,
     canEditPost: !isEducatorRole,

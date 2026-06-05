@@ -6,6 +6,7 @@ import {
   UpdateNqsElementParams,
   UpdateNqsElementBody,
   UpdateNqsElementResponse,
+  DeleteNqsElementParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -132,6 +133,23 @@ router.patch("/nqs-elements/:id", async (req, res): Promise<void> => {
     return;
   }
   res.json(UpdateNqsElementResponse.parse(element));
+});
+
+router.delete("/nqs-elements/:id", async (req, res): Promise<void> => {
+  const params = DeleteNqsElementParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const [element] = await db
+    .delete(nqsElementsTable)
+    .where(eq(nqsElementsTable.id, params.data.id))
+    .returning();
+  if (!element) {
+    res.status(404).json({ error: "Element not found" });
+    return;
+  }
+  res.sendStatus(204);
 });
 
 export default router;

@@ -835,6 +835,10 @@ export const UpdateNqsElementResponse = zod.object({
   sortOrder: zod.number(),
 });
 
+export const DeleteNqsElementParams = zod.object({
+  id: zod.coerce.number(),
+});
+
 export const ListNqsAreasResponseItem = zod.object({
   id: zod.number(),
   number: zod.number(),

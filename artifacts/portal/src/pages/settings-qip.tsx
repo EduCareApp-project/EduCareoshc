@@ -1,10 +1,11 @@
 import { useState } from "react";
 import {
   useListQipSources, useCreateQipSource, useDeleteQipSource,
-  useListNqsElements, useUpdateNqsElement,
+  useListNqsElements, useUpdateNqsElement, useDeleteNqsElement,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,10 +28,13 @@ function ElementsTab() {
   const queryClient = useQueryClient();
   const { data: elements, isLoading } = useListNqsElements();
   const updateMutation = useUpdateNqsElement();
+  const deleteMutation = useDeleteNqsElement();
   const { toast } = useToast();
+  const { isAdmin } = usePermissions();
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: number; code: string; label: string } | null>(null);
 
   function startEdit(id: number, label: string) {
     setEditingId(id);
@@ -57,6 +61,17 @@ function ElementsTab() {
     );
   }
 
+  function handleDelete(id: number) {
+    deleteMutation.mutate({ id }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/nqs-elements"] });
+        setDeleteConfirm(null);
+        toast({ title: "Element deleted" });
+      },
+      onError: () => toast({ title: "Failed to delete element", variant: "destructive" }),
+    });
+  }
+
   if (isLoading) return <div className="text-muted-foreground text-sm py-4">Loading elements…</div>;
   if (!elements || elements.length === 0) return <div className="text-muted-foreground text-sm py-4">No elements found.</div>;
 
@@ -71,6 +86,7 @@ function ElementsTab() {
     <div className="space-y-6">
       <div className="rounded-md border bg-amber-50 border-amber-200 px-4 py-3 text-sm text-amber-800">
         <strong>Note:</strong> The concept name (middle column) can be edited and will update the Add QIP Item dropdown. The element code and descriptor are fixed NQS reference text.
+        {isAdmin && <span className="ml-1">Admins can also delete elements — deleted elements can be re-seeded by removing all elements and reloading.</span>}
       </div>
 
       {Object.entries(grouped).map(([qa, items]) => (
@@ -85,14 +101,14 @@ function ElementsTab() {
                   <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground w-16">Code</th>
                   <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground w-52">Concept</th>
                   <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground">Descriptor</th>
-                  <th className="w-8"></th>
+                  <th className={isAdmin ? "w-16" : "w-8"}></th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {items.map((el) => (
                   <tr
                     key={el.id}
-                    className={`${el.isHeader ? "bg-muted/30" : "hover:bg-muted/10"} transition-colors align-top`}
+                    className={`${el.isHeader ? "bg-muted/30" : "hover:bg-muted/10"} transition-colors align-top group`}
                   >
                     <td className="px-3 py-2.5">
                       <code className={`text-xs font-mono ${el.isHeader ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
@@ -133,15 +149,28 @@ function ElementsTab() {
 
                     <td className="px-2 py-2 text-right">
                       {editingId !== el.id && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                          onClick={() => startEdit(el.id, el.label)}
-                          title="Edit concept name"
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                            onClick={() => startEdit(el.id, el.label)}
+                            title="Edit concept name"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          {isAdmin && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                              onClick={() => setDeleteConfirm({ id: el.id, code: el.code, label: el.label })}
+                              title="Delete element"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -151,6 +180,28 @@ function ElementsTab() {
           </div>
         </div>
       ))}
+
+      <Dialog open={deleteConfirm !== null} onOpenChange={() => setDeleteConfirm(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete element?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Delete <code className="text-xs bg-muted px-1 py-0.5 rounded">{deleteConfirm?.code}</code> — <strong>{deleteConfirm?.label}</strong>?
+            This will remove it from the NQS element dropdown in QIP items. Existing QIP items that reference this element will not be affected.
+          </p>
+          <div className="flex gap-2 justify-end pt-2">
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteConfirm !== null && handleDelete(deleteConfirm.id)}
+            >
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

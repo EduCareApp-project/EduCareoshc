@@ -211,13 +211,27 @@
 @media print {
   @page { margin: 16mm 14mm; size: A4; }
 
-  html, body { overflow: visible !important; height: auto !important; background: white !important; }
+  /* Remove ALL height/overflow constraints so the full page renders */
+  html, body, #root,
+  div, main, section, article {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  body { background: white !important; }
 
   /* Layout: hide sidebar & mobile header, make main full-width */
   aside, header { display: none !important; }
-  .flex.min-h-\[100dvh\] { display: block !important; }
-  .flex-1.overflow-hidden { overflow: visible !important; display: block !important; }
-  main { overflow: visible !important; padding: 0 !important; }
+
+  /* The outer h-screen wrapper and scroll container */
+  .flex.h-screen,
+  .h-screen { height: auto !important; overflow: visible !important; display: block !important; }
+  .overflow-hidden { overflow: visible !important; }
+  .overflow-y-auto { overflow: visible !important; }
+
+  main { padding: 0 !important; }
   main > div { max-width: 100% !important; }
 
   /* Hide elements marked as screen-only */
@@ -227,7 +241,11 @@
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
   /* Avoid cutting cards across pages */
-  .rounded-xl { page-break-inside: avoid; break-inside: avoid; border: 1px solid #d1d5db !important; }
+  .rounded-lg, .rounded-xl {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    border: 1px solid #d1d5db !important;
+  }
 
   /* Two-column grids stay side-by-side on A4 */
   .grid-cols-2, .md\:grid-cols-2 { grid-template-columns: repeat(2, 1fr) !important; }

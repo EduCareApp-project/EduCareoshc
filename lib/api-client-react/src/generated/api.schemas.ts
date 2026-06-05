@@ -408,6 +408,7 @@ export interface NqsElement {
   id: number;
   code: string;
   label: string;
+  descriptor?: string | null;
   isHeader: boolean;
   sortOrder: number;
 }

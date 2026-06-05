@@ -6,6 +6,7 @@ export const nqsElementsTable = pgTable("nqs_elements", {
   id: serial("id").primaryKey(),
   code: text("code").notNull().unique(),
   label: text("label").notNull(),
+  descriptor: text("descriptor"),
   isHeader: boolean("is_header").notNull().default(false),
   sortOrder: integer("sort_order").notNull(),
 });

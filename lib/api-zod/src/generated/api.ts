@@ -812,6 +812,7 @@ export const ListNqsElementsResponseItem = zod.object({
   id: zod.number(),
   code: zod.string(),
   label: zod.string(),
+  descriptor: zod.string().nullish(),
   isHeader: zod.boolean(),
   sortOrder: zod.number(),
 });
@@ -829,6 +830,7 @@ export const UpdateNqsElementResponse = zod.object({
   id: zod.number(),
   code: zod.string(),
   label: zod.string(),
+  descriptor: zod.string().nullish(),
   isHeader: zod.boolean(),
   sortOrder: zod.number(),
 });

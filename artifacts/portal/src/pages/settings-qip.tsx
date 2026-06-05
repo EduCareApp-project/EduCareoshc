@@ -70,7 +70,7 @@ function ElementsTab() {
   return (
     <div className="space-y-6">
       <div className="rounded-md border bg-amber-50 border-amber-200 px-4 py-3 text-sm text-amber-800">
-        <strong>Note:</strong> Editing an element label here updates it across the entire portal — including the Add QIP Item form. The element code (e.g. 2.2.3) is fixed and cannot be changed.
+        <strong>Note:</strong> The concept name (middle column) can be edited and will update the Add QIP Item dropdown. The element code and descriptor are fixed NQS reference text.
       </div>
 
       {Object.entries(grouped).map(([qa, items]) => (
@@ -78,67 +78,76 @@ function ElementsTab() {
           <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
             {QA_LABELS[qa] ?? `Quality Area ${qa}`}
           </h3>
-          <div className="rounded-md border divide-y">
-            {items.map((el) => (
-              <div
-                key={el.id}
-                className={`flex items-center gap-3 px-4 py-2.5 ${el.isHeader ? "bg-muted/40" : "hover:bg-muted/20"} transition-colors`}
-              >
-                <code className={`text-xs font-mono shrink-0 w-12 ${el.isHeader ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
-                  {el.code}
-                </code>
+          <div className="rounded-md border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground w-16">Code</th>
+                  <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground w-52">Concept</th>
+                  <th className="text-left px-3 py-2 text-xs font-semibold text-muted-foreground">Descriptor</th>
+                  <th className="w-8"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {items.map((el) => (
+                  <tr
+                    key={el.id}
+                    className={`${el.isHeader ? "bg-muted/30" : "hover:bg-muted/10"} transition-colors align-top`}
+                  >
+                    <td className="px-3 py-2.5">
+                      <code className={`text-xs font-mono ${el.isHeader ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
+                        {el.code}
+                      </code>
+                    </td>
 
-                {editingId === el.id ? (
-                  <div className="flex flex-1 items-center gap-2">
-                    <Input
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") saveEdit(el.id);
-                        if (e.key === "Escape") cancelEdit();
-                      }}
-                      className="h-8 text-sm flex-1"
-                      autoFocus
-                    />
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 text-primary hover:text-primary"
-                      onClick={() => saveEdit(el.id)}
-                      disabled={updateMutation.isPending}
-                    >
-                      <Check className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                      onClick={cancelEdit}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <span className={`flex-1 text-sm ${el.isHeader ? "font-semibold" : ""}`}>
-                      {el.label}
-                    </span>
-                    {el.isHeader ? (
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground shrink-0">Standard</Badge>
-                    ) : null}
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 text-muted-foreground hover:text-foreground shrink-0"
-                      onClick={() => startEdit(el.id, el.label)}
-                      title="Edit label"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                  </>
-                )}
-              </div>
-            ))}
+                    <td className="px-3 py-2.5">
+                      {editingId === el.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <Input
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") saveEdit(el.id);
+                              if (e.key === "Escape") cancelEdit();
+                            }}
+                            className="h-7 text-xs"
+                            autoFocus
+                          />
+                          <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-primary" onClick={() => saveEdit(el.id)} disabled={updateMutation.isPending}>
+                            <Check className="h-3 w-3" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 text-muted-foreground" onClick={cancelEdit}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className={`text-sm ${el.isHeader ? "font-semibold" : ""}`}>{el.label}</span>
+                      )}
+                    </td>
+
+                    <td className="px-3 py-2.5">
+                      <span className="text-xs text-muted-foreground leading-relaxed">
+                        {el.descriptor ?? <span className="italic">—</span>}
+                      </span>
+                    </td>
+
+                    <td className="px-2 py-2 text-right">
+                      {editingId !== el.id && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                          onClick={() => startEdit(el.id, el.label)}
+                          title="Edit concept name"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       ))}

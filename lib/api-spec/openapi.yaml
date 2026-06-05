@@ -678,6 +678,44 @@ paths:
               schema:
                 $ref: "#/components/schemas/Program"
 
+  /nqs-elements:
+    get:
+      operationId: listNqsElements
+      tags: [nqs]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NqsElement"
+
+  /nqs-elements/{id}:
+    patch:
+      operationId: updateNqsElement
+      tags: [nqs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NqsElementUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NqsElement"
+
   /nqs:
     get:
       operationId: listNqsAreas
@@ -3541,6 +3579,28 @@ components:
           type: array
           items:
             type: integer
+
+    NqsElement:
+      type: object
+      required: [id, code, label, isHeader, sortOrder]
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        label:
+          type: string
+        isHeader:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    NqsElementUpdate:
+      type: object
+      required: [label]
+      properties:
+        label:
+          type: string
 
     NqsArea:
       type: object

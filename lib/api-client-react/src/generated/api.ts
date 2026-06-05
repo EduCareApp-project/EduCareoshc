@@ -83,6 +83,8 @@ import type {
   NotificationSetting,
   NqsArea,
   NqsAreaUpdate,
+  NqsElement,
+  NqsElementUpdate,
   Observation,
   ObservationComment,
   ObservationInput,
@@ -2982,6 +2984,155 @@ export const useUpdateProgram = <
   TContext
 > => {
   return useMutation(getUpdateProgramMutationOptions(options));
+};
+
+export const getListNqsElementsUrl = () => {
+  return `/api/nqs-elements`;
+};
+
+export const listNqsElements = async (
+  options?: RequestInit,
+): Promise<NqsElement[]> => {
+  return customFetch<NqsElement[]>(getListNqsElementsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListNqsElementsQueryKey = () => {
+  return [`/api/nqs-elements`] as const;
+};
+
+export const getListNqsElementsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listNqsElements>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listNqsElements>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListNqsElementsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listNqsElements>>> = ({
+    signal,
+  }) => listNqsElements({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listNqsElements>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListNqsElementsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listNqsElements>>
+>;
+export type ListNqsElementsQueryError = ErrorType<unknown>;
+
+export function useListNqsElements<
+  TData = Awaited<ReturnType<typeof listNqsElements>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listNqsElements>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListNqsElementsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getUpdateNqsElementUrl = (id: number) => {
+  return `/api/nqs-elements/${id}`;
+};
+
+export const updateNqsElement = async (
+  id: number,
+  nqsElementUpdate: NqsElementUpdate,
+  options?: RequestInit,
+): Promise<NqsElement> => {
+  return customFetch<NqsElement>(getUpdateNqsElementUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(nqsElementUpdate),
+  });
+};
+
+export const getUpdateNqsElementMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateNqsElement>>,
+    TError,
+    { id: number; data: BodyType<NqsElementUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateNqsElement>>,
+  TError,
+  { id: number; data: BodyType<NqsElementUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateNqsElement"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateNqsElement>>,
+    { id: number; data: BodyType<NqsElementUpdate> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateNqsElement(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateNqsElementMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateNqsElement>>
+>;
+export type UpdateNqsElementMutationBody = BodyType<NqsElementUpdate>;
+export type UpdateNqsElementMutationError = ErrorType<unknown>;
+
+export const useUpdateNqsElement = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateNqsElement>>,
+    TError,
+    { id: number; data: BodyType<NqsElementUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateNqsElement>>,
+  TError,
+  { id: number; data: BodyType<NqsElementUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateNqsElementMutationOptions(options));
 };
 
 export const getListNqsAreasUrl = () => {

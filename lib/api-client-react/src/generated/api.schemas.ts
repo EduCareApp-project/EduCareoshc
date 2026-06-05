@@ -404,6 +404,18 @@ export interface ProgramUpdate {
   outcomeIds?: number[];
 }
 
+export interface NqsElement {
+  id: number;
+  code: string;
+  label: string;
+  isHeader: boolean;
+  sortOrder: number;
+}
+
+export interface NqsElementUpdate {
+  label: string;
+}
+
 export type NqsAreaStatus = (typeof NqsAreaStatus)[keyof typeof NqsAreaStatus];
 
 export const NqsAreaStatus = {

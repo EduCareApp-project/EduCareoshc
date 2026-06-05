@@ -111,6 +111,8 @@ export * from "./nqsArea";
 export * from "./nqsAreaStatus";
 export * from "./nqsAreaUpdate";
 export * from "./nqsAreaUpdateStatus";
+export * from "./nqsElement";
+export * from "./nqsElementUpdate";
 export * from "./observation";
 export * from "./observationComment";
 export * from "./observationInput";

@@ -3,7 +3,7 @@ import {
   useListQipItems, useCreateQipItem, useUpdateQipItem, useDeleteQipItem,
   useListQipSources, useCreateQipSource, useDeleteQipSource,
   useListQipStrengths, useUpsertQipStrength,
-  useListSites,
+  useListSites, useListNqsElements,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -40,77 +40,6 @@ const QA_AREAS = [
   { key: "7", label: "Quality Area 7: Governance and Leadership" },
 ];
 
-const NQS_ELEMENTS: { value: string; label: string }[] = [
-  // QA1
-  { value: "1.1", label: "Standard 1.1 – Approved learning framework" },
-  { value: "1.1.1", label: "1.1.1 – Curriculum decision making" },
-  { value: "1.1.2", label: "1.1.2 – Child's knowledge, ideas and interests" },
-  { value: "1.1.3", label: "1.1.3 – Program maximises learning opportunities" },
-  { value: "1.2", label: "Standard 1.2 – Educators facilitate learning" },
-  { value: "1.2.1", label: "1.2.1 – Deliberate and purposeful decisions" },
-  { value: "1.2.2", label: "1.2.2 – Responsive teaching and scaffolding" },
-  { value: "1.2.3", label: "1.2.3 – Critical reflection informs planning" },
-  { value: "1.3", label: "Standard 1.3 – Planned and reflective approach" },
-  { value: "1.3.1", label: "1.3.1 – Assessment and evaluation cycle" },
-  { value: "1.3.2", label: "1.3.2 – Critical reflection guides planning" },
-  { value: "1.3.3", label: "1.3.3 – Families informed about program" },
-  // QA2
-  { value: "2.1", label: "Standard 2.1 – Each child's health is promoted" },
-  { value: "2.1.1", label: "2.1.1 – Each child's health needs are supported" },
-  { value: "2.1.2", label: "2.1.2 – Illness, injury and hygiene management" },
-  { value: "2.1.3", label: "2.1.3 – Healthy lifestyle is promoted" },
-  { value: "2.2", label: "Standard 2.2 – Healthy eating and physical activity" },
-  { value: "2.2.1", label: "2.2.1 – Healthy eating is promoted" },
-  { value: "2.2.2", label: "2.2.2 – Physical activity is promoted" },
-  { value: "2.2.3", label: "2.2.3 – Community collaboration for health and wellbeing" },
-  { value: "2.3", label: "Standard 2.3 – Each child is protected" },
-  { value: "2.3.1", label: "2.3.1 – Children are adequately supervised" },
-  { value: "2.3.2", label: "2.3.2 – Children protected from harm and hazards" },
-  // QA3
-  { value: "3.1", label: "Standard 3.1 – Design of spaces" },
-  { value: "3.1.1", label: "3.1.1 – Spaces, furniture and equipment are appropriate" },
-  { value: "3.1.2", label: "3.1.2 – Environment promotes competence and exploration" },
-  { value: "3.2", label: "Standard 3.2 – Service environment supports learning" },
-  { value: "3.2.1", label: "3.2.1 – Indoor and outdoor spaces engage children" },
-  { value: "3.2.2", label: "3.2.2 – Resources and equipment support learning" },
-  { value: "3.2.3", label: "3.2.3 – Environment is inclusive and promotes independence" },
-  // QA4
-  { value: "4.1", label: "Standard 4.1 – Staffing arrangements" },
-  { value: "4.1.1", label: "4.1.1 – Educators recruited with skills and qualifications" },
-  { value: "4.1.2", label: "4.1.2 – Continuing professional learning" },
-  { value: "4.2", label: "Standard 4.2 – Collaborative, respectful and ethical" },
-  { value: "4.2.1", label: "4.2.1 – Staff work collaboratively with mutual respect" },
-  { value: "4.2.2", label: "4.2.2 – Professional standards guide practice" },
-  // QA5
-  { value: "5.1", label: "Standard 5.1 – Respectful and equitable relationships" },
-  { value: "5.1.1", label: "5.1.1 – Warm, responsive interactions that build trust" },
-  { value: "5.1.2", label: "5.1.2 – Dignity and rights of every child maintained" },
-  { value: "5.2", label: "Standard 5.2 – Sensitive and responsive relationships" },
-  { value: "5.2.1", label: "5.2.1 – Children supported to collaborate and help each other" },
-  { value: "5.2.2", label: "5.2.2 – Children supported to regulate behaviour" },
-  { value: "5.2.3", label: "5.2.3 – Strengths of families and community recognised" },
-  // QA6
-  { value: "6.1", label: "Standard 6.1 – Relationships with families" },
-  { value: "6.1.1", label: "6.1.1 – Families supported as primary educators" },
-  { value: "6.1.2", label: "6.1.2 – Family expertise and beliefs are respected" },
-  { value: "6.1.3", label: "6.1.3 – Current information available to families" },
-  { value: "6.2", label: "Standard 6.2 – Families supported in parenting role" },
-  { value: "6.2.1", label: "6.2.1 – Service supports family involvement" },
-  { value: "6.2.2", label: "6.2.2 – Families have opportunities to contribute" },
-  { value: "6.3", label: "Standard 6.3 – Collaboration with other organisations" },
-  { value: "6.3.1", label: "6.3.1 – Links with community and support agencies" },
-  { value: "6.3.2", label: "6.3.2 – Service builds community relationships" },
-  { value: "6.3.3", label: "6.3.3 – Service is an active community participant" },
-  // QA7
-  { value: "7.1", label: "Standard 7.1 – Governance supports quality" },
-  { value: "7.1.1", label: "7.1.1 – Statement of philosophy guides operations" },
-  { value: "7.1.2", label: "7.1.2 – Management systems meet regulatory requirements" },
-  { value: "7.1.3", label: "7.1.3 – Roles and responsibilities clearly defined" },
-  { value: "7.2", label: "Standard 7.2 – Effective leadership" },
-  { value: "7.2.1", label: "7.2.1 – Self-assessment and quality improvement process" },
-  { value: "7.2.2", label: "7.2.2 – Educational leader effectively supported" },
-  { value: "7.2.3", label: "7.2.3 – Service regularly evaluates and improves" },
-];
 
 const PRIORITY_COLOURS: Record<string, string> = {
   high: "bg-red-100 text-red-800 border-red-200",
@@ -153,6 +82,7 @@ function ItemForm({
   defaultQA,
   sites,
   sources,
+  nqsElements,
   onSubmit,
   onCancel,
   isPending,
@@ -161,6 +91,7 @@ function ItemForm({
   defaultQA?: string;
   sites: { id: number; name: string }[];
   sources: { id: number; name: string }[];
+  nqsElements: { code: string; label: string; isHeader: boolean }[];
   onSubmit: (data: FormState) => void;
   onCancel: () => void;
   isPending: boolean;
@@ -216,9 +147,13 @@ function ItemForm({
           <Select value={form.standardElement} onValueChange={(v) => set("standardElement", v)}>
             <SelectTrigger><SelectValue placeholder="Select element" /></SelectTrigger>
             <SelectContent className="max-h-64">
-              {NQS_ELEMENTS
-                .filter((e) => !form.qualityArea || e.value.startsWith(form.qualityArea + ".") || e.value === form.qualityArea)
-                .map((e) => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
+              {nqsElements
+                .filter((e) => !form.qualityArea || e.code.startsWith(form.qualityArea + ".") || e.code === form.qualityArea)
+                .map((e) => (
+                  <SelectItem key={e.code} value={e.code}>
+                    {e.isHeader ? e.label : `${e.code} – ${e.label}`}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>
@@ -353,11 +288,13 @@ function ItemRow({
   item,
   sites,
   sources,
+  nqsElements,
   onDeleted,
 }: {
   item: any;
   sites: { id: number; name: string }[];
   sources: { id: number; name: string }[];
+  nqsElements: { code: string; label: string; isHeader: boolean }[];
   onDeleted: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -450,6 +387,7 @@ function ItemRow({
                 initial={initialForm}
                 sites={sites}
                 sources={sources}
+                nqsElements={nqsElements}
                 onSubmit={handleEdit}
                 onCancel={() => setEditOpen(false)}
                 isPending={updateMutation.isPending}
@@ -664,6 +602,7 @@ export default function Qip() {
   const { data: items, isLoading } = useListQipItems();
   const { data: sites = [] } = useListSites();
   const { data: sources = [] } = useListQipSources();
+  const { data: nqsElements = [] } = useListNqsElements();
   const createMutation = useCreateQipItem();
 
   const [activeTab, setActiveTab] = useState("1");
@@ -749,6 +688,7 @@ export default function Qip() {
                 defaultQA={activeTab}
                 sites={sites}
                 sources={sources}
+                nqsElements={nqsElements}
                 onSubmit={handleCreate}
                 onCancel={() => setAddOpen(false)}
                 isPending={createMutation.isPending}
@@ -874,6 +814,7 @@ export default function Qip() {
                             item={item}
                             sites={sites}
                             sources={sources}
+                            nqsElements={nqsElements}
                             onDeleted={() => queryClient.invalidateQueries({ queryKey: ["/api/qip"] })}
                           />
                         ))}

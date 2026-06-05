@@ -6,6 +6,7 @@ export * from "./outcomes";
 export * from "./observations";
 export * from "./programs";
 export * from "./nqs_areas";
+export * from "./nqs_elements";
 export * from "./notices";
 export * from "./jottings";
 export * from "./incidents";

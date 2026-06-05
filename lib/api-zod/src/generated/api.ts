@@ -808,6 +808,31 @@ export const UpdateProgramResponse = zod.object({
   createdAt: zod.coerce.date().optional(),
 });
 
+export const ListNqsElementsResponseItem = zod.object({
+  id: zod.number(),
+  code: zod.string(),
+  label: zod.string(),
+  isHeader: zod.boolean(),
+  sortOrder: zod.number(),
+});
+export const ListNqsElementsResponse = zod.array(ListNqsElementsResponseItem);
+
+export const UpdateNqsElementParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateNqsElementBody = zod.object({
+  label: zod.string(),
+});
+
+export const UpdateNqsElementResponse = zod.object({
+  id: zod.number(),
+  code: zod.string(),
+  label: zod.string(),
+  isHeader: zod.boolean(),
+  sortOrder: zod.number(),
+});
+
 export const ListNqsAreasResponseItem = zod.object({
   id: zod.number(),
   number: zod.number(),

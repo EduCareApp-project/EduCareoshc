@@ -1,14 +1,152 @@
 import { useState } from "react";
-import { useListQipSources, useCreateQipSource, useDeleteQipSource } from "@workspace/api-client-react";
+import {
+  useListQipSources, useCreateQipSource, useDeleteQipSource,
+  useListNqsElements, useUpdateNqsElement,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Tag, Trash2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Tag, Trash2, Pencil, Check, X, ListTree } from "lucide-react";
 
-export default function SettingsQip() {
+const QA_LABELS: Record<string, string> = {
+  "1": "QA1 — Educational Program and Practice",
+  "2": "QA2 — Children's Health and Safety",
+  "3": "QA3 — Physical Environment",
+  "4": "QA4 — Staffing Arrangements",
+  "5": "QA5 — Relationships with Children",
+  "6": "QA6 — Collaborative Partnerships",
+  "7": "QA7 — Governance and Leadership",
+};
+
+function ElementsTab() {
+  const queryClient = useQueryClient();
+  const { data: elements, isLoading } = useListNqsElements();
+  const updateMutation = useUpdateNqsElement();
+  const { toast } = useToast();
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState("");
+
+  function startEdit(id: number, label: string) {
+    setEditingId(id);
+    setEditValue(label);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditValue("");
+  }
+
+  function saveEdit(id: number) {
+    if (!editValue.trim()) return;
+    updateMutation.mutate(
+      { id, data: { label: editValue.trim() } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["/api/nqs-elements"] });
+          setEditingId(null);
+          toast({ title: "Element updated" });
+        },
+        onError: () => toast({ title: "Failed to update element", variant: "destructive" }),
+      }
+    );
+  }
+
+  if (isLoading) return <div className="text-muted-foreground text-sm py-4">Loading elements…</div>;
+  if (!elements || elements.length === 0) return <div className="text-muted-foreground text-sm py-4">No elements found.</div>;
+
+  const grouped = elements.reduce<Record<string, typeof elements>>((acc, el) => {
+    const qa = el.code.split(".")[0];
+    if (!acc[qa]) acc[qa] = [];
+    acc[qa].push(el);
+    return acc;
+  }, {});
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-md border bg-amber-50 border-amber-200 px-4 py-3 text-sm text-amber-800">
+        <strong>Note:</strong> Editing an element label here updates it across the entire portal — including the Add QIP Item form. The element code (e.g. 2.2.3) is fixed and cannot be changed.
+      </div>
+
+      {Object.entries(grouped).map(([qa, items]) => (
+        <div key={qa}>
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+            {QA_LABELS[qa] ?? `Quality Area ${qa}`}
+          </h3>
+          <div className="rounded-md border divide-y">
+            {items.map((el) => (
+              <div
+                key={el.id}
+                className={`flex items-center gap-3 px-4 py-2.5 ${el.isHeader ? "bg-muted/40" : "hover:bg-muted/20"} transition-colors`}
+              >
+                <code className={`text-xs font-mono shrink-0 w-12 ${el.isHeader ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
+                  {el.code}
+                </code>
+
+                {editingId === el.id ? (
+                  <div className="flex flex-1 items-center gap-2">
+                    <Input
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveEdit(el.id);
+                        if (e.key === "Escape") cancelEdit();
+                      }}
+                      className="h-8 text-sm flex-1"
+                      autoFocus
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-primary hover:text-primary"
+                      onClick={() => saveEdit(el.id)}
+                      disabled={updateMutation.isPending}
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                      onClick={cancelEdit}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <span className={`flex-1 text-sm ${el.isHeader ? "font-semibold" : ""}`}>
+                      {el.label}
+                    </span>
+                    {el.isHeader ? (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground shrink-0">Standard</Badge>
+                    ) : null}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-muted-foreground hover:text-foreground shrink-0"
+                      onClick={() => startEdit(el.id, el.label)}
+                      title="Edit label"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SourcesTab() {
   const queryClient = useQueryClient();
   const { data: sources, isLoading } = useListQipSources();
   const createMutation = useCreateQipSource();
@@ -44,14 +182,6 @@ export default function SettingsQip() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">QIP Settings – Sources</h1>
-          <p className="text-muted-foreground mt-1">Manage the sources available when creating QIP improvement items.</p>
-        </div>
-      </div>
-
-      {/* Add form */}
       <Card>
         <CardContent className="pt-5 pb-4">
           <form onSubmit={handleAdd} className="flex gap-2">
@@ -68,7 +198,6 @@ export default function SettingsQip() {
         </CardContent>
       </Card>
 
-      {/* Sources list */}
       {isLoading ? (
         <div className="text-muted-foreground text-sm">Loading…</div>
       ) : !sources || sources.length === 0 ? (
@@ -118,6 +247,46 @@ export default function SettingsQip() {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+export default function SettingsQip() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">QIP Settings</h1>
+        <p className="text-muted-foreground mt-1">Manage NQS elements and the sources available when creating QIP improvement items.</p>
+      </div>
+
+      <Tabs defaultValue="elements">
+        <TabsList>
+          <TabsTrigger value="elements" className="gap-2">
+            <ListTree className="h-4 w-4" />NQS Elements
+          </TabsTrigger>
+          <TabsTrigger value="sources" className="gap-2">
+            <Tag className="h-4 w-4" />Sources
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="elements" className="mt-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">NQS Elements</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Edit the label for any element. Changes take effect immediately in the Add QIP Item form.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ElementsTab />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sources" className="mt-6">
+          <SourcesTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

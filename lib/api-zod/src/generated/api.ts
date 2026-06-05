@@ -1389,18 +1389,18 @@ export const UpdateQipItemParams = zod.object({
 });
 
 export const UpdateQipItemBody = zod.object({
-  siteId: zod.number().optional(),
-  date: zod.coerce.date().optional(),
+  siteId: zod.number().nullish(),
+  date: zod.coerce.date().nullish(),
   qualityArea: zod.string().optional(),
-  standardElement: zod.string().optional(),
-  source: zod.string().optional(),
+  standardElement: zod.string().nullish(),
+  source: zod.string().nullish(),
   priority: zod.enum(["low", "medium", "high"]).optional(),
-  issueIdentified: zod.string().optional(),
-  outcomeGoal: zod.string().optional(),
-  howToAchieve: zod.string().optional(),
-  successMeasure: zod.string().optional(),
-  dueDate: zod.coerce.date().optional(),
-  progressNotes: zod.string().optional(),
+  issueIdentified: zod.string().nullish(),
+  outcomeGoal: zod.string().nullish(),
+  howToAchieve: zod.string().nullish(),
+  successMeasure: zod.string().nullish(),
+  dueDate: zod.coerce.date().nullish(),
+  progressNotes: zod.string().nullish(),
   archivedAt: zod.coerce.date().nullish(),
 });
 

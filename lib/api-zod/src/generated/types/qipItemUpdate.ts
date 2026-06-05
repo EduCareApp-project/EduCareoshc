@@ -8,18 +8,28 @@
 import type { QipItemUpdatePriority } from "./qipItemUpdatePriority";
 
 export interface QipItemUpdate {
-  siteId?: number;
-  date?: Date;
+  /** @nullable */
+  siteId?: number | null;
+  /** @nullable */
+  date?: Date | null;
   qualityArea?: string;
-  standardElement?: string;
-  source?: string;
+  /** @nullable */
+  standardElement?: string | null;
+  /** @nullable */
+  source?: string | null;
   priority?: QipItemUpdatePriority;
-  issueIdentified?: string;
-  outcomeGoal?: string;
-  howToAchieve?: string;
-  successMeasure?: string;
-  dueDate?: Date;
-  progressNotes?: string;
+  /** @nullable */
+  issueIdentified?: string | null;
+  /** @nullable */
+  outcomeGoal?: string | null;
+  /** @nullable */
+  howToAchieve?: string | null;
+  /** @nullable */
+  successMeasure?: string | null;
+  /** @nullable */
+  dueDate?: Date | null;
+  /** @nullable */
+  progressNotes?: string | null;
   /** @nullable */
   archivedAt?: Date | null;
 }

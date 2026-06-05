@@ -4191,32 +4191,32 @@ components:
       type: object
       properties:
         siteId:
-          type: integer
+          type: ["integer", "null"]
         date:
-          type: string
+          type: ["string", "null"]
           format: date
         qualityArea:
           type: string
         standardElement:
-          type: string
+          type: ["string", "null"]
         source:
-          type: string
+          type: ["string", "null"]
         priority:
           type: string
           enum: [low, medium, high]
         issueIdentified:
-          type: string
+          type: ["string", "null"]
         outcomeGoal:
-          type: string
+          type: ["string", "null"]
         howToAchieve:
-          type: string
+          type: ["string", "null"]
         successMeasure:
-          type: string
+          type: ["string", "null"]
         dueDate:
-          type: string
+          type: ["string", "null"]
           format: date
         progressNotes:
-          type: string
+          type: ["string", "null"]
         archivedAt:
           type: ["string", "null"]
           format: date-time

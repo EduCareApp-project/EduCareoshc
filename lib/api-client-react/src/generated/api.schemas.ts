@@ -889,18 +889,28 @@ export const QipItemUpdatePriority = {
 } as const;
 
 export interface QipItemUpdate {
-  siteId?: number;
-  date?: string;
+  /** @nullable */
+  siteId?: number | null;
+  /** @nullable */
+  date?: string | null;
   qualityArea?: string;
-  standardElement?: string;
-  source?: string;
+  /** @nullable */
+  standardElement?: string | null;
+  /** @nullable */
+  source?: string | null;
   priority?: QipItemUpdatePriority;
-  issueIdentified?: string;
-  outcomeGoal?: string;
-  howToAchieve?: string;
-  successMeasure?: string;
-  dueDate?: string;
-  progressNotes?: string;
+  /** @nullable */
+  issueIdentified?: string | null;
+  /** @nullable */
+  outcomeGoal?: string | null;
+  /** @nullable */
+  howToAchieve?: string | null;
+  /** @nullable */
+  successMeasure?: string | null;
+  /** @nullable */
+  dueDate?: string | null;
+  /** @nullable */
+  progressNotes?: string | null;
   /** @nullable */
   archivedAt?: string | null;
 }

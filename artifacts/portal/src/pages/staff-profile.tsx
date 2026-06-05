@@ -33,7 +33,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Plus, Trash2, GraduationCap, User, Award, Paperclip, X, Pencil, FileText, AlertTriangle, Camera, Check, ClipboardList, FolderDown, Archive, ChevronDown } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, GraduationCap, User, Award, Paperclip, X, Pencil, FileText, AlertTriangle, Camera, Check, ClipboardList, FolderDown, Archive, ChevronDown, Download } from "lucide-react";
 import AppraisalsTab from "./appraisals-tab";
 import { format, parseISO, isValid } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -530,11 +530,21 @@ export default function StaffProfile() {
       <div className="flex items-center gap-4">
         <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center font-bold text-xl text-primary overflow-hidden">
           {staff.profilePicturePath ? (
-            <img
-              src={storageUrl(staff.profilePicturePath)}
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
+            isAdminOrEL ? (
+              <a href={storageUrl(staff.profilePicturePath)} target="_blank" rel="noopener noreferrer" title="Open full size" className="w-full h-full block">
+                <img
+                  src={storageUrl(staff.profilePicturePath)}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              </a>
+            ) : (
+              <img
+                src={storageUrl(staff.profilePicturePath)}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            )
           ) : (
             <>{staff.firstName[0]}{staff.lastName[0]}</>
           )}
@@ -654,6 +664,18 @@ export default function StaffProfile() {
                       />
                     </label>
                   </div>
+                  {isAdminOrEL && staff.profilePicturePath && (
+                    <a
+                      href={storageUrl(staff.profilePicturePath)}
+                      download={`${staff.firstName}-${staff.lastName}-photo.jpg`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Download photo
+                    </a>
+                  )}
                 </div>
 
                 {/* Bio */}

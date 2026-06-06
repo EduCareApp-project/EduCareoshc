@@ -159,7 +159,6 @@ function StaffRoutes() {
 
         <Route path="/calendar" component={Calendar} />
         <Route path="/planning" component={Planning} />
-        <Route path="/planning/print" component={WeeklyPlanPrint} />
         <Route path="/planning/new" component={PlanningDetail} />
         <Route path="/planning/:id" component={PlanningDetail} />
 
@@ -257,6 +256,11 @@ function Router() {
 
   // Not logged in → send to login
   if (!user) return <Redirect to="/login" />;
+
+  // Print routes — no layout chrome
+  if (location === "/planning/print" || location.startsWith("/planning/print?")) {
+    return <WeeklyPlanPrint />;
+  }
 
   // Guardian portal
   if (user.type === "guardian") return <GuardianRoutes />;

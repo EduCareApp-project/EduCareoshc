@@ -85,6 +85,7 @@ import SettingsConditionConfig from "@/pages/settings-condition-config";
 import SettingsEvacuationConfig from "@/pages/settings-evacuation-config";
 import SettingsPoliciesConfig from "@/pages/settings-policies-config";
 import SettingsBrandKit from "@/pages/settings-brand-kit";
+import SettingsProductOverview from "@/pages/settings-product-overview";
 import Appraisals from "@/pages/appraisals";
 import AppraisalDetail from "@/pages/appraisal-detail";
 import ClickUpReports from "@/pages/clickup-reports";
@@ -218,6 +219,7 @@ function StaffRoutes() {
         <Route path="/settings/evacuation-config" component={SettingsEvacuationConfig} />
         <Route path="/settings/policies-config" component={SettingsPoliciesConfig} />
         <Route path="/settings/brand-kit" component={SettingsBrandKit} />
+        <Route path="/settings/product-overview" component={SettingsProductOverview} />
 
         <Route component={NotFound} />
       </Switch>

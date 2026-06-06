@@ -775,7 +775,7 @@ function LeadershipDashboard() {
             subtitle={summary ? (summary.sitesWithPublishedPlan === summary.totalSites && summary.totalSites > 0 ? "All sites covered this week" : `${summary.totalSites - summary.sitesWithPublishedPlan} site${summary.totalSites - summary.sitesWithPublishedPlan === 1 ? "" : "s"} missing a plan`) : undefined}
             icon={ClipboardList}
             loading={loadingSummary}
-            href="/planning"
+            href="/reports/weekly-plans"
           />
           <MetricCard
             title="Open Incidents"

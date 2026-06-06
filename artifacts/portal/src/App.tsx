@@ -59,6 +59,7 @@ import ReportsLearning from "@/pages/reports-learning";
 import ReportsService from "@/pages/reports-service";
 import ReportsStaff from "@/pages/reports-staff";
 import ReportsSystemAccess from "@/pages/reports-system-access";
+import ReportsWeeklyPlans from "@/pages/reports-weekly-plans";
 import Sites from "@/pages/sites";
 import Settings from "@/pages/settings";
 import SettingsQip from "@/pages/settings-qip";
@@ -184,6 +185,7 @@ function StaffRoutes() {
         <Route path="/reports/service" component={ReportsService} />
         <Route path="/reports/staff" component={ReportsStaff} />
         <Route path="/reports/system-access" component={ReportsSystemAccess} />
+        <Route path="/reports/weekly-plans" component={ReportsWeeklyPlans} />
         <Route path="/clickup-reports" component={ClickUpReports} />
 
         <Route path="/appraisals" component={Appraisals} />

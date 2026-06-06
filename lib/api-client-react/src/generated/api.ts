@@ -84,6 +84,7 @@ import type {
   NqsArea,
   NqsAreaUpdate,
   NqsElement,
+  NqsElementInput,
   NqsElementUpdate,
   Observation,
   ObservationComment,
@@ -3053,6 +3054,86 @@ export function useListNqsElements<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+export const getCreateNqsElementUrl = () => {
+  return `/api/nqs-elements`;
+};
+
+export const createNqsElement = async (
+  nqsElementInput: NqsElementInput,
+  options?: RequestInit,
+): Promise<NqsElement> => {
+  return customFetch<NqsElement>(getCreateNqsElementUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(nqsElementInput),
+  });
+};
+
+export const getCreateNqsElementMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createNqsElement>>,
+    TError,
+    { data: BodyType<NqsElementInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createNqsElement>>,
+  TError,
+  { data: BodyType<NqsElementInput> },
+  TContext
+> => {
+  const mutationKey = ["createNqsElement"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createNqsElement>>,
+    { data: BodyType<NqsElementInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createNqsElement(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateNqsElementMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createNqsElement>>
+>;
+export type CreateNqsElementMutationBody = BodyType<NqsElementInput>;
+export type CreateNqsElementMutationError = ErrorType<unknown>;
+
+export const useCreateNqsElement = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createNqsElement>>,
+    TError,
+    { data: BodyType<NqsElementInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createNqsElement>>,
+  TError,
+  { data: BodyType<NqsElementInput> },
+  TContext
+> => {
+  return useMutation(getCreateNqsElementMutationOptions(options));
+};
 
 export const getUpdateNqsElementUrl = (id: number) => {
   return `/api/nqs-elements/${id}`;

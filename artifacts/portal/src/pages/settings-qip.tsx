@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   useListQipSources, useCreateQipSource, useDeleteQipSource,
-  useListNqsElements, useUpdateNqsElement, useDeleteNqsElement,
+  useListNqsElements, useCreateNqsElement, useUpdateNqsElement, useDeleteNqsElement,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -9,6 +9,8 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -24,9 +26,12 @@ const QA_LABELS: Record<string, string> = {
   "7": "QA7 — Governance and Leadership",
 };
 
+const EMPTY_ADD_FORM = { code: "", label: "", descriptor: "", isHeader: false };
+
 function ElementsTab() {
   const queryClient = useQueryClient();
   const { data: elements, isLoading } = useListNqsElements();
+  const createMutation = useCreateNqsElement();
   const updateMutation = useUpdateNqsElement();
   const deleteMutation = useDeleteNqsElement();
   const { toast } = useToast();
@@ -35,6 +40,34 @@ function ElementsTab() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: number; code: string; label: string } | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addForm, setAddForm] = useState(EMPTY_ADD_FORM);
+  const setAdd = (k: keyof typeof EMPTY_ADD_FORM, v: string | boolean) =>
+    setAddForm((f) => ({ ...f, [k]: v }));
+
+  function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!addForm.code.trim() || !addForm.label.trim()) return;
+    createMutation.mutate(
+      {
+        data: {
+          code: addForm.code.trim(),
+          label: addForm.label.trim(),
+          descriptor: addForm.descriptor.trim() || null,
+          isHeader: addForm.isHeader,
+        },
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["/api/nqs-elements"] });
+          setAddOpen(false);
+          setAddForm(EMPTY_ADD_FORM);
+          toast({ title: "Element added" });
+        },
+        onError: () => toast({ title: "Failed to add element", variant: "destructive" }),
+      }
+    );
+  }
 
   function startEdit(id: number, label: string) {
     setEditingId(id);
@@ -84,9 +117,16 @@ function ElementsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-md border bg-amber-50 border-amber-200 px-4 py-3 text-sm text-amber-800">
-        <strong>Note:</strong> The concept name (middle column) can be edited and will update the Add QIP Item dropdown. The element code and descriptor are fixed NQS reference text.
-        {isAdmin && <span className="ml-1">Admins can also delete elements — deleted elements can be re-seeded by removing all elements and reloading.</span>}
+      <div className="flex items-start justify-between gap-4">
+        <div className="rounded-md border bg-amber-50 border-amber-200 px-4 py-3 text-sm text-amber-800 flex-1">
+          <strong>Note:</strong> The concept name (middle column) can be edited and will update the Add QIP Item dropdown. The element code and descriptor are fixed NQS reference text.
+          {isAdmin && <span className="ml-1">Admins can also add and delete elements.</span>}
+        </div>
+        {isAdmin && (
+          <Button size="sm" onClick={() => setAddOpen(true)} className="shrink-0">
+            <Plus className="h-4 w-4 mr-2" />Add Element
+          </Button>
+        )}
       </div>
 
       {Object.entries(grouped).map(([qa, items]) => (
@@ -200,6 +240,71 @@ function ElementsTab() {
               Delete
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) setAddForm(EMPTY_ADD_FORM); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add NQS Element</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreate} className="space-y-4 pt-1">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="el-code">Code <span className="text-destructive">*</span></Label>
+                <Input
+                  id="el-code"
+                  value={addForm.code}
+                  onChange={(e) => setAdd("code", e.target.value)}
+                  placeholder="e.g. 1.1.4"
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground">Use the NQS format: QA.Standard.Element</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="el-label">Concept name <span className="text-destructive">*</span></Label>
+                <Input
+                  id="el-label"
+                  value={addForm.label}
+                  onChange={(e) => setAdd("label", e.target.value)}
+                  placeholder="e.g. Sustainable practices"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="el-descriptor">Descriptor</Label>
+              <Textarea
+                id="el-descriptor"
+                value={addForm.descriptor}
+                onChange={(e) => setAdd("descriptor", e.target.value)}
+                rows={3}
+                placeholder="Optional: describe what this element covers…"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="el-header"
+                checked={addForm.isHeader}
+                onChange={(e) => setAdd("isHeader", e.target.checked)}
+                className="h-4 w-4 rounded border-input accent-primary"
+              />
+              <Label htmlFor="el-header" className="font-normal cursor-pointer">
+                Standard header row (bold, shaded — use for x.x level standards, not x.x.x elements)
+              </Label>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button type="button" variant="outline" onClick={() => { setAddOpen(false); setAddForm(EMPTY_ADD_FORM); }}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={!addForm.code.trim() || !addForm.label.trim() || createMutation.isPending}>
+                {createMutation.isPending ? "Adding…" : "Add Element"}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

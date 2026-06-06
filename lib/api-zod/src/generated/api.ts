@@ -818,6 +818,14 @@ export const ListNqsElementsResponseItem = zod.object({
 });
 export const ListNqsElementsResponse = zod.array(ListNqsElementsResponseItem);
 
+export const CreateNqsElementBody = zod.object({
+  code: zod.string(),
+  label: zod.string(),
+  descriptor: zod.string().nullish(),
+  isHeader: zod.boolean().optional(),
+  sortOrder: zod.number().optional(),
+});
+
 export const UpdateNqsElementParams = zod.object({
   id: zod.coerce.number(),
 });

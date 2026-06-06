@@ -413,6 +413,15 @@ export interface NqsElement {
   sortOrder: number;
 }
 
+export interface NqsElementInput {
+  code: string;
+  label: string;
+  /** @nullable */
+  descriptor?: string | null;
+  isHeader?: boolean;
+  sortOrder?: number;
+}
+
 export interface NqsElementUpdate {
   label: string;
 }

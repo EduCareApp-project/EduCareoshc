@@ -691,6 +691,22 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/NqsElement"
+    post:
+      operationId: createNqsElement
+      tags: [nqs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NqsElementInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NqsElement"
 
   /nqs-elements/{id}:
     patch:
@@ -3605,6 +3621,21 @@ components:
         descriptor:
           type: string
           nullable: true
+        isHeader:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    NqsElementInput:
+      type: object
+      required: [code, label]
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+        descriptor:
+          type: ["string", "null"]
         isHeader:
           type: boolean
         sortOrder:

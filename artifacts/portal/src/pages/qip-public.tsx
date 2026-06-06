@@ -257,7 +257,7 @@ export default function QipPublic() {
                                       <td className="py-1.5 px-2 align-top text-gray-700">
                                         {item.successMeasure?.trim() ? item.successMeasure : <span className="text-gray-400">—</span>}
                                       </td>
-                                      <td className="py-1.5 px-2 align-top text-gray-700">
+                                      <td className="py-1.5 px-2 align-top text-gray-700 whitespace-pre-wrap">
                                         {item.progressNotes?.trim() ? item.progressNotes : <span className="text-gray-400">—</span>}
                                       </td>
                                       <td className="py-1.5 px-2 align-top text-gray-700 whitespace-nowrap">

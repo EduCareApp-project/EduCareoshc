@@ -80,6 +80,7 @@ const EMPTY_FORM: FormState = {
 function ItemForm({
   initial,
   defaultQA,
+  defaultSiteId,
   sites,
   sources,
   nqsElements,
@@ -89,6 +90,7 @@ function ItemForm({
 }: {
   initial?: FormState;
   defaultQA?: string;
+  defaultSiteId?: string;
   sites: { id: number; name: string }[];
   sources: { id: number; name: string }[];
   nqsElements: { code: string; label: string; isHeader: boolean }[];
@@ -96,7 +98,9 @@ function ItemForm({
   onCancel: () => void;
   isPending: boolean;
 }) {
-  const [form, setForm] = useState<FormState>(initial ?? { ...EMPTY_FORM, qualityArea: defaultQA ?? "" });
+  const [form, setForm] = useState<FormState>(
+    initial ?? { ...EMPTY_FORM, qualityArea: defaultQA ?? "", siteId: defaultSiteId ?? "" }
+  );
   const set = (k: keyof FormState, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   return (
@@ -686,6 +690,7 @@ export default function Qip() {
               <DialogHeader><DialogTitle>Add QIP Item</DialogTitle></DialogHeader>
               <ItemForm
                 defaultQA={activeTab}
+                defaultSiteId={siteFilter}
                 sites={sites}
                 sources={sources}
                 nqsElements={nqsElements}

@@ -19,7 +19,7 @@ import {
 } from "recharts";
 import { BookMarked, FileText, StickyNote, Eye } from "lucide-react";
 import { melbourneDate } from "@/lib/timezone";
-import { subDays, subMonths, parseISO, isAfter } from "date-fns";
+import { subDays, subMonths, parseISO, isBefore, startOfDay } from "date-fns";
 
 // ── Period helpers ────────────────────────────────────────────────────────────
 
@@ -33,11 +33,11 @@ const PERIODS = [
 function periodCutoff(period: string): Date {
   const now = melbourneDate();
   switch (period) {
-    case "7d":    return subDays(now, 7);
-    case "month": return subDays(now, 30);
-    case "term":  return subMonths(now, 3);
-    case "year":  return subMonths(now, 12);
-    default:      return subDays(now, 7);
+    case "7d":    return startOfDay(subDays(now, 7));
+    case "month": return startOfDay(subDays(now, 30));
+    case "term":  return startOfDay(subMonths(now, 3));
+    case "year":  return startOfDay(subMonths(now, 12));
+    default:      return startOfDay(subDays(now, 7));
   }
 }
 
@@ -45,7 +45,7 @@ function afterCutoff(dateStr: string | null | undefined, cutoff: Date): boolean 
   if (!dateStr) return false;
   try {
     const d = parseISO(dateStr.length === 10 ? dateStr + "T00:00:00" : dateStr);
-    return isAfter(d, cutoff);
+    return !isBefore(d, cutoff);
   } catch {
     return false;
   }
@@ -365,14 +365,14 @@ export default function ReportsLearning() {
           icon={<StickyNote className="h-5 w-5" />}
           label="Jottings"
           count={filteredJottings.length}
-          sub="All active jottings"
+          sub={selectedSite !== "all" ? "Filtered by site" : "Across all sites"}
           loading={isLoadingCounts}
         />
         <StatTile
           icon={<Eye className="h-5 w-5" />}
           label="Observations"
           count={filteredObservations.length}
-          sub="All sites"
+          sub={selectedSite !== "all" ? "Filtered by site" : "Across all sites"}
           loading={isLoadingCounts}
         />
       </div>

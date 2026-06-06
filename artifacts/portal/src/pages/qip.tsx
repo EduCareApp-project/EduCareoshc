@@ -373,7 +373,7 @@ function ItemRow({
       </td>
       <td className="py-3 px-4 text-sm text-foreground">{item.issueIdentified ?? <span className="text-muted-foreground">—</span>}</td>
       <td className="py-3 px-4 text-sm text-foreground">{item.outcomeGoal ?? <span className="text-muted-foreground">—</span>}</td>
-      <td className="py-3 px-4 text-sm text-foreground">{item.progressNotes ?? <span className="text-muted-foreground">—</span>}</td>
+      <td className="py-3 px-4 text-sm text-foreground whitespace-pre-wrap">{item.progressNotes ?? <span className="text-muted-foreground">—</span>}</td>
       <td className="py-3 px-4 text-sm text-foreground whitespace-nowrap">
         {item.dueDate ? new Date(item.dueDate).toLocaleDateString("en-AU") : <span className="text-muted-foreground">—</span>}
       </td>
@@ -449,7 +449,7 @@ function ArchivedItemRow({
       </td>
       <td className="py-3 px-4 text-sm text-foreground">{item.issueIdentified ?? <span className="text-muted-foreground">—</span>}</td>
       <td className="py-3 px-4 text-sm text-foreground">{item.outcomeGoal ?? <span className="text-muted-foreground">—</span>}</td>
-      <td className="py-3 px-4 text-sm text-foreground">{item.progressNotes ?? <span className="text-muted-foreground">—</span>}</td>
+      <td className="py-3 px-4 text-sm text-foreground whitespace-pre-wrap">{item.progressNotes ?? <span className="text-muted-foreground">—</span>}</td>
       <td className="py-3 px-4 text-sm text-foreground whitespace-nowrap">
         {item.dueDate ? new Date(item.dueDate).toLocaleDateString("en-AU") : <span className="text-muted-foreground">—</span>}
       </td>

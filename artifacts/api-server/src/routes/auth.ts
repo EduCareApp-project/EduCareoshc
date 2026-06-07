@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { eq, asc, and, gt, isNull, isNotNull, inArray, sql } from "drizzle-orm";
+import { eq, asc, and, or, gt, isNull, isNotNull, inArray, sql } from "drizzle-orm";
 import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, postsTable, sitesTable, planningExperiencesTable } from "@workspace/db";
 import { sendPasswordResetEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
@@ -77,17 +77,34 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     }
 
     const [firstChild] = await db
-      .select({ guardianName: childrenTable.guardianName })
+      .select({
+        guardianName: childrenTable.guardianName,
+        guardian2Name: childrenTable.guardian2Name,
+        guardian2Email: childrenTable.guardian2Email,
+      })
       .from(childrenTable)
-      .where(eq(childrenTable.guardianEmail, guardian.guardianEmail))
+      .where(
+        or(
+          eq(childrenTable.guardianEmail, guardian.guardianEmail),
+          eq(childrenTable.guardian2Email, guardian.guardianEmail),
+        )
+      )
       .limit(1);
+
+    let displayName = guardian.guardianEmail;
+    if (firstChild) {
+      const isSecondGuardian = firstChild.guardian2Email?.toLowerCase() === guardian.guardianEmail.toLowerCase();
+      displayName = isSecondGuardian
+        ? (firstChild.guardian2Name ?? firstChild.guardianName ?? guardian.guardianEmail)
+        : (firstChild.guardianName ?? guardian.guardianEmail);
+    }
 
     req.session.user = {
       id: guardian.id,
       type: "guardian",
       role: "guardian",
       email: guardian.guardianEmail,
-      name: firstChild?.guardianName ?? guardian.guardianEmail,
+      name: displayName,
     };
     await new Promise<void>((resolve, reject) =>
       req.session.save((err) => (err ? reject(err) : resolve()))

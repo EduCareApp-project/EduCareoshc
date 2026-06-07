@@ -45,6 +45,7 @@ import dataImportRouter from "./data-import";
 import medicationsRouter from "./medications";
 import behaviouralNotificationsRouter from "./behavioural-notifications";
 import clickupRouter from "./clickup";
+import superAdminRouter from "./super-admin";
 
 const router: IRouter = Router();
 
@@ -52,6 +53,7 @@ const router: IRouter = Router();
 router.use(healthRouter);
 router.use(authRouter);
 router.use(contactEnquiryRouter);
+router.use(superAdminRouter);
 
 // Allow unauthenticated access to public pages and storage (for public assets)
 router.use("/qip/public", (req: Request, res: Response, next: NextFunction) => next());

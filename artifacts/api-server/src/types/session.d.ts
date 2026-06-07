@@ -8,7 +8,10 @@ declare module "express-session" {
       role: string;
       email: string;
       name: string;
-      siteId?: number | null;
+        siteId?: number | null;
+    };
+    superAdmin?: {
+      email: string;
     };
   }
 }

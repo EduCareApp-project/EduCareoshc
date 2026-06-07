@@ -40,6 +40,10 @@ localPort = 19161
 externalPort = 5000
 
 [[ports]]
+localPort = 20029
+externalPort = 4200
+
+[[ports]]
 localPort = 25265
 externalPort = 3000
 
@@ -49,3 +53,5 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.shared]
+SUPER_ADMIN_EMAIL = "system@educareoshc.com.au"
+SUPER_ADMIN_PASSWORD_HASH = "$2b$12$MqBZ.3NobH8jNjjpNDgkyOm6d910q6LCtt7joxveqwKb8k0yFGcZS"

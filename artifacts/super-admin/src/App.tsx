@@ -58,12 +58,11 @@ function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await apiFetch("/super-admin/login", {
+      const data = await apiFetch("/super-admin/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      qc.invalidateQueries({ queryKey: ["sa-session"] });
-      navigate("/");
+      qc.setQueryData(["sa-session"], { email: data.email });
     } catch (err: any) {
       setError(err.message ?? "Login failed");
     } finally {

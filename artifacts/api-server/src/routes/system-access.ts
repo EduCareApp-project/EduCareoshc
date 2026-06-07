@@ -15,6 +15,8 @@ router.get("/reports/system-access", async (_req, res): Promise<void> => {
     db.select({
       guardianEmail: childrenTable.guardianEmail,
       guardianName: childrenTable.guardianName,
+      guardian2Email: childrenTable.guardian2Email,
+      guardian2Name: childrenTable.guardian2Name,
       firstName: childrenTable.firstName,
       lastName: childrenTable.lastName,
       siteId: childrenTable.siteId,
@@ -23,17 +25,24 @@ router.get("/reports/system-access", async (_req, res): Promise<void> => {
   ]);
 
   const guardianMeta = new Map<string, { name: string; children: string[]; siteIds: number[] }>();
+
+  function indexGuardian(email: string | null, name: string | null, childName: string, siteId: number | null) {
+    const key = (email ?? "").toLowerCase();
+    if (!key) return;
+    if (!guardianMeta.has(key)) {
+      guardianMeta.set(key, { name: name ?? key, children: [], siteIds: [] });
+    }
+    const entry = guardianMeta.get(key)!;
+    entry.children.push(childName);
+    if (siteId != null && !entry.siteIds.includes(siteId)) {
+      entry.siteIds.push(siteId);
+    }
+  }
+
   for (const child of childRows) {
-    const email = (child.guardianEmail ?? "").toLowerCase();
-    if (!email) continue;
-    if (!guardianMeta.has(email)) {
-      guardianMeta.set(email, { name: child.guardianName ?? email, children: [], siteIds: [] });
-    }
-    const entry = guardianMeta.get(email)!;
-    entry.children.push(`${child.firstName} ${child.lastName}`);
-    if (child.siteId != null && !entry.siteIds.includes(child.siteId)) {
-      entry.siteIds.push(child.siteId);
-    }
+    const childName = `${child.firstName} ${child.lastName}`;
+    indexGuardian(child.guardianEmail, child.guardianName, childName, child.siteId);
+    indexGuardian(child.guardian2Email, child.guardian2Name, childName, child.siteId);
   }
 
   const guardians = guardianRows

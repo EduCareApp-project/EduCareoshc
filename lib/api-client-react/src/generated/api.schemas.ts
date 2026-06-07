@@ -574,6 +574,10 @@ export interface NoticeInput {
   expiresAt?: string;
 }
 
+export interface SetGuardianPasswordInput {
+  newPassword?: string;
+}
+
 export type PatchNoticeBodyPriority =
   (typeof PatchNoticeBodyPriority)[keyof typeof PatchNoticeBodyPriority];
 

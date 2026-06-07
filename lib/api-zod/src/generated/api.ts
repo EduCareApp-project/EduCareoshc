@@ -342,6 +342,10 @@ export const ResetGuardianPasswordParams = zod.object({
   email: zod.coerce.string(),
 });
 
+export const ResetGuardianPasswordBody = zod.object({
+  newPassword: zod.string().optional(),
+});
+
 export const ResetGuardianPasswordResponse = zod.object({
   newPassword: zod.string(),
 });

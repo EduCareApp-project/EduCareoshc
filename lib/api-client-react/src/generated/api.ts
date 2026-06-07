@@ -123,6 +123,7 @@ import type {
   RoutineItemCompletion,
   RoutineItemCompletionInput,
   ServiceComplianceReport,
+  SetGuardianPasswordInput,
   Site,
   SiteInput,
   SiteUpdate,
@@ -955,11 +956,14 @@ export const getResetGuardianPasswordUrl = (email: string) => {
 
 export const resetGuardianPassword = async (
   email: string,
+  setGuardianPasswordInput?: SetGuardianPasswordInput,
   options?: RequestInit,
 ): Promise<NewPasswordResult> => {
   return customFetch<NewPasswordResult>(getResetGuardianPasswordUrl(email), {
     ...options,
     method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(setGuardianPasswordInput),
   });
 };
 
@@ -970,14 +974,14 @@ export const getResetGuardianPasswordMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof resetGuardianPassword>>,
     TError,
-    { email: string },
+    { email: string; data: BodyType<SetGuardianPasswordInput> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof resetGuardianPassword>>,
   TError,
-  { email: string },
+  { email: string; data: BodyType<SetGuardianPasswordInput> },
   TContext
 > => {
   const mutationKey = ["resetGuardianPassword"];
@@ -991,11 +995,11 @@ export const getResetGuardianPasswordMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof resetGuardianPassword>>,
-    { email: string }
+    { email: string; data: BodyType<SetGuardianPasswordInput> }
   > = (props) => {
-    const { email } = props ?? {};
+    const { email, data } = props ?? {};
 
-    return resetGuardianPassword(email, requestOptions);
+    return resetGuardianPassword(email, data, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -1004,7 +1008,8 @@ export const getResetGuardianPasswordMutationOptions = <
 export type ResetGuardianPasswordMutationResult = NonNullable<
   Awaited<ReturnType<typeof resetGuardianPassword>>
 >;
-
+export type ResetGuardianPasswordMutationBody =
+  BodyType<SetGuardianPasswordInput>;
 export type ResetGuardianPasswordMutationError = ErrorType<void>;
 
 /**
@@ -1017,14 +1022,14 @@ export const useResetGuardianPassword = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof resetGuardianPassword>>,
     TError,
-    { email: string },
+    { email: string; data: BodyType<SetGuardianPasswordInput> },
     TContext
   >;
   request?: SecondParameter<typeof customFetch>;
 }): UseMutationResult<
   Awaited<ReturnType<typeof resetGuardianPassword>>,
   TError,
-  { email: string },
+  { email: string; data: BodyType<SetGuardianPasswordInput> },
   TContext
 > => {
   return useMutation(getResetGuardianPasswordMutationOptions(options));

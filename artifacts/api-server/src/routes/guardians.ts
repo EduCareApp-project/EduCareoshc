@@ -144,7 +144,8 @@ router.post("/guardians/:email/reset-password", async (req, res): Promise<void> 
     return;
   }
 
-  const newPassword = generatePassword();
+  const supplied = (req.body as { newPassword?: string })?.newPassword;
+  const newPassword = supplied && supplied.length >= 6 ? supplied : generatePassword();
   const hash = hashPassword(newPassword);
 
   await db

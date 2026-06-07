@@ -164,6 +164,7 @@ export * from "./routineItemCompletion";
 export * from "./routineItemCompletionInput";
 export * from "./serviceComplianceReport";
 export * from "./serviceComplianceReportEvacuationStatus";
+export * from "./setGuardianPasswordInput";
 export * from "./site";
 export * from "./siteInput";
 export * from "./siteUpdate";

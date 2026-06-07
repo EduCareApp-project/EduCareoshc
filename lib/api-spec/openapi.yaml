@@ -223,6 +223,12 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetGuardianPasswordInput"
       responses:
         "200":
           description: OK
@@ -3809,6 +3815,12 @@ components:
         expiresAt:
           type: string
           format: date-time
+
+    SetGuardianPasswordInput:
+      type: object
+      properties:
+        newPassword:
+          type: string
 
     PatchNoticeBody:
       type: object

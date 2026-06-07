@@ -173,6 +173,8 @@ export default function GuardianDetail() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [newPassword, setNewPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [customPassword, setCustomPassword] = useState("");
+  const [showCustomPassword, setShowCustomPassword] = useState(false);
 
   if (isLoading) {
     return (
@@ -196,11 +198,15 @@ export default function GuardianDetail() {
   }
 
   async function handleResetPassword() {
-    const result = await resetMutation.mutateAsync({ email: encodedEmail ?? "" });
+    const result = await resetMutation.mutateAsync({
+      email: encodedEmail ?? "",
+      data: customPassword.trim() ? { newPassword: customPassword.trim() } : undefined,
+    });
     setNewPassword(result.newPassword);
     setShowNewPassword(true);
+    setCustomPassword("");
     await queryClient.invalidateQueries();
-    toast({ title: "Password reset", description: "Copy the new password — it won't be shown again." });
+    toast({ title: "Password set", description: "Copy the new password — it won't be shown again." });
   }
 
   function copyPassword() {
@@ -297,25 +303,46 @@ export default function GuardianDetail() {
         <div className="space-y-2">
           <Label>Password</Label>
           <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <p className="text-sm text-muted-foreground">
-                {guardian.hasPassword ? "A password has been set." : "No password set."}
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleResetPassword}
-                disabled={resetMutation.isPending}
-              >
-                <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${resetMutation.isPending ? "animate-spin" : ""}`} />
-                {guardian.hasPassword ? "Reset Password" : "Set Password"}
-              </Button>
+            <p className="text-sm text-muted-foreground">
+              {guardian.hasPassword ? "A password has been set." : "No password set."}
+            </p>
+
+            {/* Custom password input */}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">New password (leave blank to auto-generate)</Label>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    type={showCustomPassword ? "text" : "password"}
+                    value={customPassword}
+                    onChange={(e) => setCustomPassword(e.target.value)}
+                    placeholder="Enter a password…"
+                    className="pr-9"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomPassword((v) => !v)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label="Toggle visibility"
+                  >
+                    {showCustomPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleResetPassword}
+                  disabled={resetMutation.isPending}
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${resetMutation.isPending ? "animate-spin" : ""}`} />
+                  {guardian.hasPassword ? "Reset" : "Set Password"}
+                </Button>
+              </div>
             </div>
 
             {newPassword && (
               <div className="border rounded-lg p-4 bg-amber-50 border-amber-200 space-y-2">
                 <p className="text-xs font-semibold text-amber-800">
-                  New password — copy it now, it won't be shown again.
+                  Password set — copy it now, it won't be shown again.
                 </p>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 flex items-center gap-2 bg-white border rounded-md px-3 py-2">

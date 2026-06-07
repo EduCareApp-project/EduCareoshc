@@ -46,7 +46,7 @@ const STATUS_COLOURS: Record<string, string> = {
 };
 
 function LoginPage() {
-  const [email, setEmail] = useState("system@educareoshc.com.au");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

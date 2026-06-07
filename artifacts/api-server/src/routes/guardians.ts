@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, sql, or } from "drizzle-orm";
 import crypto from "crypto";
+import bcrypt from "bcryptjs";
 import { db, childrenTable, parentAccountsTable } from "@workspace/db";
 import {
   ListGuardiansResponse,
@@ -11,10 +12,8 @@ import {
 
 const router: IRouter = Router();
 
-function hashPassword(password: string): string {
-  const salt = crypto.randomBytes(16).toString("hex");
-  const hash = crypto.scryptSync(password, salt, 64).toString("hex");
-  return `${salt}:${hash}`;
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 12);
 }
 
 function generatePassword(): string {
@@ -146,7 +145,7 @@ router.post("/guardians/:email/reset-password", async (req, res): Promise<void> 
 
   const supplied = (req.body as { newPassword?: string })?.newPassword;
   const newPassword = supplied && supplied.length >= 6 ? supplied : generatePassword();
-  const hash = hashPassword(newPassword);
+  const hash = await hashPassword(newPassword);
 
   await db
     .insert(parentAccountsTable)

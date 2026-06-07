@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, or } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, sitesTable } from "@workspace/db";
@@ -224,14 +224,29 @@ router.post("/reports/system-access/guardian/:id/send-instructions", async (req,
     return;
   }
 
-  // Look up guardian name from children table
+  // Look up guardian name — check primary and secondary guardian email
+  const gEmail = guardian.guardianEmail.toLowerCase();
   const [childRow] = await db
-    .select({ guardianName: childrenTable.guardianName })
+    .select({
+      guardianEmail: childrenTable.guardianEmail,
+      guardianName: childrenTable.guardianName,
+      guardian2Email: childrenTable.guardian2Email,
+      guardian2Name: childrenTable.guardian2Name,
+    })
     .from(childrenTable)
-    .where(eq(childrenTable.guardianEmail, guardian.guardianEmail.toLowerCase()))
+    .where(
+      or(
+        eq(childrenTable.guardianEmail, gEmail),
+        eq(childrenTable.guardian2Email, gEmail),
+      )
+    )
     .limit(1);
 
-  const recipientName = childRow?.guardianName ?? guardian.guardianEmail;
+  const recipientName = childRow
+    ? (childRow.guardian2Email?.toLowerCase() === gEmail
+        ? childRow.guardian2Name
+        : childRow.guardianName) ?? gEmail
+    : gEmail;
 
   const baseUrl = getBaseUrl();
   const token = await createResetToken(guardian.guardianEmail.toLowerCase(), "guardian");

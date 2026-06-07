@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, or } from "drizzle-orm";
 import crypto from "crypto";
 import { db, childrenTable, parentAccountsTable } from "@workspace/db";
 import {
@@ -132,7 +132,12 @@ router.post("/guardians/:email/reset-password", async (req, res): Promise<void> 
   const [existing] = await db
     .select()
     .from(childrenTable)
-    .where(eq(childrenTable.guardianEmail, email));
+    .where(
+      or(
+        eq(childrenTable.guardianEmail, email),
+        eq(childrenTable.guardian2Email, email),
+      )
+    );
 
   if (!existing) {
     res.status(404).json({ error: "Guardian not found" });

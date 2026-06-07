@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, or, desc } from "drizzle-orm";
 import { db, childMedicationsTable, medicationLogsTable, childrenTable, staffTable, parentAccountsTable } from "@workspace/db";
 import { sendMedicationLogEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
@@ -212,7 +212,7 @@ router.get("/guardian/medication-logs", async (req, res): Promise<void> => {
 
   const children = await db.select({ id: childrenTable.id, firstName: childrenTable.firstName, lastName: childrenTable.lastName })
     .from(childrenTable)
-    .where(eq(childrenTable.guardianEmail, guardianEmail));
+    .where(or(eq(childrenTable.guardianEmail, guardianEmail), eq(childrenTable.guardian2Email, guardianEmail)));
 
   if (children.length === 0) { res.json([]); return; }
 

@@ -242,10 +242,11 @@ router.get("/auth/my-children", async (req, res): Promise<void> => {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
+  const email = req.session.user.email;
   const children = await db
     .select()
     .from(childrenTable)
-    .where(eq(childrenTable.guardianEmail, req.session.user.email))
+    .where(or(eq(childrenTable.guardianEmail, email), eq(childrenTable.guardian2Email, email)))
     .orderBy(asc(childrenTable.lastName), asc(childrenTable.firstName));
   res.json(children);
 });
@@ -256,10 +257,11 @@ router.get("/auth/my-posts", async (req, res): Promise<void> => {
     return;
   }
 
+  const email = req.session.user.email;
   const children = await db
     .select({ id: childrenTable.id, firstName: childrenTable.firstName, lastName: childrenTable.lastName })
     .from(childrenTable)
-    .where(eq(childrenTable.guardianEmail, req.session.user.email));
+    .where(or(eq(childrenTable.guardianEmail, email), eq(childrenTable.guardian2Email, email)));
 
   if (children.length === 0) {
     res.json([]);
@@ -303,10 +305,11 @@ router.get("/auth/my-plans", async (req, res): Promise<void> => {
     return;
   }
 
+  const email = req.session.user.email;
   const children = await db
     .select({ siteId: childrenTable.siteId })
     .from(childrenTable)
-    .where(eq(childrenTable.guardianEmail, req.session.user.email));
+    .where(or(eq(childrenTable.guardianEmail, email), eq(childrenTable.guardian2Email, email)));
 
   const siteIds = [...new Set(children.map((c) => c.siteId).filter((id): id is number => id != null))];
 
@@ -350,10 +353,11 @@ router.put("/auth/my-children/:id/pickups", async (req, res): Promise<void> => {
   const childId = Number(req.params.id);
   if (isNaN(childId)) { res.status(400).json({ error: "Invalid id" }); return; }
 
+  const email = req.session.user.email;
   const [child] = await db
     .select({ id: childrenTable.id })
     .from(childrenTable)
-    .where(and(eq(childrenTable.id, childId), eq(childrenTable.guardianEmail, req.session.user.email)));
+    .where(and(eq(childrenTable.id, childId), or(eq(childrenTable.guardianEmail, email), eq(childrenTable.guardian2Email, email))));
   if (!child) { res.status(404).json({ error: "Not found" }); return; }
 
   const pickups = req.body as Array<{ id: string; fullName: string; phone: string; relationship: string }>;
@@ -371,10 +375,11 @@ router.post("/auth/acknowledge-comm-entry", async (req, res): Promise<void> => {
   const { childId, entryId } = req.body as { childId: number; entryId: string };
   if (!childId || !entryId) { res.status(400).json({ error: "childId and entryId required" }); return; }
 
+  const email = req.session.user.email;
   const [child] = await db
     .select()
     .from(childrenTable)
-    .where(and(eq(childrenTable.id, childId), eq(childrenTable.guardianEmail, req.session.user.email)));
+    .where(and(eq(childrenTable.id, childId), or(eq(childrenTable.guardianEmail, email), eq(childrenTable.guardian2Email, email))));
   if (!child) { res.status(404).json({ error: "Not found" }); return; }
 
   const plan = child.communicationPlan as any;

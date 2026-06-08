@@ -9,6 +9,8 @@ import {
   UpdateGuardianBody,
   ResetGuardianPasswordResponse,
 } from "@workspace/api-zod";
+import { sendWelcomeEmail } from "../lib/email";
+import { getEmailBranding } from "../lib/emailBranding";
 
 const router: IRouter = Router();
 
@@ -123,6 +125,38 @@ router.patch("/guardians/:email", async (req, res): Promise<void> => {
   const list = await buildGuardianList();
   const guardian = list.find((g) => g.guardianEmail === email);
   res.json(GetGuardianResponse.parse(guardian));
+});
+
+router.post("/guardians/:email/send-welcome-email", async (req, res): Promise<void> => {
+  const email = decodeURIComponent(req.params.email);
+
+  const [existing] = await db
+    .select()
+    .from(childrenTable)
+    .where(
+      or(
+        eq(childrenTable.guardianEmail, email),
+        eq(childrenTable.guardian2Email, email),
+      )
+    );
+
+  if (!existing) {
+    res.status(404).json({ error: "Guardian not found" });
+    return;
+  }
+
+  const guardianName =
+    existing.guardianEmail === email
+      ? existing.guardianName
+      : (existing.guardian2Name ?? email);
+
+  const branding = await getEmailBranding(existing.siteId ?? undefined);
+  const domains = (process.env.REPLIT_DOMAINS ?? "").split(",").map((d) => d.trim()).filter(Boolean);
+  const portalUrl = domains.length > 0 ? `https://${domains[0]}` : "https://educareoshc.com.au";
+
+  await sendWelcomeEmail(email, guardianName, portalUrl, branding);
+
+  res.json({ ok: true });
 });
 
 router.post("/guardians/:email/reset-password", async (req, res): Promise<void> => {

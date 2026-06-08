@@ -34,6 +34,7 @@ import {
   Plus,
   Trash2,
   Pencil,
+  Send,
 } from "lucide-react";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -175,6 +176,8 @@ export default function GuardianDetail() {
   const [copied, setCopied] = useState(false);
   const [customPassword, setCustomPassword] = useState("");
   const [showCustomPassword, setShowCustomPassword] = useState(false);
+  const [welcomeSending, setWelcomeSending] = useState(false);
+  const [welcomeSent, setWelcomeSent] = useState(false);
 
   if (isLoading) {
     return (
@@ -195,6 +198,21 @@ export default function GuardianDetail() {
         </Link>
       </div>
     );
+  }
+
+  async function handleSendWelcomeEmail() {
+    setWelcomeSending(true);
+    try {
+      const res = await fetch(`/api/guardians/${encodedEmail}/send-welcome-email`, { method: "POST" });
+      if (!res.ok) throw new Error("Failed");
+      setWelcomeSent(true);
+      toast({ title: "Welcome email sent", description: `Sent to ${email}` });
+      setTimeout(() => setWelcomeSent(false), 4000);
+    } catch {
+      toast({ title: "Failed to send email", variant: "destructive" });
+    } finally {
+      setWelcomeSending(false);
+    }
   }
 
   async function handleResetPassword() {
@@ -293,9 +311,21 @@ export default function GuardianDetail() {
         {/* Username */}
         <div className="space-y-2">
           <Label>Username</Label>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-mono bg-muted px-3 py-1.5 rounded-md border">{guardian.guardianEmail}</p>
             <span className="text-xs text-muted-foreground">auto-set from email</span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="ml-auto gap-1.5"
+              onClick={handleSendWelcomeEmail}
+              disabled={welcomeSending}
+            >
+              {welcomeSent
+                ? <><Check className="h-3.5 w-3.5 text-emerald-600" /> Sent</>
+                : <><Send className={`h-3.5 w-3.5 ${welcomeSending ? "animate-pulse" : ""}`} /> Send Welcome Email</>
+              }
+            </Button>
           </div>
         </div>
 

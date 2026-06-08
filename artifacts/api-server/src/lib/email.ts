@@ -13,6 +13,7 @@
  *   "Email: SMTP configured — transactional emails will be delivered"
  * When any are missing it logs a warning and skips sending.
  */
+import path from "path";
 import nodemailer from "nodemailer";
 import { logger } from "./logger";
 
@@ -561,6 +562,126 @@ export async function sendPostNotificationEmail(
 
   const sent = recipients.length - errors.length;
   logger.info({ sent, failed: errors.length }, "Post notification emails dispatched");
+}
+
+// ── Welcome email ─────────────────────────────────────────────────────────────
+
+export async function sendWelcomeEmail(
+  email: string,
+  recipientName: string,
+  portalUrl: string,
+  branding?: EmailBranding,
+): Promise<void> {
+  const from = smtpFrom();
+  const transport = createTransport();
+
+  if (!transport) {
+    logger.warn({ email }, "SMTP not configured — welcome email was not sent");
+    return;
+  }
+
+  const senderName = fromName(branding);
+  const pdfPath = path.resolve(process.cwd(), "attached_assets", "EduCare_Features_-_Families_1780904943093.pdf");
+
+  await transport.sendMail({
+    from: `"${senderName}" <${from}>`,
+    to: email,
+    subject: "Welcome to EduCare",
+    text: [
+      `Hi ${recipientName},`,
+      "",
+      "Welcome to EduCare — the family portal for your child's OSHC service.",
+      "",
+      "Through the app you can:",
+      "• View your child's weekly learning program",
+      "• Manage approved pick-up contacts",
+      "• Read learning stories and updates from educators",
+      "• Access medical plans and communication plans",
+      "• View medication logs",
+      "• Receive service notices and announcements",
+      "",
+      `Log in at: ${portalUrl}`,
+      "",
+      "We've attached a quick guide to help you get started.",
+      "",
+      `— ${senderName}`,
+    ].join("\n"),
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <body style="font-family: sans-serif; color: #1a1a1a; max-width: 560px; margin: 0 auto; padding: 0;">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%); padding: 36px 32px 28px; border-radius: 12px 12px 0 0;">
+            ${branding?.logoUrl
+              ? `<img src="${branding.logoUrl}" alt="${senderName.replace(/"/g, "&quot;")}" style="height:48px;display:block;margin-bottom:20px;max-width:200px;object-fit:contain;" />`
+              : `<p style="color:#fff; font-size:22px; font-weight:800; margin:0 0 20px; letter-spacing:-0.5px;">${senderName}</p>`
+            }
+            <h1 style="color:#fff; margin:0; font-size:28px; font-weight:800; line-height:1.2;">Welcome to EduCare</h1>
+            <p style="color:rgba(255,255,255,0.80); margin:8px 0 0; font-size:15px;">Hi ${recipientName.replace(/</g, "&lt;").replace(/>/g, "&gt;")} — we're glad you're here.</p>
+          </div>
+
+          <!-- Body -->
+          <div style="padding: 28px 32px; background:#fff; border: 1px solid #e8e8e8; border-top: none; border-radius: 0 0 12px 12px;">
+            <p style="color:#444; font-size:15px; line-height:1.6; margin:0 0 20px;">
+              EduCare gives your family real-time access to everything happening in your child's OSHC experience — from weekly learning programs to health updates, learning stories, and service announcements.
+            </p>
+
+            <!-- Feature list -->
+            <table style="width:100%; border-collapse:collapse; margin-bottom:24px;">
+              ${[
+                ["📅", "Weekly Learning Program", "See what's planned each day."],
+                ["🚗", "Approved Pick-Ups", "Manage who can collect your child."],
+                ["📸", "Posts & Updates", "Learning stories and photos from educators."],
+                ["💊", "Medical Plans", "Risk assessments and communication plans."],
+                ["🔔", "Notices", "Service announcements and reminders."],
+              ].map(([icon, title, desc]) => `
+              <tr>
+                <td style="padding:8px 10px 8px 0; vertical-align:top; font-size:18px; width:28px;">${icon}</td>
+                <td style="padding:8px 0;">
+                  <p style="margin:0; font-weight:700; color:#1a1a1a; font-size:14px;">${title}</p>
+                  <p style="margin:2px 0 0; color:#666; font-size:13px;">${desc}</p>
+                </td>
+              </tr>`).join("")}
+            </table>
+
+            <!-- CTA button -->
+            <div style="text-align:center; margin: 8px 0 24px;">
+              <a href="${portalUrl}" style="
+                display: inline-block;
+                padding: 14px 32px;
+                background: #1b5e20;
+                color: #fff;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 700;
+                font-size: 15px;
+                letter-spacing: 0.2px;
+              ">Open the Family Portal</a>
+            </div>
+
+            <p style="color:#888; font-size:13px; margin:0 0 4px;">
+              We've attached a quick guide to help you explore everything the app has to offer.
+            </p>
+
+            <hr style="border:none; border-top:1px solid #eee; margin:24px 0;" />
+            <p style="color:#aaa; font-size:12px; margin:0;">
+              ${senderName} — sent by your centre administrator.
+              If you have trouble logging in, please contact your service directly.
+            </p>
+          </div>
+        </body>
+      </html>
+    `,
+    attachments: [
+      {
+        filename: "EduCare_Features_-_Families.pdf",
+        path: pdfPath,
+        contentType: "application/pdf",
+      },
+    ],
+  });
+
+  logger.info({ email }, "Welcome email sent");
 }
 
 export interface MedicationLogEmailOptions {

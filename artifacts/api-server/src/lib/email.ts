@@ -581,7 +581,7 @@ export async function sendWelcomeEmail(
   }
 
   const senderName = fromName(branding);
-  const pdfPath = path.resolve(process.cwd(), "attached_assets", "EduCare_Features_-_Families_1780904943093.pdf");
+  const pdfPath = path.resolve(process.cwd(), "..", "..", "attached_assets", "EduCare_Features_-_Families_1780904943093.pdf");
 
   await transport.sendMail({
     from: `"${senderName}" <${from}>`,

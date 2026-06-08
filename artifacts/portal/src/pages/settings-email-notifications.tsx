@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
-type TemplateKey = "passwordReset" | "loginInvite" | "loginResend" | "postNotification" | "contactEnquiry";
+type TemplateKey = "passwordReset" | "loginInvite" | "loginResend" | "postNotification" | "contactEnquiry" | "welcomeEmail";
 
 interface TemplateForm {
   subject: string;
@@ -27,6 +27,7 @@ const TEMPLATE_LIST: { key: TemplateKey; label: string; description: string }[] 
   { key: "loginResend", label: "Resend Login", description: "Sent when resending login details to an existing account" },
   { key: "postNotification", label: "Post Notification", description: "Sent to guardians when a new post is published" },
   { key: "contactEnquiry", label: "Contact Enquiry", description: "Internal notification when a contact form is submitted" },
+  { key: "welcomeEmail", label: "Welcome Email", description: "Sent to new guardians to introduce the EduCare family portal" },
 ];
 
 const DEFAULTS: Record<TemplateKey, TemplateForm> = {
@@ -49,6 +50,10 @@ const DEFAULTS: Record<TemplateKey, TemplateForm> = {
   contactEnquiry: {
     subject: "New enquiry from [Name] — [Service]",
     intro: "A new contact enquiry was submitted via the EduCare website.",
+  },
+  welcomeEmail: {
+    subject: "Welcome to EduCare",
+    intro: "EduCare gives your family real-time access to everything happening in your child's OSHC experience — from weekly learning programs to health updates, learning stories, and service announcements.",
   },
 };
 
@@ -136,6 +141,46 @@ function buildEmailPreview(
           <tr><td style="padding:8px 12px;color:#888;font-size:13px;white-space:nowrap;vertical-align:top;">Message</td><td style="padding:8px 12px;font-size:13px;white-space:pre-wrap;">I'd like to enquire about enrolling my child.</td></tr>
         </table>
         <p style="color:#aaa;font-size:12px;margin:0;">Reply directly to this email to respond to Jane Smith.</p>`);
+
+    case "welcomeEmail": {
+      const features = [
+        ["📅", "Weekly Learning Program", "See what's planned each day."],
+        ["🚗", "Approved Pick-Ups", "Manage who can collect your child."],
+        ["📸", "Posts &amp; Updates", "Learning stories and photos from educators."],
+        ["💊", "Medical Plans", "Risk assessments and communication plans."],
+        ["🔔", "Notices", "Service announcements and reminders."],
+      ];
+      const featureRows = features.map(([icon, title, desc]) => `
+        <tr>
+          <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:18px;width:28px;">${icon}</td>
+          <td style="padding:6px 0;">
+            <p style="margin:0;font-weight:700;color:#1a1a1a;font-size:13px;">${title}</p>
+            <p style="margin:2px 0 0;color:#666;font-size:12px;">${desc}</p>
+          </td>
+        </tr>`).join("");
+      return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+        *{box-sizing:border-box;}
+        body{margin:0;padding:16px;background:#f0f0f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;}
+      </style></head><body>
+        <div style="max-width:560px;margin:0 auto;">
+          <div style="background:linear-gradient(135deg,#1b5e20 0%,#2e7d32 100%);padding:32px 28px 24px;border-radius:10px 10px 0 0;">
+            ${logoHtml}
+            <h1 style="color:#fff;margin:0;font-size:26px;font-weight:800;line-height:1.2;">${subject}</h1>
+            <p style="color:rgba(255,255,255,0.80);margin:8px 0 0;font-size:14px;">Hi [Guardian Name] — we're glad you're here.</p>
+          </div>
+          <div style="padding:24px 28px;background:#fff;border:1px solid #e8e8e8;border-top:none;border-radius:0 0 10px 10px;">
+            <p style="color:#444;font-size:14px;line-height:1.6;margin:0 0 18px;">${intro}</p>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">${featureRows}</table>
+            <div style="text-align:center;margin:8px 0 20px;">
+              <a href="#" style="display:inline-block;padding:12px 28px;background:#1b5e20;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:14px;">Open the Family Portal</a>
+            </div>
+            <p style="color:#888;font-size:12px;margin:0 0 4px;">We've attached a quick guide to help you explore everything the app has to offer.</p>
+            <hr style="border:none;border-top:1px solid #eee;margin:20px 0;" />
+            <p style="color:#aaa;font-size:11px;margin:0;">${senderName} — sent by your centre administrator.</p>
+          </div>
+        </div>
+      </body></html>`;
+    }
 
     default:
       return `<!DOCTYPE html><html><body><p>No preview.</p></body></html>`;

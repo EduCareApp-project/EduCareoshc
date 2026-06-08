@@ -57,6 +57,7 @@ export interface EmailBranding {
     loginResend?: { subject?: string; intro?: string };
     postNotification?: { subject?: string; intro?: string };
     contactEnquiry?: { subject?: string; intro?: string };
+    welcomeEmail?: { subject?: string; intro?: string };
   };
 }
 
@@ -581,12 +582,14 @@ export async function sendWelcomeEmail(
   }
 
   const senderName = fromName(branding);
+  const subject = branding?.templates?.welcomeEmail?.subject ?? "Welcome to EduCare";
+  const intro = branding?.templates?.welcomeEmail?.intro ?? "EduCare gives your family real-time access to everything happening in your child's OSHC experience — from weekly learning programs to health updates, learning stories, and service announcements.";
   const pdfPath = path.resolve(process.cwd(), "..", "..", "attached_assets", "EduCare_Features_-_Families_1780904943093.pdf");
 
   await transport.sendMail({
     from: `"${senderName}" <${from}>`,
     to: email,
-    subject: "Welcome to EduCare",
+    subject,
     text: [
       `Hi ${recipientName},`,
       "",

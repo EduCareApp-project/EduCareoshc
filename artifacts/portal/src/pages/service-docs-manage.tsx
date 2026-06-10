@@ -1,14 +1,13 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { useLocation } from "wouter";
 import {
   useListFileLibrary, useCreateFileLibraryItem, useDeleteFileLibraryItem,
-  useListFileCategories, useCreateFileCategory, useListSites,
+  useListFileCategories, useCreateFileCategory,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -265,20 +264,8 @@ export default function ServiceDocsManage() {
 
   const { data: files, isLoading: filesLoading } = useListFileLibrary();
   const { data: categories, isLoading: catsLoading } = useListFileCategories();
-  const { data: sites } = useListSites();
-
-  const [selectedSiteId, setSelectedSiteId] = useState<string>("");
-
-  useEffect(() => {
-    if (sites && sites.length > 0 && !selectedSiteId) {
-      setSelectedSiteId(String(sites[0].id));
-    }
-  }, [sites, selectedSiteId]);
 
   const loading = filesLoading || catsLoading;
-
-  const activeSiteId: number | null =
-    selectedSiteId ? parseInt(selectedSiteId) : null;
 
   function getCatId(name: string) {
     return categories?.find((c) => c.name === name)?.id;
@@ -286,9 +273,7 @@ export default function ServiceDocsManage() {
 
   function getFiles(catId: number | undefined): FileItem[] {
     if (!catId) return [];
-    return (files ?? [])
-      .filter((f) => f.categoryId === catId)
-      .filter((f) => !activeSiteId || f.siteId === activeSiteId);
+    return (files ?? []).filter((f) => f.categoryId === catId);
   }
 
   async function ensureCategory(name: string): Promise<number> {
@@ -306,7 +291,7 @@ export default function ServiceDocsManage() {
     queryClient.invalidateQueries({ queryKey: ["/api/file-categories"] });
   }
 
-  const previewUrl = activeSiteId ? `/service-docs?siteId=${activeSiteId}` : "/service-docs";
+  const previewUrl = "/service-docs";
 
   return (
     <div className="space-y-6">
@@ -323,18 +308,6 @@ export default function ServiceDocsManage() {
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          {sites && sites.length > 1 && (
-            <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
-              <SelectTrigger className="h-9 text-sm w-auto min-w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {sites.map((s) => (
-                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
           <a
             href={previewUrl}
             target="_blank"
@@ -362,7 +335,7 @@ export default function ServiceDocsManage() {
                 categoryName={catName}
                 categoryId={catId}
                 files={getFiles(catId)}
-                siteId={activeSiteId}
+                siteId={null}
                 onEnsureCategory={() => ensureCategory(catName)}
                 onRefresh={refresh}
               />

@@ -3,7 +3,6 @@ import { LogOut, Menu, Home, Bell, BellOff, Newspaper, CalendarDays, Pill, Heart
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { ScrollArea } from "./ui/scroll-area";
 import { useAuth } from "@/contexts/auth";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -24,6 +23,7 @@ type FeedItem = {
   title: string;
   subtitle?: string;
   date: string;
+  href: string;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -89,6 +89,7 @@ function GuardianNotificationBell({ dark = false }: { dark?: boolean }) {
       title: n.title,
       subtitle: n.priority !== "normal" ? n.priority.charAt(0).toUpperCase() + n.priority.slice(1) : undefined,
       date: n.createdAt,
+      href: "/notices",
     })),
     ...(posts ?? [])
       .filter((p) => !!p.publishedAt)
@@ -97,6 +98,7 @@ function GuardianNotificationBell({ dark = false }: { dark?: boolean }) {
         type: "post" as const,
         title: p.title,
         date: p.publishedAt!,
+        href: "/",
       })),
     ...(plans ?? [])
       .filter((p) => p.stage === "published")
@@ -108,12 +110,15 @@ function GuardianNotificationBell({ dark = false }: { dark?: boolean }) {
           ? `Week of ${new Date(p.startDate + "T00:00:00").toLocaleDateString("en-AU")}`
           : undefined,
         date: p.createdAt,
+        href: "/",
       })),
   ]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 20);
 
   const unread = feed.filter((item) => new Date(item.date).getTime() > lastSeen).length;
+
+  const [, setLocation] = useLocation();
 
   function handleOpenChange(isOpen: boolean) {
     if (isOpen) {
@@ -123,6 +128,11 @@ function GuardianNotificationBell({ dark = false }: { dark?: boolean }) {
       setLastSeen(now);
     }
     setOpen(isOpen);
+  }
+
+  function handleItemClick(item: FeedItem) {
+    setOpen(false);
+    setLocation(item.href);
   }
 
   const ICONS: Record<FeedItem["type"], typeof Bell> = {
@@ -168,7 +178,7 @@ function GuardianNotificationBell({ dark = false }: { dark?: boolean }) {
           )}
         </div>
 
-        <ScrollArea className="max-h-[400px]">
+        <div className="overflow-y-auto max-h-[400px]">
           {feed.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
               <BellOff className="h-8 w-8 opacity-30" />
@@ -182,7 +192,11 @@ function GuardianNotificationBell({ dark = false }: { dark?: boolean }) {
                 return (
                   <div
                     key={item.id}
-                    className={`flex items-start gap-3 px-4 py-3 ${isNew ? "bg-blue-50/60" : ""}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleItemClick(item)}
+                    onKeyDown={(e) => e.key === "Enter" && handleItemClick(item)}
+                    className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-accent/50 ${isNew ? "bg-blue-50/60" : ""}`}
                   >
                     <div className={`mt-0.5 rounded-full p-1.5 shrink-0 ${TYPE_COLORS[item.type]}`}>
                       <Icon className="h-3 w-3" />
@@ -207,7 +221,7 @@ function GuardianNotificationBell({ dark = false }: { dark?: boolean }) {
               })}
             </div>
           )}
-        </ScrollArea>
+        </div>
 
         <div className="border-t px-4 py-2">
           <p className="text-[11px] text-muted-foreground">

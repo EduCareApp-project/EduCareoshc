@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
   useListFileLibrary, useCreateFileLibraryItem, useDeleteFileLibraryItem,
@@ -267,12 +267,18 @@ export default function ServiceDocsManage() {
   const { data: categories, isLoading: catsLoading } = useListFileCategories();
   const { data: sites } = useListSites();
 
-  const [selectedSiteId, setSelectedSiteId] = useState<string>("__all__");
+  const [selectedSiteId, setSelectedSiteId] = useState<string>("");
+
+  useEffect(() => {
+    if (sites && sites.length > 0 && !selectedSiteId) {
+      setSelectedSiteId(String(sites[0].id));
+    }
+  }, [sites, selectedSiteId]);
 
   const loading = filesLoading || catsLoading;
 
   const activeSiteId: number | null =
-    selectedSiteId === "__all__" ? null : parseInt(selectedSiteId);
+    selectedSiteId ? parseInt(selectedSiteId) : null;
 
   function getCatId(name: string) {
     return categories?.find((c) => c.name === name)?.id;
@@ -282,9 +288,7 @@ export default function ServiceDocsManage() {
     if (!catId) return [];
     return (files ?? [])
       .filter((f) => f.categoryId === catId)
-      .filter((f) =>
-        selectedSiteId === "__all__" || f.siteId === activeSiteId
-      );
+      .filter((f) => !activeSiteId || f.siteId === activeSiteId);
   }
 
   async function ensureCategory(name: string): Promise<number> {
@@ -325,7 +329,6 @@ export default function ServiceDocsManage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__all__">All sites</SelectItem>
                 {sites.map((s) => (
                   <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
                 ))}

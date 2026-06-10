@@ -9,6 +9,7 @@ import type { NoticeInputAudience } from "./noticeInputAudience";
 import type { NoticeInputPriority } from "./noticeInputPriority";
 
 export interface NoticeInput {
+  siteId?: number | null;
   title: string;
   content: string;
   priority?: NoticeInputPriority;

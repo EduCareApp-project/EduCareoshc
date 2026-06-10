@@ -960,6 +960,7 @@ export const ListNoticesQueryParams = zod.object({
 
 export const ListNoticesResponseItem = zod.object({
   id: zod.number(),
+  siteId: zod.number().nullish(),
   title: zod.string(),
   content: zod.string(),
   priority: zod.enum(["low", "normal", "high", "urgent"]),
@@ -975,6 +976,7 @@ export const createNoticeBodyPriorityDefault = `normal`;
 export const createNoticeBodyAudienceDefault = `leadership`;
 
 export const CreateNoticeBody = zod.object({
+  siteId: zod.number().nullish(),
   title: zod.string(),
   content: zod.string(),
   priority: zod
@@ -993,6 +995,7 @@ export const UpdateNoticeParams = zod.object({
 });
 
 export const UpdateNoticeBody = zod.object({
+  siteId: zod.number().nullish(),
   title: zod.string().optional(),
   content: zod.string().optional(),
   priority: zod.enum(["low", "normal", "high", "urgent"]).optional(),
@@ -1003,6 +1006,7 @@ export const UpdateNoticeBody = zod.object({
 
 export const UpdateNoticeResponse = zod.object({
   id: zod.number(),
+  siteId: zod.number().nullish(),
   title: zod.string(),
   content: zod.string(),
   priority: zod.enum(["low", "normal", "high", "urgent"]),

@@ -50,9 +50,9 @@ function GuardianNotificationBell({ dark = false }: { dark?: boolean }) {
   const snapshotRef = useRef(lastSeen);
 
   const { data: notices } = useQuery<{ id: number; title: string; priority: string; createdAt: string }[]>({
-    queryKey: ["/api/notices", "guardian"],
+    queryKey: ["/api/auth/my-notices"],
     queryFn: async () => {
-      const res = await fetch("/api/notices?audience=guardian");
+      const res = await fetch("/api/auth/my-notices");
       if (!res.ok) return [];
       return res.json();
     },

@@ -131,16 +131,16 @@ router.patch("/posts/:id", async (req, res): Promise<void> => {
 
   const wasPublished = existing.publishedAt == null && post.publishedAt != null;
   if (wasPublished && notifyGuardians !== false) {
+    const childJoinConditions = [
+      eq(childrenTable.guardianEmail, parentAccountsTable.guardianEmail),
+      eq(childrenTable.status, "active"),
+      ...(post.siteId ? [eq(childrenTable.siteId, post.siteId)] : []),
+    ];
+
     const guardians = await db
       .selectDistinct({ email: parentAccountsTable.guardianEmail })
       .from(parentAccountsTable)
-      .innerJoin(
-        childrenTable,
-        and(
-          eq(childrenTable.guardianEmail, parentAccountsTable.guardianEmail),
-          eq(childrenTable.status, "active"),
-        ),
-      )
+      .innerJoin(childrenTable, and(...childJoinConditions))
       .where(
         and(
           isNotNull(parentAccountsTable.passwordHash),

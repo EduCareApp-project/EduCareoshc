@@ -10,6 +10,7 @@ import type { NoticePriority } from "./noticePriority";
 
 export interface Notice {
   id: number;
+  siteId?: number | null;
   title: string;
   content: string;
   priority: NoticePriority;

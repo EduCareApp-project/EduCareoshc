@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { eq, asc, and, or, gt, isNull, isNotNull, inArray, sql } from "drizzle-orm";
-import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, postsTable, sitesTable, planningExperiencesTable } from "@workspace/db";
+import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, postsTable, sitesTable, planningExperiencesTable, noticesTable } from "@workspace/db";
 import { sendPasswordResetEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 
@@ -396,4 +396,39 @@ router.post("/auth/acknowledge-comm-entry", async (req, res): Promise<void> => {
   res.json({ ok: true });
 });
 
+// Guardian-scoped notices — only notices that apply to the guardian's sites (or global ones)
+router.get("/auth/my-notices", async (req, res): Promise<void> => {
+  if (!req.session.user || req.session.user.type !== "guardian") {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const email = req.session.user.email;
+  const children = await db
+    .select({ siteId: childrenTable.siteId })
+    .from(childrenTable)
+    .where(or(eq(childrenTable.guardianEmail, email), eq(childrenTable.guardian2Email, email)));
+
+  const siteIds = [...new Set(children.map((c) => c.siteId).filter((id): id is number => id != null))];
+
+  // Show notices that are either:
+  // - global (siteId IS NULL), or
+  // - targeted at one of the guardian's child's sites
+  const rows = await db
+    .select()
+    .from(noticesTable)
+    .where(
+      and(
+        eq(noticesTable.audience, "guardian"),
+        siteIds.length > 0
+          ? or(isNull(noticesTable.siteId), inArray(noticesTable.siteId, siteIds))
+          : isNull(noticesTable.siteId),
+      ),
+    )
+    .orderBy(noticesTable.createdAt);
+
+  res.json(rows);
+});
+
 export default router;
+

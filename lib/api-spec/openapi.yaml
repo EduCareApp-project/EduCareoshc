@@ -3767,6 +3767,9 @@ components:
       properties:
         id:
           type: integer
+        siteId:
+          type: integer
+          nullable: true
         title:
           type: string
         content:
@@ -3798,6 +3801,9 @@ components:
       type: object
       required: [title, content]
       properties:
+        siteId:
+          type: integer
+          nullable: true
         title:
           type: string
         content:
@@ -3831,6 +3837,9 @@ components:
     PatchNoticeBody:
       type: object
       properties:
+        siteId:
+          type: integer
+          nullable: true
         title:
           type: string
         content:

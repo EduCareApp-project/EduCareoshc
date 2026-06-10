@@ -1,9 +1,11 @@
-import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { sitesTable } from "./sites";
 
 export const noticesTable = pgTable("notices", {
   id: serial("id").primaryKey(),
+  siteId: integer("site_id").references(() => sitesTable.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   content: text("content").notNull(),
   priority: text("priority").notNull().default("normal"),

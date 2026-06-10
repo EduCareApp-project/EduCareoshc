@@ -455,9 +455,9 @@ export default function GuardianHome() {
   });
 
   const { data: notices } = useQuery<Notice[]>({
-    queryKey: ["/api/notices", "guardian"],
+    queryKey: ["/api/auth/my-notices"],
     queryFn: async () => {
-      const res = await fetch("/api/notices?audience=guardian");
+      const res = await fetch("/api/auth/my-notices");
       if (!res.ok) throw new Error("Failed to load notices");
       return res.json();
     },

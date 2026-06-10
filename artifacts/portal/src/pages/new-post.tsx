@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCreatePost, useUpdatePost, useListChildren, useListStaff, useListSites, getListPostsQueryKey } from "@workspace/api-client-react";
@@ -15,6 +15,7 @@ import { ArrowLeft, ImagePlus, X, Loader2, CameraOff, Paperclip, FileText } from
 import { useUpload } from "@workspace/object-storage-web";
 import { useMemo } from "react";
 import { MtopOutcomePicker } from "@/components/mtop-outcome-picker";
+import { usePermissions } from "@/hooks/use-permissions";
 
 const EMPTY_FORM = {
   siteId: "",
@@ -33,6 +34,7 @@ export default function NewPost() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isAdmin, ownSiteId } = usePermissions();
 
   const { data: sites } = useListSites();
   const { data: children } = useListChildren();
@@ -41,6 +43,14 @@ export default function NewPost() {
   const updatePost = useUpdatePost();
 
   const [form, setForm] = useState<typeof EMPTY_FORM>(EMPTY_FORM);
+
+  // Default non-admin users to their own site on first load
+  useEffect(() => {
+    if (!isAdmin && ownSiteId != null) {
+      setForm((f) => f.siteId === "" ? { ...f, siteId: String(ownSiteId) } : f);
+    }
+  }, [isAdmin, ownSiteId]);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [images, setImages] = useState<string[]>([]);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
@@ -193,7 +203,7 @@ export default function NewPost() {
                 >
                   <SelectTrigger><SelectValue placeholder="Select site" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">All sites</SelectItem>
+                    {isAdmin && <SelectItem value="none">All sites</SelectItem>}
                     {(sites ?? []).map((s) => (
                       <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
                     ))}

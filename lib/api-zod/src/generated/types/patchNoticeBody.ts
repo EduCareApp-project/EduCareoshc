@@ -9,6 +9,7 @@ import type { PatchNoticeBodyAudience } from "./patchNoticeBodyAudience";
 import type { PatchNoticeBodyPriority } from "./patchNoticeBodyPriority";
 
 export interface PatchNoticeBody {
+  siteId?: number | null;
   title?: string;
   content?: string;
   priority?: PatchNoticeBodyPriority;

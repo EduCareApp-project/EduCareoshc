@@ -534,6 +534,7 @@ export const NoticeAudience = {
 
 export interface Notice {
   id: number;
+  siteId?: number | null;
   title: string;
   content: string;
   priority: NoticePriority;
@@ -565,6 +566,7 @@ export const NoticeInputAudience = {
 } as const;
 
 export interface NoticeInput {
+  siteId?: number | null;
   title: string;
   content: string;
   priority?: NoticeInputPriority;
@@ -598,6 +600,7 @@ export const PatchNoticeBodyAudience = {
 } as const;
 
 export interface PatchNoticeBody {
+  siteId?: number | null;
   title?: string;
   content?: string;
   priority?: PatchNoticeBodyPriority;

@@ -20,9 +20,9 @@ function imageUrl(path: string) {
 
 export default function GuardianNotices() {
   const { data: posts, isLoading } = useQuery<Post[]>({
-    queryKey: ["/api/posts"],
+    queryKey: ["/api/auth/my-posts"],
     queryFn: async () => {
-      const res = await fetch("/api/posts");
+      const res = await fetch("/api/auth/my-posts");
       if (!res.ok) throw new Error("Failed to load notices");
       return res.json();
     },

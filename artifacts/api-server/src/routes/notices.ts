@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, isNotNull, isNull } from "drizzle-orm";
+import { eq, and, isNotNull, isNull, inArray } from "drizzle-orm";
 import { db, noticesTable, parentAccountsTable, childrenTable } from "@workspace/db";
 import { CreateNoticeBody, DeleteNoticeParams, ListNoticesResponse, ListNoticesResponseItem, UpdateNoticeBody, UpdateNoticeParams } from "@workspace/api-zod";
 import { sendGuardianNoticeEmail } from "../lib/email";
@@ -14,9 +14,20 @@ function getPortalUrl(): string {
 
 router.get("/notices", async (req, res): Promise<void> => {
   const audience = req.query.audience as string | undefined;
-  const rows = audience
-    ? await db.select().from(noticesTable).where(eq(noticesTable.audience, audience)).orderBy(noticesTable.createdAt)
-    : await db.select().from(noticesTable).orderBy(noticesTable.createdAt);
+  const siteIdParam = req.query.siteId as string | undefined;
+  const siteId = siteIdParam ? parseInt(siteIdParam) : null;
+
+  let query = db.select().from(noticesTable).$dynamic();
+
+  const conditions = [];
+  if (audience) conditions.push(eq(noticesTable.audience, audience));
+  if (siteId) conditions.push(eq(noticesTable.siteId, siteId));
+
+  if (conditions.length > 0) {
+    query = query.where(conditions.length === 1 ? conditions[0] : and(...conditions));
+  }
+
+  const rows = await query.orderBy(noticesTable.createdAt);
   res.json(ListNoticesResponse.parse(rows));
 });
 
@@ -26,17 +37,40 @@ router.post("/notices", async (req, res): Promise<void> => {
   const [notice] = await db.insert(noticesTable).values(parsed.data as any).returning();
 
   if (notice.audience === "guardian") {
-    const guardians = await db
-      .selectDistinct({ email: parentAccountsTable.guardianEmail })
-      .from(parentAccountsTable)
-      .innerJoin(
-        childrenTable,
-        and(
-          eq(childrenTable.guardianEmail, parentAccountsTable.guardianEmail),
-          eq(childrenTable.status, "active"),
-        ),
-      )
-      .where(and(isNotNull(parentAccountsTable.passwordHash), isNull(parentAccountsTable.blockedAt)));
+    // Build the guardian query — scope to site when notice has a siteId
+    const baseConditions = [
+      isNotNull(parentAccountsTable.passwordHash),
+      isNull(parentAccountsTable.blockedAt),
+    ];
+
+    let guardians;
+    if (notice.siteId) {
+      guardians = await db
+        .selectDistinct({ email: parentAccountsTable.guardianEmail })
+        .from(parentAccountsTable)
+        .innerJoin(
+          childrenTable,
+          and(
+            eq(childrenTable.guardianEmail, parentAccountsTable.guardianEmail),
+            eq(childrenTable.status, "active"),
+            eq(childrenTable.siteId, notice.siteId),
+          ),
+        )
+        .where(and(...baseConditions));
+    } else {
+      guardians = await db
+        .selectDistinct({ email: parentAccountsTable.guardianEmail })
+        .from(parentAccountsTable)
+        .innerJoin(
+          childrenTable,
+          and(
+            eq(childrenTable.guardianEmail, parentAccountsTable.guardianEmail),
+            eq(childrenTable.status, "active"),
+          ),
+        )
+        .where(and(...baseConditions));
+    }
+
     const recipients = guardians.map((g) => g.email);
     const strippedContent = notice.content.replace(/<[^>]*>/g, "").trim().slice(0, 300);
     getEmailBranding().then((branding) =>

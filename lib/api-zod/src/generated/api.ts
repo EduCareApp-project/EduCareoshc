@@ -3436,8 +3436,12 @@ export const UpdateChildSettingsResponse = zod.object({
 });
 
 /**
- * @summary Get notification settings
+ * @summary Get notification settings, optionally filtered by site
  */
+export const ListNotificationSettingsQueryParams = zod.object({
+  siteId: zod.coerce.number().optional(),
+});
+
 export const ListNotificationSettingsResponseItem = zod.object({
   id: zod.number(),
   type: zod.string(),
@@ -3445,6 +3449,7 @@ export const ListNotificationSettingsResponseItem = zod.object({
   description: zod.string().nullish(),
   enabled: zod.boolean(),
   advanceDays: zod.number().nullish(),
+  siteId: zod.number().nullish(),
 });
 export const ListNotificationSettingsResponse = zod.array(
   ListNotificationSettingsResponseItem,
@@ -3457,6 +3462,7 @@ export const UpdateNotificationSettingsBodyItem = zod.object({
   type: zod.string(),
   enabled: zod.boolean(),
   advanceDays: zod.number().nullish(),
+  siteId: zod.number().nullish(),
 });
 export const UpdateNotificationSettingsBody = zod.array(
   UpdateNotificationSettingsBodyItem,

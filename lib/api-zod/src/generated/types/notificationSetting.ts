@@ -15,4 +15,6 @@ export interface NotificationSetting {
   enabled: boolean;
   /** @nullable */
   advanceDays?: number | null;
+  /** @nullable */
+  siteId?: number | null;
 }

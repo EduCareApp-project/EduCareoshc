@@ -1,5 +1,6 @@
-import { pgTable, serial, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, boolean, unique } from "drizzle-orm/pg-core";
 import { staffTable } from "./staff";
+import { sitesTable } from "./sites";
 
 export const notificationsTable = pgTable("notifications", {
   id: serial("id").primaryKey(),
@@ -20,11 +21,14 @@ export type InsertNotification = typeof notificationsTable.$inferInsert;
 
 export const notificationSettingsTable = pgTable("notification_settings", {
   id: serial("id").primaryKey(),
-  type: text("type").notNull().unique(),
+  type: text("type").notNull(),
   label: text("label").notNull(),
   description: text("description"),
   enabled: boolean("enabled").notNull().default(true),
   advanceDays: integer("advance_days").default(14),
-});
+  siteId: integer("site_id").references(() => sitesTable.id, { onDelete: "cascade" }),
+}, (t) => [
+  unique("uq_notification_settings_type_site").on(t.type, t.siteId),
+]);
 
 export type NotificationSetting = typeof notificationSettingsTable.$inferSelect;

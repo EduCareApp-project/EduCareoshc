@@ -2795,7 +2795,13 @@ paths:
     get:
       operationId: listNotificationSettings
       tags: [notification-settings]
-      summary: Get notification settings
+      summary: Get notification settings, optionally filtered by site
+      parameters:
+        - name: siteId
+          in: query
+          required: false
+          schema:
+            type: integer
       responses:
         "200":
           description: OK
@@ -5795,6 +5801,8 @@ components:
           type: boolean
         advanceDays:
           type: ["integer", "null"]
+        siteId:
+          type: ["integer", "null"]
 
     Notification:
       type: object
@@ -5839,6 +5847,8 @@ components:
         enabled:
           type: boolean
         advanceDays:
+          type: ["integer", "null"]
+        siteId:
           type: ["integer", "null"]
 
     ChildMedication:

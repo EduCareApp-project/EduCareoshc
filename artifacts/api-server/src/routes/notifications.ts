@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { logger } from "../lib/logger";
-import { eq, and, desc, isNull, lte, gte, inArray, not } from "drizzle-orm";
+import { eq, and, desc, isNull, lte, gte, inArray, not, isNotNull } from "drizzle-orm";
 import {
   db,
   notificationsTable,
@@ -282,18 +282,71 @@ router.put("/notifications/:id/read", async (req, res): Promise<void> => {
 });
 
 // ── GET /notification-settings ────────────────────────────────────────────────
-router.get("/notification-settings", async (_req, res): Promise<void> => {
-  const items = await db.select().from(notificationSettingsTable).orderBy(notificationSettingsTable.id);
-  res.json(items);
+router.get("/notification-settings", async (req, res): Promise<void> => {
+  const siteId = req.query.siteId ? parseInt(req.query.siteId as string) : null;
+
+  // Always fetch global (siteId IS NULL) settings as the base
+  const globalSettings = await db.select()
+    .from(notificationSettingsTable)
+    .where(isNull(notificationSettingsTable.siteId))
+    .orderBy(notificationSettingsTable.id);
+
+  if (!siteId) {
+    res.json(globalSettings);
+    return;
+  }
+
+  // Fetch site-specific overrides
+  const siteSettings = await db.select()
+    .from(notificationSettingsTable)
+    .where(eq(notificationSettingsTable.siteId, siteId));
+
+  // Merge: site-specific overrides take precedence over global
+  const merged = globalSettings.map((g) => {
+    const override = siteSettings.find((s) => s.type === g.type);
+    if (override) return override;
+    // Return a "virtual" site-scoped row from global defaults (id=0 flags it as unsaved)
+    return { ...g, id: 0, siteId };
+  });
+
+  res.json(merged);
 });
 
 // ── PUT /notification-settings ────────────────────────────────────────────────
 router.put("/notification-settings", async (req, res): Promise<void> => {
-  const updates = req.body as Array<{ type: string; enabled: boolean; advanceDays?: number | null }>;
+  const updates = req.body as Array<{ type: string; enabled: boolean; advanceDays?: number | null; siteId?: number | null }>;
   for (const u of updates) {
-    await db.update(notificationSettingsTable)
-      .set({ enabled: u.enabled, advanceDays: u.advanceDays ?? null })
-      .where(eq(notificationSettingsTable.type, u.type));
+    if (u.siteId) {
+      // Upsert a site-specific override
+      const [existing] = await db.select({ id: notificationSettingsTable.id })
+        .from(notificationSettingsTable)
+        .where(and(
+          eq(notificationSettingsTable.type, u.type),
+          eq(notificationSettingsTable.siteId, u.siteId),
+        ));
+      if (existing) {
+        await db.update(notificationSettingsTable)
+          .set({ enabled: u.enabled, advanceDays: u.advanceDays ?? null })
+          .where(eq(notificationSettingsTable.id, existing.id));
+      } else {
+        const [globalRow] = await db.select()
+          .from(notificationSettingsTable)
+          .where(and(eq(notificationSettingsTable.type, u.type), isNull(notificationSettingsTable.siteId)));
+        await db.insert(notificationSettingsTable).values({
+          type: u.type,
+          label: globalRow?.label ?? u.type,
+          description: globalRow?.description,
+          enabled: u.enabled,
+          advanceDays: u.advanceDays ?? null,
+          siteId: u.siteId,
+        });
+      }
+    } else {
+      // Update global setting
+      await db.update(notificationSettingsTable)
+        .set({ enabled: u.enabled, advanceDays: u.advanceDays ?? null })
+        .where(and(eq(notificationSettingsTable.type, u.type), isNull(notificationSettingsTable.siteId)));
+    }
   }
   res.json({ ok: true });
 });

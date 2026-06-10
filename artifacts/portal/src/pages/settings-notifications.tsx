@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { ChevronLeft, Bell, Save, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListNotificationSettings,
   getListNotificationSettingsQueryKey,
   useUpdateNotificationSettings,
+  useListSites,
 } from "@workspace/api-client-react";
 
 const SETTING_META: Record<string, { label: string; description: string; hasAdvanceDays: boolean; group: string }> = {
@@ -126,24 +128,37 @@ type SettingRow = {
   type: string;
   enabled: boolean;
   advanceDays?: number | null;
+  siteId?: number | null;
 };
 
 export default function SettingsNotifications() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const settingsQueryKey = getListNotificationSettingsQueryKey();
-  const { data: rawSettings, isLoading } = useListNotificationSettings({
+  const { data: sites } = useListSites();
+  const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
+
+  const params = selectedSiteId != null ? { siteId: selectedSiteId } : undefined;
+  const settingsQueryKey = getListNotificationSettingsQueryKey(params);
+
+  const { data: rawSettings, isLoading } = useListNotificationSettings(params, {
     query: { queryKey: settingsQueryKey },
   });
 
   const [local, setLocal] = useState<Record<string, SettingRow>>({});
   const [dirty, setDirty] = useState(false);
 
+  // Reset local edits when site changes
+  useEffect(() => {
+    setLocal({});
+    setDirty(false);
+  }, [selectedSiteId]);
+
   const settings: SettingRow[] = (rawSettings ?? []).map((s) => ({
     type: s.type,
     enabled: local[s.type]?.enabled ?? s.enabled,
     advanceDays: local[s.type]?.advanceDays !== undefined ? local[s.type].advanceDays : s.advanceDays,
+    siteId: s.siteId ?? null,
   }));
 
   const { mutate: save, isPending } = useUpdateNotificationSettings({
@@ -171,13 +186,23 @@ export default function SettingsNotifications() {
   }
 
   function handleSave() {
-    save({ data: settings.map((s) => ({ type: s.type, enabled: s.enabled, advanceDays: s.advanceDays ?? null })) });
+    save({
+      data: settings.map((s) => ({
+        type: s.type,
+        enabled: s.enabled,
+        advanceDays: s.advanceDays ?? null,
+        siteId: selectedSiteId ?? null,
+      })),
+    });
   }
 
   function handleReset() {
     setLocal({});
     setDirty(false);
   }
+
+  const multiSite = sites && sites.length > 1;
+  const selectedSiteName = sites?.find((s) => s.id === selectedSiteId)?.name;
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -194,6 +219,30 @@ export default function SettingsNotifications() {
           </p>
         </div>
       </div>
+
+      {multiSite && (
+        <div className="flex items-center gap-3">
+          <Select
+            value={selectedSiteId == null ? "__global__" : String(selectedSiteId)}
+            onValueChange={(v) => setSelectedSiteId(v === "__global__" ? null : parseInt(v))}
+          >
+            <SelectTrigger className="w-[220px] h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__global__">All sites (global defaults)</SelectItem>
+              {sites.map((s) => (
+                <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedSiteId != null && (
+            <p className="text-sm text-muted-foreground">
+              Settings below apply to <span className="font-medium text-foreground">{selectedSiteName}</span> only and override the global defaults.
+            </p>
+          )}
+        </div>
+      )}
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>

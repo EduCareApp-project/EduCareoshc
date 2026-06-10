@@ -69,6 +69,7 @@ import type {
   LearningStoriesReport,
   ListJottingsParams,
   ListNoticesParams,
+  ListNotificationSettingsParams,
   ListQipStrengthsParams,
   ListRoutineItemCompletionsParams,
   MarkAllNotificationsRead200,
@@ -12426,44 +12427,68 @@ export const useUpdateChildSettings = <
 };
 
 /**
- * @summary Get notification settings
+ * @summary Get notification settings, optionally filtered by site
  */
-export const getListNotificationSettingsUrl = () => {
-  return `/api/notification-settings`;
+export const getListNotificationSettingsUrl = (
+  params?: ListNotificationSettingsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/notification-settings?${stringifiedParams}`
+    : `/api/notification-settings`;
 };
 
 export const listNotificationSettings = async (
+  params?: ListNotificationSettingsParams,
   options?: RequestInit,
 ): Promise<NotificationSetting[]> => {
-  return customFetch<NotificationSetting[]>(getListNotificationSettingsUrl(), {
-    ...options,
-    method: "GET",
-  });
+  return customFetch<NotificationSetting[]>(
+    getListNotificationSettingsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
 };
 
-export const getListNotificationSettingsQueryKey = () => {
-  return [`/api/notification-settings`] as const;
+export const getListNotificationSettingsQueryKey = (
+  params?: ListNotificationSettingsParams,
+) => {
+  return [`/api/notification-settings`, ...(params ? [params] : [])] as const;
 };
 
 export const getListNotificationSettingsQueryOptions = <
   TData = Awaited<ReturnType<typeof listNotificationSettings>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listNotificationSettings>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: ListNotificationSettingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listNotificationSettings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getListNotificationSettingsQueryKey();
+    queryOptions?.queryKey ?? getListNotificationSettingsQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof listNotificationSettings>>
-  > = ({ signal }) => listNotificationSettings({ signal, ...requestOptions });
+  > = ({ signal }) =>
+    listNotificationSettings(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listNotificationSettings>>,
@@ -12478,21 +12503,24 @@ export type ListNotificationSettingsQueryResult = NonNullable<
 export type ListNotificationSettingsQueryError = ErrorType<unknown>;
 
 /**
- * @summary Get notification settings
+ * @summary Get notification settings, optionally filtered by site
  */
 
 export function useListNotificationSettings<
   TData = Awaited<ReturnType<typeof listNotificationSettings>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<
-    Awaited<ReturnType<typeof listNotificationSettings>>,
-    TError,
-    TData
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListNotificationSettingsQueryOptions(options);
+>(
+  params?: ListNotificationSettingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listNotificationSettings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListNotificationSettingsQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

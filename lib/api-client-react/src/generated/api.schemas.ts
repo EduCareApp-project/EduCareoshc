@@ -1858,6 +1858,8 @@ export interface UpdateNotificationSettingItem {
   enabled: boolean;
   /** @nullable */
   advanceDays?: number | null;
+  /** @nullable */
+  siteId?: number | null;
 }
 
 export interface Notification {
@@ -1888,6 +1890,8 @@ export interface NotificationSetting {
   enabled: boolean;
   /** @nullable */
   advanceDays?: number | null;
+  /** @nullable */
+  siteId?: number | null;
 }
 
 export interface ChildMedication {
@@ -2103,6 +2107,10 @@ export type MarkAllNotificationsRead200 = {
 
 export type MarkNotificationRead200 = {
   ok: boolean;
+};
+
+export type ListNotificationSettingsParams = {
+  siteId?: number;
 };
 
 export type UpdateNotificationSettings200 = {

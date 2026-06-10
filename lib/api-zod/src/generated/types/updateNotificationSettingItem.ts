@@ -11,4 +11,6 @@ export interface UpdateNotificationSettingItem {
   enabled: boolean;
   /** @nullable */
   advanceDays?: number | null;
+  /** @nullable */
+  siteId?: number | null;
 }

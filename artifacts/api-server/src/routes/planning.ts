@@ -60,6 +60,9 @@ router.patch("/planning/:id", async (req, res): Promise<void> => {
   const wasJustPublished = existing?.stage !== "published" && exp.stage === "published";
   if (wasJustPublished) {
     const weekOf = exp.startDate ? formatDateAU(exp.startDate as string) : null;
+    // Only notify guardians whose active children are enrolled at the same site as the plan.
+    // If the plan has no siteId, fall back to notifying all sites.
+    const siteFilter = exp.siteId != null ? eq(childrenTable.siteId, exp.siteId) : undefined;
     const guardians = await db
       .selectDistinct({ email: parentAccountsTable.guardianEmail })
       .from(parentAccountsTable)
@@ -68,6 +71,7 @@ router.patch("/planning/:id", async (req, res): Promise<void> => {
         and(
           eq(childrenTable.guardianEmail, parentAccountsTable.guardianEmail),
           eq(childrenTable.status, "active"),
+          siteFilter,
         ),
       )
       .where(and(isNotNull(parentAccountsTable.passwordHash), isNull(parentAccountsTable.blockedAt)));

@@ -150,7 +150,7 @@ router.post("/guardians/:email/send-welcome-email", async (req, res): Promise<vo
       ? existing.guardianName
       : (existing.guardian2Name ?? email);
 
-  const branding = await getEmailBranding(existing.siteId ?? undefined);
+  const branding = await getEmailBranding();
   const domains = (process.env.REPLIT_DOMAINS ?? "").split(",").map((d) => d.trim()).filter(Boolean);
   const portalUrl = domains.length > 0 ? `https://${domains[0]}` : "https://educareoshc.com.au";
 

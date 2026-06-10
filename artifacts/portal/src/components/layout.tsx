@@ -237,7 +237,7 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
           )}
         </div>
 
-        <ScrollArea className="max-h-[400px]">
+        <div className="overflow-y-auto max-h-[400px]">
           {!notifications || notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
               <BellOff className="h-8 w-8 opacity-30" />
@@ -279,7 +279,7 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
               ))}
             </div>
           )}
-        </ScrollArea>
+        </div>
 
         <div className="border-t px-4 py-2 flex justify-end">
           <Button

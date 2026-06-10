@@ -18,7 +18,7 @@ import { ArrowLeft, Upload, Trash2, FileText, FileImage, File, ExternalLink, Plu
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@workspace/object-storage-web";
 
-const PUBLIC_CATEGORIES = ["Prescribed Information", "Parent Notices"] as const;
+const PUBLIC_CATEGORIES = ["Prescribed Information", "Parent Notices", "Policies and Procedures"] as const;
 
 function fileExt(name: string) {
   return name.split(".").pop()?.toLowerCase() ?? "";

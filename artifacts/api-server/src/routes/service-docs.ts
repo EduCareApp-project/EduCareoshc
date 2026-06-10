@@ -8,7 +8,7 @@ const objectStorageService = new ObjectStorageService();
 
 const router: IRouter = Router();
 
-const PUBLIC_CATEGORIES = ["Prescribed Information", "Parent Notices"];
+const PUBLIC_CATEGORIES = ["Prescribed Information", "Parent Notices", "Policies and Procedures"];
 
 // Default site when none is specified in the URL — Aldercourt (id=1)
 const DEFAULT_SITE_ID = 1;

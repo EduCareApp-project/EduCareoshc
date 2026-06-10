@@ -396,6 +396,56 @@ router.post("/auth/acknowledge-comm-entry", async (req, res): Promise<void> => {
   res.json({ ok: true });
 });
 
+// Guardian-scoped educators — staff from the guardian's children's home site(s)
+router.get("/auth/my-educators", async (req, res): Promise<void> => {
+  if (!req.session.user || req.session.user.type !== "guardian") {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const email = req.session.user.email;
+  const children = await db
+    .select({ siteId: childrenTable.siteId })
+    .from(childrenTable)
+    .where(and(
+      or(eq(childrenTable.guardianEmail, email), eq(childrenTable.guardian2Email, email)),
+      eq(childrenTable.status, "active"),
+    ));
+
+  const siteIds = [...new Set(children.map((c) => c.siteId).filter((id): id is number => id != null))];
+
+  // Fetch all active staff — site-filtered for educators/coordinators, all for leaders/admins
+  const allStaff = await db
+    .select({
+      id: staffTable.id,
+      firstName: staffTable.firstName,
+      lastName: staffTable.lastName,
+      role: staffTable.role,
+      bio: staffTable.bio,
+      profilePicturePath: staffTable.profilePicturePath,
+      siteId: staffTable.siteId,
+    })
+    .from(staffTable)
+    .where(eq(staffTable.status, "active"))
+    .orderBy(staffTable.lastName);
+
+  // Site staff (educator + coordinator at guardian's child's site)
+  const siteStaff = allStaff.filter(
+    (s) =>
+      (s.role === "educator" || s.role === "coordinator") &&
+      s.siteId != null &&
+      (siteIds.length === 0 || siteIds.includes(s.siteId)),
+  );
+
+  // Educational leaders (service-wide)
+  const educationalLeaders = allStaff.filter((s) => s.role === "educational_leader");
+
+  // Approved providers / admins (service-wide)
+  const approvedProviders = allStaff.filter((s) => s.role === "admin");
+
+  res.json({ siteStaff, educationalLeaders, approvedProviders });
+});
+
 // Guardian-scoped notices — only notices that apply to the guardian's sites (or global ones)
 router.get("/auth/my-notices", async (req, res): Promise<void> => {
   if (!req.session.user || req.session.user.type !== "guardian") {

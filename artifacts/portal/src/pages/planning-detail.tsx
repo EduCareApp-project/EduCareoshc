@@ -25,6 +25,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, Save, Trash2, Users, Upload, FileText, X, Loader2, Copy, Pencil, Link, ExternalLink, Plus, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/auth";
 import { StaffCommentSection } from "@/components/staff-comment-section";
 import { format } from "date-fns";
 
@@ -203,6 +204,8 @@ export default function PlanningDetail() {
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isGuardian = user?.type === "guardian";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const assessmentFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -528,7 +531,7 @@ export default function PlanningDetail() {
           <ArrowLeft className="h-4 w-4" />Back to Planning Cycle
         </button>
         <div className="flex items-center gap-2">
-          {!isNew && !isEditing && (
+          {!isNew && !isEditing && !isGuardian && (
             <Button variant="outline" size="sm" onClick={() => window.print()}>
               <FileDown className="h-4 w-4 mr-1.5" />Export PDF
             </Button>

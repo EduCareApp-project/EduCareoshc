@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getListNoticesQueryKey } from "@workspace/api-client-react";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -52,6 +52,22 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
   const updateNotice = useUpdateNotice();
   const { isAdmin, ownSiteId } = usePermissions();
   const { data: sites } = useListSites();
+
+  // Site filter — always scoped to a single site (never show all sites mixed)
+  const [siteFilter, setSiteFilter] = useState<string>("");
+  useEffect(() => {
+    if (siteFilter) return;
+    if (ownSiteId) { setSiteFilter(String(ownSiteId)); return; }
+    if (sites && sites.length > 0) setSiteFilter(String(sites[0].id));
+  }, [sites, ownSiteId, siteFilter]);
+
+  const displayedNotices = (notices ?? []).filter((n) => {
+    if (!siteFilter) return true;
+    const id = parseInt(siteFilter);
+    return n.siteId === id || n.siteId == null;
+  });
+
+  const showSiteFilter = (sites ?? []).length > 1;
 
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
@@ -179,20 +195,34 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
         <CardTitle className="text-lg flex items-center gap-2">
           <Bell className="w-5 h-5" /> Notice Board
         </CardTitle>
-        {canManage && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              const next = !showForm;
-              if (next && !isAdmin && ownSiteId != null) setNewSiteId(ownSiteId);
-              setShowForm(next);
-            }}
-          >
-            {showForm ? <X className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
-            {showForm ? "Cancel" : "Add Notice"}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {showSiteFilter && (
+            <Select value={siteFilter} onValueChange={setSiteFilter}>
+              <SelectTrigger className="h-8 w-40 text-xs">
+                <SelectValue placeholder="Select site" />
+              </SelectTrigger>
+              <SelectContent>
+                {(sites ?? []).map((s) => (
+                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {canManage && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const next = !showForm;
+                if (next && !isAdmin && ownSiteId != null) setNewSiteId(ownSiteId);
+                setShowForm(next);
+              }}
+            >
+              {showForm ? <X className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
+              {showForm ? "Cancel" : "Add Notice"}
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Create form — staff only */}
@@ -277,9 +307,9 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
             <Skeleton className="h-36 w-64 shrink-0" />
             <Skeleton className="h-36 w-64 shrink-0" />
           </div>
-        ) : notices && notices.length > 0 ? (
+        ) : displayedNotices.length > 0 ? (
           <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
-            {notices.map((notice) => (
+            {displayedNotices.map((notice) => (
               <div
                 key={notice.id}
                 className="min-w-[280px] max-w-[320px] p-4 rounded-lg border shrink-0 snap-start flex flex-col justify-between text-white cursor-pointer hover:brightness-95 transition-all"

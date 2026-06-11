@@ -3,12 +3,11 @@ import { useLocation } from "wouter";
 import { useListPlanningExperiences, useListChildren, useListSites } from "@workspace/api-client-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, CalendarDays, MapPin, Users, ChevronRight, Award, ClipboardList } from "lucide-react";
+import { Plus, CalendarDays, MapPin, Users, ChevronRight, Award } from "lucide-react";
 import { Link } from "wouter";
-import { format, parseISO, isBefore, startOfToday } from "date-fns";
+import { format } from "date-fns";
 
 const STAGE_LABELS: Record<string, string> = {
   brainstorm: "Brainstorm",
@@ -21,6 +20,13 @@ const STAGE_COLORS: Record<string, string> = {
   planned: "bg-blue-100 text-blue-700 border-blue-300",
   assessment: "bg-amber-100 text-amber-700 border-amber-300",
   closed: "bg-green-100 text-green-700 border-green-300",
+};
+
+const STAGE_ORDER: Record<string, number> = {
+  planned: 0,
+  brainstorm: 1,
+  assessment: 2,
+  closed: 3,
 };
 
 export default function Planning() {
@@ -43,23 +49,21 @@ export default function Planning() {
     return s?.name ?? null;
   };
 
-  const filtered = (experiences ?? []).filter((exp) => {
-    if (exp.weeklyPlanData != null) return false; // calendar weekly plans — not planning cycles
-    if (exp.stage === "published") return false; // published = on the calendar, not in planning cycle tab
-    if (siteFilter === "templates") return exp.isTemplate === true;
-    if (exp.isTemplate) return false; // exclude templates from all other views
-    if (siteFilter === "all") return true;
-    if (siteFilter === "none") return !exp.siteId;
-    return exp.siteId === parseInt(siteFilter, 10);
-  });
-
-  const today = startOfToday();
-  const pastPublishedWeeklyPlans = (experiences ?? []).filter((exp) => {
-    if (exp.weeklyPlanData == null) return false;
-    if (exp.stage !== "published") return false;
-    if (!exp.startDate) return false;
-    return isBefore(parseISO(exp.startDate.slice(0, 10)), today);
-  }).sort((a, b) => (b.startDate ?? "").localeCompare(a.startDate ?? ""));
+  const filtered = (experiences ?? [])
+    .filter((exp) => {
+      if (exp.weeklyPlanData != null) return false;
+      if (exp.stage === "published") return false;
+      if (siteFilter === "templates") return exp.isTemplate === true;
+      if (exp.isTemplate) return false;
+      if (siteFilter === "all") return true;
+      if (siteFilter === "none") return !exp.siteId;
+      return exp.siteId === parseInt(siteFilter, 10);
+    })
+    .sort((a, b) => {
+      const ao = STAGE_ORDER[a.stage] ?? 99;
+      const bo = STAGE_ORDER[b.stage] ?? 99;
+      return ao !== bo ? ao - bo : (a.title ?? "").localeCompare(b.title ?? "");
+    });
 
   return (
     <div className="space-y-6">
@@ -174,54 +178,6 @@ export default function Planning() {
               </button>
             );
           })}
-        </div>
-      )}
-
-      {pastPublishedWeeklyPlans.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold tracking-tight">Assessment</h2>
-            <Badge variant="secondary" className="text-xs">{pastPublishedWeeklyPlans.length}</Badge>
-          </div>
-          <p className="text-sm text-muted-foreground -mt-1">
-            Published weekly programs whose week has passed — ready for assessment.
-          </p>
-          <div className="space-y-2">
-            {pastPublishedWeeklyPlans.map((exp) => {
-              const site = siteName(exp.siteId);
-              return (
-                <div
-                  key={exp.id}
-                  className="w-full text-left bg-white border rounded-xl p-5 opacity-80"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-amber-100 text-amber-700 border-amber-300">
-                          Assessment
-                        </span>
-                      </div>
-                      <h3 className="font-semibold text-base leading-snug truncate">{exp.title}</h3>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-muted-foreground">
-                        {site && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="h-3.5 w-3.5" />{site}
-                          </span>
-                        )}
-                        {exp.startDate && (
-                          <span className="flex items-center gap-1">
-                            <CalendarDays className="h-3.5 w-3.5" />
-                            Week of {format(parseISO(exp.startDate.slice(0, 10)), "dd/MM/yyyy")}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
         </div>
       )}
     </div>

@@ -37,6 +37,7 @@ async function seedNotificationSettings(): Promise<void> {
     { type: "checklist_overdue",         label: "Checklist overdue",                enabled: true,  advanceDays: 3   },
     { type: "welfare_note_submitted",    label: "Welfare note submitted",           enabled: true,  advanceDays: null },
     { type: "welfare_mandatory_report",  label: "Mandatory report submitted",       enabled: true,  advanceDays: null },
+    { type: "medication_administered",   label: "Medication administered",          enabled: true,  advanceDays: null },
   ];
 
   for (const row of defaults) {

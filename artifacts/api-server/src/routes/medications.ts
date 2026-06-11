@@ -4,6 +4,7 @@ import { db, childMedicationsTable, medicationLogsTable, childrenTable, staffTab
 import { sendMedicationLogEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 import { logger } from "../lib/logger";
+import { createNotificationsForRoles } from "../lib/notify";
 
 const router: IRouter = Router();
 
@@ -152,9 +153,24 @@ router.post("/children/:id/medications/:medicationId/logs", async (req, res): Pr
         lastName: childrenTable.lastName,
         guardianEmail: childrenTable.guardianEmail,
         guardian2Email: childrenTable.guardian2Email,
+        siteId: childrenTable.siteId,
       }).from(childrenTable).where(eq(childrenTable.id, childId));
 
       if (!child || !medication) return;
+
+      // ── In-app notification → all staff at the child's site ──────────────
+      const childName = `${child.firstName} ${child.lastName}`;
+      await createNotificationsForRoles({
+        roles: ["admin", "educational_leader", "coordinator", "educator"],
+        siteId: child.siteId ?? undefined,
+        type: "medication_administered",
+        title: "Medication administered",
+        body: `${childName} was given ${medication.name} (${dosageAdministered}) by ${enriched.administeredByName ?? "an educator"}.`,
+        href: `/children/${childId}`,
+        referenceId: log.id,
+        referenceType: "medication_log",
+        dedupeKeyPrefix: `medication_administered:${log.id}`,
+      });
 
       const recipients = [child.guardianEmail, child.guardian2Email]
         .filter((e): e is string => !!e);

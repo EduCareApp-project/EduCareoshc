@@ -18,7 +18,8 @@ export type NotificationType =
   | "staff_qualification_expiry"
   | "checklist_overdue"
   | "welfare_mandatory_report"
-  | "welfare_note_submitted";
+  | "welfare_note_submitted"
+  | "medication_administered";
 
 export async function isTypeEnabled(type: NotificationType): Promise<boolean> {
   const [setting] = await db.select({ enabled: notificationSettingsTable.enabled })

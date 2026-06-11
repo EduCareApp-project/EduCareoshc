@@ -1,10 +1,11 @@
-import { useListPosts, useListChildren, useDeletePost, getListPostsQueryKey } from "@workspace/api-client-react";
+import { useListPosts, useListChildren, useDeletePost, getListPostsQueryKey, useListSites } from "@workspace/api-client-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Newspaper, Plus, Trash2, User, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -30,8 +31,12 @@ export default function Posts() {
 
   const { data: posts, isLoading } = useListPosts();
   const { data: children } = useListChildren();
+  const { data: sites } = useListSites();
   const { canDelete, canEditPost, isEducatorRole, ownSiteId } = usePermissions();
   const deleteMutation = useDeletePost();
+  const [siteFilter, setSiteFilter] = useState<string>("all");
+
+  const showSiteFilter = !isEducatorRole && (sites ?? []).length > 1;
 
   const filteredChild = filterChildId
     ? (children ?? []).find((c) => c.id === filterChildId)
@@ -44,7 +49,11 @@ export default function Posts() {
   const displayedPosts = (filterChildId
     ? (posts ?? []).filter((p) => (p.childIds ?? []).includes(filterChildId))
     : (posts ?? [])
-  ).filter((p) => !isEducatorRole || !ownSiteId || p.siteId === ownSiteId);
+  ).filter((p) => {
+    if (isEducatorRole && ownSiteId) return p.siteId === ownSiteId;
+    if (!isEducatorRole && siteFilter !== "all") return p.siteId === parseInt(siteFilter);
+    return true;
+  });
 
   function handleDelete(e: React.MouseEvent, id: number) {
     e.stopPropagation();
@@ -60,7 +69,7 @@ export default function Posts() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
           {filterChildId && (
             <Link href="/posts">
@@ -76,9 +85,24 @@ export default function Posts() {
               : "Learning stories and observations shared with families."}
           </p>
         </div>
-        <Button onClick={() => setLocation("/posts/new")}>
-          <Plus className="h-4 w-4 mr-2" />New Post
-        </Button>
+        <div className="flex items-center gap-3">
+          {showSiteFilter && (
+            <Select value={siteFilter} onValueChange={setSiteFilter}>
+              <SelectTrigger className="w-48 bg-card">
+                <SelectValue placeholder="All sites" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All sites</SelectItem>
+                {(sites ?? []).map((s) => (
+                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Button onClick={() => setLocation("/posts/new")}>
+            <Plus className="h-4 w-4 mr-2" />New Post
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (

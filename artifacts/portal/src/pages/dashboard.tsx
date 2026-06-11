@@ -14,7 +14,7 @@ import { RichTextEditor, RichTextView } from "@/components/rich-text-editor";
 import {
   Baby, Users, BookOpen, ClipboardList, ShieldCheck, Bell, Trash2, Plus,
   AlertTriangle, CheckCircle2, Clock, FileText, Calendar, PenLine, ShoppingCart,
-  Layers, Image, ChevronLeft, ChevronRight, GraduationCap, Paperclip, X, XCircle, Upload, Newspaper, Pencil, ExternalLink, ClipboardCheck,
+  Layers, Image, ChevronLeft, ChevronRight, GraduationCap, Paperclip, X, XCircle, Upload, Newspaper, Pencil, ExternalLink, ClipboardCheck, Building2,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO, startOfWeek, addDays } from "date-fns";
@@ -320,8 +320,14 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
                     </div>
                   )}
                 </div>
-                <div className="text-xs text-white/60 mt-4 pt-2 border-t border-white/25">
-                  {format(new Date(notice.createdAt), "MMM d, h:mm a")}
+                <div className="mt-4 pt-2 border-t border-white/25 flex items-center justify-between gap-2">
+                  <span className="text-xs text-white/60">{format(new Date(notice.createdAt), "MMM d, h:mm a")}</span>
+                  {notice.siteId != null && (
+                    <span className="flex items-center gap-1 text-[11px] text-white/70 bg-white/15 rounded px-1.5 py-0.5 shrink-0">
+                      <Building2 className="h-3 w-3" />
+                      {(sites ?? []).find((s) => s.id === notice.siteId)?.name ?? "One site"}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -429,13 +435,19 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
       <Dialog open={!!selectedNotice} onOpenChange={(open) => { if (!open) setSelectedNotice(null); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <Badge className={`${PRIORITY_COLORS[selectedNotice?.priority ?? "normal"]} border-none capitalize`}>
                 {selectedNotice?.priority}
               </Badge>
               <span className="text-xs text-muted-foreground">
                 {selectedNotice && format(new Date(selectedNotice.createdAt), "dd/MM/yyyy 'at' h:mm a")}
               </span>
+              {selectedNotice?.siteId != null && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5">
+                  <Building2 className="h-3 w-3" />
+                  {(sites ?? []).find((s) => s.id === selectedNotice.siteId)?.name ?? "One site"}
+                </span>
+              )}
             </div>
             <DialogTitle className="text-lg leading-snug">{selectedNotice?.title}</DialogTitle>
           </DialogHeader>

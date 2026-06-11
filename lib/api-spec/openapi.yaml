@@ -5729,6 +5729,10 @@ components:
           type: integer
         staffProfilesVisibleToPeers:
           type: boolean
+        staffCustomRoles:
+          type: array
+          items:
+            type: string
         childrenRequireMedicalNotes:
           type: boolean
         childrenShowDobOnProfile:

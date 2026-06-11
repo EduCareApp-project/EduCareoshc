@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { ChevronLeft, Users, Save, ShieldAlert } from "lucide-react";
+import { ChevronLeft, Users, Save, ShieldAlert, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/use-permissions";
+import { SYSTEM_ROLES } from "@/hooks/use-staff-roles";
 import {
   useGetFeatureSettings,
   getGetFeatureSettingsQueryKey,
@@ -30,13 +31,32 @@ export default function SettingsStaffConfig() {
   const [requireWwcc, setRequireWwcc] = useState(true);
   const [appraisalCycle, setAppraisalCycle] = useState("365");
   const [profilesVisibleToPeers, setProfilesVisibleToPeers] = useState(false);
+  const [customRoles, setCustomRoles] = useState<string[]>([]);
+  const [newRole, setNewRole] = useState("");
 
   useEffect(() => {
     if (!settings) return;
     setRequireWwcc(settings.staffRequireWwcc ?? true);
     setAppraisalCycle(String(settings.staffAppraisalCycleDays ?? 365));
     setProfilesVisibleToPeers(settings.staffProfilesVisibleToPeers ?? false);
+    setCustomRoles(settings.staffCustomRoles ?? []);
   }, [settings]);
+
+  function handleAddRole() {
+    const trimmed = newRole.trim();
+    if (!trimmed) return;
+    const existing = [...SYSTEM_ROLES.map((r) => r.value.toLowerCase()), ...customRoles.map((r) => r.toLowerCase())];
+    if (existing.includes(trimmed.toLowerCase())) {
+      toast({ title: "Role already exists", variant: "destructive" });
+      return;
+    }
+    setCustomRoles((prev) => [...prev, trimmed]);
+    setNewRole("");
+  }
+
+  function handleRemoveRole(role: string) {
+    setCustomRoles((prev) => prev.filter((r) => r !== role));
+  }
 
   function handleSave() {
     updateMutation.mutate(
@@ -45,6 +65,7 @@ export default function SettingsStaffConfig() {
           staffRequireWwcc: requireWwcc,
           staffAppraisalCycleDays: parseInt(appraisalCycle) || 365,
           staffProfilesVisibleToPeers: profilesVisibleToPeers,
+          staffCustomRoles: customRoles,
         },
       },
       {
@@ -134,6 +155,73 @@ export default function SettingsStaffConfig() {
               </div>
             </>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Staff Roles</CardTitle>
+          <CardDescription>
+            Define the roles available when creating or editing staff profiles. System roles cannot be removed.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* System roles — read-only */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">System roles</p>
+            <div className="flex flex-wrap gap-2">
+              {SYSTEM_ROLES.map((r) => (
+                <span
+                  key={r.value}
+                  className="flex items-center gap-1.5 text-sm bg-muted text-muted-foreground rounded-md px-3 py-1.5 border"
+                >
+                  {r.label}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Custom roles */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Custom roles</p>
+            {customRoles.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic mb-3">No custom roles added yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {customRoles.map((role) => (
+                  <span
+                    key={role}
+                    className="flex items-center gap-1.5 text-sm bg-primary/10 text-primary rounded-md px-3 py-1.5 border border-primary/20"
+                  >
+                    {role}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveRole(role)}
+                      className="ml-0.5 text-primary/60 hover:text-destructive transition-colors"
+                      aria-label={`Remove ${role}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Input
+                placeholder="e.g. Room Leader"
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddRole(); } }}
+                className="max-w-xs"
+              />
+              <Button type="button" variant="outline" onClick={handleAddRole} disabled={!newRole.trim()}>
+                <Plus className="h-4 w-4 mr-1" /> Add Role
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

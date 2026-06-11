@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, Link, useLocation, Redirect } from "wouter";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useStaffRoles } from "@/hooks/use-staff-roles";
 import {
   useGetStaff, getGetStaffQueryKey,
   useUpdateStaff,
@@ -105,6 +106,7 @@ export default function StaffProfile() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { isEducatorRole, canManageQualifications, isAdminOrEL, ownId } = usePermissions();
+  const staffRoles = useStaffRoles();
 
   const { data: staff, isLoading: loadingStaff } = useGetStaff(staffId, { query: { queryKey: getGetStaffQueryKey(staffId), enabled: !!staffId } });
   const { data: pdList, isLoading: loadingPd } = useGetStaffProfessionalDevelopment(staffId, { query: { queryKey: getGetStaffProfessionalDevelopmentQueryKey(staffId), enabled: !!staffId } });
@@ -1158,10 +1160,9 @@ export default function StaffProfile() {
                 <Select value={profileEditForm.role} onValueChange={(v) => setProfileEditForm((f) => ({ ...f, role: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="educational_leader">Educational Leader</SelectItem>
-                    <SelectItem value="coordinator">Coordinator</SelectItem>
-                    <SelectItem value="educator">Educator</SelectItem>
+                    {staffRoles.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

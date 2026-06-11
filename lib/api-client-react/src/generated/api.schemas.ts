@@ -1821,6 +1821,7 @@ export interface FeatureSettings {
   staffRequireWwcc?: boolean;
   staffAppraisalCycleDays?: number;
   staffProfilesVisibleToPeers?: boolean;
+  staffCustomRoles?: string[];
   childrenRequireMedicalNotes?: boolean;
   childrenShowDobOnProfile?: boolean;
   postsAllowGuardianComments?: boolean;

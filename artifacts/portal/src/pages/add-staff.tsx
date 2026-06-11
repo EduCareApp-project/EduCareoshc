@@ -12,12 +12,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
+import { useStaffRoles } from "@/hooks/use-staff-roles";
 
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
-  role: z.enum(["admin", "educational_leader", "coordinator", "educator"]),
+  role: z.string().min(1, "Role is required"),
   qualifications: z.string().min(1, "Qualifications are required"),
   status: z.enum(["active", "inactive"]).default("active"),
   phone: z.string().optional(),
@@ -31,6 +32,7 @@ export default function AddStaff() {
   const { toast } = useToast();
   const createStaff = useCreateStaff();
   const { data: sites } = useListSites();
+  const staffRoles = useStaffRoles();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -99,10 +101,9 @@ export default function AddStaff() {
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="educational_leader">Educational Leader</SelectItem>
-                      <SelectItem value="coordinator">Coordinator</SelectItem>
-                      <SelectItem value="educator">Educator</SelectItem>
+                      {staffRoles.map((r) => (
+                        <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 <FormMessage /></FormItem>

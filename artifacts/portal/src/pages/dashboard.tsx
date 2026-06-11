@@ -41,7 +41,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 type NoticeAudience = "leadership" | "educator" | "guardian";
 
 // ─── Shared Notice Board ─────────────────────────────────────────────────────
-type NoticeItem = { id: number; title: string; content: string; priority: string; audience: string; createdAt: string; documentPaths?: string[] | null; documentNames?: string[] | null };
+type NoticeItem = { id: number; title: string; content: string; priority: string; audience: string; siteId?: number | null; createdAt: string; documentPaths?: string[] | null; documentNames?: string[] | null };
 
 function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: NoticeAudience }) {
   const queryClient = useQueryClient();
@@ -50,11 +50,14 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
   const createNotice = useCreateNotice();
   const deleteNotice = useDeleteNotice();
   const updateNotice = useUpdateNotice();
+  const { isAdmin, ownSiteId } = usePermissions();
+  const { data: sites } = useListSites();
 
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [priority, setPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
+  const [newSiteId, setNewSiteId] = useState<number | null>(null);
   const [documents, setDocuments] = useState<{ path: string; name: string }[]>([]);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -66,6 +69,7 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
   const [editContent, setEditContent] = useState("");
   const [editPriority, setEditPriority] = useState<"low" | "normal" | "high" | "urgent">("normal");
   const [editAudience, setEditAudience] = useState<NoticeAudience>("leadership");
+  const [editSiteId, setEditSiteId] = useState<number | null>(null);
   const [editDocuments, setEditDocuments] = useState<{ path: string; name: string }[]>([]);
   const [uploadingEditDoc, setUploadingEditDoc] = useState(false);
   const editFileRef = useRef<HTMLInputElement>(null);
@@ -76,6 +80,7 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
     setEditContent(notice.content);
     setEditPriority(notice.priority as any);
     setEditAudience(notice.audience as any);
+    setEditSiteId(notice.siteId ?? null);
     setEditDocuments(
       (notice.documentPaths ?? []).map((p, i) => ({ path: p, name: notice.documentNames?.[i] ?? p.split("/").pop() ?? `Document ${i + 1}` }))
     );
@@ -91,9 +96,10 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
           content: editContent,
           priority: editPriority as any,
           audience: editAudience as any,
+          siteId: editSiteId ?? null,
           documentPaths: editDocuments.map((d) => d.path),
           documentNames: editDocuments.map((d) => d.name),
-        },
+        } as any,
       },
       {
         onSuccess: () => {
@@ -136,6 +142,7 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
 
   const resetForm = () => {
     setTitle(""); setContent(""); setPriority("normal"); setDocuments([]);
+    setNewSiteId(!isAdmin && ownSiteId != null ? ownSiteId : null);
     setShowForm(false);
     if (fileRef.current) fileRef.current.value = "";
   };
@@ -146,9 +153,10 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
       {
         data: {
           title, content, priority: priority as any, audience: audience as any,
+          siteId: newSiteId ?? null,
           documentPaths: documents.map((d) => d.path),
           documentNames: documents.map((d) => d.name),
-        },
+        } as any,
       },
       {
         onSuccess: () => {
@@ -172,7 +180,15 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
           <Bell className="w-5 h-5" /> Notice Board
         </CardTitle>
         {canManage && (
-          <Button variant="ghost" size="sm" onClick={() => setShowForm((v) => !v)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              const next = !showForm;
+              if (next && !isAdmin && ownSiteId != null) setNewSiteId(ownSiteId);
+              setShowForm(next);
+            }}
+          >
             {showForm ? <X className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
             {showForm ? "Cancel" : "Add Notice"}
           </Button>
@@ -196,6 +212,24 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
                 </SelectContent>
               </Select>
             </div>
+
+            {(sites ?? []).length > 0 && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Site</label>
+                <Select
+                  value={newSiteId != null ? String(newSiteId) : "all"}
+                  onValueChange={(v) => setNewSiteId(v === "all" ? null : parseInt(v))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select site" /></SelectTrigger>
+                  <SelectContent>
+                    {isAdmin && <SelectItem value="all">All sites</SelectItem>}
+                    {(sites ?? []).map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <RichTextEditor value={content} onChange={setContent} placeholder="Notice content…" />
 
@@ -330,6 +364,23 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
                 </Select>
               </div>
             </div>
+            {(sites ?? []).length > 0 && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Site</label>
+                <Select
+                  value={editSiteId != null ? String(editSiteId) : "all"}
+                  onValueChange={(v) => setEditSiteId(v === "all" ? null : parseInt(v))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {isAdmin && <SelectItem value="all">All sites</SelectItem>}
+                    {(sites ?? []).map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <RichTextEditor value={editContent} onChange={setEditContent} placeholder="Notice content…" />
 
             {/* Edit attachments */}

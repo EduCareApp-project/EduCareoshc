@@ -62,6 +62,7 @@ import ReportsStaff from "@/pages/reports-staff";
 import ReportsSystemAccess from "@/pages/reports-system-access";
 import ReportsWeeklyPlans from "@/pages/reports-weekly-plans";
 import Sites from "@/pages/sites";
+import SiteInstructions from "@/pages/site-instructions";
 import Settings from "@/pages/settings";
 import SettingsQip from "@/pages/settings-qip";
 import SettingsEmailNotifications from "@/pages/settings-email-notifications";
@@ -197,6 +198,7 @@ function StaffRoutes() {
         <Route path="/appraisals/:id" component={AppraisalDetail} />
 
         <Route path="/sites" component={Sites} />
+        <Route path="/sites/:id" component={SiteInstructions} />
         <Route path="/settings" component={Settings} />
         <Route path="/settings/qip" component={SettingsQip} />
         <Route path="/settings/email-notifications" component={SettingsEmailNotifications} />

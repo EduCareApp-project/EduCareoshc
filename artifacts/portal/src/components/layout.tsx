@@ -78,6 +78,7 @@ const NAV_GROUPS = [
   {
     label: "SERVICE OPERATIONS",
     items: [
+      { href: "/sites", label: "Sites", icon: Building2 },
       { href: "/incidents", label: "Incident Log", icon: AlertTriangle },
       { href: "/condition-reports", label: "Condition Report", icon: ClipboardX },
       { href: "/evacuations", label: "Safety Evacuation", icon: ShieldAlert },

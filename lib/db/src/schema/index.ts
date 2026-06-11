@@ -37,3 +37,4 @@ export * from "./medications";
 export * from "./behavioural_notifications";
 export * from "./planning_comments";
 export * from "./observation_comments";
+export * from "./site_instructions";

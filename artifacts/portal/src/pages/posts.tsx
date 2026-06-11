@@ -10,7 +10,7 @@ import { Newspaper, Plus, Trash2, User, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PostDetailDialog } from "@/components/post-detail-dialog";
 import { useAuth } from "@/contexts/auth";
 
@@ -34,7 +34,15 @@ export default function Posts() {
   const { data: sites } = useListSites();
   const { canDelete, canEditPost, isEducatorRole, ownSiteId } = usePermissions();
   const deleteMutation = useDeletePost();
-  const [siteFilter, setSiteFilter] = useState<string>("all");
+  const [siteFilter, setSiteFilter] = useState<string>("");
+
+  // Auto-select the user's own site (or first available) so posts are never
+  // shown across all services at once.
+  useEffect(() => {
+    if (siteFilter) return;
+    if (isEducatorRole && ownSiteId) { setSiteFilter(String(ownSiteId)); return; }
+    if (sites && sites.length > 0) setSiteFilter(String(sites[0].id));
+  }, [sites, isEducatorRole, ownSiteId, siteFilter]);
 
   const showSiteFilter = !isEducatorRole && (sites ?? []).length > 1;
 
@@ -50,9 +58,10 @@ export default function Posts() {
     ? (posts ?? []).filter((p) => (p.childIds ?? []).includes(filterChildId))
     : (posts ?? [])
   ).filter((p) => {
-    if (isEducatorRole && ownSiteId) return p.siteId === ownSiteId;
-    if (!isEducatorRole && siteFilter !== "all") return p.siteId === parseInt(siteFilter);
-    return true;
+    if (!siteFilter) return false; // waiting for sites to load
+    const id = parseInt(siteFilter);
+    // Show posts assigned to the selected site OR posts with no site (visible to all)
+    return p.siteId === id || p.siteId === null || p.siteId === undefined;
   });
 
   function handleDelete(e: React.MouseEvent, id: number) {
@@ -92,7 +101,6 @@ export default function Posts() {
                 <SelectValue placeholder="All sites" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All sites</SelectItem>
                 {(sites ?? []).map((s) => (
                   <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
                 ))}

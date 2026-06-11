@@ -10178,6 +10178,162 @@ export const useDeletePost = <
   return useMutation(getDeletePostMutationOptions(options));
 };
 
+export const getLikePostUrl = (id: number) => {
+  return `/api/posts/${id}/like`;
+};
+
+export const likePost = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getLikePostUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getLikePostMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof likePost>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof likePost>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["likePost"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof likePost>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return likePost(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type LikePostMutationResult = NonNullable<
+  Awaited<ReturnType<typeof likePost>>
+>;
+
+export type LikePostMutationError = ErrorType<unknown>;
+
+export const useLikePost = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof likePost>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof likePost>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getLikePostMutationOptions(options));
+};
+
+export const getUnlikePostUrl = (id: number) => {
+  return `/api/posts/${id}/like`;
+};
+
+export const unlikePost = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getUnlikePostUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getUnlikePostMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof unlikePost>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof unlikePost>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["unlikePost"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof unlikePost>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return unlikePost(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UnlikePostMutationResult = NonNullable<
+  Awaited<ReturnType<typeof unlikePost>>
+>;
+
+export type UnlikePostMutationError = ErrorType<unknown>;
+
+export const useUnlikePost = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof unlikePost>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof unlikePost>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getUnlikePostMutationOptions(options));
+};
+
 export const getListPostCommentsUrl = (id: number) => {
   return `/api/posts/${id}/comments`;
 };

@@ -2304,6 +2304,32 @@ paths:
         "204":
           description: Deleted
 
+  /posts/{id}/like:
+    post:
+      operationId: likePost
+      tags: [posts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Liked
+    delete:
+      operationId: unlikePost
+      tags: [posts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Unliked
+
   /posts/{id}/comments:
     get:
       operationId: listPostComments
@@ -5010,7 +5036,7 @@ components:
 
     Post:
       type: object
-      required: [id, title, images, outcomeIds, createdAt]
+      required: [id, title, images, outcomeIds, createdAt, likeCount, likedByMe]
       properties:
         id:
           type: integer
@@ -5070,6 +5096,12 @@ components:
         createdAt:
           type: string
           format: date-time
+        likeCount:
+          type: integer
+          default: 0
+        likedByMe:
+          type: boolean
+          default: false
 
     PostComment:
       type: object

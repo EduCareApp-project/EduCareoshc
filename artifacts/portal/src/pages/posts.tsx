@@ -1,4 +1,4 @@
-import { useListPosts, useListChildren, useDeletePost, getListPostsQueryKey, useListSites } from "@workspace/api-client-react";
+import { useListPosts, useListChildren, useDeletePost, getListPostsQueryKey, useListSites, useLikePost, useUnlikePost } from "@workspace/api-client-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Newspaper, Plus, Trash2, User, ArrowLeft } from "lucide-react";
+import { Newspaper, Plus, Trash2, User, ArrowLeft, Heart } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
@@ -54,6 +54,18 @@ export default function Posts() {
     if (!isEducatorRole && siteFilter !== "all") return p.siteId === parseInt(siteFilter);
     return true;
   });
+
+  const likeMutation = useLikePost();
+  const unlikeMutation = useUnlikePost();
+
+  function handleLike(e: React.MouseEvent, postId: number, likedByMe: boolean) {
+    e.stopPropagation();
+    const mutation = likedByMe ? unlikeMutation : likeMutation;
+    mutation.mutate({ id: postId }, {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() }),
+      onError: () => toast({ title: "Could not update like", variant: "destructive" }),
+    });
+  }
 
   function handleDelete(e: React.MouseEvent, id: number) {
     e.stopPropagation();
@@ -173,10 +185,26 @@ export default function Posts() {
                   ) : post.description ? (
                     <p className="text-sm text-muted-foreground line-clamp-3">{post.description.replace(/<[^>]*>/g, "")}</p>
                   ) : null}
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                    {post.staffName && <span>{post.staffName}</span>}
-                    {post.staffName && post.date && <span>·</span>}
-                    {post.date && <span>{format(new Date(post.date.slice(0, 10) + "T00:00:00"), "dd/MM/yyyy")}</span>}
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {post.staffName && <span>{post.staffName}</span>}
+                      {post.staffName && post.date && <span>·</span>}
+                      {post.date && <span>{format(new Date(post.date.slice(0, 10) + "T00:00:00"), "dd/MM/yyyy")}</span>}
+                    </div>
+                    <button
+                      onClick={(e) => handleLike(e, post.id, post.likedByMe)}
+                      className={`flex items-center gap-1 text-xs transition-colors select-none ${
+                        post.likedByMe
+                          ? "text-rose-500 hover:text-rose-600"
+                          : "text-muted-foreground hover:text-rose-500"
+                      }`}
+                    >
+                      <Heart
+                        className="h-3.5 w-3.5"
+                        fill={post.likedByMe ? "currentColor" : "none"}
+                      />
+                      {post.likeCount > 0 && <span>{post.likeCount}</span>}
+                    </button>
                   </div>
                 </CardContent>
               </Card>

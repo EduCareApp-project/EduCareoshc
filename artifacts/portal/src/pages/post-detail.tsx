@@ -3,7 +3,7 @@ import { useRoute, useLocation } from "wouter";
 import {
   useGetPost, getGetPostQueryKey, useDeletePost, getListPostsQueryKey,
   useListPostComments, useCreatePostComment, useDeletePostComment,
-  getListPostCommentsQueryKey,
+  getListPostCommentsQueryKey, useLikePost, useUnlikePost,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Trash2, Pencil, User, CalendarDays, GraduationCap, Building2, MessageCircle, Send, FileText } from "lucide-react";
+import { ArrowLeft, Trash2, Pencil, User, CalendarDays, GraduationCap, Building2, MessageCircle, Send, FileText, Heart } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -165,6 +165,21 @@ export default function PostDetail() {
   const deleteMutation = useDeletePost();
   const { canDelete, canEditPost } = usePermissions();
 
+  const likeMutation = useLikePost();
+  const unlikeMutation = useUnlikePost();
+
+  function handleLike() {
+    if (!post) return;
+    const mutation = post.likedByMe ? unlikeMutation : likeMutation;
+    mutation.mutate({ id }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetPostQueryKey(id) });
+        queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() });
+      },
+      onError: () => toast({ title: "Could not update like", variant: "destructive" }),
+    });
+  }
+
   function handleDelete() {
     if (!confirm("Delete this post permanently?")) return;
     deleteMutation.mutate({ id }, {
@@ -260,6 +275,23 @@ export default function PostDetail() {
               </span>
             )}
           </div>
+
+          <button
+            onClick={handleLike}
+            disabled={likeMutation.isPending || unlikeMutation.isPending}
+            className={`flex items-center gap-1.5 text-sm transition-colors select-none ${
+              post.likedByMe
+                ? "text-rose-500 hover:text-rose-600"
+                : "text-muted-foreground hover:text-rose-500"
+            }`}
+          >
+            <Heart
+              className="h-4 w-4 transition-transform active:scale-110"
+              fill={post.likedByMe ? "currentColor" : "none"}
+            />
+            <span>{post.likeCount > 0 ? post.likeCount : ""}</span>
+            <span>{post.likedByMe ? "Liked" : "Like"}</span>
+          </button>
         </div>
 
         {post.images && post.images.length > 0 && (

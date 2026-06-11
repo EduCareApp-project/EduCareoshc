@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
 import { createNotification } from "../lib/notify";
 import { logger } from "../lib/logger";
-import { eq, and, isNotNull, isNull } from "drizzle-orm";
-import { db, postsTable, postCommentsTable, childrenTable, staffTable, sitesTable, parentAccountsTable } from "@workspace/db";
+import { eq, and, isNotNull, isNull, sql } from "drizzle-orm";
+import { db, postsTable, postCommentsTable, postLikesTable, childrenTable, staffTable, sitesTable, parentAccountsTable } from "@workspace/db";
 import {
   CreatePostBody, GetPostParams, GetPostResponse,
   UpdatePostParams, UpdatePostBody, UpdatePostResponse,
@@ -10,6 +10,7 @@ import {
   ListPostCommentsParams, ListPostCommentsResponse,
   CreatePostCommentParams, CreatePostCommentBody,
   DeletePostCommentParams,
+  LikePostParams, UnlikePostParams,
 } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { sendPostNotificationEmail } from "../lib/email";
@@ -17,11 +18,14 @@ import { getEmailBranding } from "../lib/emailBranding";
 
 const router: IRouter = Router();
 
-async function enrichPost(p: typeof postsTable.$inferSelect) {
-  const [childList, staffList, siteList] = await Promise.all([
+type LikerId = { staffId: number } | { guardianEmail: string } | null;
+
+async function enrichPost(p: typeof postsTable.$inferSelect, likerId: LikerId = null) {
+  const [childList, staffList, siteList, likes] = await Promise.all([
     db.select().from(childrenTable),
     db.select().from(staffTable),
     db.select().from(sitesTable),
+    db.select().from(postLikesTable).where(eq(postLikesTable.postId, p.id)),
   ]);
   const staff = staffList.find((s) => s.id === p.staffId);
   const site = siteList.find((s) => s.id === p.siteId);
@@ -29,11 +33,21 @@ async function enrichPost(p: typeof postsTable.$inferSelect) {
     const c = childList.find((ch) => ch.id === cid);
     return c ? `${c.firstName} ${c.lastName}` : null;
   }).filter(Boolean) as string[];
+
+  const likeCount = likes.length;
+  const likedByMe = likerId != null && likes.some((l) =>
+    "staffId" in likerId
+      ? l.staffId === likerId.staffId
+      : l.guardianEmail === likerId.guardianEmail
+  );
+
   return {
     ...p,
     childNames,
     staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
     siteName: site ? site.name : null,
+    likeCount,
+    likedByMe,
   };
 }
 
@@ -48,10 +62,7 @@ async function generateAiSummary(title: string, description?: string, learning?:
           role: "system",
           content: "You are a helpful assistant for an early childhood education centre. Write a warm, engaging 1-2 sentence summary of a learning observation post for display on a tile card. Be concise and positive.",
         },
-        {
-          role: "user",
-          content: `Post title: "${title}"\n\n${text.slice(0, 800)}`,
-        },
+        { role: "user", content: `Title: ${title}\n\n${text}` },
       ],
       max_tokens: 80,
     });
@@ -61,13 +72,29 @@ async function generateAiSummary(title: string, description?: string, learning?:
   }
 }
 
-router.get("/posts", async (_req, res): Promise<void> => {
+function sessionLikerId(req: import("express").Request): LikerId {
+  const user = req.session?.user;
+  if (!user) return null;
+  if (user.type === "staff") return { staffId: user.id };
+  if (user.type === "guardian") return { guardianEmail: user.email };
+  return null;
+}
+
+router.get("/posts", async (req, res): Promise<void> => {
+  const likerId = sessionLikerId(req);
   const rows = await db.select().from(postsTable).orderBy(postsTable.createdAt);
-  const [childList, staffList, siteList] = await Promise.all([
+  const [childList, staffList, siteList, allLikes] = await Promise.all([
     db.select().from(childrenTable),
     db.select().from(staffTable),
     db.select().from(sitesTable),
+    db.select().from(postLikesTable),
   ]);
+
+  const likeCountMap = new Map<number, number>();
+  for (const like of allLikes) {
+    likeCountMap.set(like.postId, (likeCountMap.get(like.postId) ?? 0) + 1);
+  }
+
   const enriched = rows.map((p) => {
     const staff = staffList.find((s) => s.id === p.staffId);
     const site = siteList.find((s) => s.id === p.siteId);
@@ -75,11 +102,20 @@ router.get("/posts", async (_req, res): Promise<void> => {
       const c = childList.find((ch) => ch.id === cid);
       return c ? `${c.firstName} ${c.lastName}` : null;
     }).filter(Boolean) as string[];
+    const likesForPost = allLikes.filter((l) => l.postId === p.id);
+    const likeCount = likeCountMap.get(p.id) ?? 0;
+    const likedByMe = likerId != null && likesForPost.some((l) =>
+      "staffId" in likerId
+        ? l.staffId === likerId.staffId
+        : l.guardianEmail === likerId.guardianEmail
+    );
     return {
       ...p,
       childNames,
       staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
       siteName: site ? site.name : null,
+      likeCount,
+      likedByMe,
     };
   });
   res.json(ListPostsResponse.parse(enriched));
@@ -104,7 +140,7 @@ router.post("/posts", async (req, res): Promise<void> => {
     childIds: postData.childIds ?? [],
     aiSummary,
   }).returning();
-  res.status(201).json(GetPostResponse.parse(await enrichPost(post)));
+  res.status(201).json(GetPostResponse.parse(await enrichPost(post, sessionLikerId(req))));
 });
 
 router.get("/posts/:id", async (req, res): Promise<void> => {
@@ -112,7 +148,7 @@ router.get("/posts/:id", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const [post] = await db.select().from(postsTable).where(eq(postsTable.id, params.data.id));
   if (!post) { res.status(404).json({ error: "Post not found" }); return; }
-  res.json(GetPostResponse.parse(await enrichPost(post)));
+  res.json(GetPostResponse.parse(await enrichPost(post, sessionLikerId(req))));
 });
 
 router.patch("/posts/:id", async (req, res): Promise<void> => {
@@ -165,7 +201,7 @@ router.patch("/posts/:id", async (req, res): Promise<void> => {
     });
   }
 
-  res.json(UpdatePostResponse.parse(await enrichPost(post)));
+  res.json(UpdatePostResponse.parse(await enrichPost(post, sessionLikerId(req))));
 });
 
 router.delete("/posts/:id", async (req, res): Promise<void> => {
@@ -173,6 +209,41 @@ router.delete("/posts/:id", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const [post] = await db.delete(postsTable).where(eq(postsTable.id, params.data.id)).returning();
   if (!post) { res.status(404).json({ error: "Post not found" }); return; }
+  res.sendStatus(204);
+});
+
+router.post("/posts/:id/like", async (req, res): Promise<void> => {
+  const params = LikePostParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const likerId = sessionLikerId(req);
+  if (!likerId) { res.status(401).json({ error: "Not authenticated" }); return; }
+
+  try {
+    if ("staffId" in likerId) {
+      await db.insert(postLikesTable).values({ postId: params.data.id, staffId: likerId.staffId }).onConflictDoNothing();
+    } else {
+      await db.insert(postLikesTable).values({ postId: params.data.id, guardianEmail: likerId.guardianEmail }).onConflictDoNothing();
+    }
+  } catch {
+  }
+  res.sendStatus(204);
+});
+
+router.delete("/posts/:id/like", async (req, res): Promise<void> => {
+  const params = UnlikePostParams.safeParse(req.params);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const likerId = sessionLikerId(req);
+  if (!likerId) { res.status(401).json({ error: "Not authenticated" }); return; }
+
+  if ("staffId" in likerId) {
+    await db.delete(postLikesTable).where(
+      and(eq(postLikesTable.postId, params.data.id), eq(postLikesTable.staffId, likerId.staffId))
+    );
+  } else {
+    await db.delete(postLikesTable).where(
+      and(eq(postLikesTable.postId, params.data.id), eq(postLikesTable.guardianEmail, likerId.guardianEmail))
+    );
+  }
   res.sendStatus(204);
 });
 

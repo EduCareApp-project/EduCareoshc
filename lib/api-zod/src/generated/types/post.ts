@@ -40,4 +40,6 @@ export interface Post {
    */
   publishedAt?: Date | null;
   createdAt: Date;
+  likeCount: number;
+  likedByMe: boolean;
 }

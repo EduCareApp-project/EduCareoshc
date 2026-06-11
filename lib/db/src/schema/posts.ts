@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, date, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, date, integer, unique } from "drizzle-orm/pg-core";
 import { sitesTable } from "./sites";
 import { childrenTable } from "./children";
 import { staffTable } from "./staff";
@@ -39,3 +39,14 @@ export const postCommentsTable = pgTable("post_comments", {
 export const insertPostCommentSchema = createInsertSchema(postCommentsTable).omit({ id: true, createdAt: true });
 export type InsertPostComment = z.infer<typeof insertPostCommentSchema>;
 export type PostComment = typeof postCommentsTable.$inferSelect;
+
+export const postLikesTable = pgTable("post_likes", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull().references(() => postsTable.id, { onDelete: "cascade" }),
+  staffId: integer("staff_id"),
+  guardianEmail: text("guardian_email"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  unique("post_likes_post_staff_unique").on(t.postId, t.staffId),
+  unique("post_likes_post_guardian_unique").on(t.postId, t.guardianEmail),
+]);

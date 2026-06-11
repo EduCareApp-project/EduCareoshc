@@ -2198,6 +2198,8 @@ export const listPostsResponseImagesMax = 3;
 export const listPostsResponseDocumentPathsDefault = [];
 export const listPostsResponseDocumentNamesDefault = [];
 export const listPostsResponseOutcomeIdsDefault = [];
+export const listPostsResponseLikeCountDefault = 0;
+export const listPostsResponseLikedByMeDefault = false;
 
 export const ListPostsResponseItem = zod.object({
   id: zod.number(),
@@ -2228,6 +2230,8 @@ export const ListPostsResponseItem = zod.object({
     .nullish()
     .describe("When set, the post is visible to guardians. Null means draft."),
   createdAt: zod.coerce.date(),
+  likeCount: zod.number().default(listPostsResponseLikeCountDefault),
+  likedByMe: zod.boolean().default(listPostsResponseLikedByMeDefault),
 });
 export const ListPostsResponse = zod.array(ListPostsResponseItem);
 
@@ -2264,6 +2268,8 @@ export const getPostResponseImagesMax = 3;
 export const getPostResponseDocumentPathsDefault = [];
 export const getPostResponseDocumentNamesDefault = [];
 export const getPostResponseOutcomeIdsDefault = [];
+export const getPostResponseLikeCountDefault = 0;
+export const getPostResponseLikedByMeDefault = false;
 
 export const GetPostResponse = zod.object({
   id: zod.number(),
@@ -2292,6 +2298,8 @@ export const GetPostResponse = zod.object({
     .nullish()
     .describe("When set, the post is visible to guardians. Null means draft."),
   createdAt: zod.coerce.date(),
+  likeCount: zod.number().default(getPostResponseLikeCountDefault),
+  likedByMe: zod.boolean().default(getPostResponseLikedByMeDefault),
 });
 
 export const UpdatePostParams = zod.object({
@@ -2333,6 +2341,8 @@ export const updatePostResponseImagesMax = 3;
 export const updatePostResponseDocumentPathsDefault = [];
 export const updatePostResponseDocumentNamesDefault = [];
 export const updatePostResponseOutcomeIdsDefault = [];
+export const updatePostResponseLikeCountDefault = 0;
+export const updatePostResponseLikedByMeDefault = false;
 
 export const UpdatePostResponse = zod.object({
   id: zod.number(),
@@ -2363,9 +2373,19 @@ export const UpdatePostResponse = zod.object({
     .nullish()
     .describe("When set, the post is visible to guardians. Null means draft."),
   createdAt: zod.coerce.date(),
+  likeCount: zod.number().default(updatePostResponseLikeCountDefault),
+  likedByMe: zod.boolean().default(updatePostResponseLikedByMeDefault),
 });
 
 export const DeletePostParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const LikePostParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UnlikePostParams = zod.object({
   id: zod.coerce.number(),
 });
 

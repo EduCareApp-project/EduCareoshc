@@ -1408,6 +1408,8 @@ export interface Post {
    */
   publishedAt?: string | null;
   createdAt: string;
+  likeCount: number;
+  likedByMe: boolean;
 }
 
 export interface PostComment {

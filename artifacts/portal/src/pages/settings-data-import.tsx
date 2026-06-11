@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import {
   ChevronLeft, Upload, Download, CheckCircle2, XCircle,
   AlertCircle, Building2, Users, Baby, Loader2,
-  FileText, X, SkipForward, UserCheck,
+  FileText, X, SkipForward, UserCheck, Eye, BookOpen, StickyNote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -69,9 +69,48 @@ const TEMPLATES = {
     "Sarah,Williams,sarah.williams@centre.com.au,educator,Certificate III,0411 222 333,WWC1234567E",
     "Michael,Brown,m.brown@centre.com.au,coordinator,Diploma of Early Childhood,0422 333 444,WWC7654321E",
   ].join("\n"),
+
+  observations: [
+    "# EduCare Observations Import Template",
+    "# childFirstName + childLastName must match an existing child at the selected site.",
+    "# staffEmail must match an existing staff member's email address.",
+    "# Date format: YYYY-MM-DD or DD/MM/YYYY",
+    "# outcomeIds: MTOP outcome IDs separated by | (e.g. 1|3|5). Leave blank if none.",
+    "#   1 = Strong sense of identity, 2 = Connected with their world,",
+    "#   3 = Strong sense of wellbeing, 4 = Confident and involved learners,",
+    "#   5 = Effective communicators",
+    "childFirstName,childLastName,staffEmail,observationDate,description,outcomeIds,commentPlan,actionNotes",
+    'Emma,Smith,sarah.williams@centre.com.au,2024-03-15,"Emma demonstrated strong problem-solving skills during block play, carefully stacking blocks and adjusting her approach when they fell.",1|4,,',
+    'Liam,Jones,sarah.williams@centre.com.au,2024-03-16,"Liam engaged in collaborative storytelling with peers, showing rich vocabulary and imaginative expression.",5,"Extend by introducing new vocabulary cards.","Provide more open-ended storytelling props."',
+  ].join("\n"),
+
+  jottings: [
+    "# EduCare Jottings Import Template",
+    "# content is required. childFirstName/childLastName and staffEmail are optional.",
+    "# If child columns are provided, the child must exist at the selected site.",
+    "# staffEmail must match an existing staff member's email address.",
+    "childFirstName,childLastName,staffEmail,content",
+    'Emma,Smith,sarah.williams@centre.com.au,"Emma helped a younger child tie their shoes without being asked — wonderful empathy shown today."',
+    ',,sarah.williams@centre.com.au,"Group sang morning songs with great enthusiasm — all children fully engaged."',
+    'Liam,Jones,,"Liam brought in a drawing he made at home and excitedly shared it with the group."',
+  ].join("\n"),
+
+  posts: [
+    "# EduCare Posts Import Template",
+    "# title is required. All other columns are optional.",
+    "# childFirstName + childLastName must match an existing child at the selected site (if provided).",
+    "# staffEmail must match an existing staff member's email address (if provided).",
+    "# Date format: YYYY-MM-DD or DD/MM/YYYY",
+    "# outcomeIds: MTOP outcome IDs separated by | (e.g. 1|3). Leave blank if none.",
+    "title,childFirstName,childLastName,staffEmail,date,description,learning,opportunities,outcomeIds",
+    '"Building with Blocks",Emma,Smith,sarah.williams@centre.com.au,2024-03-15,"Today Emma explored spatial reasoning through block construction.","Developed persistence and spatial awareness.","Introduce more complex building challenges.",1|4',
+    '"Garden Discovery Walk",,,m.brown@centre.com.au,2024-03-18,"The group explored the sensory garden and discovered new insects.","Curiosity and respect for living things.",,"2|3"',
+  ].join("\n"),
 };
 
-function downloadTemplate(type: "children" | "staff") {
+type ImportType = "children" | "staff" | "observations" | "jottings" | "posts";
+
+function downloadTemplate(type: ImportType) {
   const csv = TEMPLATES[type];
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -209,7 +248,7 @@ function ImportTab({
   requiresSite = true,
   showGuardians = false,
 }: {
-  type: "children" | "staff";
+  type: ImportType;
   siteId: number | null;
   description: React.ReactNode;
   requiresSite?: boolean;
@@ -251,7 +290,7 @@ function ImportTab({
     setError(null);
     try {
       const body: Record<string, unknown> = { rows };
-      if (requiresSite) body.siteId = siteId;
+      if (siteId) body.siteId = siteId;
 
       const res = await fetch(`/api/import/${type}`, {
         method: "POST",
@@ -352,7 +391,7 @@ export default function SettingsDataImport() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Data Import</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Bulk-import children and staff from CSV files. Guardian portal accounts are created automatically.
+            Bulk-import children, staff, observations, jottings, and posts from CSV files.
           </p>
         </div>
       </div>
@@ -365,7 +404,7 @@ export default function SettingsDataImport() {
             Select Organisation / Site
           </CardTitle>
           <CardDescription>
-            All imported records will be assigned to the selected site. Choose the correct site before uploading.
+            All imported records will be assigned to the selected site. Children and staff require a site. Observations, jottings and posts resolve children/staff by name within the selected site.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -423,14 +462,26 @@ export default function SettingsDataImport() {
 
       {/* Import tabs */}
       <Tabs defaultValue="children">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="children" className="gap-2">
-            <Baby className="h-4 w-4" />
-            Children & Guardians
+        <TabsList className="flex flex-wrap h-auto gap-1 p-1">
+          <TabsTrigger value="children" className="gap-1.5 text-xs">
+            <Baby className="h-3.5 w-3.5" />
+            Children
           </TabsTrigger>
-          <TabsTrigger value="staff" className="gap-2">
-            <Users className="h-4 w-4" />
+          <TabsTrigger value="staff" className="gap-1.5 text-xs">
+            <Users className="h-3.5 w-3.5" />
             Staff
+          </TabsTrigger>
+          <TabsTrigger value="observations" className="gap-1.5 text-xs">
+            <Eye className="h-3.5 w-3.5" />
+            Observations
+          </TabsTrigger>
+          <TabsTrigger value="jottings" className="gap-1.5 text-xs">
+            <StickyNote className="h-3.5 w-3.5" />
+            Jottings
+          </TabsTrigger>
+          <TabsTrigger value="posts" className="gap-1.5 text-xs">
+            <BookOpen className="h-3.5 w-3.5" />
+            Posts
           </TabsTrigger>
         </TabsList>
 
@@ -473,6 +524,85 @@ export default function SettingsDataImport() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="observations">
+          <Card>
+            <CardContent className="pt-2 pb-6 px-6">
+              <ImportTab
+                type="observations"
+                siteId={selectedSiteId}
+                requiresSite={false}
+                description={
+                  <div className="space-y-2">
+                    <p>
+                      Import learning observations. Children are looked up by first and last name within the selected site,
+                      and staff by email address.
+                    </p>
+                    <ul className="list-disc list-inside space-y-0.5 text-xs text-muted-foreground">
+                      <li>Rows where the child or staff cannot be found are reported as errors and skipped.</li>
+                      <li>
+                        <code className="font-mono bg-muted px-1 rounded text-xs">outcomeIds</code> accepts MTOP outcome numbers separated by <code className="font-mono bg-muted px-1 rounded text-xs">|</code> (e.g. <code className="font-mono bg-muted px-1 rounded text-xs">1|4</code>).
+                      </li>
+                      <li>Select a site above to narrow child lookup to that site only.</li>
+                    </ul>
+                  </div>
+                }
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="jottings">
+          <Card>
+            <CardContent className="pt-2 pb-6 px-6">
+              <ImportTab
+                type="jottings"
+                siteId={selectedSiteId}
+                requiresSite={false}
+                description={
+                  <div className="space-y-2">
+                    <p>
+                      Import quick jottings. Only <code className="font-mono bg-muted px-0.5 rounded text-xs">content</code> is required —
+                      child and staff columns are optional but must match existing records if provided.
+                    </p>
+                    <ul className="list-disc list-inside space-y-0.5 text-xs text-muted-foreground">
+                      <li>Leave <code className="font-mono bg-muted px-1 rounded text-xs">childFirstName</code> and <code className="font-mono bg-muted px-1 rounded text-xs">childLastName</code> blank for general (non-child-specific) jottings.</li>
+                      <li>Leave <code className="font-mono bg-muted px-1 rounded text-xs">staffEmail</code> blank if the author is unknown.</li>
+                      <li>Select a site above to narrow child lookup to that site only.</li>
+                    </ul>
+                  </div>
+                }
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="posts">
+          <Card>
+            <CardContent className="pt-2 pb-6 px-6">
+              <ImportTab
+                type="posts"
+                siteId={selectedSiteId}
+                requiresSite={false}
+                description={
+                  <div className="space-y-2">
+                    <p>
+                      Import learning stories and posts. Only <code className="font-mono bg-muted px-0.5 rounded text-xs">title</code> is required.
+                      Posts are linked to the selected site automatically.
+                    </p>
+                    <ul className="list-disc list-inside space-y-0.5 text-xs text-muted-foreground">
+                      <li>Child and staff columns are optional — leave blank for group/general posts.</li>
+                      <li>
+                        <code className="font-mono bg-muted px-1 rounded text-xs">outcomeIds</code> accepts MTOP outcome numbers separated by <code className="font-mono bg-muted px-1 rounded text-xs">|</code> (e.g. <code className="font-mono bg-muted px-1 rounded text-xs">2|3</code>).
+                      </li>
+                      <li>Imported posts are not automatically published — review and publish from the Posts page.</li>
+                    </ul>
+                  </div>
+                }
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Notes */}
@@ -485,6 +615,7 @@ export default function SettingsDataImport() {
             <li>Date formats accepted: YYYY-MM-DD or DD/MM/YYYY.</li>
             <li>Staff are imported without passwords. Send login instructions from each staff profile after import.</li>
             <li>Guardian portal accounts are created automatically when children are imported — no separate upload needed.</li>
+            <li>Observations, jottings and posts resolve children by name — import children first if they don't exist yet.</li>
           </ul>
         </AlertDescription>
       </Alert>

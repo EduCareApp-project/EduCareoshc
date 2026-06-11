@@ -46,6 +46,7 @@ const DEFAULTS: Required<FeatureSettings> = {
   evacuationDrillReminderDays: 14,
   policiesRequireAcknowledgement: true,
   policiesAcknowledgementDays: 7,
+  staffCustomRoles: [],
 };
 
 router.get("/settings/features", async (_req, res): Promise<void> => {

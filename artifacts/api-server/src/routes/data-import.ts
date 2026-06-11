@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, childrenTable, staffTable, parentAccountsTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { db, childrenTable, staffTable, parentAccountsTable, observationsTable, jottingsTable, postsTable } from "@workspace/db";
+import { eq, and, ilike } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -250,6 +250,270 @@ router.post("/import/guardians", async (req, res): Promise<void> => {
       result.inserted++;
     } catch (err: any) {
       result.errors.push({ row: rowNum, message: err?.message ?? "Database error", data: guardianEmail });
+    }
+  }
+
+  res.json(result);
+});
+
+// ── Helpers: resolve child and staff by name/email ────────────────────────────
+async function resolveChild(
+  firstName: string,
+  lastName: string,
+  siteId: number | null,
+): Promise<number | null> {
+  const conditions: any[] = [
+    ilike(childrenTable.firstName, firstName.trim()),
+    ilike(childrenTable.lastName, lastName.trim()),
+  ];
+  if (siteId) conditions.push(eq(childrenTable.siteId, siteId));
+  const rows = await db.select({ id: childrenTable.id })
+    .from(childrenTable)
+    .where(and(...conditions))
+    .limit(1);
+  return rows[0]?.id ?? null;
+}
+
+async function resolveStaff(emailOrName: string): Promise<number | null> {
+  const val = emailOrName.trim();
+  if (!val) return null;
+  // Try email first
+  if (val.includes("@")) {
+    const rows = await db.select({ id: staffTable.id })
+      .from(staffTable)
+      .where(ilike(staffTable.email, val))
+      .limit(1);
+    return rows[0]?.id ?? null;
+  }
+  // Otherwise treat as "First Last"
+  const parts = val.split(/\s+/);
+  if (parts.length >= 2) {
+    const rows = await db.select({ id: staffTable.id })
+      .from(staffTable)
+      .where(and(ilike(staffTable.firstName, parts[0]), ilike(staffTable.lastName, parts.slice(1).join(" "))))
+      .limit(1);
+    return rows[0]?.id ?? null;
+  }
+  return null;
+}
+
+function parseOutcomeIds(raw: string): string[] {
+  if (!raw?.trim()) return [];
+  return raw.split(/[|,;]/).map((s) => s.trim()).filter(Boolean);
+}
+
+// ── POST /import/observations ─────────────────────────────────────────────────
+router.post("/import/observations", async (req, res): Promise<void> => {
+  if (!requireAdmin(req, res)) return;
+
+  const { siteId, rows } = req.body as {
+    siteId: number | null;
+    rows: Array<Record<string, string>>;
+  };
+
+  if (!Array.isArray(rows)) {
+    res.status(400).json({ error: "rows is required." });
+    return;
+  }
+
+  const result: ImportResult = { inserted: 0, skipped: 0, errors: [] };
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNum = i + 1;
+
+    const childFirstName = row.childFirstName?.trim() || row.child_first_name?.trim() || row.childFirst?.trim();
+    const childLastName = row.childLastName?.trim() || row.child_last_name?.trim() || row.childLast?.trim();
+    const staffRef = row.staffEmail?.trim() || row.staff_email?.trim() || row.staff?.trim() || row.educator?.trim();
+    const description = row.description?.trim();
+    const observationDateRaw = row.observationDate?.trim() || row.observation_date?.trim() || row.date?.trim();
+    const outcomeIds = parseOutcomeIds(row.outcomeIds ?? row.outcome_ids ?? row.outcomes ?? "");
+    const commentPlan = row.commentPlan?.trim() || row.comment_plan?.trim() || undefined;
+    const actionNotes = row.actionNotes?.trim() || row.action_notes?.trim() || undefined;
+
+    const errors: string[] = [];
+    if (!childFirstName) errors.push("childFirstName is required");
+    if (!childLastName) errors.push("childLastName is required");
+    if (!staffRef) errors.push("staffEmail is required");
+    if (!description) errors.push("description is required");
+
+    const observationDate = parseDate(observationDateRaw ?? "");
+    if (!observationDate) errors.push("observationDate is required (YYYY-MM-DD or DD/MM/YYYY)");
+
+    if (errors.length > 0) {
+      result.errors.push({ row: rowNum, message: errors.join("; "), data: `${childFirstName ?? "?"} ${childLastName ?? "?"}` });
+      continue;
+    }
+
+    try {
+      const childId = await resolveChild(childFirstName!, childLastName!, siteId ?? null);
+      if (!childId) {
+        result.errors.push({ row: rowNum, message: `Child "${childFirstName} ${childLastName}" not found${siteId ? " at selected site" : ""}`, data: `${childFirstName} ${childLastName}` });
+        continue;
+      }
+
+      const staffId = await resolveStaff(staffRef!);
+      if (!staffId) {
+        result.errors.push({ row: rowNum, message: `Staff "${staffRef}" not found`, data: `${childFirstName} ${childLastName}` });
+        continue;
+      }
+
+      await db.insert(observationsTable).values({
+        childId,
+        staffId,
+        description: description!,
+        observationDate: observationDate! as any,
+        outcomeIds,
+        commentPlan: commentPlan ?? null,
+        actionNotes: actionNotes ?? null,
+      });
+      result.inserted++;
+    } catch (err: any) {
+      result.errors.push({ row: rowNum, message: err?.message ?? "Database error", data: `${childFirstName} ${childLastName}` });
+    }
+  }
+
+  res.json(result);
+});
+
+// ── POST /import/jottings ─────────────────────────────────────────────────────
+router.post("/import/jottings", async (req, res): Promise<void> => {
+  if (!requireAdmin(req, res)) return;
+
+  const { siteId, rows } = req.body as {
+    siteId: number | null;
+    rows: Array<Record<string, string>>;
+  };
+
+  if (!Array.isArray(rows)) {
+    res.status(400).json({ error: "rows is required." });
+    return;
+  }
+
+  const result: ImportResult = { inserted: 0, skipped: 0, errors: [] };
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNum = i + 1;
+
+    const content = row.content?.trim() || row.note?.trim() || row.text?.trim();
+    const childFirstName = row.childFirstName?.trim() || row.child_first_name?.trim();
+    const childLastName = row.childLastName?.trim() || row.child_last_name?.trim();
+    const staffRef = row.staffEmail?.trim() || row.staff_email?.trim() || row.staff?.trim() || row.educator?.trim();
+
+    if (!content) {
+      result.errors.push({ row: rowNum, message: "content is required" });
+      continue;
+    }
+
+    try {
+      let childId: number | null = null;
+      if (childFirstName && childLastName) {
+        childId = await resolveChild(childFirstName, childLastName, siteId ?? null);
+        if (!childId) {
+          result.errors.push({ row: rowNum, message: `Child "${childFirstName} ${childLastName}" not found${siteId ? " at selected site" : ""}`, data: content.slice(0, 60) });
+          continue;
+        }
+      }
+
+      let staffId: number | null = null;
+      if (staffRef) {
+        staffId = await resolveStaff(staffRef);
+        if (!staffId) {
+          result.errors.push({ row: rowNum, message: `Staff "${staffRef}" not found`, data: content.slice(0, 60) });
+          continue;
+        }
+      }
+
+      await db.insert(jottingsTable).values({
+        content,
+        childId,
+        staffId,
+      });
+      result.inserted++;
+    } catch (err: any) {
+      result.errors.push({ row: rowNum, message: err?.message ?? "Database error", data: content?.slice(0, 60) });
+    }
+  }
+
+  res.json(result);
+});
+
+// ── POST /import/posts ────────────────────────────────────────────────────────
+router.post("/import/posts", async (req, res): Promise<void> => {
+  if (!requireAdmin(req, res)) return;
+
+  const { siteId, rows } = req.body as {
+    siteId: number | null;
+    rows: Array<Record<string, string>>;
+  };
+
+  if (!Array.isArray(rows)) {
+    res.status(400).json({ error: "rows is required." });
+    return;
+  }
+
+  const result: ImportResult = { inserted: 0, skipped: 0, errors: [] };
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNum = i + 1;
+
+    const title = row.title?.trim();
+    const childFirstName = row.childFirstName?.trim() || row.child_first_name?.trim();
+    const childLastName = row.childLastName?.trim() || row.child_last_name?.trim();
+    const staffRef = row.staffEmail?.trim() || row.staff_email?.trim() || row.staff?.trim();
+    const dateRaw = row.date?.trim() || row.postDate?.trim() || row.post_date?.trim();
+    const description = row.description?.trim() || undefined;
+    const learning = row.learning?.trim() || undefined;
+    const opportunities = row.opportunities?.trim() || undefined;
+    const outcomeIds = parseOutcomeIds(row.outcomeIds ?? row.outcome_ids ?? row.outcomes ?? "");
+
+    if (!title) {
+      result.errors.push({ row: rowNum, message: "title is required" });
+      continue;
+    }
+
+    const date = dateRaw ? parseDate(dateRaw) : null;
+    if (dateRaw && !date) {
+      result.errors.push({ row: rowNum, message: "date format invalid — use YYYY-MM-DD or DD/MM/YYYY", data: title });
+      continue;
+    }
+
+    try {
+      const childIds: number[] = [];
+      if (childFirstName && childLastName) {
+        const childId = await resolveChild(childFirstName, childLastName, siteId ?? null);
+        if (!childId) {
+          result.errors.push({ row: rowNum, message: `Child "${childFirstName} ${childLastName}" not found${siteId ? " at selected site" : ""}`, data: title });
+          continue;
+        }
+        childIds.push(childId);
+      }
+
+      let staffId: number | null = null;
+      if (staffRef) {
+        staffId = await resolveStaff(staffRef);
+        if (!staffId) {
+          result.errors.push({ row: rowNum, message: `Staff "${staffRef}" not found`, data: title });
+          continue;
+        }
+      }
+
+      await db.insert(postsTable).values({
+        title,
+        siteId: siteId ?? null,
+        childIds,
+        staffId,
+        date: date as any ?? null,
+        description: description ?? null,
+        learning: learning ?? null,
+        opportunities: opportunities ?? null,
+        outcomeIds,
+      });
+      result.inserted++;
+    } catch (err: any) {
+      result.errors.push({ row: rowNum, message: err?.message ?? "Database error", data: title });
     }
   }
 

@@ -1,11 +1,12 @@
-import { useListObservations, useListChildren } from "@workspace/api-client-react";
+import { useListObservations, useListChildren, useListSites } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, FileText, Calendar, User, Clock, MessageCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format, isEqual } from "date-fns";
+import { format } from "date-fns";
 import { useState, useMemo } from "react";
 import { usePermissions } from "@/hooks/use-permissions";
 
@@ -13,18 +14,30 @@ export default function ObservationsList() {
   const { isEducatorRole, ownSiteId } = usePermissions();
   const { data: observations, isLoading } = useListObservations();
   const { data: children } = useListChildren();
+  const { data: sites } = useListSites();
   const [search, setSearch] = useState("");
+  const [siteFilter, setSiteFilter] = useState<string>("all");
 
   const childSiteMap = useMemo(
     () => new Map((children ?? []).map((c) => [c.id, c.siteId ?? null])),
     [children],
   );
 
+  const showSiteFilter = !isEducatorRole && (sites ?? []).length > 1;
+
   const filteredObs = observations?.filter((obs) => {
+    // Educators are always scoped to their own site
     if (isEducatorRole && ownSiteId) {
       const childSite = childSiteMap.get(obs.childId);
       if (childSite !== undefined && childSite !== ownSiteId) return false;
     }
+
+    // Site filter dropdown (admins/EL/coordinators)
+    if (!isEducatorRole && siteFilter !== "all") {
+      const childSite = childSiteMap.get(obs.childId);
+      if (childSite !== parseInt(siteFilter)) return false;
+    }
+
     const q = search.toLowerCase();
     return (
       obs.description.toLowerCase().includes(q) ||
@@ -47,14 +60,29 @@ export default function ObservationsList() {
         </Link>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by child, educator or observation..."
-          className="pl-9 max-w-md bg-card"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by child, educator or observation..."
+            className="pl-9 bg-card"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        {showSiteFilter && (
+          <Select value={siteFilter} onValueChange={setSiteFilter}>
+            <SelectTrigger className="w-48 bg-card">
+              <SelectValue placeholder="All sites" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All sites</SelectItem>
+              {(sites ?? []).map((s) => (
+                <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {isLoading ? (

@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useLocation } from "wouter";
 import {
   useListFileLibrary, useCreateFileLibraryItem, useDeleteFileLibraryItem,
-  useListFileCategories, useCreateFileCategory,
+  useListFileCategories, useCreateFileCategory, useListSites,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ArrowLeft, Upload, Trash2, FileText, FileImage, File, ExternalLink, Plus, ChevronUp, ChevronDown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@workspace/object-storage-web";
 
@@ -264,6 +265,8 @@ export default function ServiceDocsManage() {
 
   const { data: files, isLoading: filesLoading } = useListFileLibrary();
   const { data: categories, isLoading: catsLoading } = useListFileCategories();
+  const { data: sites } = useListSites();
+  const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
 
   const loading = filesLoading || catsLoading;
 
@@ -273,7 +276,11 @@ export default function ServiceDocsManage() {
 
   function getFiles(catId: number | undefined): FileItem[] {
     if (!catId) return [];
-    return (files ?? []).filter((f) => f.categoryId === catId);
+    return (files ?? []).filter((f) => {
+      if (f.categoryId !== catId) return false;
+      if (selectedSiteId != null) return f.siteId === selectedSiteId;
+      return true;
+    });
   }
 
   async function ensureCategory(name: string): Promise<number> {
@@ -308,6 +315,22 @@ export default function ServiceDocsManage() {
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          {(sites ?? []).length > 0 && (
+            <Select
+              value={selectedSiteId != null ? String(selectedSiteId) : "all"}
+              onValueChange={(v) => setSelectedSiteId(v === "all" ? null : parseInt(v))}
+            >
+              <SelectTrigger className="w-44 h-9">
+                <SelectValue placeholder="Filter by site" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All sites</SelectItem>
+                {(sites ?? []).map((s) => (
+                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <a
             href={previewUrl}
             target="_blank"
@@ -335,7 +358,7 @@ export default function ServiceDocsManage() {
                 categoryName={catName}
                 categoryId={catId}
                 files={getFiles(catId)}
-                siteId={null}
+                siteId={selectedSiteId}
                 onEnsureCategory={() => ensureCategory(catName)}
                 onRefresh={refresh}
               />

@@ -9,10 +9,10 @@ import { useQuery } from "@tanstack/react-query";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/educators", label: "Educators", icon: Users },
   { href: "/pickups", label: "Approved Pick-Ups", icon: UserCheck },
   { href: "/medical", label: "Medical Plans", icon: HeartPulse },
   { href: "/medication-logs", label: "Medication Logs", icon: Pill },
+  { href: "/educators", label: "Educators", icon: Users },
 ];
 
 const LS_LAST_SEEN = "educare_guardian_last_seen";

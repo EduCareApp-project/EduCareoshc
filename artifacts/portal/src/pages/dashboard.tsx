@@ -43,7 +43,7 @@ type NoticeAudience = "leadership" | "educator" | "guardian";
 // ─── Shared Notice Board ─────────────────────────────────────────────────────
 type NoticeItem = { id: number; title: string; content: string; priority: string; audience: string; siteId?: number | null; createdAt: string; documentPaths?: string[] | null; documentNames?: string[] | null };
 
-function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: NoticeAudience }) {
+function NoticeBoard({ canManage, audience, siteId: externalSiteId }: { canManage: boolean; audience: NoticeAudience; siteId?: string }) {
   const queryClient = useQueryClient();
   const params = { audience };
   const { data: notices, isLoading } = useListNotices(params);
@@ -53,13 +53,15 @@ function NoticeBoard({ canManage, audience }: { canManage: boolean; audience: No
   const { isAdmin, ownSiteId } = usePermissions();
   const { data: sites } = useListSites();
 
-  // Site filter — always scoped to a single site (never show all sites mixed)
+  // Site filter — always scoped to a single site.
+  // externalSiteId (from the dashboard tab selector) takes priority; falls back to ownSiteId or first site.
   const [siteFilter, setSiteFilter] = useState<string>("");
   useEffect(() => {
+    if (externalSiteId) { setSiteFilter(externalSiteId); return; }
     if (siteFilter) return;
     if (ownSiteId) { setSiteFilter(String(ownSiteId)); return; }
     if (sites && sites.length > 0) setSiteFilter(String(sites[0].id));
-  }, [sites, ownSiteId, siteFilter]);
+  }, [sites, ownSiteId, siteFilter, externalSiteId]);
 
   const displayedNotices = (notices ?? []).filter((n) => {
     if (!siteFilter) return true;
@@ -1127,7 +1129,7 @@ function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
 
   return (
     <div className="space-y-8">
-      <NoticeBoard canManage audience="educator" />
+      <NoticeBoard canManage audience="educator" siteId={selectedSiteId || undefined} />
 
       {/* Row 1: Service Compliance + Checklists */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -1337,7 +1339,7 @@ function GuardianDashboard({ siteFilter = "__all__" }: { siteFilter?: string }) 
         ))}
       </div>
 
-      <NoticeBoard canManage audience="guardian" />
+      <NoticeBoard canManage audience="guardian" siteId={siteFilter !== "__all__" ? siteFilter : undefined} />
 
       {/* Published weekly plans */}
       <Card>

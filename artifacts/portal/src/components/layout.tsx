@@ -78,13 +78,13 @@ const NAV_GROUPS = [
   {
     label: "SERVICE OPERATIONS",
     items: [
-      { href: "/sites", label: "Sites", icon: Building2 },
       { href: "/incidents", label: "Incident Log", icon: AlertTriangle },
       { href: "/condition-reports", label: "Condition Report", icon: ClipboardX },
       { href: "/evacuations", label: "Safety Evacuation", icon: ShieldAlert },
       { href: "/qip", label: "QIP", icon: TrendingUp },
       { href: "/policies", label: "Policies & Files", icon: FolderOpen },
       { href: "/checklists", label: "Checklists", icon: CheckSquare },
+      { href: "/sites", label: "Sites", icon: Building2 },
     ]
   },
   {

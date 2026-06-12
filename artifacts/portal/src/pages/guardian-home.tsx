@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/auth";
 import { useListSites } from "@workspace/api-client-react";
 import {
@@ -57,11 +58,16 @@ type Notice = {
   priority: string;
   audience: string;
   siteId: number | null;
-  documentUrl?: string | null;
-  documentName?: string | null;
+  documentPaths?: string[] | null;
+  documentNames?: string[] | null;
   expiresAt?: string | null;
   createdAt: string;
 };
+
+function docUrl(path: string) {
+  const stripped = path.replace(/^\/?(objects\/)?/, "");
+  return `/api/storage/objects/${stripped}`;
+}
 
 const NOTICE_PRIORITY_COLORS: Record<string, string> = {
   low:    "bg-slate-100 text-slate-700",
@@ -430,6 +436,7 @@ function PostCard({ post, onSelect }: { post: Post; onSelect: () => void }) {
 export default function GuardianHome() {
   const { user } = useAuth();
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+  const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
   // Only set when the user explicitly clicks a site tab; otherwise falls back to first child's site.
   const [noticeSiteOverride, setNoticeSiteOverride] = useState<number | null>(null);
 
@@ -570,8 +577,9 @@ export default function GuardianHome() {
             {activeNotices.map((notice) => (
               <div
                 key={notice.id}
-                className="min-w-[280px] max-w-[320px] p-4 rounded-lg border shrink-0 snap-start flex flex-col justify-between text-white"
+                className="min-w-[280px] max-w-[320px] p-4 rounded-lg border shrink-0 snap-start flex flex-col justify-between text-white cursor-pointer hover:brightness-95 transition-all"
                 style={{ backgroundColor: "#29BCD4", borderColor: "#1fa8be" }}
+                onClick={() => setSelectedNotice(notice)}
               >
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-start">
@@ -581,10 +589,14 @@ export default function GuardianHome() {
                   </div>
                   <h4 className="font-semibold text-sm text-white">{notice.title}</h4>
                   <RichTextView html={notice.content} className="text-white/85 line-clamp-3" />
-                  {notice.documentUrl && (
+                  {notice.documentPaths && notice.documentPaths.length > 0 && (
                     <div className="mt-1 flex items-center gap-1.5 text-xs text-white/80">
                       <Paperclip className="h-3 w-3 shrink-0" />
-                      <span>{notice.documentName ?? "1 attachment"}</span>
+                      <span>
+                        {notice.documentPaths.length === 1
+                          ? notice.documentNames?.[0] ?? "1 attachment"
+                          : `${notice.documentPaths.length} attachments`}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -719,6 +731,48 @@ export default function GuardianHome() {
         onClose={() => setSelectedPostId(null)}
         defaultCommentName={user?.name ?? "Guardian"}
       />
+
+      {/* Notice detail dialog */}
+      <Dialog open={!!selectedNotice} onOpenChange={(open) => { if (!open) setSelectedNotice(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <Badge className={`${NOTICE_PRIORITY_COLORS[selectedNotice?.priority ?? "normal"]} border-none capitalize`}>
+                {selectedNotice?.priority}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                {selectedNotice && format(new Date(selectedNotice.createdAt), "dd/MM/yyyy 'at' h:mm a")}
+              </span>
+            </div>
+            <DialogTitle className="text-lg leading-snug">{selectedNotice?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="mt-2 space-y-4">
+            {selectedNotice && (
+              <RichTextView html={selectedNotice.content} className="text-foreground" />
+            )}
+            {selectedNotice?.documentPaths && selectedNotice.documentPaths.length > 0 && (
+              <div className="pt-3 border-t space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Attachments</p>
+                {selectedNotice.documentPaths.map((path, idx) => {
+                  const name = selectedNotice.documentNames?.[idx] ?? path.split("/").pop() ?? `Document ${idx + 1}`;
+                  return (
+                    <a
+                      key={idx}
+                      href={docUrl(path)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-primary hover:underline font-medium"
+                    >
+                      <FileText className="h-4 w-4 shrink-0" />
+                      {name}
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

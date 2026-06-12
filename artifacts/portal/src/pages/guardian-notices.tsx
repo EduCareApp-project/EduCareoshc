@@ -166,43 +166,31 @@ export default function GuardianNotices() {
         </h2>
 
         {noticesLoading ? (
-          <div className="space-y-3">
-            <Skeleton className="h-24 w-full rounded-lg" />
-            <Skeleton className="h-24 w-full rounded-lg" />
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            <Skeleton className="h-36 w-64 shrink-0 rounded-lg" />
+            <Skeleton className="h-36 w-64 shrink-0 rounded-lg" />
           </div>
         ) : filteredNotices.length === 0 ? (
-          <Card>
-            <CardContent className="py-10 text-center text-muted-foreground">
-              <Bell className="h-8 w-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">No notices at this time.</p>
-            </CardContent>
-          </Card>
+          <div className="text-center py-6 text-muted-foreground text-sm">No active notices</div>
         ) : (
-          <div className="space-y-3">
+          <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
             {filteredNotices.map((notice) => (
-              <Card
+              <div
                 key={notice.id}
-                className={`overflow-hidden border-l-4 cursor-pointer hover:shadow-md transition-shadow ${PRIORITY_BORDER[notice.priority] ?? PRIORITY_BORDER.normal}`}
+                className="min-w-[280px] max-w-[320px] p-4 rounded-lg border shrink-0 snap-start flex flex-col justify-between text-white cursor-pointer hover:brightness-95 transition-all"
+                style={{ backgroundColor: "#29BCD4", borderColor: "#1fa8be" }}
                 onClick={() => setSelectedNotice(notice)}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <h3 className="font-semibold text-sm leading-snug">{notice.title}</h3>
-                    <Badge className={`${PRIORITY_COLORS[notice.priority] ?? PRIORITY_COLORS.normal} shrink-0 capitalize text-xs border-none`}>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-start">
+                    <Badge className={`${PRIORITY_COLORS[notice.priority] ?? PRIORITY_COLORS.normal} border-none capitalize`}>
                       {notice.priority}
                     </Badge>
                   </div>
-                  {notice.siteId != null && (
-                    <div className="flex items-center gap-1 mb-2">
-                      <Badge variant="outline" className="text-[11px] font-normal px-1.5 py-0 h-5 flex items-center gap-1">
-                        <Building2 className="h-3 w-3" />
-                        {(sites ?? []).find((s) => s.id === notice.siteId)?.name ?? "One site"}
-                      </Badge>
-                    </div>
-                  )}
-                  <RichTextView html={notice.content} className="text-sm text-muted-foreground line-clamp-3" />
+                  <h4 className="font-semibold text-sm text-white">{notice.title}</h4>
+                  <RichTextView html={notice.content} className="text-white/85 line-clamp-3" />
                   {notice.documentPaths && notice.documentPaths.length > 0 && (
-                    <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <div className="mt-1 flex items-center gap-1.5 text-xs text-white/80">
                       <Paperclip className="h-3 w-3 shrink-0" />
                       <span>
                         {notice.documentPaths.length === 1
@@ -211,11 +199,17 @@ export default function GuardianNotices() {
                       </span>
                     </div>
                   )}
-                  <p className="text-[11px] text-muted-foreground/60 mt-2">
-                    {format(new Date(notice.createdAt), "dd/MM/yyyy")}
-                  </p>
-                </CardContent>
-              </Card>
+                </div>
+                <div className="mt-4 pt-2 border-t border-white/25 flex items-center justify-between gap-2">
+                  <span className="text-xs text-white/60">{format(new Date(notice.createdAt), "MMM d, h:mm a")}</span>
+                  {notice.siteId != null && (
+                    <span className="flex items-center gap-1 text-[11px] text-white/70 bg-white/15 rounded px-1.5 py-0.5 shrink-0">
+                      <Building2 className="h-3 w-3" />
+                      {(sites ?? []).find((s) => s.id === notice.siteId)?.name ?? "One site"}
+                    </span>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
         )}

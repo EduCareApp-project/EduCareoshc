@@ -69,12 +69,6 @@ const NOTICE_PRIORITY_COLORS: Record<string, string> = {
   high:   "bg-amber-100 text-amber-800",
   urgent: "bg-red-100 text-red-800",
 };
-const NOTICE_BORDER_COLORS: Record<string, string> = {
-  low:    "border-l-slate-300",
-  normal: "border-l-blue-400",
-  high:   "border-l-amber-400",
-  urgent: "border-l-red-500",
-};
 
 // ── Calendar helpers ──────────────────────────────────────────────────────────
 function getWeeksInMonth(month: Date): Date[][] {
@@ -572,36 +566,38 @@ export default function GuardianHome() {
           </div>
         </div>
         {activeNotices.length > 0 && (
-          <div className="space-y-3">
+          <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
             {activeNotices.map((notice) => (
-              <Card
+              <div
                 key={notice.id}
-                className={`overflow-hidden border-l-4 ${NOTICE_BORDER_COLORS[notice.priority] ?? NOTICE_BORDER_COLORS.normal}`}
+                className="min-w-[280px] max-w-[320px] p-4 rounded-lg border shrink-0 snap-start flex flex-col justify-between text-white"
+                style={{ backgroundColor: "#29BCD4", borderColor: "#1fa8be" }}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <h3 className="font-semibold text-sm leading-snug">{notice.title}</h3>
-                    <Badge className={`${NOTICE_PRIORITY_COLORS[notice.priority] ?? NOTICE_PRIORITY_COLORS.normal} shrink-0 capitalize text-xs border-none`}>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-start">
+                    <Badge className={`${NOTICE_PRIORITY_COLORS[notice.priority] ?? NOTICE_PRIORITY_COLORS.normal} border-none capitalize`}>
                       {notice.priority}
                     </Badge>
                   </div>
-                  <RichTextView html={notice.content} className="text-sm text-muted-foreground" />
+                  <h4 className="font-semibold text-sm text-white">{notice.title}</h4>
+                  <RichTextView html={notice.content} className="text-white/85 line-clamp-3" />
                   {notice.documentUrl && (
-                    <a
-                      href={notice.documentUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-                    >
-                      <Paperclip className="h-3 w-3" />
-                      {notice.documentName ?? "View attached document"}
-                    </a>
+                    <div className="mt-1 flex items-center gap-1.5 text-xs text-white/80">
+                      <Paperclip className="h-3 w-3 shrink-0" />
+                      <span>{notice.documentName ?? "1 attachment"}</span>
+                    </div>
                   )}
-                  <p className="text-[11px] text-muted-foreground/60 mt-2">
-                    {new Date(notice.createdAt).toLocaleDateString("en-AU")}
-                  </p>
-                </CardContent>
-              </Card>
+                </div>
+                <div className="mt-4 pt-2 border-t border-white/25 flex items-center justify-between gap-2">
+                  <span className="text-xs text-white/60">{new Date(notice.createdAt).toLocaleDateString("en-AU")}</span>
+                  {notice.siteId != null && (
+                    <span className="flex items-center gap-1 text-[11px] text-white/70 bg-white/15 rounded px-1.5 py-0.5 shrink-0">
+                      <Building2 className="h-3 w-3" />
+                      {(sites ?? []).find((s) => s.id === notice.siteId)?.name ?? "One site"}
+                    </span>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
         )}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useListSites } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -61,7 +61,9 @@ function docUrl(path: string) {
 
 export default function GuardianNotices() {
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
-  const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
+  // siteIdOverride is only set when the user explicitly clicks a tab.
+  // Until then, effectiveSiteId falls back to the guardian's first child's site.
+  const [siteIdOverride, setSiteIdOverride] = useState<number | null>(null);
 
   const { data: notices, isLoading: noticesLoading } = useQuery<Notice[]>({
     queryKey: ["/api/auth/my-notices"],
@@ -96,16 +98,17 @@ export default function GuardianNotices() {
     ...new Set((children ?? []).map((c) => c.siteId).filter((id): id is number => id != null)),
   ];
 
-  useEffect(() => {
-    if (selectedSiteId != null) return;
-    if (childSiteIds.length > 0) setSelectedSiteId(childSiteIds[0]);
-  }, [childSiteIds.join(",")]);
+  // Computed: user's explicit choice, else first child's site, else null (no children yet)
+  const effectiveSiteId: number | null = siteIdOverride ?? childSiteIds[0] ?? null;
 
   const now = new Date();
 
   const filteredNotices = (notices ?? [])
     .filter((n) => !n.expiresAt || new Date(n.expiresAt) > now)
-    .filter((n) => n.siteId == null || selectedSiteId == null || n.siteId === selectedSiteId)
+    .filter((n) => {
+      if (effectiveSiteId == null) return true; // children not loaded yet — show all
+      return n.siteId == null || n.siteId === effectiveSiteId;
+    })
     .sort((a, b) => {
       const order = { urgent: 0, high: 1, normal: 2, low: 3 };
       const pa = order[a.priority as keyof typeof order] ?? 2;
@@ -127,17 +130,17 @@ export default function GuardianNotices() {
         <p className="text-muted-foreground text-sm mt-1">Updates and news from your education and care service.</p>
       </div>
 
-      {/* Site tabs */}
+      {/* Site tabs — only shown when guardian has children at multiple sites */}
       {showSiteTabs && (
         <div className="flex gap-2 flex-wrap">
           {childSiteIds.map((siteId) => {
             const site = (sites ?? []).find((s) => s.id === siteId);
             const siteName = site?.name ?? `Site ${siteId}`;
-            const isActive = selectedSiteId === siteId;
+            const isActive = effectiveSiteId === siteId;
             return (
               <button
                 key={siteId}
-                onClick={() => setSelectedSiteId(siteId)}
+                onClick={() => setSiteIdOverride(siteId)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                   isActive
                     ? "bg-primary text-primary-foreground border-primary"
@@ -189,6 +192,14 @@ export default function GuardianNotices() {
                       {notice.priority}
                     </Badge>
                   </div>
+                  {notice.siteId != null && (
+                    <div className="flex items-center gap-1 mb-2">
+                      <Badge variant="outline" className="text-[11px] font-normal px-1.5 py-0 h-5 flex items-center gap-1">
+                        <Building2 className="h-3 w-3" />
+                        {(sites ?? []).find((s) => s.id === notice.siteId)?.name ?? "One site"}
+                      </Badge>
+                    </div>
+                  )}
                   <RichTextView html={notice.content} className="text-sm text-muted-foreground line-clamp-3" />
                   {notice.documentPaths && notice.documentPaths.length > 0 && (
                     <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">

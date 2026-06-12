@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -436,7 +436,8 @@ function PostCard({ post, onSelect }: { post: Post; onSelect: () => void }) {
 export default function GuardianHome() {
   const { user } = useAuth();
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
-  const [selectedNoticeSiteId, setSelectedNoticeSiteId] = useState<number | null>(null);
+  // Only set when the user explicitly clicks a site tab; otherwise falls back to first child's site.
+  const [noticeSiteOverride, setNoticeSiteOverride] = useState<number | null>(null);
 
   const { data: children, isLoading: childrenLoading } = useQuery<Child[]>({
     queryKey: ["/api/auth/my-children"],
@@ -475,14 +476,15 @@ export default function GuardianHome() {
     ),
   ];
 
-  useEffect(() => {
-    if (selectedNoticeSiteId != null) return;
-    if (childSiteIds.length > 0) setSelectedNoticeSiteId(childSiteIds[0]);
-  }, [childSiteIds.join(",")]);
+  // Computed: user's explicit choice, else first child's site, else null (children not loaded yet)
+  const selectedNoticeSiteId: number | null = noticeSiteOverride ?? childSiteIds[0] ?? null;
 
   const activeNotices = (notices ?? [])
     .filter((n) => !n.expiresAt || new Date(n.expiresAt) > now)
-    .filter((n) => n.siteId == null || selectedNoticeSiteId == null || n.siteId === selectedNoticeSiteId)
+    .filter((n) => {
+      if (selectedNoticeSiteId == null) return true; // children not loaded yet — show all
+      return n.siteId == null || n.siteId === selectedNoticeSiteId;
+    })
     .sort((a, b) => {
       const order = { urgent: 0, high: 1, normal: 2, low: 3 };
       const pa = order[a.priority as keyof typeof order] ?? 2;
@@ -523,7 +525,7 @@ export default function GuardianHome() {
                 return (
                   <button
                     key={siteId}
-                    onClick={() => setSelectedNoticeSiteId(siteId)}
+                    onClick={() => setNoticeSiteOverride(siteId)}
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                       isActive
                         ? "bg-primary text-primary-foreground border-primary"

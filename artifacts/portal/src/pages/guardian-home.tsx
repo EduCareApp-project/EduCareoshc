@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,6 +56,7 @@ type Notice = {
   content: string;
   priority: string;
   audience: string;
+  siteId: number | null;
   documentUrl?: string | null;
   documentName?: string | null;
   expiresAt?: string | null;
@@ -435,6 +436,7 @@ function PostCard({ post, onSelect }: { post: Post; onSelect: () => void }) {
 export default function GuardianHome() {
   const { user } = useAuth();
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+  const [selectedNoticeSiteId, setSelectedNoticeSiteId] = useState<number | null>(null);
 
   const { data: children, isLoading: childrenLoading } = useQuery<Child[]>({
     queryKey: ["/api/auth/my-children"],
@@ -464,15 +466,6 @@ export default function GuardianHome() {
   });
 
   const now = new Date();
-  const activeNotices = (notices ?? [])
-    .filter((n) => !n.expiresAt || new Date(n.expiresAt) > now)
-    .sort((a, b) => {
-      const order = { urgent: 0, high: 1, normal: 2, low: 3 };
-      const pa = order[a.priority as keyof typeof order] ?? 2;
-      const pb = order[b.priority as keyof typeof order] ?? 2;
-      if (pa !== pb) return pa - pb;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
 
   const { data: sites } = useListSites();
 
@@ -481,6 +474,22 @@ export default function GuardianHome() {
       (children ?? []).map((c) => c.siteId).filter((id): id is number => id != null),
     ),
   ];
+
+  useEffect(() => {
+    if (selectedNoticeSiteId != null) return;
+    if (childSiteIds.length > 0) setSelectedNoticeSiteId(childSiteIds[0]);
+  }, [childSiteIds.join(",")]);
+
+  const activeNotices = (notices ?? [])
+    .filter((n) => !n.expiresAt || new Date(n.expiresAt) > now)
+    .filter((n) => n.siteId == null || selectedNoticeSiteId == null || n.siteId === selectedNoticeSiteId)
+    .sort((a, b) => {
+      const order = { urgent: 0, high: 1, normal: 2, low: 3 };
+      const pa = order[a.priority as keyof typeof order] ?? 2;
+      const pb = order[b.priority as keyof typeof order] ?? 2;
+      if (pa !== pb) return pa - pb;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
   return (
     <div className="space-y-6">
@@ -503,6 +512,32 @@ export default function GuardianHome() {
               {activeNotices.length}
             </span>
           )}
+
+          {/* Site selector — only when guardian has children at multiple sites */}
+          {childSiteIds.length > 1 && (
+            <div className="flex gap-1.5 ml-1">
+              {childSiteIds.map((siteId) => {
+                const site = (sites ?? []).find((s) => s.id === siteId);
+                const siteName = site?.name ?? `Site ${siteId}`;
+                const isActive = selectedNoticeSiteId === siteId;
+                return (
+                  <button
+                    key={siteId}
+                    onClick={() => setSelectedNoticeSiteId(siteId)}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                      isActive
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <Building2 className="h-3 w-3" />
+                    {siteName}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           <div className="ml-auto flex gap-2 flex-wrap">
             {childSiteIds.map((siteId) => {
               const site = (sites ?? []).find((s) => s.id === siteId);

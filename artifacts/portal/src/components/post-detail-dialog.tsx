@@ -3,7 +3,7 @@ import {
   useGetPost, useDeletePost, getListPostsQueryKey,
   getGetPostQueryKey,
   useListPostComments, useCreatePostComment, useDeletePostComment,
-  getListPostCommentsQueryKey,
+  getListPostCommentsQueryKey, useLikePost, useUnlikePost,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Trash2, Pencil, User, CalendarDays, GraduationCap, Building2, MessageCircle, Send } from "lucide-react";
+import { Trash2, Pencil, User, CalendarDays, GraduationCap, Building2, MessageCircle, Send, Heart } from "lucide-react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -71,6 +71,20 @@ export function PostDetailDialog({
   const deleteMutation = useDeletePost();
   const createComment = useCreatePostComment();
   const deleteComment = useDeletePostComment();
+  const likeMutation = useLikePost();
+  const unlikeMutation = useUnlikePost();
+
+  function handleLike() {
+    if (!postId || !post) return;
+    const mutation = post.likedByMe ? unlikeMutation : likeMutation;
+    mutation.mutate({ id: postId }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetPostQueryKey(postId) });
+        queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() });
+      },
+      onError: () => toast({ title: "Could not update like", variant: "destructive" }),
+    });
+  }
 
   function handleDelete() {
     if (!postId || !confirm("Delete this post permanently?")) return;
@@ -228,13 +242,31 @@ export function PostDetailDialog({
 
               {/* Comments */}
               <section className="space-y-4 border-t pt-5">
-                <h3 className="flex items-center gap-2 text-sm font-semibold">
-                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                  Comments
-                  {comments.length > 0 && (
-                    <span className="text-sm font-normal text-muted-foreground">({comments.length})</span>
-                  )}
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold">
+                    <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                    Comments
+                    {comments.length > 0 && (
+                      <span className="text-sm font-normal text-muted-foreground">({comments.length})</span>
+                    )}
+                  </h3>
+                  <button
+                    onClick={handleLike}
+                    disabled={likeMutation.isPending || unlikeMutation.isPending}
+                    className={`flex items-center gap-1.5 text-sm transition-colors select-none ${
+                      post.likedByMe
+                        ? "text-rose-500 hover:text-rose-600"
+                        : "text-muted-foreground hover:text-rose-500"
+                    }`}
+                  >
+                    <Heart
+                      className="h-4 w-4 transition-transform active:scale-110"
+                      fill={post.likedByMe ? "currentColor" : "none"}
+                    />
+                    <span>{post.likeCount && post.likeCount > 0 ? post.likeCount : ""}</span>
+                    <span>{post.likedByMe ? "Liked" : "Like"}</span>
+                  </button>
+                </div>
 
                 {commentsLoading ? (
                   <div className="space-y-2">

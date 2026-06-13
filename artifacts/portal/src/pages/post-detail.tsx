@@ -33,7 +33,19 @@ function TextSection({ heading, content }: { heading: string; content: string | 
   );
 }
 
-function CommentSection({ postId }: { postId: number }) {
+function CommentSection({
+  postId,
+  likedByMe,
+  likeCount,
+  onLike,
+  likeDisabled,
+}: {
+  postId: number;
+  likedByMe?: boolean;
+  likeCount?: number;
+  onLike?: () => void;
+  likeDisabled?: boolean;
+}) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [authorName, setAuthorName] = useState("");
@@ -75,13 +87,33 @@ function CommentSection({ postId }: { postId: number }) {
 
   return (
     <section className="space-y-5 border-t pt-6">
-      <h2 className="flex items-center gap-2 text-base font-semibold">
-        <MessageCircle className="h-4 w-4 text-muted-foreground" />
-        Comments
-        {comments.length > 0 && (
-          <span className="text-sm font-normal text-muted-foreground">({comments.length})</span>
+      <div className="flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-base font-semibold">
+          <MessageCircle className="h-4 w-4 text-muted-foreground" />
+          Comments
+          {comments.length > 0 && (
+            <span className="text-sm font-normal text-muted-foreground">({comments.length})</span>
+          )}
+        </h2>
+        {onLike && (
+          <button
+            onClick={onLike}
+            disabled={likeDisabled}
+            className={`flex items-center gap-1.5 text-sm transition-colors select-none ${
+              likedByMe
+                ? "text-rose-500 hover:text-rose-600"
+                : "text-muted-foreground hover:text-rose-500"
+            }`}
+          >
+            <Heart
+              className="h-4 w-4 transition-transform active:scale-110"
+              fill={likedByMe ? "currentColor" : "none"}
+            />
+            <span>{likeCount && likeCount > 0 ? likeCount : ""}</span>
+            <span>{likedByMe ? "Liked" : "Like"}</span>
+          </button>
         )}
-      </h2>
+      </div>
 
       {isLoading ? (
         <div className="space-y-3">
@@ -276,22 +308,6 @@ export default function PostDetail() {
             )}
           </div>
 
-          <button
-            onClick={handleLike}
-            disabled={likeMutation.isPending || unlikeMutation.isPending}
-            className={`flex items-center gap-1.5 text-sm transition-colors select-none ${
-              post.likedByMe
-                ? "text-rose-500 hover:text-rose-600"
-                : "text-muted-foreground hover:text-rose-500"
-            }`}
-          >
-            <Heart
-              className="h-4 w-4 transition-transform active:scale-110"
-              fill={post.likedByMe ? "currentColor" : "none"}
-            />
-            <span>{post.likeCount > 0 ? post.likeCount : ""}</span>
-            <span>{post.likedByMe ? "Liked" : "Like"}</span>
-          </button>
         </div>
 
         {post.images && post.images.length > 0 && (
@@ -347,7 +363,13 @@ export default function PostDetail() {
           Posted {format(new Date(post.createdAt), "dd/MM/yyyy 'at' h:mm a")}
         </p>
 
-        <CommentSection postId={id} />
+        <CommentSection
+          postId={id}
+          likedByMe={post.likedByMe}
+          likeCount={post.likeCount}
+          onLike={handleLike}
+          likeDisabled={likeMutation.isPending || unlikeMutation.isPending}
+        />
       </article>
     </div>
   );

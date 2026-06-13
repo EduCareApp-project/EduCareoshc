@@ -16,6 +16,7 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 import { sendPostNotificationEmail } from "../lib/email";
 import { isEmailChannelEnabled } from "../lib/channelMap";
 import { getEmailBranding } from "../lib/emailBranding";
+import { getAppUrl } from "../lib/appUrl";
 
 const router: IRouter = Router();
 
@@ -191,9 +192,7 @@ router.patch("/posts/:id", async (req, res): Promise<void> => {
       .trim()
       .slice(0, 200) || null;
 
-    const domains = (process.env.REPLIT_DOMAINS ?? "").split(",").map((d) => d.trim()).filter(Boolean);
-    const portalHost = domains[0] ?? "localhost";
-    const portalUrl = `https://${portalHost}/notices`;
+    const portalUrl = `${getAppUrl()}/notices`;
 
     getEmailBranding().then((branding) =>
       sendPostNotificationEmail(recipients, { postTitle: post.title, excerpt, portalUrl }, branding)

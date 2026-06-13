@@ -10,13 +10,9 @@ import { sendWeeklyPlanPublishedEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 import { isTypeEnabled } from "../lib/notify";
 import { isEmailChannelEnabled } from "../lib/channelMap";
+import { getAppUrl } from "../lib/appUrl";
 
 const router: IRouter = Router();
-
-function getPortalUrl(): string {
-  const domains = (process.env.REPLIT_DOMAINS ?? "").split(",").map((d) => d.trim()).filter(Boolean);
-  return `https://${domains[0] ?? "localhost"}`;
-}
 
 function formatDateAU(dateStr: string): string {
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -83,7 +79,7 @@ router.patch("/planning/:id", async (req, res): Promise<void> => {
         sendWeeklyPlanPublishedEmail(recipients, {
           planTitle: exp.title ?? "Calendar",
           weekOf,
-          portalUrl: getPortalUrl(),
+          portalUrl: getAppUrl(),
         }, branding)
       );
     }).catch((err) => req.log.warn({ err }, "Weekly plan published email dispatch failed"));

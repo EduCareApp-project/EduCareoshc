@@ -5,6 +5,7 @@ import { randomBytes } from "crypto";
 import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, sitesTable } from "@workspace/db";
 import { sendLoginInstructionsEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
+import { getAppUrl } from "../lib/appUrl";
 
 const router: IRouter = Router();
 
@@ -142,8 +143,7 @@ function isSmtpConfigured(): boolean {
 }
 
 function getBaseUrl(): string {
-  const domains = (process.env.REPLIT_DOMAINS ?? process.env.REPLIT_DEV_DOMAIN ?? "localhost").split(",");
-  return `https://${domains[0]}`;
+  return getAppUrl();
 }
 
 async function createResetToken(email: string, userType: "staff" | "guardian"): Promise<string> {

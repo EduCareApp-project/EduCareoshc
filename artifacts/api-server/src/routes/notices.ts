@@ -5,13 +5,9 @@ import { CreateNoticeBody, DeleteNoticeParams, ListNoticesResponse, ListNoticesR
 import { sendGuardianNoticeEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 import { isEmailChannelEnabled } from "../lib/channelMap";
+import { getAppUrl } from "../lib/appUrl";
 
 const router: IRouter = Router();
-
-function getPortalUrl(): string {
-  const domains = (process.env.REPLIT_DOMAINS ?? "").split(",").map((d) => d.trim()).filter(Boolean);
-  return `https://${domains[0] ?? "localhost"}`;
-}
 
 router.get("/notices", async (req, res): Promise<void> => {
   const audience = req.query.audience as string | undefined;
@@ -81,7 +77,7 @@ router.post("/notices", async (req, res): Promise<void> => {
           noticeTitle: notice.title,
           priority: notice.priority,
           content: strippedContent,
-          portalUrl: getPortalUrl(),
+          portalUrl: getAppUrl(),
         }, branding)
       );
     }).catch((err) => req.log.warn({ err }, "Guardian notice email dispatch failed"));

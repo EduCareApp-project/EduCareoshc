@@ -6,6 +6,7 @@ import { getEmailBranding } from "../lib/emailBranding";
 import { logger } from "../lib/logger";
 import { createNotificationsForRoles } from "../lib/notify";
 import { isEmailChannelEnabled } from "../lib/channelMap";
+import { getAppUrl } from "../lib/appUrl";
 
 const router: IRouter = Router();
 
@@ -192,8 +193,7 @@ router.post("/children/:id/medications/:medicationId/logs", async (req, res): Pr
       if (validRecipients.length === 0) return;
       if (!await isEmailChannelEnabled("guardian_medication")) return;
 
-      const domains = (process.env.REPLIT_DOMAINS ?? "").split(",").map((d) => d.trim()).filter(Boolean);
-      const portalUrl = `https://${domains[0] ?? "localhost"}/medication-logs`;
+      const portalUrl = `${getAppUrl()}/medication-logs`;
 
       const branding = await getEmailBranding();
       await sendMedicationLogEmail(validRecipients, {

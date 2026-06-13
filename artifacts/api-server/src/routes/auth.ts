@@ -5,6 +5,7 @@ import { eq, asc, and, or, gt, isNull, isNotNull, inArray, sql } from "drizzle-o
 import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, postsTable, sitesTable, planningExperiencesTable, noticesTable } from "@workspace/db";
 import { sendPasswordResetEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
+import { getAppUrl } from "../lib/appUrl";
 
 const router: IRouter = Router();
 
@@ -171,9 +172,7 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
       expiresAt,
     });
 
-    const domains = (process.env.REPLIT_DOMAINS ?? process.env.REPLIT_DEV_DOMAIN ?? "localhost").split(",");
-    const baseUrl = `https://${domains[0]}`;
-    const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+    const resetUrl = `${getAppUrl()}/reset-password?token=${token}`;
 
     try {
       const branding = await getEmailBranding();

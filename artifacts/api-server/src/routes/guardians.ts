@@ -11,6 +11,7 @@ import {
 } from "@workspace/api-zod";
 import { sendWelcomeEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
+import { getAppUrl } from "../lib/appUrl";
 
 const router: IRouter = Router();
 
@@ -151,10 +152,7 @@ router.post("/guardians/:email/send-welcome-email", async (req, res): Promise<vo
       : (existing.guardian2Name ?? email);
 
   const branding = await getEmailBranding();
-  const domains = (process.env.REPLIT_DOMAINS ?? "").split(",").map((d) => d.trim()).filter(Boolean);
-  const portalUrl = domains.length > 0 ? `https://${domains[0]}` : "https://educareoshc.com.au";
-
-  await sendWelcomeEmail(email, guardianName, portalUrl, branding);
+  await sendWelcomeEmail(email, guardianName, getAppUrl(), branding);
 
   res.json({ ok: true });
 });

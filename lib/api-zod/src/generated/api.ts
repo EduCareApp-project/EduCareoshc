@@ -3325,6 +3325,7 @@ export const GetFeatureSettingsResponse = zod.object({
       zod.object({
         email: zod.boolean().optional(),
         inApp: zod.boolean().optional(),
+        recipients: zod.array(zod.string()).optional(),
       }),
     )
     .optional(),
@@ -3383,6 +3384,7 @@ export const UpdateFeatureSettingsBody = zod.object({
       zod.object({
         email: zod.boolean().optional(),
         inApp: zod.boolean().optional(),
+        recipients: zod.array(zod.string()).optional(),
       }),
     )
     .optional(),
@@ -3438,6 +3440,7 @@ export const UpdateFeatureSettingsResponse = zod.object({
       zod.object({
         email: zod.boolean().optional(),
         inApp: zod.boolean().optional(),
+        recipients: zod.array(zod.string()).optional(),
       }),
     )
     .optional(),

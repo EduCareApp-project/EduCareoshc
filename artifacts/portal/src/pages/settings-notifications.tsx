@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { ChevronLeft, Bell, Save, RotateCcw, Mail, BellRing } from "lucide-react";
+import { ChevronLeft, Bell, Save, RotateCcw, Mail, BellRing, Pencil, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -149,7 +150,20 @@ type MappingEvent = {
   audience: "guardian" | "staff";
   defaultEmail: boolean;
   defaultInApp: boolean;
+  defaultRecipients: string[];
 };
+
+const RECIPIENT_OPTIONS = [
+  { value: "admin",              label: "Admin",               className: "bg-red-50 text-red-700 border-red-200" },
+  { value: "educational_leader", label: "Educational Leader",  className: "bg-orange-50 text-orange-700 border-orange-200" },
+  { value: "coordinator",        label: "Coordinator",         className: "bg-amber-50 text-amber-700 border-amber-200" },
+  { value: "educator",           label: "Educator",            className: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+  { value: "site",               label: "All Site Staff",      className: "bg-teal-50 text-teal-700 border-teal-200" },
+  { value: "guardian",           label: "Guardian",            className: "bg-blue-50 text-blue-700 border-blue-200" },
+  { value: "submitter",          label: "Submitter",           className: "bg-violet-50 text-violet-700 border-violet-200" },
+  { value: "editor",             label: "Editor",              className: "bg-purple-50 text-purple-700 border-purple-200" },
+] as const;
+
 
 const MAPPING_EVENTS: MappingEvent[] = [
   // Guardian Notifications
@@ -157,141 +171,141 @@ const MAPPING_EVENTS: MappingEvent[] = [
     key: "guardian_notice", label: "Notice posted",
     description: "Sent to guardians when a new service notice is published.",
     group: "Guardian Notifications", audience: "guardian",
-    defaultEmail: true, defaultInApp: false,
+    defaultEmail: true, defaultInApp: false, defaultRecipients: ["guardian"],
   },
   {
     key: "guardian_post", label: "Learning story published",
     description: "Sent to guardians when a learning story or post is published for their child.",
     group: "Guardian Notifications", audience: "guardian",
-    defaultEmail: true, defaultInApp: false,
+    defaultEmail: true, defaultInApp: false, defaultRecipients: ["guardian"],
   },
   {
     key: "guardian_weekly_plan", label: "Weekly plan published",
     description: "Sent to guardians when a weekly learning plan is published for their child's site.",
     group: "Guardian Notifications", audience: "guardian",
-    defaultEmail: true, defaultInApp: false,
+    defaultEmail: true, defaultInApp: false, defaultRecipients: ["guardian"],
   },
   {
     key: "guardian_medication", label: "Medication administered",
     description: "Sent to guardians when medication is administered to their child.",
     group: "Guardian Notifications", audience: "guardian",
-    defaultEmail: true, defaultInApp: false,
+    defaultEmail: true, defaultInApp: false, defaultRecipients: ["guardian"],
   },
   {
     key: "guardian_behavioural", label: "Behavioural notification",
     description: "Sent to guardians when a behavioural incident is logged for their child.",
     group: "Guardian Notifications", audience: "guardian",
-    defaultEmail: true, defaultInApp: false,
+    defaultEmail: true, defaultInApp: false, defaultRecipients: ["guardian"],
   },
   {
     key: "guardian_welcome", label: "New enrolment welcome",
     description: "Welcome email sent to families when a new child is enrolled.",
     group: "Guardian Notifications", audience: "guardian",
-    defaultEmail: true, defaultInApp: false,
+    defaultEmail: true, defaultInApp: false, defaultRecipients: ["guardian"],
   },
   // Staff Events
   {
     key: "incident_submitted", label: "Incident submitted",
     description: "Notifies Educational Leaders and Admins when an incident is logged.",
     group: "Staff Events", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["admin", "educational_leader"],
   },
   {
     key: "incident_closed", label: "Incident closed",
     description: "Notifies the site Coordinator when an incident is resolved.",
     group: "Staff Events", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["coordinator", "submitter"],
   },
   {
     key: "condition_submitted", label: "Condition report submitted",
     description: "Notifies Educational Leaders and Admins when a condition report is filed.",
     group: "Staff Events", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["admin", "educational_leader"],
   },
   {
     key: "condition_closed", label: "Condition report closed",
     description: "Notifies the site Coordinator when a condition report is closed.",
     group: "Staff Events", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["coordinator", "submitter"],
   },
   {
     key: "post_comment", label: "Comment on post",
     description: "Notifies the post author when a new comment is added.",
     group: "Staff Events", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["submitter"],
   },
   {
     key: "observation_comment", label: "Comment on observation",
     description: "Notifies the observation author when a new comment is added.",
     group: "Staff Events", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["submitter"],
   },
   {
     key: "appraisal_submitted", label: "Appraisal submitted",
     description: "Notifies the relevant party when an appraisal stage is submitted.",
     group: "Staff Events", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["submitter", "editor"],
   },
   {
     key: "policy_new", label: "New policy published",
     description: "Notifies relevant staff when a new policy is created.",
     group: "Staff Events", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["admin", "educational_leader", "educator"],
   },
   {
     key: "policy_updated", label: "Policy updated",
     description: "Notifies staff when a policy version is updated.",
     group: "Staff Events", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["admin", "educational_leader", "educator"],
   },
   {
     key: "welfare_note_submitted", label: "Welfare note submitted",
     description: "Notifies Admins when a welfare note is created or edited.",
     group: "Staff Events", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["admin"],
   },
   {
     key: "welfare_mandatory_report", label: "Mandatory welfare report",
     description: "Notifies leaders when a mandatory welfare report is flagged.",
     group: "Staff Events", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["admin", "coordinator", "educational_leader"],
   },
   {
     key: "medication_administered", label: "Medication administered (staff)",
     description: "Notifies relevant staff when medication is logged for a child.",
     group: "Staff Events", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["admin", "submitter"],
   },
   // Deadline Reminders
   {
     key: "qip_deadline", label: "QIP deadline approaching",
     description: "Alert when a QIP improvement item is approaching its due date.",
     group: "Deadline Reminders", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["admin", "educational_leader"],
   },
   {
     key: "qip_deadline_expired", label: "QIP item overdue",
     description: "Alert when a QIP item has passed its due date.",
     group: "Deadline Reminders", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["admin", "educational_leader"],
   },
   {
     key: "staff_qualification_expiry", label: "Staff qualification expiring",
     description: "Alert when a staff qualification is close to expiry.",
     group: "Deadline Reminders", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["admin", "educational_leader"],
   },
   {
     key: "weekly_plan_missing", label: "Weekly plan not published",
     description: "Alert when the current week has no published planning experience.",
     group: "Deadline Reminders", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["admin", "educational_leader"],
   },
   {
     key: "checklist_overdue", label: "Checklist overdue",
     description: "Alert when an active checklist is more than 7 days past its target date.",
     group: "Deadline Reminders", audience: "staff",
-    defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true, defaultRecipients: ["admin", "coordinator"],
   },
 ];
 
@@ -379,23 +393,41 @@ export default function SettingsNotifications() {
   });
   const updateFs = useUpdateFeatureSettings();
 
-  type ChannelEntry = { email: boolean; inApp: boolean };
-  const [channelLocal, setChannelLocal] = useState<Record<string, ChannelEntry>>({});
+  type ChannelEntry = { email: boolean; inApp: boolean; recipients: string[] };
+  const [channelLocal, setChannelLocal] = useState<Record<string, Partial<ChannelEntry>>>({});
   const [channelDirty, setChannelDirty] = useState(false);
+  const [openPopoverKey, setOpenPopoverKey] = useState<string | null>(null);
+
+  function storedEntry(key: string): Partial<ChannelEntry> {
+    return (featureSettings?.notificationChannelMap as Record<string, Partial<ChannelEntry>> | undefined)?.[key] ?? {};
+  }
 
   function getChannelValue(key: string, field: "email" | "inApp"): boolean {
-    if (channelLocal[key] !== undefined) return channelLocal[key][field];
-    const stored = (featureSettings?.notificationChannelMap as Record<string, ChannelEntry> | undefined)?.[key];
-    if (stored !== undefined && stored[field] !== undefined) return stored[field];
+    if (channelLocal[key]?.[field] !== undefined) return channelLocal[key][field]!;
+    const s = storedEntry(key);
+    if (s[field] !== undefined) return s[field]!;
     const event = MAPPING_EVENTS.find((e) => e.key === key);
     return field === "email" ? (event?.defaultEmail ?? false) : (event?.defaultInApp ?? false);
   }
 
+  function getRecipients(key: string): string[] {
+    if (channelLocal[key]?.recipients !== undefined) return channelLocal[key].recipients!;
+    const s = storedEntry(key);
+    if (s.recipients !== undefined) return s.recipients;
+    return MAPPING_EVENTS.find((e) => e.key === key)?.defaultRecipients ?? [];
+  }
+
   function setChannelValue(key: string, field: "email" | "inApp", value: boolean) {
-    setChannelLocal((prev) => ({
-      ...prev,
-      [key]: { email: getChannelValue(key, "email"), inApp: getChannelValue(key, "inApp"), [field]: value },
-    }));
+    setChannelLocal((prev) => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
+    setChannelDirty(true);
+  }
+
+  function toggleRecipient(key: string, recipient: string) {
+    const current = getRecipients(key);
+    const next = current.includes(recipient)
+      ? current.filter((r) => r !== recipient)
+      : [...current, recipient];
+    setChannelLocal((prev) => ({ ...prev, [key]: { ...prev[key], recipients: next } }));
     setChannelDirty(true);
   }
 
@@ -405,6 +437,7 @@ export default function SettingsNotifications() {
       merged[event.key] = {
         email: getChannelValue(event.key, "email"),
         inApp: getChannelValue(event.key, "inApp"),
+        recipients: getRecipients(event.key),
       };
     }
     updateFs.mutate(
@@ -429,7 +462,7 @@ export default function SettingsNotifications() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-5xl">
       <div className="flex items-center gap-3">
         <Link href="/settings">
           <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -598,7 +631,7 @@ export default function SettingsNotifications() {
                     </CardHeader>
                     <CardContent className="p-0">
                       {/* Header row */}
-                      <div className="grid grid-cols-[1fr_72px_72px] gap-2 px-6 py-2 border-b bg-muted/40">
+                      <div className="grid grid-cols-[minmax(0,1fr)_64px_64px_minmax(180px,260px)] gap-3 px-6 py-2 border-b bg-muted/40">
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Event</span>
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide text-center flex items-center justify-center gap-1">
                           <Mail className="h-3 w-3" /> Email
@@ -606,42 +639,105 @@ export default function SettingsNotifications() {
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide text-center flex items-center justify-center gap-1">
                           <BellRing className="h-3 w-3" /> In-App
                         </span>
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                          <Users className="h-3 w-3" /> Recipients
+                        </span>
                       </div>
-                      {events.map((event, i) => (
-                        <div key={event.key}>
-                          {i > 0 && <Separator />}
-                          <div className="grid grid-cols-[1fr_72px_72px] gap-2 items-center px-6 py-3">
-                            <div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-sm font-medium">{event.label}</span>
-                                <Badge
-                                  variant="outline"
-                                  className={`text-[10px] h-4 px-1.5 ${event.audience === "guardian" ? "border-blue-200 text-blue-700 bg-blue-50" : "border-violet-200 text-violet-700 bg-violet-50"}`}
-                                >
-                                  {event.audience === "guardian" ? "Guardians" : "Staff"}
-                                </Badge>
+                      {events.map((event, i) => {
+                        const currentRecipients = getRecipients(event.key);
+                        const isOpen = openPopoverKey === event.key;
+                        return (
+                          <div key={event.key}>
+                            {i > 0 && <Separator />}
+                            <div className="grid grid-cols-[minmax(0,1fr)_64px_64px_minmax(180px,260px)] gap-3 items-start px-6 py-3">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm font-medium">{event.label}</span>
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-[10px] h-4 px-1.5 ${event.audience === "guardian" ? "border-blue-200 text-blue-700 bg-blue-50" : "border-violet-200 text-violet-700 bg-violet-50"}`}
+                                  >
+                                    {event.audience === "guardian" ? "Guardians" : "Staff"}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-0.5">{event.description}</p>
                               </div>
-                              <p className="text-xs text-muted-foreground mt-0.5">{event.description}</p>
-                            </div>
-                            {/* Email checkbox */}
-                            <div className="flex items-center justify-center">
-                              <Checkbox
-                                checked={getChannelValue(event.key, "email")}
-                                onCheckedChange={(v) => setChannelValue(event.key, "email", Boolean(v))}
-                                className="h-4 w-4"
-                              />
-                            </div>
-                            {/* In-App checkbox */}
-                            <div className="flex items-center justify-center">
-                              <Checkbox
-                                checked={getChannelValue(event.key, "inApp")}
-                                onCheckedChange={(v) => setChannelValue(event.key, "inApp", Boolean(v))}
-                                className="h-4 w-4"
-                              />
+                              {/* Email checkbox */}
+                              <div className="flex items-center justify-center pt-1">
+                                <Checkbox
+                                  checked={getChannelValue(event.key, "email")}
+                                  onCheckedChange={(v) => setChannelValue(event.key, "email", Boolean(v))}
+                                  className="h-4 w-4"
+                                />
+                              </div>
+                              {/* In-App checkbox */}
+                              <div className="flex items-center justify-center pt-1">
+                                <Checkbox
+                                  checked={getChannelValue(event.key, "inApp")}
+                                  onCheckedChange={(v) => setChannelValue(event.key, "inApp", Boolean(v))}
+                                  className="h-4 w-4"
+                                />
+                              </div>
+                              {/* Recipients */}
+                              <div className="flex flex-wrap gap-1 items-start pt-0.5">
+                                {currentRecipients.map((r) => {
+                                  const opt = RECIPIENT_OPTIONS.find((o) => o.value === r);
+                                  if (!opt) return null;
+                                  return (
+                                    <span key={r} className={`inline-flex items-center gap-0.5 text-[10px] font-medium border rounded-full px-2 py-0.5 ${opt.className}`}>
+                                      {opt.label}
+                                    </span>
+                                  );
+                                })}
+                                <Popover open={isOpen} onOpenChange={(open) => setOpenPopoverKey(open ? event.key : null)}>
+                                  <PopoverTrigger asChild>
+                                    <button
+                                      className="inline-flex items-center gap-1 text-[10px] text-muted-foreground border border-dashed rounded-full px-2 py-0.5 hover:border-foreground hover:text-foreground transition-colors"
+                                    >
+                                      <Pencil className="h-2.5 w-2.5" /> Edit
+                                    </button>
+                                  </PopoverTrigger>
+                                  <PopoverContent align="start" side="bottom" className="w-56 p-3 space-y-3">
+                                    <p className="text-xs font-semibold text-foreground">Distribution list</p>
+                                    <div className="space-y-1">
+                                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">Roles</p>
+                                      {RECIPIENT_OPTIONS.filter((o) => !["submitter", "editor"].includes(o.value)).map((opt) => (
+                                        <label key={opt.value} className="flex items-center gap-2 py-0.5 cursor-pointer">
+                                          <Checkbox
+                                            checked={currentRecipients.includes(opt.value)}
+                                            onCheckedChange={() => toggleRecipient(event.key, opt.value)}
+                                            className="h-3.5 w-3.5"
+                                          />
+                                          <span className={`text-[11px] font-medium border rounded-full px-2 py-0.5 ${opt.className}`}>{opt.label}</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                    <div className="space-y-1 border-t pt-2">
+                                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium mb-1">Event-relative</p>
+                                      {RECIPIENT_OPTIONS.filter((o) => ["submitter", "editor"].includes(o.value)).map((opt) => (
+                                        <label key={opt.value} className="flex items-center gap-2 py-0.5 cursor-pointer">
+                                          <Checkbox
+                                            checked={currentRecipients.includes(opt.value)}
+                                            onCheckedChange={() => toggleRecipient(event.key, opt.value)}
+                                            className="h-3.5 w-3.5"
+                                          />
+                                          <span className={`text-[11px] font-medium border rounded-full px-2 py-0.5 ${opt.className}`}>{opt.label}</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                    <button
+                                      onClick={() => setOpenPopoverKey(null)}
+                                      className="w-full text-xs text-center text-muted-foreground hover:text-foreground pt-1 border-t"
+                                    >
+                                      Done
+                                    </button>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </CardContent>
                   </Card>
                 );

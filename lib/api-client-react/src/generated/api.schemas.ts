@@ -1785,6 +1785,7 @@ export type FeatureSettingsNotificationChannelMap = {
   [key: string]: {
     email?: boolean;
     inApp?: boolean;
+    recipients?: string[];
   };
 };
 

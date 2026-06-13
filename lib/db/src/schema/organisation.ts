@@ -16,6 +16,7 @@ export interface FeatureSettings {
   // Children
   childrenRequireMedicalNotes?: boolean;
   childrenShowDobOnProfile?: boolean;
+  childDocumentTypes?: string[];
   // Posts
   postsAllowGuardianComments?: boolean;
   postsDefaultScope?: "all_sites" | "own_site";

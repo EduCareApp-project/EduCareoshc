@@ -8,6 +8,7 @@ import {
   useGetChildConfidentialNotes, getGetChildConfidentialNotesQueryKey, useCreateConfidentialNote, useUpdateConfidentialNote, useDeleteConfidentialNote,
   useListStaff, useListJottings, useListPlanningExperiences, useListPosts,
   useListChildDocuments, getListChildDocumentsQueryKey, useCreateChildDocument, useDeleteChildDocument,
+  useGetFeatureSettings, getGetFeatureSettingsQueryKey,
   useGetChildSettings, getGetChildSettingsQueryKey,
   useListChildMedications, useUpsertChildMedication,
   useListMedicationLogs, getListMedicationLogsQueryKey,
@@ -948,6 +949,8 @@ export default function ChildProfile() {
   }
 
   const { data: childDocuments, isLoading: docsLoading } = useListChildDocuments(id, { query: { queryKey: getListChildDocumentsQueryKey(id), enabled: !!id } });
+  const { data: featureSettings } = useGetFeatureSettings({ query: { queryKey: getGetFeatureSettingsQueryKey() } });
+  const [selectedDocType, setSelectedDocType] = useState<string>("");
   const createDocMutation = useCreateChildDocument();
   const deleteDocMutation = useDeleteChildDocument();
   const { uploadFile: uploadDoc, isUploading: isUploadingDoc } = useUpload({
@@ -960,7 +963,7 @@ export default function ChildProfile() {
     const result = await uploadDoc(file);
     if (!result) return;
     createDocMutation.mutate(
-      { id, data: { documentPath: result.objectPath, documentName: file.name } },
+      { id, data: { documentPath: result.objectPath, documentName: file.name, ...(selectedDocType ? { category: selectedDocType } : {}) } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: [`/api/children/${id}/documents`] });
@@ -1908,51 +1911,72 @@ export default function ChildProfile() {
         {/* ── Documents ── */}
         <TabsContent value="documents" className="space-y-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <FolderOpen className="h-5 w-5 text-muted-foreground" />
                 Documents
               </CardTitle>
-              <label className={`inline-flex items-center gap-2 cursor-pointer rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground ${isUploadingDoc ? "opacity-50 pointer-events-none" : ""}`}>
-                <Upload className="h-3.5 w-3.5" />
-                {isUploadingDoc ? "Uploading…" : "Upload Document"}
-                <input
-                  type="file"
-                  className="hidden"
-                  disabled={isUploadingDoc}
-                  onChange={handleDocUpload}
-                />
-              </label>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              {/* Upload toolbar */}
+              <div className="flex items-center gap-2">
+                <Select value={selectedDocType} onValueChange={setSelectedDocType}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select document type…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(featureSettings?.childDocumentTypes ?? ["Medical", "Behaviour", "MTOP Evidence"]).map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <label className={`inline-flex items-center gap-2 cursor-pointer rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground shrink-0 ${(isUploadingDoc || !selectedDocType) ? "opacity-50 pointer-events-none" : ""}`}>
+                  <Upload className="h-3.5 w-3.5" />
+                  {isUploadingDoc ? "Uploading…" : "Upload"}
+                  <input
+                    type="file"
+                    className="hidden"
+                    disabled={isUploadingDoc || !selectedDocType}
+                    onChange={handleDocUpload}
+                  />
+                </label>
+              </div>
+
+              {/* Document list grouped by type */}
               {docsLoading ? (
                 <div className="space-y-2">
                   <Skeleton className="h-10 w-full" />
                   <Skeleton className="h-10 w-full" />
                 </div>
               ) : !childDocuments || childDocuments.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground border-2 border-dashed rounded-lg">
+                <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground border-2 border-dashed rounded-lg">
                   <FolderOpen className="h-8 w-8 mb-2 opacity-30" />
                   <p className="text-sm font-medium">No documents uploaded yet</p>
-                  <p className="text-xs mt-1">Use the Upload Document button to add files for this child.</p>
+                  <p className="text-xs mt-1">Select a type above then click Upload.</p>
                 </div>
-              ) : (
-                <div className="divide-y">
-                  {childDocuments.map((doc) => (
-                    <div key={doc.id} className="flex items-center gap-3 py-2.5 group">
-                      <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <a
-                        href={`/api/storage/objects/${doc.documentPath.replace(/^\/?(objects\/)?/, "")}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 text-sm font-medium text-primary hover:underline underline-offset-4 truncate"
-                      >
-                        {doc.documentName ?? doc.documentPath.split("/").pop()}
-                      </a>
-                      <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">
-                        {format(new Date(doc.uploadedAt), "dd/MM/yyyy")}
-                      </span>
-                      {canDelete && (
+              ) : (() => {
+                const types = featureSettings?.childDocumentTypes ?? ["Medical", "Behaviour", "MTOP Evidence"];
+                const allGroups: Array<{ type: string; docs: typeof childDocuments }> = types.map((type) => ({
+                  type,
+                  docs: childDocuments.filter((d) => d.category === type),
+                }));
+                const grouped = allGroups.filter((g) => g.docs.length > 0);
+                const other = childDocuments.filter((d) => !d.category || !types.includes(d.category));
+                const docRow = (doc: typeof childDocuments[0]) => (
+                  <div key={doc.id} className="flex items-center gap-3 py-2.5 group">
+                    <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <a
+                      href={`/api/storage/objects/${doc.documentPath.replace(/^\/?(objects\/)?/, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 text-sm font-medium text-primary hover:underline underline-offset-4 truncate"
+                    >
+                      {doc.documentName ?? doc.documentPath.split("/").pop()}
+                    </a>
+                    <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">
+                      {format(new Date(doc.uploadedAt), "dd/MM/yyyy")}
+                    </span>
+                    {canDelete && (
                       <button
                         type="button"
                         onClick={() => handleDocDelete(doc.id, doc.documentName ?? null)}
@@ -1960,11 +1984,26 @@ export default function ChildProfile() {
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+                    )}
+                  </div>
+                );
+                return (
+                  <div className="space-y-4">
+                    {grouped.map(({ type, docs }) => (
+                      <div key={type}>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 pb-1 border-b">{type}</p>
+                        <div className="divide-y">{docs.map(docRow)}</div>
+                      </div>
+                    ))}
+                    {other.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 pb-1 border-b">Other</p>
+                        <div className="divide-y">{other.map(docRow)}</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>

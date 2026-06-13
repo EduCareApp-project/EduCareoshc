@@ -5769,6 +5769,10 @@ components:
           type: boolean
         childrenShowDobOnProfile:
           type: boolean
+        childDocumentTypes:
+          type: array
+          items:
+            type: string
         postsAllowGuardianComments:
           type: boolean
         postsDefaultScope:

@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { ChevronLeft, Baby, Save } from "lucide-react";
+import { ChevronLeft, Baby, Save, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -36,6 +37,8 @@ export default function SettingsChildren() {
   const [mode, setMode] = useState<"letter_icon" | "profile_picture">("letter_icon");
   const [requireMedicalNotes, setRequireMedicalNotes] = useState(false);
   const [showDobOnProfile, setShowDobOnProfile] = useState(false);
+  const [docTypes, setDocTypes] = useState<string[]>([]);
+  const [newTypeName, setNewTypeName] = useState("");
 
   useEffect(() => {
     if (settings?.childDisplayMode) {
@@ -47,6 +50,7 @@ export default function SettingsChildren() {
     if (!featureSettings) return;
     setRequireMedicalNotes(featureSettings.childrenRequireMedicalNotes ?? false);
     setShowDobOnProfile(featureSettings.childrenShowDobOnProfile ?? false);
+    setDocTypes(featureSettings.childDocumentTypes ?? ["Medical", "Behaviour", "MTOP Evidence"]);
   }, [featureSettings]);
 
   function handleSaveDisplay() {
@@ -56,6 +60,19 @@ export default function SettingsChildren() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetChildSettingsQueryKey() });
           toast({ title: "Display setting saved" });
+        },
+        onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+      }
+    );
+  }
+
+  function handleSaveDocTypes() {
+    updateFeatures.mutate(
+      { data: { childDocumentTypes: docTypes } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetFeatureSettingsQueryKey() });
+          toast({ title: "Document types saved" });
         },
         onError: () => toast({ title: "Failed to save", variant: "destructive" }),
       }
@@ -205,6 +222,77 @@ export default function SettingsChildren() {
 
           <div className="pt-2 flex justify-end border-t">
             <Button onClick={handleSaveProfile} disabled={updateFeatures.isPending || isLoading}>
+              <Save className="h-4 w-4 mr-2" />
+              Save
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Document Types</CardTitle>
+          <CardDescription>
+            Configure the document categories available when uploading files to a child's profile. Documents will be grouped by type on each child's profile.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => <div key={i} className="h-10 bg-muted/30 rounded animate-pulse" />)}
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                {docTypes.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">No document types configured yet.</p>
+                )}
+                {docTypes.map((type, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <div className="flex-1 text-sm px-3 py-2 border rounded-md bg-muted/30">{type}</div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0"
+                      onClick={() => setDocTypes(docTypes.filter((_, i) => i !== idx))}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <Input
+                  placeholder="New type name…"
+                  value={newTypeName}
+                  onChange={(e) => setNewTypeName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newTypeName.trim() && !docTypes.includes(newTypeName.trim())) {
+                      setDocTypes([...docTypes, newTypeName.trim()]);
+                      setNewTypeName("");
+                    }
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const trimmed = newTypeName.trim();
+                    if (trimmed && !docTypes.includes(trimmed)) {
+                      setDocTypes([...docTypes, trimmed]);
+                      setNewTypeName("");
+                    }
+                  }}
+                  disabled={!newTypeName.trim() || docTypes.includes(newTypeName.trim())}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add
+                </Button>
+              </div>
+            </>
+          )}
+
+          <div className="pt-2 flex justify-end border-t">
+            <Button onClick={handleSaveDocTypes} disabled={updateFeatures.isPending || isLoading}>
               <Save className="h-4 w-4 mr-2" />
               Save
             </Button>

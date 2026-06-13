@@ -1826,6 +1826,7 @@ export interface FeatureSettings {
   staffCustomRoles?: string[];
   childrenRequireMedicalNotes?: boolean;
   childrenShowDobOnProfile?: boolean;
+  childDocumentTypes?: string[];
   postsAllowGuardianComments?: boolean;
   postsDefaultScope?: FeatureSettingsPostsDefaultScope;
   postsRequireCommentApproval?: boolean;

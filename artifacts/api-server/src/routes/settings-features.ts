@@ -15,6 +15,7 @@ const DEFAULTS: Required<FeatureSettings> = {
   staffProfilesVisibleToPeers: false,
   childrenRequireMedicalNotes: false,
   childrenShowDobOnProfile: false,
+  childDocumentTypes: ["Medical", "Behaviour", "MTOP Evidence"],
   postsAllowGuardianComments: true,
   postsDefaultScope: "all_sites",
   postsRequireCommentApproval: false,

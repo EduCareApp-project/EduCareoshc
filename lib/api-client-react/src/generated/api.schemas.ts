@@ -1781,6 +1781,13 @@ export interface ChildSettings {
   childDisplayMode: ChildSettingsChildDisplayMode;
 }
 
+export type FeatureSettingsNotificationChannelMap = {
+  [key: string]: {
+    email?: boolean;
+    inApp?: boolean;
+  };
+};
+
 export type FeatureSettingsPostsDefaultScope =
   (typeof FeatureSettingsPostsDefaultScope)[keyof typeof FeatureSettingsPostsDefaultScope];
 
@@ -1827,6 +1834,7 @@ export interface FeatureSettings {
   childrenRequireMedicalNotes?: boolean;
   childrenShowDobOnProfile?: boolean;
   childDocumentTypes?: string[];
+  notificationChannelMap?: FeatureSettingsNotificationChannelMap;
   postsAllowGuardianComments?: boolean;
   postsDefaultScope?: FeatureSettingsPostsDefaultScope;
   postsRequireCommentApproval?: boolean;

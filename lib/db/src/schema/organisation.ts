@@ -17,6 +17,8 @@ export interface FeatureSettings {
   childrenRequireMedicalNotes?: boolean;
   childrenShowDobOnProfile?: boolean;
   childDocumentTypes?: string[];
+  // Notification channel map — controls email vs in-app per event key
+  notificationChannelMap?: Record<string, { email?: boolean; inApp?: boolean }>;
   // Posts
   postsAllowGuardianComments?: boolean;
   postsDefaultScope?: "all_sites" | "own_site";

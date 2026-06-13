@@ -14,6 +14,7 @@ import {
 } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { sendPostNotificationEmail } from "../lib/email";
+import { isEmailChannelEnabled } from "../lib/channelMap";
 import { getEmailBranding } from "../lib/emailBranding";
 
 const router: IRouter = Router();
@@ -166,7 +167,7 @@ router.patch("/posts/:id", async (req, res): Promise<void> => {
   if (!post) { res.status(404).json({ error: "Post not found" }); return; }
 
   const wasPublished = existing.publishedAt == null && post.publishedAt != null;
-  if (wasPublished && notifyGuardians !== false) {
+  if (wasPublished && notifyGuardians !== false && await isEmailChannelEnabled("guardian_post")) {
     const childJoinConditions = [
       eq(childrenTable.guardianEmail, parentAccountsTable.guardianEmail),
       eq(childrenTable.status, "active"),

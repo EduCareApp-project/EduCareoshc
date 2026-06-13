@@ -4,6 +4,7 @@ import { db, noticesTable, parentAccountsTable, childrenTable } from "@workspace
 import { CreateNoticeBody, DeleteNoticeParams, ListNoticesResponse, ListNoticesResponseItem, UpdateNoticeBody, UpdateNoticeParams } from "@workspace/api-zod";
 import { sendGuardianNoticeEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
+import { isEmailChannelEnabled } from "../lib/channelMap";
 
 const router: IRouter = Router();
 
@@ -73,14 +74,17 @@ router.post("/notices", async (req, res): Promise<void> => {
 
     const recipients = guardians.map((g) => g.email);
     const strippedContent = notice.content.replace(/<[^>]*>/g, "").trim().slice(0, 300);
-    getEmailBranding().then((branding) =>
-      sendGuardianNoticeEmail(recipients, {
-        noticeTitle: notice.title,
-        priority: notice.priority,
-        content: strippedContent,
-        portalUrl: getPortalUrl(),
-      }, branding)
-    ).catch((err) => req.log.warn({ err }, "Guardian notice email dispatch failed"));
+    isEmailChannelEnabled("guardian_notice").then((emailEnabled) => {
+      if (!emailEnabled || recipients.length === 0) return;
+      return getEmailBranding().then((branding) =>
+        sendGuardianNoticeEmail(recipients, {
+          noticeTitle: notice.title,
+          priority: notice.priority,
+          content: strippedContent,
+          portalUrl: getPortalUrl(),
+        }, branding)
+      );
+    }).catch((err) => req.log.warn({ err }, "Guardian notice email dispatch failed"));
   }
 
   res.status(201).json(ListNoticesResponseItem.parse(notice));

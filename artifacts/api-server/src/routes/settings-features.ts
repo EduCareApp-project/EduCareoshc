@@ -16,6 +16,7 @@ const DEFAULTS: Required<FeatureSettings> = {
   childrenRequireMedicalNotes: false,
   childrenShowDobOnProfile: false,
   childDocumentTypes: ["Medical", "Behaviour", "MTOP Evidence"],
+  notificationChannelMap: {},
   postsAllowGuardianComments: true,
   postsDefaultScope: "all_sites",
   postsRequireCommentApproval: false,

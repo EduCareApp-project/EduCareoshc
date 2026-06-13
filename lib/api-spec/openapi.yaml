@@ -5773,6 +5773,15 @@ components:
           type: array
           items:
             type: string
+        notificationChannelMap:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              email:
+                type: boolean
+              inApp:
+                type: boolean
         postsAllowGuardianComments:
           type: boolean
         postsDefaultScope:

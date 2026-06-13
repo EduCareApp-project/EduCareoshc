@@ -3319,6 +3319,15 @@ export const GetFeatureSettingsResponse = zod.object({
   childrenRequireMedicalNotes: zod.boolean().optional(),
   childrenShowDobOnProfile: zod.boolean().optional(),
   childDocumentTypes: zod.array(zod.string()).optional(),
+  notificationChannelMap: zod
+    .record(
+      zod.string(),
+      zod.object({
+        email: zod.boolean().optional(),
+        inApp: zod.boolean().optional(),
+      }),
+    )
+    .optional(),
   postsAllowGuardianComments: zod.boolean().optional(),
   postsDefaultScope: zod.enum(["all_sites", "own_site"]).optional(),
   postsRequireCommentApproval: zod.boolean().optional(),
@@ -3368,6 +3377,15 @@ export const UpdateFeatureSettingsBody = zod.object({
   childrenRequireMedicalNotes: zod.boolean().optional(),
   childrenShowDobOnProfile: zod.boolean().optional(),
   childDocumentTypes: zod.array(zod.string()).optional(),
+  notificationChannelMap: zod
+    .record(
+      zod.string(),
+      zod.object({
+        email: zod.boolean().optional(),
+        inApp: zod.boolean().optional(),
+      }),
+    )
+    .optional(),
   postsAllowGuardianComments: zod.boolean().optional(),
   postsDefaultScope: zod.enum(["all_sites", "own_site"]).optional(),
   postsRequireCommentApproval: zod.boolean().optional(),
@@ -3414,6 +3432,15 @@ export const UpdateFeatureSettingsResponse = zod.object({
   childrenRequireMedicalNotes: zod.boolean().optional(),
   childrenShowDobOnProfile: zod.boolean().optional(),
   childDocumentTypes: zod.array(zod.string()).optional(),
+  notificationChannelMap: zod
+    .record(
+      zod.string(),
+      zod.object({
+        email: zod.boolean().optional(),
+        inApp: zod.boolean().optional(),
+      }),
+    )
+    .optional(),
   postsAllowGuardianComments: zod.boolean().optional(),
   postsDefaultScope: zod.enum(["all_sites", "own_site"]).optional(),
   postsRequireCommentApproval: zod.boolean().optional(),

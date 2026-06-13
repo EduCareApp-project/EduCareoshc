@@ -1,0 +1,1 @@
+- [Notification channel map](notification-channel-map.md) — per-event email/inApp toggles stored in featureSettings.notificationChannelMap; read via channelMap.ts helpers in API routes before sending emails.

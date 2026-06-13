@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.2.0
  */
 import type { FeatureSettingsCalendarDefaultView } from "./featureSettingsCalendarDefaultView";
+import type { FeatureSettingsNotificationChannelMap } from "./featureSettingsNotificationChannelMap";
 import type { FeatureSettingsObservationsDefaultType } from "./featureSettingsObservationsDefaultType";
 import type { FeatureSettingsPostsDefaultScope } from "./featureSettingsPostsDefaultScope";
 import type { FeatureSettingsStoriesDefaultSharing } from "./featureSettingsStoriesDefaultSharing";
@@ -24,6 +25,7 @@ export interface FeatureSettings {
   childrenRequireMedicalNotes?: boolean;
   childrenShowDobOnProfile?: boolean;
   childDocumentTypes?: string[];
+  notificationChannelMap?: FeatureSettingsNotificationChannelMap;
   postsAllowGuardianComments?: boolean;
   postsDefaultScope?: FeatureSettingsPostsDefaultScope;
   postsRequireCommentApproval?: boolean;

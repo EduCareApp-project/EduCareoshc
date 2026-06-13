@@ -9,6 +9,7 @@ import {
 import { sendBehaviouralNotificationEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 import { logger } from "../lib/logger";
+import { isEmailChannelEnabled } from "../lib/channelMap";
 
 const router: IRouter = Router();
 
@@ -74,6 +75,7 @@ router.post("/children/:id/behavioural-notifications", async (req, res): Promise
   if (recipients.length > 0) {
     setImmediate(async () => {
       try {
+        if (!await isEmailChannelEnabled("guardian_behavioural")) return;
         const branding = await getEmailBranding();
         await sendBehaviouralNotificationEmail(recipients, {
           childName: `${child.firstName} ${child.lastName}`,

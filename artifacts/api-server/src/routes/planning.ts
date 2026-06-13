@@ -9,6 +9,7 @@ import {
 import { sendWeeklyPlanPublishedEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 import { isTypeEnabled } from "../lib/notify";
+import { isEmailChannelEnabled } from "../lib/channelMap";
 
 const router: IRouter = Router();
 
@@ -76,8 +77,8 @@ router.patch("/planning/:id", async (req, res): Promise<void> => {
       )
       .where(and(isNotNull(parentAccountsTable.passwordHash), isNull(parentAccountsTable.blockedAt)));
     const recipients = guardians.map((g) => g.email);
-    isTypeEnabled("planning_published").then((enabled) => {
-      if (!enabled || recipients.length === 0) return;
+    Promise.all([isTypeEnabled("planning_published"), isEmailChannelEnabled("guardian_weekly_plan")]).then(([typeEnabled, emailEnabled]) => {
+      if (!typeEnabled || !emailEnabled || recipients.length === 0) return;
       return getEmailBranding().then((branding) =>
         sendWeeklyPlanPublishedEmail(recipients, {
           planTitle: exp.title ?? "Calendar",

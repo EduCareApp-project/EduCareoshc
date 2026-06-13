@@ -65,6 +65,7 @@ export * from "./evacuationInput";
 export * from "./evacuationInputDrillType";
 export * from "./featureSettings";
 export * from "./featureSettingsCalendarDefaultView";
+export * from "./featureSettingsNotificationChannelMap";
 export * from "./featureSettingsObservationsDefaultType";
 export * from "./featureSettingsPostsDefaultScope";
 export * from "./featureSettingsStoriesDefaultSharing";

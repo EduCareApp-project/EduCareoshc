@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -148,8 +147,6 @@ type MappingEvent = {
   description: string;
   group: "Guardian Notifications" | "Staff Events" | "Deadline Reminders";
   audience: "guardian" | "staff";
-  emailImpl: boolean;
-  inAppImpl: boolean;
   defaultEmail: boolean;
   defaultInApp: boolean;
 };
@@ -160,141 +157,141 @@ const MAPPING_EVENTS: MappingEvent[] = [
     key: "guardian_notice", label: "Notice posted",
     description: "Sent to guardians when a new service notice is published.",
     group: "Guardian Notifications", audience: "guardian",
-    emailImpl: true, inAppImpl: false, defaultEmail: true, defaultInApp: false,
+    defaultEmail: true, defaultInApp: false,
   },
   {
     key: "guardian_post", label: "Learning story published",
     description: "Sent to guardians when a learning story or post is published for their child.",
     group: "Guardian Notifications", audience: "guardian",
-    emailImpl: true, inAppImpl: false, defaultEmail: true, defaultInApp: false,
+    defaultEmail: true, defaultInApp: false,
   },
   {
     key: "guardian_weekly_plan", label: "Weekly plan published",
     description: "Sent to guardians when a weekly learning plan is published for their child's site.",
     group: "Guardian Notifications", audience: "guardian",
-    emailImpl: true, inAppImpl: false, defaultEmail: true, defaultInApp: false,
+    defaultEmail: true, defaultInApp: false,
   },
   {
     key: "guardian_medication", label: "Medication administered",
     description: "Sent to guardians when medication is administered to their child.",
     group: "Guardian Notifications", audience: "guardian",
-    emailImpl: true, inAppImpl: false, defaultEmail: true, defaultInApp: false,
+    defaultEmail: true, defaultInApp: false,
   },
   {
     key: "guardian_behavioural", label: "Behavioural notification",
     description: "Sent to guardians when a behavioural incident is logged for their child.",
     group: "Guardian Notifications", audience: "guardian",
-    emailImpl: true, inAppImpl: false, defaultEmail: true, defaultInApp: false,
+    defaultEmail: true, defaultInApp: false,
   },
   {
     key: "guardian_welcome", label: "New enrolment welcome",
     description: "Welcome email sent to families when a new child is enrolled.",
     group: "Guardian Notifications", audience: "guardian",
-    emailImpl: true, inAppImpl: false, defaultEmail: true, defaultInApp: false,
+    defaultEmail: true, defaultInApp: false,
   },
   // Staff Events
   {
     key: "incident_submitted", label: "Incident submitted",
     description: "Notifies Educational Leaders and Admins when an incident is logged.",
     group: "Staff Events", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   {
     key: "incident_closed", label: "Incident closed",
     description: "Notifies the site Coordinator when an incident is resolved.",
     group: "Staff Events", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   {
     key: "condition_submitted", label: "Condition report submitted",
     description: "Notifies Educational Leaders and Admins when a condition report is filed.",
     group: "Staff Events", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   {
     key: "condition_closed", label: "Condition report closed",
     description: "Notifies the site Coordinator when a condition report is closed.",
     group: "Staff Events", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   {
     key: "post_comment", label: "Comment on post",
     description: "Notifies the post author when a new comment is added.",
     group: "Staff Events", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   {
     key: "observation_comment", label: "Comment on observation",
     description: "Notifies the observation author when a new comment is added.",
     group: "Staff Events", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   {
     key: "appraisal_submitted", label: "Appraisal submitted",
     description: "Notifies the relevant party when an appraisal stage is submitted.",
     group: "Staff Events", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   {
     key: "policy_new", label: "New policy published",
     description: "Notifies relevant staff when a new policy is created.",
     group: "Staff Events", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   {
     key: "policy_updated", label: "Policy updated",
     description: "Notifies staff when a policy version is updated.",
     group: "Staff Events", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   {
     key: "welfare_note_submitted", label: "Welfare note submitted",
     description: "Notifies Admins when a welfare note is created or edited.",
     group: "Staff Events", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   {
     key: "welfare_mandatory_report", label: "Mandatory welfare report",
     description: "Notifies leaders when a mandatory welfare report is flagged.",
     group: "Staff Events", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   {
     key: "medication_administered", label: "Medication administered (staff)",
     description: "Notifies relevant staff when medication is logged for a child.",
     group: "Staff Events", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   // Deadline Reminders
   {
     key: "qip_deadline", label: "QIP deadline approaching",
     description: "Alert when a QIP improvement item is approaching its due date.",
     group: "Deadline Reminders", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   {
     key: "qip_deadline_expired", label: "QIP item overdue",
     description: "Alert when a QIP item has passed its due date.",
     group: "Deadline Reminders", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   {
     key: "staff_qualification_expiry", label: "Staff qualification expiring",
     description: "Alert when a staff qualification is close to expiry.",
     group: "Deadline Reminders", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   {
     key: "weekly_plan_missing", label: "Weekly plan not published",
     description: "Alert when the current week has no published planning experience.",
     group: "Deadline Reminders", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
   {
     key: "checklist_overdue", label: "Checklist overdue",
     description: "Alert when an active checklist is more than 7 days past its target date.",
     group: "Deadline Reminders", audience: "staff",
-    emailImpl: false, inAppImpl: true, defaultEmail: false, defaultInApp: true,
+    defaultEmail: false, defaultInApp: true,
   },
 ];
 
@@ -570,13 +567,13 @@ export default function SettingsNotifications() {
         {/* ── Mapping tab ───────────────────────────────────────────────── */}
         <TabsContent value="mapping" className="space-y-6 mt-4">
           <p className="text-sm text-muted-foreground">
-            Control how each notification event is delivered. Uncheck <strong>Email</strong> to stop emails going to inboxes; uncheck <strong>In-App</strong> to suppress the in-app bell notification. Channels marked <span className="text-muted-foreground italic">N/A</span> are not available for that event type.
+            Choose how each event is delivered. You can enable <strong>Email</strong>, <strong>In-App</strong>, both, or neither for any event. Changes take effect immediately after saving.
           </p>
 
           {fsLoading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : (
-            <TooltipProvider>
+            <div className="space-y-6">
               {MAPPING_GROUPS.map((group) => {
                 const events = MAPPING_EVENTS.filter((e) => e.group === group);
                 return (
@@ -628,41 +625,19 @@ export default function SettingsNotifications() {
                             </div>
                             {/* Email checkbox */}
                             <div className="flex items-center justify-center">
-                              {event.emailImpl ? (
-                                <Checkbox
-                                  checked={getChannelValue(event.key, "email")}
-                                  onCheckedChange={(v) => setChannelValue(event.key, "email", Boolean(v))}
-                                  className="h-4 w-4"
-                                />
-                              ) : (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span className="text-xs text-muted-foreground/50 select-none cursor-default">N/A</span>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="text-xs">
-                                    Email delivery is not available for this event type.
-                                  </TooltipContent>
-                                </Tooltip>
-                              )}
+                              <Checkbox
+                                checked={getChannelValue(event.key, "email")}
+                                onCheckedChange={(v) => setChannelValue(event.key, "email", Boolean(v))}
+                                className="h-4 w-4"
+                              />
                             </div>
                             {/* In-App checkbox */}
                             <div className="flex items-center justify-center">
-                              {event.inAppImpl ? (
-                                <Checkbox
-                                  checked={getChannelValue(event.key, "inApp")}
-                                  onCheckedChange={(v) => setChannelValue(event.key, "inApp", Boolean(v))}
-                                  className="h-4 w-4"
-                                />
-                              ) : (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span className="text-xs text-muted-foreground/50 select-none cursor-default">N/A</span>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="text-xs">
-                                    In-app delivery is not available for this event type.
-                                  </TooltipContent>
-                                </Tooltip>
-                              )}
+                              <Checkbox
+                                checked={getChannelValue(event.key, "inApp")}
+                                onCheckedChange={(v) => setChannelValue(event.key, "inApp", Boolean(v))}
+                                className="h-4 w-4"
+                              />
                             </div>
                           </div>
                         </div>
@@ -671,7 +646,7 @@ export default function SettingsNotifications() {
                   </Card>
                 );
               })}
-            </TooltipProvider>
+            </div>
           )}
 
           <div className="flex items-center gap-2 pt-2">

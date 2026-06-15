@@ -65,7 +65,7 @@ export default function WeeklyPlanPrint() {
       {/* Screen-only controls */}
       <div className="print:hidden fixed top-0 inset-x-0 bg-white border-b shadow-sm z-10 px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src="/educare-logo.png" alt="EduCare" className="h-8 w-8 object-contain" />
+          <img src="/educare-hands.png" alt="EduCare" className="h-8 w-8 object-contain" />
           <div>
             <p className="text-sm font-semibold">{plan.title ?? "Weekly Plan"}</p>
             <p className="text-xs text-muted-foreground">
@@ -87,7 +87,7 @@ export default function WeeklyPlanPrint() {
         {/* Print header */}
         <div className="print:flex hidden items-start justify-between mb-6 pb-4 border-b border-gray-300">
           <div className="flex items-center gap-3">
-            <img src="/educare-logo.png" alt="EduCare" className="h-12 w-12 object-contain" />
+            <img src="/educare-hands.png" alt="EduCare" className="h-14 w-14 object-contain" />
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-widest font-medium">EduCare</p>
               <p className="text-sm text-gray-400">Printed {format(new Date(), "dd/MM/yyyy")}</p>

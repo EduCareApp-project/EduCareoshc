@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, asc, or, ne } from "drizzle-orm";
+import { eq, asc, or } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, sitesTable } from "@workspace/db";
@@ -11,7 +11,7 @@ const router: IRouter = Router();
 
 router.get("/reports/system-access", async (_req, res): Promise<void> => {
   const [staffRows, guardianRows, childRows, siteRows] = await Promise.all([
-    db.select().from(staffTable).where(ne(staffTable.status, "archived")).orderBy(asc(staffTable.lastName), asc(staffTable.firstName)),
+    db.select().from(staffTable).where(eq(staffTable.status, "active")).orderBy(asc(staffTable.lastName), asc(staffTable.firstName)),
     db.select().from(parentAccountsTable).orderBy(asc(parentAccountsTable.guardianEmail)),
     db.select({
       guardianEmail: childrenTable.guardianEmail,
@@ -25,13 +25,13 @@ router.get("/reports/system-access", async (_req, res): Promise<void> => {
     db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable).orderBy(asc(sitesTable.name)),
   ]);
 
-  const guardianMeta = new Map<string, { name: string; children: string[]; siteIds: number[] }>();
+  const guardianMeta = new Map<string, { email: string; name: string; children: string[]; siteIds: number[] }>();
 
   function indexGuardian(email: string | null, name: string | null, childName: string, siteId: number | null) {
     const key = (email ?? "").toLowerCase();
     if (!key) return;
     if (!guardianMeta.has(key)) {
-      guardianMeta.set(key, { name: name ?? key, children: [], siteIds: [] });
+      guardianMeta.set(key, { email: email!, name: name ?? key, children: [], siteIds: [] });
     }
     const entry = guardianMeta.get(key)!;
     entry.children.push(childName);
@@ -46,19 +46,27 @@ router.get("/reports/system-access", async (_req, res): Promise<void> => {
     indexGuardian(child.guardian2Email, child.guardian2Name, childName, child.siteId);
   }
 
-  const guardians = guardianRows
-    .map((g) => {
-      const meta = guardianMeta.get(g.guardianEmail.toLowerCase());
+  // Build a lookup from parent_accounts so we can enrich with connection/block status
+  const accountMap = new Map<string, typeof guardianRows[0]>();
+  for (const g of guardianRows) {
+    accountMap.set(g.guardianEmail.toLowerCase(), g);
+  }
+
+  // Derive the list from children (every guardian email on a child record appears here),
+  // then left-join parent_accounts — guardians without an account get id: null
+  const guardians = Array.from(guardianMeta.entries())
+    .map(([emailKey, meta]) => {
+      const account = accountMap.get(emailKey);
       return {
-        id: g.id,
-        guardianEmail: g.guardianEmail,
-        guardianName: meta?.name ?? g.guardianEmail,
-        children: meta?.children ?? [],
-        siteIds: meta?.siteIds ?? [],
-        isConnected: !!g.passwordHash,
-        blockedAt: g.blockedAt,
-        lastLoginAt: g.lastLoginAt,
-        createdAt: g.createdAt,
+        id: account?.id ?? null,
+        guardianEmail: account?.guardianEmail ?? meta.email,
+        guardianName: meta.name,
+        children: meta.children,
+        siteIds: meta.siteIds,
+        isConnected: account ? !!account.passwordHash : false,
+        blockedAt: account?.blockedAt ?? null,
+        lastLoginAt: account?.lastLoginAt ?? null,
+        createdAt: account?.createdAt ?? null,
       };
     })
     .sort((a, b) => a.guardianName.localeCompare(b.guardianName, undefined, { sensitivity: "base" }));

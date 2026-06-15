@@ -28,7 +28,7 @@ type StaffRow = {
 };
 
 type GuardianRow = {
-  id: number;
+  id: number | null;
   guardianEmail: string;
   guardianName: string;
   children: string[];
@@ -36,7 +36,7 @@ type GuardianRow = {
   isConnected: boolean;
   blockedAt: string | null;
   lastLoginAt: string | null;
-  createdAt: string;
+  createdAt: string | null;
 };
 
 type SiteOption = { id: number; name: string };
@@ -291,11 +291,12 @@ function GuardianRow({ row, onBlock }: { row: GuardianRow; onBlock: () => void }
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [pwDialog, setPwDialog] = useState(false);
+  const isProvisioned = row.id != null;
   const isBlocked = !!row.blockedAt;
-  const canSendInstructions = !!row.guardianEmail && !isBlocked;
+  const canSendInstructions = isProvisioned && !!row.guardianEmail && !isBlocked;
 
   const pwMutation = useMutation({
-    mutationFn: (pw: string) => setPassword("guardian", row.id, pw),
+    mutationFn: (pw: string) => setPassword("guardian", row.id!, pw),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/reports/system-access"] });
       toast({ title: "Password set", description: `${row.guardianName} can now log in to the family portal.` });
@@ -305,7 +306,7 @@ function GuardianRow({ row, onBlock }: { row: GuardianRow; onBlock: () => void }
   });
 
   const sendMutation = useMutation({
-    mutationFn: () => sendInstructions("guardian", row.id),
+    mutationFn: () => sendInstructions("guardian", row.id!),
     onSuccess: () => toast({ title: "Instructions sent", description: `Login instructions emailed to ${row.guardianEmail}.` }),
     onError: (e: Error) => toast({ title: "Failed to send instructions", description: e.message, variant: "destructive" }),
   });
@@ -322,8 +323,10 @@ function GuardianRow({ row, onBlock }: { row: GuardianRow; onBlock: () => void }
         </td>
         <td className="py-3 px-4">
           <div className="flex flex-wrap gap-1.5">
-            <ConnectedBadge connected={row.isConnected} />
-            <BlockedBadge blockedAt={row.blockedAt} />
+            {!isProvisioned
+              ? <Badge variant="outline" className="text-xs text-muted-foreground">No account</Badge>
+              : <><ConnectedBadge connected={row.isConnected} /><BlockedBadge blockedAt={row.blockedAt} /></>
+            }
           </div>
         </td>
         <td className="py-3 px-4 text-sm text-muted-foreground whitespace-nowrap">
@@ -339,13 +342,14 @@ function GuardianRow({ row, onBlock }: { row: GuardianRow; onBlock: () => void }
                   size="sm"
                   variant="ghost"
                   className="h-7 text-xs gap-1.5"
+                  disabled={!isProvisioned}
                   onClick={() => setPwDialog(true)}
                 >
                   <KeyRound className="h-3.5 w-3.5" />
                   {row.isConnected ? "Reset password" : "Set password"}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{row.isConnected ? "Change this guardian's password" : "Create a login password"}</TooltipContent>
+              <TooltipContent>{!isProvisioned ? "Guardian has no portal account yet" : row.isConnected ? "Change this guardian's password" : "Create a login password"}</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -361,7 +365,9 @@ function GuardianRow({ row, onBlock }: { row: GuardianRow; onBlock: () => void }
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {!row.guardianEmail
+                {!isProvisioned
+                  ? "Guardian has no portal account yet"
+                  : !row.guardianEmail
                   ? "No email address on record"
                   : isBlocked
                   ? "Unblock this account before sending instructions"
@@ -374,13 +380,14 @@ function GuardianRow({ row, onBlock }: { row: GuardianRow; onBlock: () => void }
                   size="sm"
                   variant="ghost"
                   className={`h-7 text-xs gap-1.5 ${isBlocked ? "text-emerald-700 hover:text-emerald-900" : "text-red-600 hover:text-red-800"}`}
+                  disabled={!isProvisioned}
                   onClick={onBlock}
                 >
                   {isBlocked ? <ShieldCheck className="h-3.5 w-3.5" /> : <ShieldOff className="h-3.5 w-3.5" />}
                   {isBlocked ? "Unblock" : "Block"}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{isBlocked ? "Restore access" : "Block access to the family portal"}</TooltipContent>
+              <TooltipContent>{!isProvisioned ? "Guardian has no portal account yet" : isBlocked ? "Restore access" : "Block access to the family portal"}</TooltipContent>
             </Tooltip>
           </div>
         </td>
@@ -583,9 +590,9 @@ export default function ReportsSystemAccess() {
               ) : (
                 filteredGuardians.map((g) => (
                   <GuardianRow
-                    key={g.id}
+                    key={g.guardianEmail}
                     row={g}
-                    onBlock={() => blockMutation.mutate({ type: "guardian", id: g.id })}
+                    onBlock={() => g.id != null && blockMutation.mutate({ type: "guardian", id: g.id })}
                   />
                 ))
               )}

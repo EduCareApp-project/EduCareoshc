@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronLeft, ChevronRight, Layers, ArrowRight, CheckCircle2, Plus, X, Send, AlertTriangle, CopyCheck, ClipboardList } from "lucide-react";
+import { ChevronLeft, ChevronRight, Layers, ArrowRight, CheckCircle2, Plus, X, Send, AlertTriangle, CopyCheck, ClipboardList, Copy } from "lucide-react";
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   addMonths, subMonths, format, parseISO, isBefore, isAfter, addDays, startOfToday,
@@ -18,6 +18,7 @@ import {
 import { Link, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useToast } from "@/hooks/use-toast";
 import { getListPlanningExperiencesQueryKey } from "@workspace/api-client-react";
 import {
   ReadOnlyPlanView, ExistingPlan,
@@ -52,19 +53,26 @@ interface WeekPlanModalProps {
   existingPlan?: ExistingPlan;
   onClose: () => void;
   onSaved: () => void;
+  isAdmin?: boolean;
 }
 
-function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, onSaved }: WeekPlanModalProps) {
+function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, onSaved, isAdmin }: WeekPlanModalProps) {
+  const { toast } = useToast();
   const defaultTitle = existingPlan?.title ?? `Week of ${format(weekMonday, "dd/MM/yyyy")}`;
   const [title, setTitle] = useState(defaultTitle);
   const [grid, setGrid] = useState<WeeklyPlanGrid>(() => existingPlan ? initGridFromPlan(existingPlan) : emptyGrid());
   const [cellOutcomes, setCellOutcomes] = useState<CellOutcomes>(() => existingPlan?.weeklyPlanData?.cellOutcomes ?? {});
   const [copyFromId, setCopyFromId] = useState<string>("");
   const [copyConfirm, setCopyConfirm] = useState(false);
+  const [showDuplicate, setShowDuplicate] = useState(false);
+  const [duplicateSiteId, setDuplicateSiteId] = useState<string>("");
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const { mutateAsync: create, isPending: isCreating } = useCreatePlanningExperience();
   const { mutateAsync: update, isPending: isUpdating } = useUpdatePlanningExperience();
   const isPending = isCreating || isUpdating;
   const { data: allPlanning } = useListPlanningExperiences();
+  const { data: allSites } = useListSites();
+  const otherSites = (allSites ?? []).filter((s) => s.id !== siteId);
 
   const openExperiences = (allPlanning ?? []).filter(
     (p) => p.stage !== "closed" && (siteId === undefined || p.siteId === siteId),
@@ -140,6 +148,31 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
     }
     onSaved();
     onClose();
+  }
+
+  async function handleDuplicate() {
+    if (!existingPlan || !duplicateSiteId) return;
+    setIsDuplicating(true);
+    try {
+      const weeklyPlanData = { ...grid, cellOutcomes } as any;
+      const targetSite = otherSites.find((s) => s.id === Number(duplicateSiteId));
+      await create({
+        data: {
+          title,
+          stage: "planned",
+          startDate: format(weekMonday, "yyyy-MM-dd"),
+          weeklyPlanData,
+          siteId: Number(duplicateSiteId),
+        },
+      });
+      onSaved();
+      toast({ title: "Plan duplicated", description: `Copied to ${targetSite?.name ?? "service"}` });
+      onClose();
+    } catch {
+      toast({ title: "Failed to duplicate plan", variant: "destructive" });
+    } finally {
+      setIsDuplicating(false);
+    }
   }
 
   return (
@@ -338,7 +371,45 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
           </div>
         </div>
 
-        <DialogFooter className="pt-2">
+        <DialogFooter className="pt-2 flex-wrap gap-2">
+          {isAdmin && existingPlan && otherSites.length > 0 && (
+            showDuplicate ? (
+              <div className="flex items-center gap-2 mr-auto flex-wrap">
+                <Select value={duplicateSiteId} onValueChange={setDuplicateSiteId}>
+                  <SelectTrigger className="h-8 text-xs w-52">
+                    <SelectValue placeholder="Choose service…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {otherSites.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)} className="text-xs">{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  className="h-8 text-xs gap-1.5"
+                  disabled={!duplicateSiteId || isDuplicating}
+                  onClick={handleDuplicate}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  {isDuplicating ? "Duplicating…" : "Duplicate"}
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setShowDuplicate(false); setDuplicateSiteId(""); }}>
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="mr-auto h-9 text-xs gap-1.5"
+                onClick={() => setShowDuplicate(true)}
+              >
+                <Copy className="h-3.5 w-3.5" />
+                Duplicate to service…
+              </Button>
+            )
+          )}
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSave} disabled={isPending || !title.trim()}>
             {isPending ? "Saving…" : "Save Plan"}
@@ -352,7 +423,7 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
 export default function Calendar() {
   const search = useSearch();
   const isGuardianMode = new URLSearchParams(search).get("mode") === "guardian";
-  const { isEducatorRole, ownSiteId } = usePermissions();
+  const { isEducatorRole, ownSiteId, isAdmin } = usePermissions();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [planWeek, setPlanWeek] = useState<Date | null>(null);
@@ -695,6 +766,7 @@ export default function Calendar() {
           existingPlan={planExisting ?? undefined}
           onClose={() => { setPlanWeek(null); setPlanExisting(null); }}
           onSaved={handleSaved}
+          isAdmin={isAdmin}
         />
       )}
 

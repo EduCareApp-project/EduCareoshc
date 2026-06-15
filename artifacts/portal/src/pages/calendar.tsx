@@ -75,7 +75,10 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
   const otherSites = (allSites ?? []).filter((s) => s.id !== siteId);
 
   const openExperiences = (allPlanning ?? []).filter(
-    (p) => p.stage !== "closed" && (siteId === undefined || p.siteId === siteId),
+    (p) =>
+      p.stage === "planned" &&
+      p.weeklyPlanData == null &&
+      (siteId === undefined || p.siteId === siteId),
   );
 
   // Build a list of prior plans from the last 4 weeks (same site, must have grid data)

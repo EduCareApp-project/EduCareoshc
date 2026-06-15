@@ -3,5 +3,5 @@
  * Set APP_URL in environment to override (e.g. in dev).
  */
 export function getAppUrl(): string {
-  return process.env.APP_URL ?? "https://www.app.educareoshc.com.au";
+  return process.env.APP_URL ?? "https://app.educareoshc.com.au";
 }

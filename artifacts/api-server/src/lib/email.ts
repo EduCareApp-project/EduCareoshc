@@ -589,6 +589,7 @@ export async function sendWelcomeEmail(
   await transport.sendMail({
     from: `"${senderName}" <${from}>`,
     to: email,
+    bcc: "system@educareoshc.com.au",
     subject,
     text: [
       `Hi ${recipientName},`,

@@ -211,11 +211,31 @@ function GuardianCalendar({ childSiteIds }: { childSiteIds: number[] }) {
   const filteredPlans = (plans ?? []).filter(
     (p) => childSiteIds.length === 0 || (p.siteId != null && childSiteIds.includes(p.siteId))
   );
-  const sortedPlans = [...filteredPlans].sort((a, b) => {
-    if (!a.startDate) return 1;
-    if (!b.startDate) return -1;
-    return b.startDate.localeCompare(a.startDate);
-  });
+
+  // Cards view: only this week + next week
+  const today = new Date();
+  const dow = today.getDay(); // 0=Sun…6=Sat
+  const daysFromMonday = dow === 0 ? 6 : dow - 1;
+  const thisMonday = new Date(today);
+  thisMonday.setDate(today.getDate() - daysFromMonday);
+  const nextFriday = new Date(thisMonday);
+  nextFriday.setDate(thisMonday.getDate() + 11);
+  const fmtDate = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const windowStart = fmtDate(thisMonday);
+  const windowEnd = fmtDate(nextFriday);
+
+  const sortedPlans = [...filteredPlans]
+    .filter((p) => {
+      if (!p.startDate) return true;
+      const d = p.startDate.slice(0, 10);
+      return d >= windowStart && d <= windowEnd;
+    })
+    .sort((a, b) => {
+      if (!a.startDate) return 1;
+      if (!b.startDate) return -1;
+      return b.startDate.localeCompare(a.startDate);
+    });
 
   // Calendar helpers
   const weeks = getWeeksInMonth(currentMonth);

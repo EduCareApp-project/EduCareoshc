@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { eq, asc, and, or, gt, gte, lte, isNull, isNotNull, inArray, sql } from "drizzle-orm";
+import { eq, asc, and, or, gt, isNull, isNotNull, inArray, sql } from "drizzle-orm";
 import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, postsTable, sitesTable, planningExperiencesTable, noticesTable } from "@workspace/db";
 import { sendPasswordResetEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
@@ -317,19 +317,6 @@ router.get("/auth/my-plans", async (req, res): Promise<void> => {
     return;
   }
 
-  // Compute this Monday and next Friday as YYYY-MM-DD strings (server local date)
-  const today = new Date();
-  const dow = today.getDay(); // 0=Sun … 6=Sat
-  const daysFromMonday = dow === 0 ? 6 : dow - 1;
-  const thisMonday = new Date(today);
-  thisMonday.setDate(today.getDate() - daysFromMonday);
-  const nextFriday = new Date(thisMonday);
-  nextFriday.setDate(thisMonday.getDate() + 11); // Mon+11 = next Friday
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const thisWeekStart = fmt(thisMonday);
-  const nextWeekEnd = fmt(nextFriday);
-
   const [plans, sites] = await Promise.all([
     db.select()
       .from(planningExperiencesTable)
@@ -338,8 +325,6 @@ router.get("/auth/my-plans", async (req, res): Promise<void> => {
           inArray(planningExperiencesTable.siteId, siteIds),
           sql`${planningExperiencesTable.stage} = 'published'`,
           isNotNull(planningExperiencesTable.weeklyPlanData),
-          gte(planningExperiencesTable.startDate, thisWeekStart as any),
-          lte(planningExperiencesTable.startDate, nextWeekEnd as any),
         )
       )
       .orderBy(planningExperiencesTable.startDate),

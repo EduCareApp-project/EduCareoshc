@@ -60,7 +60,7 @@ export default function WeeklyPlanPrint() {
 
   return (
     <>
-      <style>{`@page { size: landscape; margin: 12mm; }`}</style>
+      <style>{`@page { size: landscape; margin: 7mm; }`}</style>
 
       {/* Screen-only controls */}
       <div className="print:hidden fixed top-0 inset-x-0 bg-white border-b shadow-sm z-10 px-6 py-3 flex items-center justify-between">

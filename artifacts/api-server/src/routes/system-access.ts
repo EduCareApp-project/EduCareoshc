@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, asc, or } from "drizzle-orm";
+import { eq, asc, or, ne } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, sitesTable } from "@workspace/db";
@@ -11,7 +11,7 @@ const router: IRouter = Router();
 
 router.get("/reports/system-access", async (_req, res): Promise<void> => {
   const [staffRows, guardianRows, childRows, siteRows] = await Promise.all([
-    db.select().from(staffTable).orderBy(asc(staffTable.lastName), asc(staffTable.firstName)),
+    db.select().from(staffTable).where(ne(staffTable.status, "archived")).orderBy(asc(staffTable.lastName), asc(staffTable.firstName)),
     db.select().from(parentAccountsTable).orderBy(asc(parentAccountsTable.guardianEmail)),
     db.select({
       guardianEmail: childrenTable.guardianEmail,

@@ -155,7 +155,7 @@ export default function GuardianPlans() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Weekly Program</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Published weekly activity plans from your child's service.
+          This week and next week's published programs from your child's service.
         </p>
       </div>
 

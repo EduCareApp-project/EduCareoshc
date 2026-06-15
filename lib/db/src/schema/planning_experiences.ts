@@ -32,6 +32,7 @@ export const planningExperiencesTable = pgTable("planning_experiences", {
   isTemplate: boolean("is_template").notNull().default(false),
   assessmentData: jsonb("assessment_data"),
   weeklyPlanData: jsonb("weekly_plan_data"),
+  firstPublishedAt: timestamp("first_published_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

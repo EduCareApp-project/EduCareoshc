@@ -2562,6 +2562,7 @@ export const ListPlanningExperiencesResponseItem = zod.object({
       zod.null(),
     ])
     .optional(),
+  firstPublishedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
 });
 export const ListPlanningExperiencesResponse = zod.array(
@@ -2836,6 +2837,7 @@ export const GetPlanningExperienceResponse = zod.object({
       zod.null(),
     ])
     .optional(),
+  firstPublishedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
 });
 
@@ -3102,6 +3104,7 @@ export const UpdatePlanningExperienceResponse = zod.object({
       zod.null(),
     ])
     .optional(),
+  firstPublishedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
 });
 

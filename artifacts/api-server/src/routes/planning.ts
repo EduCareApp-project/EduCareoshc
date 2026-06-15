@@ -47,15 +47,19 @@ router.patch("/planning/:id", async (req, res): Promise<void> => {
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
   const [existing] = await db
-    .select({ stage: planningExperiencesTable.stage })
+    .select({ stage: planningExperiencesTable.stage, firstPublishedAt: planningExperiencesTable.firstPublishedAt })
     .from(planningExperiencesTable)
     .where(eq(planningExperiencesTable.id, params.data.id));
 
-  const [exp] = await db.update(planningExperiencesTable).set(parsed.data as any).where(eq(planningExperiencesTable.id, params.data.id)).returning();
+  // On first publish, stamp firstPublishedAt so we can suppress notifications on re-publish
+  const isFirstPublish = existing?.stage !== "published" && parsed.data.stage === "published" && !existing?.firstPublishedAt;
+  const updateData = isFirstPublish ? { ...parsed.data, firstPublishedAt: new Date() } : parsed.data;
+
+  const [exp] = await db.update(planningExperiencesTable).set(updateData as any).where(eq(planningExperiencesTable.id, params.data.id)).returning();
   if (!exp) { res.status(404).json({ error: "Planning experience not found" }); return; }
 
   const wasJustPublished = existing?.stage !== "published" && exp.stage === "published";
-  if (wasJustPublished) {
+  if (wasJustPublished && isFirstPublish) {
     const weekOf = exp.startDate ? formatDateAU(exp.startDate as string) : null;
     // Only notify guardians whose active children are enrolled at the same site as the plan.
     // If the plan has no siteId, fall back to notifying all sites.

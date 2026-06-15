@@ -5439,6 +5439,9 @@ components:
           anyOf:
             - $ref: "#/components/schemas/WeeklyPlanData"
             - type: "null"
+        firstPublishedAt:
+          type: ["string", "null"]
+          format: date-time
         createdAt:
           type: string
           format: date-time

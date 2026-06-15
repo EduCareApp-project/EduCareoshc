@@ -1646,6 +1646,8 @@ export interface PlanningExperience {
   isTemplate: boolean;
   assessmentData?: AssessmentData | null;
   weeklyPlanData?: WeeklyPlanData | null;
+  /** @nullable */
+  firstPublishedAt?: string | null;
   createdAt: string;
 }
 

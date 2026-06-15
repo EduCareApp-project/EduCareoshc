@@ -222,7 +222,7 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
         {existingPlan?.stage === "published" && (
           <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-            <span>This plan is currently published. Saving changes will revert it to draft — guardians won't see updates until you re-publish.</span>
+            <span>This plan is currently published. Saving changes will revert it to draft — guardians won't see updates until you re-publish. Parents will <strong>not</strong> be notified again when you republish.</span>
           </div>
         )}
 
@@ -658,7 +658,11 @@ export default function Calendar() {
                                 }
                               }}
                             >
-                              {isPublished ? <><Send className="h-3 w-3 mr-1" />Published</> : "Publish"}
+                              {isPublished
+                                ? <><Send className="h-3 w-3 mr-1" />Published</>
+                                : isPlanned && planned[0].firstPublishedAt
+                                ? "Republish"
+                                : "Publish"}
                             </Button>
                           </div>
                         </>}

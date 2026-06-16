@@ -1190,9 +1190,9 @@ export default function ChildProfile() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/children">
-          <Button variant="outline" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
-        </Link>
+        <Button variant="outline" size="icon" onClick={() => window.history.back()}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
         <div className="flex-1 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="relative group">

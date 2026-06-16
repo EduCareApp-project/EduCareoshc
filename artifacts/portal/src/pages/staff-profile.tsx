@@ -460,9 +460,9 @@ export default function StaffProfile() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Link href="/staff">
-          <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 mr-1" />Back to Staff</Button>
-        </Link>
+        <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
+          <ArrowLeft className="h-4 w-4 mr-1" />Back to Staff
+        </Button>
         <div className="flex items-center gap-2">
         {!isEducatorRole && staff.status === "active" && (
           <AlertDialog>

@@ -74,11 +74,9 @@ export default function EnrollChild() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-12">
       <div className="flex items-center gap-4">
-        <Link href="/children">
-          <Button variant="outline" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
+        <Button variant="outline" size="icon" onClick={() => window.history.back()}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Enroll New Child</h1>
           <p className="text-muted-foreground text-sm">Add a new child to the centre's registry.</p>
@@ -243,9 +241,7 @@ export default function EnrollChild() {
           </Card>
 
           <div className="flex justify-end gap-4">
-            <Link href="/children">
-              <Button variant="outline" type="button">Cancel</Button>
-            </Link>
+            <Button variant="outline" type="button" onClick={() => window.history.back()}>Cancel</Button>
             <Button type="submit" disabled={createChild.isPending}>
               {createChild.isPending ? "Enrolling..." : "Enroll Child"}
             </Button>

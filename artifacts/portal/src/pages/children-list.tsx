@@ -46,11 +46,28 @@ export default function ChildrenList() {
   const { data: sites } = useListSites();
   const { data: childSettings } = useGetChildSettings({ query: { queryKey: getGetChildSettingsQueryKey() } });
   const showPhoto = childSettings?.childDisplayMode === "profile_picture";
-  const [search, setSearch] = useState("");
-  const [siteFilter, setSiteFilter] = useState(() =>
-    isEducatorRole && ownSiteId ? String(ownSiteId) : "all"
+  // Sync filters to URL so navigating back restores them
+  function syncFiltersToUrl(q: string, site: string, status: string) {
+    const p = new URLSearchParams();
+    if (q) p.set("q", q);
+    if (site !== "all") p.set("site", site);
+    if (status !== "active") p.set("status", status);
+    const qs = p.toString();
+    window.history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
+  }
+
+  const [search, setSearchRaw] = useState(() => new URLSearchParams(window.location.search).get("q") ?? "");
+  const [siteFilter, setSiteFilterRaw] = useState(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get("site");
+    if (fromUrl) return fromUrl;
+    return isEducatorRole && ownSiteId ? String(ownSiteId) : "all";
+  });
+  const [statusFilter, setStatusFilterRaw] = useState<"active" | "inactive" | "all">(() =>
+    (new URLSearchParams(window.location.search).get("status") as "active" | "inactive" | "all") ?? "active"
   );
-  const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "all">("active");
+  function setSearch(v: string) { setSearchRaw(v); syncFiltersToUrl(v, siteFilter, statusFilter); }
+  function setSiteFilter(v: string) { setSiteFilterRaw(v); syncFiltersToUrl(search, v, statusFilter); }
+  function setStatusFilter(v: "active" | "inactive" | "all") { setStatusFilterRaw(v); syncFiltersToUrl(search, siteFilter, v); }
   const [view, setView] = useViewMode();
 
   const filteredChildren = children?.filter(c => {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ImageLightbox } from "@/components/image-lightbox";
 import { useRoute, useLocation } from "wouter";
 import {
   useGetPost, getGetPostQueryKey, useDeletePost, getListPostsQueryKey,
@@ -191,6 +192,7 @@ export default function PostDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const id = params?.id ? parseInt(params.id) : 0;
   const backPath = new URLSearchParams(window.location.search).get("back") ?? "/posts";
   const { data: post, isLoading } = useGetPost(id, { query: { queryKey: getGetPostQueryKey(id), enabled: id > 0 } });
@@ -311,21 +313,40 @@ export default function PostDetail() {
         </div>
 
         {post.images && post.images.length > 0 && (
-          <div className={`grid gap-3 ${
-            post.images.length === 1 ? "grid-cols-1" :
-            post.images.length === 2 ? "grid-cols-2" :
-            "grid-cols-3"
-          }`}>
-            {post.images.map((img, idx) => (
-              <div key={idx} className={`rounded-xl overflow-hidden bg-muted ${post.images.length === 1 ? "aspect-video" : "aspect-square"}`}>
-                <img
-                  src={imageUrl(img)}
-                  alt={`${post.title} — image ${idx + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
+          <>
+            <div className={`grid gap-3 ${
+              post.images.length === 1 ? "grid-cols-1" :
+              post.images.length === 2 ? "grid-cols-2" :
+              "grid-cols-3"
+            }`}>
+              {post.images.map((img, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`rounded-xl overflow-hidden bg-muted cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    post.images.length === 1 ? "aspect-video" : "aspect-square"
+                  }`}
+                  onClick={() => setLightboxIndex(idx)}
+                  aria-label={`View image ${idx + 1} full size`}
+                >
+                  <img
+                    src={imageUrl(img)}
+                    alt={`${post.title} — image ${idx + 1}`}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                  />
+                </button>
+              ))}
+            </div>
+            {lightboxIndex !== null && (
+              <ImageLightbox
+                images={post.images.map(imageUrl)}
+                index={lightboxIndex}
+                onClose={() => setLightboxIndex(null)}
+                onNext={() => setLightboxIndex((i) => ((i ?? 0) + 1) % post.images.length)}
+                onPrev={() => setLightboxIndex((i) => ((i ?? 0) - 1 + post.images.length) % post.images.length)}
+              />
+            )}
+          </>
         )}
 
         {post.documentPaths && post.documentPaths.length > 0 && (

@@ -1,10 +1,11 @@
 import { type ReactNode, useState, useEffect, useRef } from "react";
-import { LogOut, Menu, Home, Bell, BellOff, Newspaper, CalendarDays, Pill, HeartPulse, UserCheck, Users } from "lucide-react";
+import { LogOut, Menu, Home, Bell, BellOff, Newspaper, CalendarDays, Pill, HeartPulse, UserCheck, Users, KeyRound } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { useAuth } from "@/contexts/auth";
 import { useLocation } from "wouter";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 
 const NAV_ITEMS = [
@@ -276,17 +277,19 @@ function GuardianSidebar({ onClose }: { onClose?: () => void }) {
 
       {/* User info + logout */}
       <div className="px-3 py-4 border-t border-white/20 space-y-2">
-        <div className="flex items-center gap-2 px-2">
-          <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-            <span className="text-xs font-bold text-white">
-              {(user?.name ?? "G").charAt(0).toUpperCase()}
-            </span>
+        <Link href="/my-profile" onClick={onClose}>
+          <div className="flex items-center gap-2 px-2 rounded-lg py-1.5 hover:bg-white/10 transition-colors cursor-pointer">
+            <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <span className="text-xs font-bold text-white">
+                {(user?.name ?? "G").charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+              <p className="text-[10px] text-white/60 flex items-center gap-1">Guardian <KeyRound className="h-2.5 w-2.5 opacity-60" /></p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-white truncate">{user?.name}</p>
-            <p className="text-[10px] text-white/60">Guardian</p>
-          </div>
-        </div>
+        </Link>
         <Button
           variant="ghost"
           size="sm"

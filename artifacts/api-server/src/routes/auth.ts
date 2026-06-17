@@ -479,5 +479,47 @@ router.get("/auth/my-notices", async (req, res): Promise<void> => {
   res.json(rows);
 });
 
+router.put("/auth/change-password", async (req, res): Promise<void> => {
+  if (!req.session.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const { currentPassword, newPassword } = req.body ?? {};
+  if (!currentPassword || !newPassword) {
+    res.status(400).json({ error: "Current password and new password are required." });
+    return;
+  }
+  if (typeof newPassword !== "string" || newPassword.length < 8) {
+    res.status(400).json({ error: "New password must be at least 8 characters." });
+    return;
+  }
+
+  const { type, email } = req.session.user;
+
+  let currentHash: string | null = null;
+  if (type === "staff") {
+    const [row] = await db.select({ h: staffTable.passwordHash }).from(staffTable).where(eq(staffTable.email, email));
+    currentHash = row?.h ?? null;
+  } else {
+    const [row] = await db.select({ h: parentAccountsTable.passwordHash }).from(parentAccountsTable).where(eq(parentAccountsTable.guardianEmail, email));
+    currentHash = row?.h ?? null;
+  }
+
+  if (!currentHash || !(await bcrypt.compare(currentPassword, currentHash))) {
+    res.status(400).json({ error: "Current password is incorrect." });
+    return;
+  }
+
+  const newHash = await bcrypt.hash(newPassword, 12);
+  if (type === "staff") {
+    await db.update(staffTable).set({ passwordHash: newHash }).where(eq(staffTable.email, email));
+  } else {
+    await db.update(parentAccountsTable).set({ passwordHash: newHash }).where(eq(parentAccountsTable.guardianEmail, email));
+  }
+
+  res.json({ ok: true });
+});
+
 export default router;
 

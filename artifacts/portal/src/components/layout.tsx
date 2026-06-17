@@ -404,19 +404,21 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
       {/* User info + logout */}
       {user && (
         <div className="px-3 py-3 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.2)" }}>
-          <div className="flex items-center gap-2 px-2 mb-2">
-            <div className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <span className="text-xs font-bold text-white">
-                {user.name.charAt(0).toUpperCase()}
-              </span>
+          <Link href="/my-profile" onClick={onNavigate}>
+            <div className="flex items-center gap-2 px-2 mb-2 rounded-lg py-1.5 hover:bg-white/10 transition-colors cursor-pointer">
+              <div className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                <span className="text-xs font-bold text-white">
+                  {user.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-white truncate leading-tight">{user.name}</p>
+                <p className="text-[10px] text-white/50 leading-tight capitalize">
+                  {ROLE_LABELS[user.role] ?? user.role}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-white truncate leading-tight">{user.name}</p>
-              <p className="text-[10px] text-white/50 leading-tight capitalize">
-                {ROLE_LABELS[user.role] ?? user.role}
-              </p>
-            </div>
-          </div>
+          </Link>
           <Button
             variant="ghost"
             size="sm"

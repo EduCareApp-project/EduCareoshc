@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Trash2, Pencil, User, CalendarDays, GraduationCap, Building2, MessageCircle, Send, Heart } from "lucide-react";
+import { bubbleClassForSub, dotClassForSub } from "@/components/read-only-plan-view";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -243,6 +244,24 @@ export function PostDetailDialog({
                     />
                   )}
                 </>
+              )}
+
+              {/* MTOP Outcomes */}
+              {(post.outcomeIds ?? []).length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">MTOP Outcomes</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(post.outcomeIds ?? []).map((subId) => (
+                      <span
+                        key={subId}
+                        className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border ${bubbleClassForSub(String(subId))}`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${dotClassForSub(String(subId))}`} />
+                        {subId}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {/* Content sections */}

@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Trash2, Pencil, User, CalendarDays, GraduationCap, Building2, MessageCircle, Send, FileText, Heart } from "lucide-react";
+import { bubbleClassForSub, dotClassForSub } from "@/components/read-only-plan-view";
 import { usePermissions } from "@/hooks/use-permissions";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -310,6 +311,19 @@ export default function PostDetail() {
             )}
           </div>
 
+          {(post.outcomeIds ?? []).length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {(post.outcomeIds ?? []).map((subId) => (
+                <span
+                  key={subId}
+                  className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border ${bubbleClassForSub(String(subId))}`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${dotClassForSub(String(subId))}`} />
+                  {subId}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {post.images && post.images.length > 0 && (

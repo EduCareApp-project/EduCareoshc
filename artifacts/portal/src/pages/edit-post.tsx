@@ -364,19 +364,25 @@ export default function EditPost() {
           </CardContent>
         </Card>
 
+        <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-primary" />
+            <Label className="text-sm font-semibold text-primary">MTOP Outcomes</Label>
+          </div>
+          <p className="text-xs text-muted-foreground pl-4">Link this post to the relevant My Time Our Place learning outcomes.</p>
+          <div className="pl-4">
+            <MtopOutcomePicker
+              value={form.outcomeIds}
+              onChange={(ids) => setForm((f) => ({ ...f, outcomeIds: ids }))}
+              label="MTOP Outcomes"
+            />
+          </div>
+        </div>
+
         <Card>
           <CardHeader><CardTitle className="text-base">Content</CardTitle></CardHeader>
           <CardContent className="space-y-5">
-            <div className="space-y-1.5">
-              <Label>MTOP Outcomes</Label>
-              <MtopOutcomePicker
-                value={form.outcomeIds}
-                onChange={(ids) => setForm((f) => ({ ...f, outcomeIds: ids }))}
-                label="MTOP Outcomes"
-              />
-            </div>
-
-            <Separator />
+            <Separator className="hidden" />
 
             <div className="space-y-1.5">
               <Label>Description</Label>

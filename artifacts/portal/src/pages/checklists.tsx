@@ -7,10 +7,11 @@ import {
   useListChecklistTemplates, useCreateChecklistTemplate, useUpdateChecklistTemplate, useDeleteChecklistTemplate,
   useListChecklistRoutines, useCreateChecklistRoutine, useUpdateChecklistRoutine, useDeleteChecklistRoutine,
   useListRoutineItemCompletions, useCreateRoutineItemCompletion, useDeleteRoutineItemCompletion,
-  useListStaff, useListSites,
+  useListSites,
   getListChecklistTemplatesQueryKey, getListChecklistRoutinesQueryKey, getListRoutineItemCompletionsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useActiveStaff } from "@/hooks/use-active-staff";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -415,7 +416,7 @@ function RoutineDialog({
   const { toast } = useToast();
   const createMutation = useCreateChecklistRoutine();
   const { data: sites } = useListSites();
-  const { data: staff } = useListStaff();
+  const { data: staff } = useActiveStaff();
 
   const [targetDate, setTargetDate] = useState(melbourneDateStr());
   const [isRepeating, setIsRepeating] = useState(false);
@@ -521,7 +522,7 @@ function EditRoutineDialog({
   const { toast } = useToast();
   const updateMutation = useUpdateChecklistRoutine();
   const { data: sites } = useListSites();
-  const { data: staff } = useListStaff();
+  const { data: staff } = useActiveStaff();
 
   const [targetDate, setTargetDate] = useState(routine?.targetDate ?? "");
   const [isRepeating, setIsRepeating] = useState(routine?.isRepeating ?? false);
@@ -626,7 +627,7 @@ function ChecklistDoDialog({
   onOpenChange: (o: boolean) => void;
 }) {
   const queryClient = useQueryClient();
-  const { data: staff } = useListStaff();
+  const { data: staff } = useActiveStaff();
 
   const [currentDate, setCurrentDate] = useState(melbourneDate());
   const [completingAsId, setCompletingAsId] = useState<string>(() => {

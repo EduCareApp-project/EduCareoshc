@@ -7,11 +7,11 @@ import {
   useDeletePlanningExperience,
   useListChildren,
   useListSites,
-  useListStaff,
   useListOutcomes,
   useListPlanningComments, getListPlanningCommentsQueryKey,
   useCreatePlanningComment, useDeletePlanningComment,
 } from "@workspace/api-client-react";
+import { useActiveStaff } from "@/hooks/use-active-staff";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpload } from "@workspace/object-storage-web";
 import { Button } from "@/components/ui/button";
@@ -215,7 +215,7 @@ export default function PlanningDetail() {
   );
   const { data: allChildren } = useListChildren();
   const { data: sites } = useListSites();
-  const { data: staffList } = useListStaff();
+  const { data: staffList } = useActiveStaff();
 
   const { uploadFile, isUploading } = useUpload({
     onError: () => toast({ title: "File upload failed", variant: "destructive" }),

@@ -1,10 +1,11 @@
 import { useState, useRef } from "react";
 import {
   useListIncidents, useCreateIncident, useUpdateIncident, useDeleteIncident,
-  useListChildren, useListStaff, useListSites,
+  useListChildren, useListSites,
   getListIncidentsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useActiveStaff } from "@/hooks/use-active-staff";
 import { useUpload } from "@workspace/object-storage-web";
 import { usePermissions } from "@/hooks/use-permissions";
 import { Card, CardContent } from "@/components/ui/card";
@@ -96,7 +97,7 @@ function LogIncidentDialog({ open, onOpenChange }: { open: boolean; onOpenChange
   const { toast } = useToast();
   const createMutation = useCreateIncident();
   const { data: children } = useListChildren();
-  const { data: staff } = useListStaff();
+  const { data: staff } = useActiveStaff();
   const { data: sites } = useListSites();
   const { uploadFile, isUploading } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -249,7 +250,7 @@ function IncidentSubmitterForm({ incident, onDone }: { incident: any; onDone: ()
   const { toast } = useToast();
   const updateMutation = useUpdateIncident();
   const { data: children } = useListChildren();
-  const { data: staff } = useListStaff();
+  const { data: staff } = useActiveStaff();
   const { data: sites } = useListSites();
 
   const [form, setForm] = useState({
@@ -341,7 +342,7 @@ function HeadOfficeForm({ incident, onDone }: { incident: any; onDone: () => voi
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const updateMutation = useUpdateIncident();
-  const { data: staff } = useListStaff();
+  const { data: staff } = useActiveStaff();
 
   const [reportPersonId, setReportPersonId] = useState(incident.reportPersonId ? String(incident.reportPersonId) : "none");
   const [reportMadeAt, setReportMadeAt] = useState(() => {

@@ -2,10 +2,11 @@ import { useRef, useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
   useListPolicies, useCreatePolicy, useUpdatePolicy, useDeletePolicy,
-  useAcknowledgePolicy, useGetPolicyAcknowledgments, getGetPolicyAcknowledgmentsQueryKey, useListStaff,
+  useAcknowledgePolicy, useGetPolicyAcknowledgments, getGetPolicyAcknowledgmentsQueryKey,
 } from "@workspace/api-client-react";
 import type { Policy } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useActiveStaff } from "@/hooks/use-active-staff";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -276,7 +277,7 @@ export default function PoliciesList() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: policies, isLoading } = useListPolicies();
-  const { data: staff } = useListStaff();
+  const { data: staff } = useActiveStaff();
   const createMutation = useCreatePolicy();
   const updateMutation = useUpdatePolicy();
   const deleteMutation = useDeletePolicy();

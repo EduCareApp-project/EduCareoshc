@@ -6,7 +6,7 @@ import {
   useGetChildObservations, getGetChildObservationsQueryKey, useListSites,
   useGetChildWelfareNotes, getGetChildWelfareNotesQueryKey, useCreateWelfareNote, useUpdateWelfareNote, useDeleteWelfareNote,
   useGetChildConfidentialNotes, getGetChildConfidentialNotesQueryKey, useCreateConfidentialNote, useUpdateConfidentialNote, useDeleteConfidentialNote,
-  useListStaff, useListJottings, useListPlanningExperiences, useListPosts,
+  useListJottings, useListPlanningExperiences, useListPosts,
   useListChildDocuments, getListChildDocumentsQueryKey, useCreateChildDocument, useDeleteChildDocument,
   useGetFeatureSettings, getGetFeatureSettingsQueryKey,
   useGetChildSettings, getGetChildSettingsQueryKey,
@@ -19,6 +19,7 @@ import {
   useListIncidents, getListIncidentsQueryKey,
 } from "@workspace/api-client-react";
 import type { Staff } from "@workspace/api-client-react";
+import { useActiveStaff } from "@/hooks/use-active-staff";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -883,7 +884,7 @@ export default function ChildProfile() {
   const { data: child, isLoading } = useGetChild(id, { query: { queryKey: getGetChildQueryKey(id), enabled: !!id } });
   const { data: observations, isLoading: obsLoading } = useGetChildObservations(id, { query: { queryKey: getGetChildObservationsQueryKey(id), enabled: !!id } });
   const { data: sites } = useListSites();
-  const { data: staff } = useListStaff();
+  const { data: staff } = useActiveStaff();
   const { data: welfareNotes, isLoading: welfareLoading } = useGetChildWelfareNotes(id, { query: { queryKey: getGetChildWelfareNotesQueryKey(id), enabled: !!id } });
   const { data: confidentialNotes, isLoading: confidentialLoading } = useGetChildConfidentialNotes(id, { query: { queryKey: getGetChildConfidentialNotesQueryKey(id), enabled: !!id } });
   const { data: allJottings } = useListJottings({ includeArchived: true });

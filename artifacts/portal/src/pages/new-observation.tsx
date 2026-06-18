@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useCreateObservation, useListChildren, useListStaff, getListObservationsQueryKey } from "@workspace/api-client-react";
+import { useCreateObservation, useListChildren, getListObservationsQueryKey } from "@workspace/api-client-react";
+import { useActiveStaff } from "@/hooks/use-active-staff";
 import { useLocation, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ export default function NewObservation() {
 
   const createObservation = useCreateObservation();
   const { data: children } = useListChildren();
-  const { data: staff } = useListStaff();
+  const { data: staff } = useActiveStaff();
 
   const activeChildren = useMemo(() => children?.filter((c) => c.status === "active") || [], [children]);
 

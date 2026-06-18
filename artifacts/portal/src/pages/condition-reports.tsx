@@ -4,9 +4,9 @@ import {
   useCreateConditionReport,
   useUpdateConditionReport,
   useDeleteConditionReport,
-  useListStaff,
   useListSites,
 } from "@workspace/api-client-react";
+import { useActiveStaff } from "@/hooks/use-active-staff";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/use-permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,7 +61,7 @@ export default function ConditionReports() {
   const { uploadFile, isUploading } = useUpload();
 
   const { data: reports, isLoading } = useListConditionReports();
-  const { data: staffList } = useListStaff();
+  const { data: staffList } = useActiveStaff();
   const { data: sites } = useListSites();
   const { canDelete, canEditAfterSubmit, isEducatorRole, ownSiteId } = usePermissions();
   const createMutation = useCreateConditionReport();

@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { useListEvacuations, useCreateEvacuation, useUpdateEvacuation, useDeleteEvacuation, useListSites, useListStaff, ListEvacuationsQueryResult, ListSitesQueryResult, ListStaffQueryResult } from "@workspace/api-client-react";
+import { useListEvacuations, useCreateEvacuation, useUpdateEvacuation, useDeleteEvacuation, useListSites, ListEvacuationsQueryResult, ListSitesQueryResult, ListStaffQueryResult } from "@workspace/api-client-react";
+import { useActiveStaff } from "@/hooks/use-active-staff";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/use-permissions";
 import { Card, CardContent } from "@/components/ui/card";
@@ -154,7 +155,7 @@ export default function Evacuations() {
 
   const { data: evacuations, isLoading } = useListEvacuations();
   const { data: sites } = useListSites();
-  const { data: staff } = useListStaff();
+  const { data: staff } = useActiveStaff();
   const createMutation = useCreateEvacuation();
 
   const [open, setOpen] = useState(false);

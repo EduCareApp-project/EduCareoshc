@@ -1,9 +1,10 @@
 import { useState } from "react";
 import {
-  useGetObservation, getGetObservationQueryKey, useUpdateObservation, useDeleteObservation, useListStaff, getListObservationsQueryKey,
+  useGetObservation, getGetObservationQueryKey, useUpdateObservation, useDeleteObservation, getListObservationsQueryKey,
   useListObservationComments, getListObservationCommentsQueryKey,
   useCreateObservationComment, useDeleteObservationComment,
 } from "@workspace/api-client-react";
+import { useActiveStaff } from "@/hooks/use-active-staff";
 import { Link, useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,7 @@ export default function ViewObservation() {
   const { toast } = useToast();
 
   const { data: obs, isLoading } = useGetObservation(id, { query: { queryKey: getGetObservationQueryKey(id), enabled: !!id } });
-  const { data: staff } = useListStaff();
+  const { data: staff } = useActiveStaff();
   const deleteObs = useDeleteObservation();
   const updateObs = useUpdateObservation();
 

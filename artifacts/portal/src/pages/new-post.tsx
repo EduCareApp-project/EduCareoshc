@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCreatePost, useUpdatePost, useListChildren, useListStaff, useListSites, getListPostsQueryKey } from "@workspace/api-client-react";
+import { useCreatePost, useUpdatePost, useListChildren, useListSites, getListPostsQueryKey } from "@workspace/api-client-react";
+import { useActiveStaff } from "@/hooks/use-active-staff";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,7 +39,7 @@ export default function NewPost() {
 
   const { data: sites } = useListSites();
   const { data: children } = useListChildren();
-  const { data: staff } = useListStaff();
+  const { data: staff } = useActiveStaff();
   const createPost = useCreatePost();
   const updatePost = useUpdatePost();
 

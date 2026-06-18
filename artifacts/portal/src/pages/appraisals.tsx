@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { useListStaff } from "@workspace/api-client-react";
+import { useActiveStaff } from "@/hooks/use-active-staff";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -144,7 +144,7 @@ export default function Appraisals() {
   const [createOpen, setCreateOpen] = useState(false);
   const [filterStaff, setFilterStaff] = useState<string>("__all__");
 
-  const { data: staffList } = useListStaff();
+  const { data: staffList } = useActiveStaff();
   const activeStaff = (staffList ?? []).filter((s) => s.status === "active");
 
   const { data, isLoading } = useQuery({

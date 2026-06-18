@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { useListStaff } from "@workspace/api-client-react";
+import { useActiveStaff } from "@/hooks/use-active-staff";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -149,7 +149,7 @@ export default function AppraisalsTab({ staffId }: { staffId?: number }) {
   const [createOpen, setCreateOpen] = useState(false);
   const { isEducatorRole } = usePermissions();
 
-  const { data: staffList } = useListStaff();
+  const { data: staffList } = useActiveStaff();
   const activeStaff = (staffList ?? []).filter((s) => s.status === "active");
 
   const { data, isLoading } = useQuery<AppraisalRow[]>({

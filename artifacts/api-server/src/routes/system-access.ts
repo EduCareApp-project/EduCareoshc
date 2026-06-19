@@ -213,6 +213,73 @@ router.post("/reports/system-access/staff/:id/send-instructions", async (req, re
   res.json({ ok: true });
 });
 
+// Provision a guardian account (if needed) and send login instructions — used for "No account" rows
+router.post("/reports/system-access/guardian/provision-and-send", async (req, res): Promise<void> => {
+  if (!requireAdminStaff(req, res)) return;
+
+  if (!isSmtpConfigured()) {
+    res.status(503).json({ error: "Email delivery is not configured. Ask your administrator to set up SMTP." });
+    return;
+  }
+
+  const { email } = req.body ?? {};
+  if (!email || typeof email !== "string") {
+    res.status(400).json({ error: "Email is required." });
+    return;
+  }
+  const normalised = email.toLowerCase().trim();
+
+  // Look up guardian name from children records
+  const [childRow] = await db
+    .select({
+      guardianEmail: childrenTable.guardianEmail,
+      guardianName: childrenTable.guardianName,
+      guardian2Email: childrenTable.guardian2Email,
+      guardian2Name: childrenTable.guardian2Name,
+    })
+    .from(childrenTable)
+    .where(or(eq(childrenTable.guardianEmail, normalised), eq(childrenTable.guardian2Email, normalised)))
+    .limit(1);
+
+  if (!childRow) {
+    res.status(404).json({ error: "No child record found for this guardian email." });
+    return;
+  }
+
+  const recipientName = childRow.guardian2Email?.toLowerCase() === normalised
+    ? (childRow.guardian2Name ?? normalised)
+    : (childRow.guardianName ?? normalised);
+
+  // Upsert: create account if it doesn't exist yet
+  await db
+    .insert(parentAccountsTable)
+    .values({ guardianEmail: normalised })
+    .onConflictDoNothing({ target: parentAccountsTable.guardianEmail });
+
+  const baseUrl = getBaseUrl();
+  const token = await createResetToken(normalised, "guardian");
+  const setPasswordUrl = `${baseUrl}/reset-password?token=${token}`;
+  const loginUrl = `${baseUrl}/login`;
+
+  try {
+    const branding = await getEmailBranding();
+    await sendLoginInstructionsEmail(normalised, {
+      recipientName,
+      loginEmail: normalised,
+      loginUrl,
+      setPasswordUrl,
+      isAlreadyConnected: false,
+      accountType: "guardian",
+    }, branding);
+  } catch (err) {
+    req.log.error({ err, email: normalised }, "Failed to send login instructions email");
+    res.status(500).json({ error: "Failed to send email. Please try again later." });
+    return;
+  }
+
+  res.json({ ok: true });
+});
+
 // Send login instructions to a guardian
 router.post("/reports/system-access/guardian/:id/send-instructions", async (req, res): Promise<void> => {
   if (!requireAdminStaff(req, res)) return;

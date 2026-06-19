@@ -78,6 +78,17 @@ async function sendInstructions(type: "staff" | "guardian", id: number) {
   return data;
 }
 
+async function provisionAndSend(email: string) {
+  const res = await fetch("/api/reports/system-access/guardian/provision-and-send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Failed to send instructions");
+  return data;
+}
+
 async function setPassword(type: "staff" | "guardian", id: number, password: string) {
   const res = await fetch(`/api/reports/system-access/${type}/${id}/set-password`, {
     method: "PATCH",
@@ -294,7 +305,7 @@ function GuardianRow({ row, onBlock }: { row: GuardianRow; onBlock: () => void }
   const [pwDialog, setPwDialog] = useState(false);
   const isProvisioned = row.id != null;
   const isBlocked = !!row.blockedAt;
-  const canSendInstructions = isProvisioned && !!row.guardianEmail && !isBlocked;
+  const canSendInstructions = !!row.guardianEmail && !isBlocked;
 
   const pwMutation = useMutation({
     mutationFn: (pw: string) => setPassword("guardian", row.id!, pw),
@@ -307,8 +318,14 @@ function GuardianRow({ row, onBlock }: { row: GuardianRow; onBlock: () => void }
   });
 
   const sendMutation = useMutation({
-    mutationFn: () => sendInstructions("guardian", row.id!),
-    onSuccess: () => toast({ title: "Instructions sent", description: `Login instructions emailed to ${row.guardianEmail}.` }),
+    mutationFn: () =>
+      isProvisioned
+        ? sendInstructions("guardian", row.id!)
+        : provisionAndSend(row.guardianEmail),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/system-access"] });
+      toast({ title: "Instructions sent", description: `Login instructions emailed to ${row.guardianEmail}.` });
+    },
     onError: (e: Error) => toast({ title: "Failed to send instructions", description: e.message, variant: "destructive" }),
   });
 
@@ -371,12 +388,12 @@ function GuardianRow({ row, onBlock }: { row: GuardianRow; onBlock: () => void }
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {!isProvisioned
-                  ? "Guardian has no portal account yet"
-                  : !row.guardianEmail
+                {!row.guardianEmail
                   ? "No email address on record"
                   : isBlocked
                   ? "Unblock this account before sending instructions"
+                  : !isProvisioned
+                  ? "Create an account and email login instructions"
                   : "Email login instructions to this guardian"}
               </TooltipContent>
             </Tooltip>

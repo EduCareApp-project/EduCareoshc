@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -315,7 +316,12 @@ function GuardianRow({ row, onBlock }: { row: GuardianRow; onBlock: () => void }
     <>
       <tr className="border-b last:border-0 hover:bg-muted/20 transition-colors group">
         <td className="py-3 px-4">
-          <div className="font-medium text-sm">{row.guardianName}</div>
+          <Link
+            href={`/guardians/${encodeURIComponent(row.guardianEmail)}`}
+            className="font-medium text-sm hover:underline"
+          >
+            {row.guardianName}
+          </Link>
           <div className="text-xs text-muted-foreground">{row.guardianEmail}</div>
         </td>
         <td className="py-3 px-4 text-xs text-muted-foreground">

@@ -123,7 +123,7 @@ router.get("/dashboard/recent-observations", async (_req, res): Promise<void> =>
   const rows = await db
     .select()
     .from(observationsTable)
-    .orderBy(observationsTable.createdAt)
+    .orderBy(desc(observationsTable.createdAt))
     .limit(10);
 
   const childList = await db.select().from(childrenTable);

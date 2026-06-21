@@ -25,6 +25,7 @@ export default function Posts() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
+  const [selectedPostStaffId, setSelectedPostStaffId] = useState<number | null>(null);
 
   const childIdParam = new URLSearchParams(window.location.search).get("childId");
   const filterChildId = childIdParam ? parseInt(childIdParam) : null;
@@ -144,7 +145,7 @@ export default function Posts() {
               <Card
                 key={post.id}
                 className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow group"
-                onClick={() => setSelectedPostId(post.id)}
+                onClick={() => { setSelectedPostId(post.id); setSelectedPostStaffId(post.staffId ?? null); }}
               >
                 <div className="relative aspect-video bg-muted overflow-hidden">
                   {coverImage ? (
@@ -218,7 +219,7 @@ export default function Posts() {
         open={selectedPostId !== null}
         onClose={() => setSelectedPostId(null)}
         canDelete={canDelete}
-        canEditPost={canEditPost}
+        canEditPost={canEditPost || (user?.id != null && selectedPostStaffId === user.id)}
         onDeleted={() => setSelectedPostId(null)}
         defaultCommentName={user?.name}
       />

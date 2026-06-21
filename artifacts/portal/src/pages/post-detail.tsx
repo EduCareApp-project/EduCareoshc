@@ -198,7 +198,7 @@ export default function PostDetail() {
   const backPath = new URLSearchParams(window.location.search).get("back") ?? "/posts";
   const { data: post, isLoading } = useGetPost(id, { query: { queryKey: getGetPostQueryKey(id), enabled: id > 0 } });
   const deleteMutation = useDeletePost();
-  const { canDelete, canEditPost } = usePermissions();
+  const { canDelete, canEditPost, ownId } = usePermissions();
 
   const likeMutation = useLikePost();
   const unlikeMutation = useUnlikePost();
@@ -255,7 +255,7 @@ export default function PostDetail() {
           <ArrowLeft className="h-4 w-4" />Back
         </Button>
         <div className="flex items-center gap-1">
-          {canEditPost && (
+          {(canEditPost || (ownId != null && post.staffId === ownId)) && (
             <Button
               variant="ghost"
               size="sm"

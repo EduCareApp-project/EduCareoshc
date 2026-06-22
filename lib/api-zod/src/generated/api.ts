@@ -3774,7 +3774,7 @@ export const GetRollComplianceReportQueryParams = zod.object({
 export const GetRollComplianceReportResponse = zod.object({
   weeks: zod.array(
     zod.object({
-      weekStart: zod.coerce.date(),
+      weekStart: zod.string(),
       totalSites: zod.number(),
       submitted: zod.number(),
       accurate: zod.number(),

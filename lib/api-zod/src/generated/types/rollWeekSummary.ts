@@ -7,7 +7,7 @@
  */
 
 export interface RollWeekSummary {
-  weekStart: Date;
+  weekStart: string;
   totalSites: number;
   submitted: number;
   accurate: number;

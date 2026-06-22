@@ -3134,6 +3134,122 @@ paths:
               schema:
                 $ref: "#/components/schemas/RollComplianceReport"
 
+  /weekly-reviews/stats:
+    get:
+      tags: [weekly-reviews]
+      summary: Get activity counts for a site and week
+      operationId: getWeeklyReviewStats
+      parameters:
+        - name: siteId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: weekStart
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyReviewStats"
+
+  /weekly-reviews:
+    get:
+      tags: [weekly-reviews]
+      summary: List weekly reviews
+      operationId: listWeeklyReviews
+      parameters:
+        - name: siteId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WeeklyReview"
+    post:
+      tags: [weekly-reviews]
+      summary: Create a weekly review
+      operationId: createWeeklyReview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WeeklyReviewInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyReview"
+
+  /weekly-reviews/{id}:
+    get:
+      tags: [weekly-reviews]
+      summary: Get a weekly review
+      operationId: getWeeklyReview
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyReview"
+    put:
+      tags: [weekly-reviews]
+      summary: Update a weekly review
+      operationId: updateWeeklyReview
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WeeklyReviewPatch"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyReview"
+    delete:
+      tags: [weekly-reviews]
+      summary: Delete a weekly review
+      operationId: deleteWeeklyReview
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: No Content
+
 components:
   schemas:
     Guardian:
@@ -6237,3 +6353,95 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RollWeekSummary"
+
+    WeeklyReviewInput:
+      type: object
+      required: [weekStart, siteId, completedById]
+      properties:
+        weekStart:
+          type: string
+        siteId:
+          type: integer
+        completedById:
+          type: integer
+        weeklySummary:
+          type: string
+        goalsAchieved:
+          type: string
+        environmentChanges:
+          type: string
+        weekQuality:
+          type: string
+        professionalEnquiry:
+          type: string
+        childEngagement:
+          type: string
+
+    WeeklyReviewPatch:
+      type: object
+      properties:
+        weeklySummary:
+          type: string
+        goalsAchieved:
+          type: string
+        environmentChanges:
+          type: string
+        weekQuality:
+          type: string
+        professionalEnquiry:
+          type: string
+        childEngagement:
+          type: string
+
+    WeeklyReviewStats:
+      type: object
+      required: [jottingsCount, observationsCount, postsCount]
+      properties:
+        jottingsCount:
+          type: integer
+        observationsCount:
+          type: integer
+        postsCount:
+          type: integer
+
+    WeeklyReview:
+      type: object
+      required: [id, weekStart, siteId, siteName, completedById, completedByName, completedAt, jottingsCount, observationsCount, postsCount, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        weekStart:
+          type: string
+        siteId:
+          type: integer
+        siteName:
+          type: string
+        completedById:
+          type: integer
+        completedByName:
+          type: string
+        completedAt:
+          type: string
+        weeklySummary:
+          type: ["string", "null"]
+        goalsAchieved:
+          type: ["string", "null"]
+        environmentChanges:
+          type: ["string", "null"]
+        weekQuality:
+          type: ["string", "null"]
+        professionalEnquiry:
+          type: ["string", "null"]
+        childEngagement:
+          type: ["string", "null"]
+        jottingsCount:
+          type: integer
+        observationsCount:
+          type: integer
+        postsCount:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+

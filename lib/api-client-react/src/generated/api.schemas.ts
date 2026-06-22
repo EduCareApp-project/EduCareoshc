@@ -2101,6 +2101,60 @@ export interface RollComplianceReport {
   weeks: RollWeekSummary[];
 }
 
+export interface WeeklyReviewInput {
+  weekStart: string;
+  siteId: number;
+  completedById: number;
+  weeklySummary?: string;
+  goalsAchieved?: string;
+  environmentChanges?: string;
+  weekQuality?: string;
+  professionalEnquiry?: string;
+  childEngagement?: string;
+}
+
+export interface WeeklyReviewPatch {
+  weeklySummary?: string;
+  goalsAchieved?: string;
+  environmentChanges?: string;
+  weekQuality?: string;
+  professionalEnquiry?: string;
+  childEngagement?: string;
+}
+
+export interface WeeklyReviewStats {
+  jottingsCount: number;
+  observationsCount: number;
+  postsCount: number;
+}
+
+export interface WeeklyReview {
+  id: number;
+  weekStart: string;
+  siteId: number;
+  siteName: string;
+  completedById: number;
+  completedByName: string;
+  completedAt: string;
+  /** @nullable */
+  weeklySummary?: string | null;
+  /** @nullable */
+  goalsAchieved?: string | null;
+  /** @nullable */
+  environmentChanges?: string | null;
+  /** @nullable */
+  weekQuality?: string | null;
+  /** @nullable */
+  professionalEnquiry?: string | null;
+  /** @nullable */
+  childEngagement?: string | null;
+  jottingsCount: number;
+  observationsCount: number;
+  postsCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type ListNoticesParams = {
   audience?: ListNoticesAudience;
 };
@@ -2166,5 +2220,14 @@ export type DeleteBehaviouralNotification200 = {
 };
 
 export type GetRollComplianceReportParams = {
+  siteId?: number;
+};
+
+export type GetWeeklyReviewStatsParams = {
+  siteId: number;
+  weekStart: string;
+};
+
+export type ListWeeklyReviewsParams = {
   siteId?: number;
 };

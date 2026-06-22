@@ -3802,3 +3802,135 @@ export const GetRollComplianceReportResponse = zod.object({
     }),
   ),
 });
+
+/**
+ * @summary Get activity counts for a site and week
+ */
+export const GetWeeklyReviewStatsQueryParams = zod.object({
+  siteId: zod.coerce.number(),
+  weekStart: zod.coerce.string(),
+});
+
+export const GetWeeklyReviewStatsResponse = zod.object({
+  jottingsCount: zod.number(),
+  observationsCount: zod.number(),
+  postsCount: zod.number(),
+});
+
+/**
+ * @summary List weekly reviews
+ */
+export const ListWeeklyReviewsQueryParams = zod.object({
+  siteId: zod.coerce.number().optional(),
+});
+
+export const ListWeeklyReviewsResponseItem = zod.object({
+  id: zod.number(),
+  weekStart: zod.string(),
+  siteId: zod.number(),
+  siteName: zod.string(),
+  completedById: zod.number(),
+  completedByName: zod.string(),
+  completedAt: zod.string(),
+  weeklySummary: zod.string().nullish(),
+  goalsAchieved: zod.string().nullish(),
+  environmentChanges: zod.string().nullish(),
+  weekQuality: zod.string().nullish(),
+  professionalEnquiry: zod.string().nullish(),
+  childEngagement: zod.string().nullish(),
+  jottingsCount: zod.number(),
+  observationsCount: zod.number(),
+  postsCount: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListWeeklyReviewsResponse = zod.array(
+  ListWeeklyReviewsResponseItem,
+);
+
+/**
+ * @summary Create a weekly review
+ */
+export const CreateWeeklyReviewBody = zod.object({
+  weekStart: zod.string(),
+  siteId: zod.number(),
+  completedById: zod.number(),
+  weeklySummary: zod.string().optional(),
+  goalsAchieved: zod.string().optional(),
+  environmentChanges: zod.string().optional(),
+  weekQuality: zod.string().optional(),
+  professionalEnquiry: zod.string().optional(),
+  childEngagement: zod.string().optional(),
+});
+
+/**
+ * @summary Get a weekly review
+ */
+export const GetWeeklyReviewParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetWeeklyReviewResponse = zod.object({
+  id: zod.number(),
+  weekStart: zod.string(),
+  siteId: zod.number(),
+  siteName: zod.string(),
+  completedById: zod.number(),
+  completedByName: zod.string(),
+  completedAt: zod.string(),
+  weeklySummary: zod.string().nullish(),
+  goalsAchieved: zod.string().nullish(),
+  environmentChanges: zod.string().nullish(),
+  weekQuality: zod.string().nullish(),
+  professionalEnquiry: zod.string().nullish(),
+  childEngagement: zod.string().nullish(),
+  jottingsCount: zod.number(),
+  observationsCount: zod.number(),
+  postsCount: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Update a weekly review
+ */
+export const UpdateWeeklyReviewParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateWeeklyReviewBody = zod.object({
+  weeklySummary: zod.string().optional(),
+  goalsAchieved: zod.string().optional(),
+  environmentChanges: zod.string().optional(),
+  weekQuality: zod.string().optional(),
+  professionalEnquiry: zod.string().optional(),
+  childEngagement: zod.string().optional(),
+});
+
+export const UpdateWeeklyReviewResponse = zod.object({
+  id: zod.number(),
+  weekStart: zod.string(),
+  siteId: zod.number(),
+  siteName: zod.string(),
+  completedById: zod.number(),
+  completedByName: zod.string(),
+  completedAt: zod.string(),
+  weeklySummary: zod.string().nullish(),
+  goalsAchieved: zod.string().nullish(),
+  environmentChanges: zod.string().nullish(),
+  weekQuality: zod.string().nullish(),
+  professionalEnquiry: zod.string().nullish(),
+  childEngagement: zod.string().nullish(),
+  jottingsCount: zod.number(),
+  observationsCount: zod.number(),
+  postsCount: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Delete a weekly review
+ */
+export const DeleteWeeklyReviewParams = zod.object({
+  id: zod.coerce.number(),
+});

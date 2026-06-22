@@ -58,6 +58,7 @@ import type {
   GetNotificationCount200,
   GetRollComplianceReportParams,
   GetServiceComplianceReportParams,
+  GetWeeklyReviewStatsParams,
   Guardian,
   GuardianMedicationLog,
   GuardianUpdate,
@@ -73,6 +74,7 @@ import type {
   ListNotificationSettingsParams,
   ListQipStrengthsParams,
   ListRoutineItemCompletionsParams,
+  ListWeeklyReviewsParams,
   MarkAllNotificationsRead200,
   MarkNotificationRead200,
   MedicationLog,
@@ -140,6 +142,10 @@ import type {
   UpdateNotificationSettings200,
   UploadUrlRequest,
   UploadUrlResponse,
+  WeeklyReview,
+  WeeklyReviewInput,
+  WeeklyReviewPatch,
+  WeeklyReviewStats,
   WelfareNote,
   WelfareNoteInput,
   WellbeingReport,
@@ -13869,3 +13875,544 @@ export function useGetRollComplianceReport<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Get activity counts for a site and week
+ */
+export const getGetWeeklyReviewStatsUrl = (
+  params: GetWeeklyReviewStatsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/weekly-reviews/stats?${stringifiedParams}`
+    : `/api/weekly-reviews/stats`;
+};
+
+export const getWeeklyReviewStats = async (
+  params: GetWeeklyReviewStatsParams,
+  options?: RequestInit,
+): Promise<WeeklyReviewStats> => {
+  return customFetch<WeeklyReviewStats>(getGetWeeklyReviewStatsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetWeeklyReviewStatsQueryKey = (
+  params?: GetWeeklyReviewStatsParams,
+) => {
+  return [`/api/weekly-reviews/stats`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetWeeklyReviewStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getWeeklyReviewStats>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetWeeklyReviewStatsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getWeeklyReviewStats>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetWeeklyReviewStatsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getWeeklyReviewStats>>
+  > = ({ signal }) =>
+    getWeeklyReviewStats(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getWeeklyReviewStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetWeeklyReviewStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getWeeklyReviewStats>>
+>;
+export type GetWeeklyReviewStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get activity counts for a site and week
+ */
+
+export function useGetWeeklyReviewStats<
+  TData = Awaited<ReturnType<typeof getWeeklyReviewStats>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetWeeklyReviewStatsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getWeeklyReviewStats>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetWeeklyReviewStatsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List weekly reviews
+ */
+export const getListWeeklyReviewsUrl = (params?: ListWeeklyReviewsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/weekly-reviews?${stringifiedParams}`
+    : `/api/weekly-reviews`;
+};
+
+export const listWeeklyReviews = async (
+  params?: ListWeeklyReviewsParams,
+  options?: RequestInit,
+): Promise<WeeklyReview[]> => {
+  return customFetch<WeeklyReview[]>(getListWeeklyReviewsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListWeeklyReviewsQueryKey = (
+  params?: ListWeeklyReviewsParams,
+) => {
+  return [`/api/weekly-reviews`, ...(params ? [params] : [])] as const;
+};
+
+export const getListWeeklyReviewsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listWeeklyReviews>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListWeeklyReviewsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listWeeklyReviews>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListWeeklyReviewsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listWeeklyReviews>>
+  > = ({ signal }) => listWeeklyReviews(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listWeeklyReviews>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListWeeklyReviewsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listWeeklyReviews>>
+>;
+export type ListWeeklyReviewsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List weekly reviews
+ */
+
+export function useListWeeklyReviews<
+  TData = Awaited<ReturnType<typeof listWeeklyReviews>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListWeeklyReviewsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listWeeklyReviews>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListWeeklyReviewsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a weekly review
+ */
+export const getCreateWeeklyReviewUrl = () => {
+  return `/api/weekly-reviews`;
+};
+
+export const createWeeklyReview = async (
+  weeklyReviewInput: WeeklyReviewInput,
+  options?: RequestInit,
+): Promise<WeeklyReview> => {
+  return customFetch<WeeklyReview>(getCreateWeeklyReviewUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(weeklyReviewInput),
+  });
+};
+
+export const getCreateWeeklyReviewMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWeeklyReview>>,
+    TError,
+    { data: BodyType<WeeklyReviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createWeeklyReview>>,
+  TError,
+  { data: BodyType<WeeklyReviewInput> },
+  TContext
+> => {
+  const mutationKey = ["createWeeklyReview"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createWeeklyReview>>,
+    { data: BodyType<WeeklyReviewInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createWeeklyReview(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateWeeklyReviewMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createWeeklyReview>>
+>;
+export type CreateWeeklyReviewMutationBody = BodyType<WeeklyReviewInput>;
+export type CreateWeeklyReviewMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a weekly review
+ */
+export const useCreateWeeklyReview = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWeeklyReview>>,
+    TError,
+    { data: BodyType<WeeklyReviewInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createWeeklyReview>>,
+  TError,
+  { data: BodyType<WeeklyReviewInput> },
+  TContext
+> => {
+  return useMutation(getCreateWeeklyReviewMutationOptions(options));
+};
+
+/**
+ * @summary Get a weekly review
+ */
+export const getGetWeeklyReviewUrl = (id: number) => {
+  return `/api/weekly-reviews/${id}`;
+};
+
+export const getWeeklyReview = async (
+  id: number,
+  options?: RequestInit,
+): Promise<WeeklyReview> => {
+  return customFetch<WeeklyReview>(getGetWeeklyReviewUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetWeeklyReviewQueryKey = (id: number) => {
+  return [`/api/weekly-reviews/${id}`] as const;
+};
+
+export const getGetWeeklyReviewQueryOptions = <
+  TData = Awaited<ReturnType<typeof getWeeklyReview>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getWeeklyReview>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetWeeklyReviewQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getWeeklyReview>>> = ({
+    signal,
+  }) => getWeeklyReview(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getWeeklyReview>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetWeeklyReviewQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getWeeklyReview>>
+>;
+export type GetWeeklyReviewQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get a weekly review
+ */
+
+export function useGetWeeklyReview<
+  TData = Awaited<ReturnType<typeof getWeeklyReview>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getWeeklyReview>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetWeeklyReviewQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update a weekly review
+ */
+export const getUpdateWeeklyReviewUrl = (id: number) => {
+  return `/api/weekly-reviews/${id}`;
+};
+
+export const updateWeeklyReview = async (
+  id: number,
+  weeklyReviewPatch: WeeklyReviewPatch,
+  options?: RequestInit,
+): Promise<WeeklyReview> => {
+  return customFetch<WeeklyReview>(getUpdateWeeklyReviewUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(weeklyReviewPatch),
+  });
+};
+
+export const getUpdateWeeklyReviewMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateWeeklyReview>>,
+    TError,
+    { id: number; data: BodyType<WeeklyReviewPatch> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateWeeklyReview>>,
+  TError,
+  { id: number; data: BodyType<WeeklyReviewPatch> },
+  TContext
+> => {
+  const mutationKey = ["updateWeeklyReview"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateWeeklyReview>>,
+    { id: number; data: BodyType<WeeklyReviewPatch> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateWeeklyReview(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateWeeklyReviewMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateWeeklyReview>>
+>;
+export type UpdateWeeklyReviewMutationBody = BodyType<WeeklyReviewPatch>;
+export type UpdateWeeklyReviewMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a weekly review
+ */
+export const useUpdateWeeklyReview = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateWeeklyReview>>,
+    TError,
+    { id: number; data: BodyType<WeeklyReviewPatch> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateWeeklyReview>>,
+  TError,
+  { id: number; data: BodyType<WeeklyReviewPatch> },
+  TContext
+> => {
+  return useMutation(getUpdateWeeklyReviewMutationOptions(options));
+};
+
+/**
+ * @summary Delete a weekly review
+ */
+export const getDeleteWeeklyReviewUrl = (id: number) => {
+  return `/api/weekly-reviews/${id}`;
+};
+
+export const deleteWeeklyReview = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteWeeklyReviewUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteWeeklyReviewMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteWeeklyReview>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteWeeklyReview>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteWeeklyReview"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteWeeklyReview>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteWeeklyReview(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteWeeklyReviewMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteWeeklyReview>>
+>;
+
+export type DeleteWeeklyReviewMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a weekly review
+ */
+export const useDeleteWeeklyReview = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteWeeklyReview>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteWeeklyReview>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteWeeklyReviewMutationOptions(options));
+};

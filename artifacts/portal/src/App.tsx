@@ -41,6 +41,7 @@ import Calendar from "@/pages/calendar";
 import Planning from "@/pages/planning";
 import PlanningDetail from "@/pages/planning-detail";
 import WeeklyPlanPrint from "@/pages/weekly-plan-print";
+import WeeklyReview from "@/pages/weekly-review";
 import Posts from "@/pages/posts";
 import NewPost from "@/pages/new-post";
 import PostDetail from "@/pages/post-detail";
@@ -167,6 +168,7 @@ function StaffRoutes() {
         <Route path="/planning" component={Planning} />
         <Route path="/planning/new" component={PlanningDetail} />
         <Route path="/planning/:id" component={PlanningDetail} />
+        <Route path="/weekly-review" component={WeeklyReview} />
 
         <Route path="/posts" component={Posts} />
         <Route path="/posts/new" component={NewPost} />

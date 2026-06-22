@@ -38,3 +38,4 @@ export * from "./behavioural_notifications";
 export * from "./planning_comments";
 export * from "./observation_comments";
 export * from "./site_instructions";
+export * from './weekly_reviews';

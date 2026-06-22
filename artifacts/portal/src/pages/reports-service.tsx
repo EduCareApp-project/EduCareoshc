@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useGetServiceComplianceReport, useListSites, useListPlanningExperiences, useGetRollComplianceReport } from "@workspace/api-client-react";
+import { useGetServiceComplianceReport, useListSites, useListPlanningExperiences, useGetRollComplianceReport, useListWeeklyReviews } from "@workspace/api-client-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShieldCheck, AlertTriangle, CheckCircle2, Clock, ClipboardX, TrendingUp, CheckSquare, Layers, ArrowRight, ClipboardList } from "lucide-react";
-import { format } from "date-fns";
+import { ShieldCheck, AlertTriangle, CheckCircle2, Clock, ClipboardX, TrendingUp, CheckSquare, Layers, ArrowRight, ClipboardList, ClipboardCheck } from "lucide-react";
+import { format, isBefore, parseISO, startOfToday } from "date-fns";
 import { Link } from "wouter";
 
 export default function ReportsService() {
@@ -19,6 +19,26 @@ export default function ReportsService() {
   const { data: report, isLoading } = useGetServiceComplianceReport(siteIdParam ? { siteId: siteIdParam } : undefined);
   const { data: allPlanning, isLoading: planningLoading } = useListPlanningExperiences();
   const { data: rollReport, isLoading: rollLoading } = useGetRollComplianceReport(siteIdParam ? { siteId: siteIdParam } : undefined);
+  const { data: allReviews } = useListWeeklyReviews();
+
+  const today = startOfToday();
+
+  // Past published weekly plans (have a grid) per site
+  const pastPublishedPlans = (allPlanning ?? []).filter((p) => {
+    if (p.weeklyPlanData == null) return false;
+    if (p.stage !== "published") return false;
+    if (!p.startDate) return false;
+    return isBefore(parseISO(p.startDate.slice(0, 10)), today);
+  });
+
+  // Outstanding = past published plans with no matching weekly review
+  function outstandingForSite(siteId: number) {
+    return pastPublishedPlans.filter((p) => {
+      if (p.siteId !== siteId) return false;
+      const weekStart = p.startDate!.slice(0, 10);
+      return !(allReviews ?? []).some((r) => r.weekStart === weekStart && r.siteId === siteId);
+    });
+  }
 
   const assessmentCycles = (allPlanning ?? []).filter((p) => {
     if (p.stage !== "assessment") return false;
@@ -171,6 +191,76 @@ export default function ReportsService() {
               </div>
 
             </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-base">Weekly Reviews</CardTitle>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">Outstanding weekly reviews per service — past published weeks without a completed review.</p>
+        </CardHeader>
+        <CardContent className="p-0">
+          {planningLoading ? (
+            <div className="px-6 pb-4 space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+          ) : (sites ?? []).filter((s) => siteIdParam === undefined || s.id === siteIdParam).length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No services found.</p>
+          ) : (
+            <div className="rounded-b-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left px-4 py-2 font-medium text-muted-foreground">Service</th>
+                    <th className="text-center px-4 py-2 font-medium text-muted-foreground">Outstanding</th>
+                    <th className="text-center px-4 py-2 font-medium text-muted-foreground">Total plans</th>
+                    <th className="px-4 py-2" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {(sites ?? [])
+                    .filter((s) => siteIdParam === undefined || s.id === siteIdParam)
+                    .map((site) => {
+                      const outstanding = outstandingForSite(site.id);
+                      const total = pastPublishedPlans.filter((p) => p.siteId === site.id).length;
+                      const allDone = outstanding.length === 0 && total > 0;
+                      const noneYet = total === 0;
+                      return (
+                        <tr key={site.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3 font-medium">{site.name}</td>
+                          <td className="px-4 py-3 text-center">
+                            {noneYet ? (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            ) : (
+                              <span className={`font-bold text-base ${outstanding.length > 0 ? "text-amber-600" : "text-green-600"}`}>
+                                {outstanding.length}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-center text-muted-foreground">{total}</td>
+                          <td className="px-4 py-3 text-right">
+                            {noneYet ? (
+                              <span className="text-xs text-muted-foreground">No plans yet</span>
+                            ) : allDone ? (
+                              <Badge className="bg-green-100 text-green-800 text-xs gap-1">
+                                <CheckCircle2 className="h-3 w-3" /> All reviewed
+                              </Badge>
+                            ) : (
+                              <Link href="/calendar">
+                                <Badge className="bg-amber-100 text-amber-800 text-xs cursor-pointer hover:bg-amber-200">
+                                  {outstanding.length} pending →
+                                </Badge>
+                              </Link>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
           )}
         </CardContent>
       </Card>

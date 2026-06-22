@@ -525,9 +525,9 @@ function WeeklyReviewSection({ siteId, sites, pastPublishedWeeks }: WeeklyReview
     },
   });
 
-  const siteStaff = (staff ?? []).filter((s) =>
-    !formSiteId || s.siteId === Number(formSiteId)
-  );
+  const siteStaff = (staff ?? [])
+    .filter((s) => s.status === "active")
+    .sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`));
 
   function reviewForPlan(plan: PlanningExperience): WeeklyReviewItem | undefined {
     const weekStart = plan.startDate?.slice(0, 10);

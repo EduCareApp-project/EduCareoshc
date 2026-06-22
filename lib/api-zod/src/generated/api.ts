@@ -3763,3 +3763,47 @@ export const ListGuardianMedicationLogsResponseItem = zod.object({
 export const ListGuardianMedicationLogsResponse = zod.array(
   ListGuardianMedicationLogsResponseItem,
 );
+
+/**
+ * @summary Get roll compliance report across all weeks since records began
+ */
+export const GetRollComplianceReportQueryParams = zod.object({
+  siteId: zod.coerce.number().optional(),
+});
+
+export const GetRollComplianceReportResponse = zod.object({
+  weeks: zod.array(
+    zod.object({
+      weekStart: zod.coerce.date(),
+      totalSites: zod.number(),
+      submitted: zod.number(),
+      accurate: zod.number(),
+    }),
+  ),
+  summary: zod.object({
+    lastMonth: zod.object({
+      totalWeeks: zod.number(),
+      totalPossible: zod.number(),
+      submitted: zod.number(),
+      accurate: zod.number(),
+      submittedPct: zod.number(),
+      accuratePct: zod.number(),
+    }),
+    last3Months: zod.object({
+      totalWeeks: zod.number(),
+      totalPossible: zod.number(),
+      submitted: zod.number(),
+      accurate: zod.number(),
+      submittedPct: zod.number(),
+      accuratePct: zod.number(),
+    }),
+    lastYear: zod.object({
+      totalWeeks: zod.number(),
+      totalPossible: zod.number(),
+      submitted: zod.number(),
+      accurate: zod.number(),
+      submittedPct: zod.number(),
+      accuratePct: zod.number(),
+    }),
+  }),
+});

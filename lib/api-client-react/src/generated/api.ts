@@ -56,6 +56,7 @@ import type {
   FileLibraryItem,
   GetLearningStoriesReportParams,
   GetNotificationCount200,
+  GetRollComplianceReportParams,
   GetServiceComplianceReportParams,
   Guardian,
   GuardianMedicationLog,
@@ -121,6 +122,7 @@ import type {
   QipSourceUpdate,
   QipStrength,
   QipStrengthUpdate,
+  RollComplianceReport,
   RoutineItemCompletion,
   RoutineItemCompletionInput,
   ServiceComplianceReport,
@@ -13757,6 +13759,112 @@ export function useListGuardianMedicationLogs<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getListGuardianMedicationLogsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get roll compliance report across all weeks since records began
+ */
+export const getGetRollComplianceReportUrl = (
+  params?: GetRollComplianceReportParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/api/roll-submissions/report?${stringifiedParams}`
+    : `/api/api/roll-submissions/report`;
+};
+
+export const getRollComplianceReport = async (
+  params?: GetRollComplianceReportParams,
+  options?: RequestInit,
+): Promise<RollComplianceReport> => {
+  return customFetch<RollComplianceReport>(
+    getGetRollComplianceReportUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetRollComplianceReportQueryKey = (
+  params?: GetRollComplianceReportParams,
+) => {
+  return [
+    `/api/api/roll-submissions/report`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetRollComplianceReportQueryOptions = <
+  TData = Awaited<ReturnType<typeof getRollComplianceReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetRollComplianceReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getRollComplianceReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetRollComplianceReportQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getRollComplianceReport>>
+  > = ({ signal }) =>
+    getRollComplianceReport(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getRollComplianceReport>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetRollComplianceReportQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getRollComplianceReport>>
+>;
+export type GetRollComplianceReportQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get roll compliance report across all weeks since records began
+ */
+
+export function useGetRollComplianceReport<
+  TData = Awaited<ReturnType<typeof getRollComplianceReport>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetRollComplianceReportParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getRollComplianceReport>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetRollComplianceReportQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

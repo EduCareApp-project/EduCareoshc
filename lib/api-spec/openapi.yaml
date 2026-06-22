@@ -3116,6 +3116,24 @@ paths:
                 items:
                   $ref: "#/components/schemas/GuardianMedicationLog"
 
+  /api/roll-submissions/report:
+    get:
+      tags: [roll-submissions]
+      summary: Get roll compliance report across all weeks since records began
+      operationId: getRollComplianceReport
+      parameters:
+        - name: siteId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RollComplianceReport"
+
 components:
   schemas:
     Guardian:
@@ -6167,3 +6185,56 @@ components:
           items:
             type: string
           description: Specific guardian email addresses to notify. Defaults to all guardians on the child's profile if omitted.
+
+    RollCompliancePeriod:
+      type: object
+      required: [totalWeeks, totalPossible, submitted, accurate, submittedPct, accuratePct]
+      properties:
+        totalWeeks:
+          type: integer
+        totalPossible:
+          type: integer
+        submitted:
+          type: integer
+        accurate:
+          type: integer
+        submittedPct:
+          type: number
+        accuratePct:
+          type: number
+
+    RollWeekSummary:
+      type: object
+      required: [weekStart, totalSites, submitted, accurate]
+      properties:
+        weekStart:
+          type: string
+          format: date
+        totalSites:
+          type: integer
+        submitted:
+          type: integer
+        accurate:
+          type: integer
+
+    RollComplianceSummary:
+      type: object
+      required: [lastMonth, last3Months, lastYear]
+      properties:
+        lastMonth:
+          $ref: "#/components/schemas/RollCompliancePeriod"
+        last3Months:
+          $ref: "#/components/schemas/RollCompliancePeriod"
+        lastYear:
+          $ref: "#/components/schemas/RollCompliancePeriod"
+
+    RollComplianceReport:
+      type: object
+      required: [weeks, summary]
+      properties:
+        weeks:
+          type: array
+          items:
+            $ref: "#/components/schemas/RollWeekSummary"
+        summary:
+          $ref: "#/components/schemas/RollComplianceSummary"

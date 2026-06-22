@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, rollSubmissionsTable, sitesTable } from "@workspace/db";
+import { GetRollComplianceReportResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -16,6 +17,91 @@ function getWeekStart(d: Date): Date {
 function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
+
+// GET /api/roll-submissions/report?siteId=N
+// Returns a week-by-week compliance summary since records began, plus period summaries.
+router.get("/roll-submissions/report", async (req, res): Promise<void> => {
+  const siteIdFilter = typeof req.query.siteId === "string" ? parseInt(req.query.siteId, 10) : null;
+
+  const allSites = await db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable).orderBy(sitesTable.name);
+  const filteredSites = siteIdFilter ? allSites.filter((s) => s.id === siteIdFilter) : allSites;
+  const totalSitesCount = filteredSites.length;
+
+  let submissionsQuery = db.select().from(rollSubmissionsTable);
+  if (siteIdFilter) {
+    submissionsQuery = submissionsQuery.where(eq(rollSubmissionsTable.siteId, siteIdFilter)) as typeof submissionsQuery;
+  }
+  const allSubmissions = await submissionsQuery;
+
+  const emptyPeriod = () => ({ totalWeeks: 0, totalPossible: 0, submitted: 0, accurate: 0, submittedPct: 0, accuratePct: 0 });
+
+  if (totalSitesCount === 0 || allSubmissions.length === 0) {
+    res.json(GetRollComplianceReportResponse.parse({ weeks: [], summary: { lastMonth: emptyPeriod(), last3Months: emptyPeriod(), lastYear: emptyPeriod() } }));
+    return;
+  }
+
+  // Find earliest weekStart in data
+  const weekStarts = allSubmissions.map((s) => s.weekStart as string);
+  const earliest = weekStarts.reduce((a, b) => (a < b ? a : b));
+
+  // Generate every week from earliest to current week
+  const currentWeekStart = toDateStr(getWeekStart(new Date()));
+  const allWeeks: string[] = [];
+  const cursor = new Date(earliest + "T00:00:00");
+  const endDate = new Date(currentWeekStart + "T00:00:00");
+  while (cursor <= endDate) {
+    allWeeks.push(toDateStr(cursor));
+    cursor.setDate(cursor.getDate() + 7);
+  }
+
+  // Group submissions by weekStart
+  const byWeek = new Map<string, typeof allSubmissions>();
+  for (const sub of allSubmissions) {
+    const ws = sub.weekStart as string;
+    if (!byWeek.has(ws)) byWeek.set(ws, []);
+    byWeek.get(ws)!.push(sub);
+  }
+
+  // Build per-week summaries (newest first)
+  const weekSummaries = allWeeks.map((weekStart) => {
+    const subs = byWeek.get(weekStart) ?? [];
+    return {
+      weekStart,
+      totalSites: totalSitesCount,
+      submitted: subs.filter((s) => s.submitted).length,
+      accurate: subs.filter((s) => s.accurate).length,
+    };
+  }).reverse();
+
+  // Period summaries
+  const now = new Date();
+  const cutoff = (days: number) => toDateStr(getWeekStart(new Date(now.getTime() - days * 24 * 60 * 60 * 1000)));
+
+  function periodSummary(fromCutoff: string) {
+    const weeks = weekSummaries.filter((w) => w.weekStart >= fromCutoff);
+    const totalWeeks = weeks.length;
+    const totalPossible = totalWeeks * totalSitesCount;
+    const submitted = weeks.reduce((sum, w) => sum + w.submitted, 0);
+    const accurate = weeks.reduce((sum, w) => sum + w.accurate, 0);
+    return {
+      totalWeeks,
+      totalPossible,
+      submitted,
+      accurate,
+      submittedPct: totalPossible > 0 ? Math.round((submitted / totalPossible) * 100) : 0,
+      accuratePct: totalPossible > 0 ? Math.round((accurate / totalPossible) * 100) : 0,
+    };
+  }
+
+  res.json(GetRollComplianceReportResponse.parse({
+    weeks: weekSummaries,
+    summary: {
+      lastMonth: periodSummary(cutoff(28)),
+      last3Months: periodSummary(cutoff(91)),
+      lastYear: periodSummary(cutoff(365)),
+    },
+  }));
+});
 
 // GET /api/roll-submissions?weekStart=YYYY-MM-DD
 // Returns every site with its submission status for the given week.

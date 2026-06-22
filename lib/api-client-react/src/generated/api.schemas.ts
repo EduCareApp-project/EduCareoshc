@@ -2075,6 +2075,33 @@ export interface BehaviouralNotificationInput {
   recipientEmails?: string[];
 }
 
+export interface RollCompliancePeriod {
+  totalWeeks: number;
+  totalPossible: number;
+  submitted: number;
+  accurate: number;
+  submittedPct: number;
+  accuratePct: number;
+}
+
+export interface RollWeekSummary {
+  weekStart: string;
+  totalSites: number;
+  submitted: number;
+  accurate: number;
+}
+
+export interface RollComplianceSummary {
+  lastMonth: RollCompliancePeriod;
+  last3Months: RollCompliancePeriod;
+  lastYear: RollCompliancePeriod;
+}
+
+export interface RollComplianceReport {
+  weeks: RollWeekSummary[];
+  summary: RollComplianceSummary;
+}
+
 export type ListNoticesParams = {
   audience?: ListNoticesAudience;
 };
@@ -2137,4 +2164,8 @@ export type UpdateNotificationSettings200 = {
 
 export type DeleteBehaviouralNotification200 = {
   ok: boolean;
+};
+
+export type GetRollComplianceReportParams = {
+  siteId?: number;
 };

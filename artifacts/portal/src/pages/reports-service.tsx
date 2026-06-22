@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useGetServiceComplianceReport, useListSites, useListPlanningExperiences } from "@workspace/api-client-react";
+import { useGetServiceComplianceReport, useListSites, useListPlanningExperiences, useGetRollComplianceReport } from "@workspace/api-client-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShieldCheck, AlertTriangle, CheckCircle2, Clock, ClipboardX, TrendingUp, CheckSquare, Layers, ArrowRight } from "lucide-react";
+import { ShieldCheck, AlertTriangle, CheckCircle2, Clock, ClipboardX, TrendingUp, CheckSquare, Layers, ArrowRight, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "wouter";
 
@@ -18,6 +18,7 @@ export default function ReportsService() {
   const siteIdParam = filterSiteId === "__all__" ? undefined : Number(filterSiteId);
   const { data: report, isLoading } = useGetServiceComplianceReport(siteIdParam ? { siteId: siteIdParam } : undefined);
   const { data: allPlanning, isLoading: planningLoading } = useListPlanningExperiences();
+  const { data: rollReport, isLoading: rollLoading } = useGetRollComplianceReport(siteIdParam ? { siteId: siteIdParam } : undefined);
 
   const assessmentCycles = (allPlanning ?? []).filter((p) => {
     if (p.stage !== "assessment") return false;
@@ -124,6 +125,107 @@ export default function ReportsService() {
           </Card>
         </Link>
       </div>
+
+      {/* Roll Compliance Report */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-base">Roll Compliance</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {rollLoading ? (
+            <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+          ) : !rollReport || rollReport.weeks.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">No roll data recorded yet.</p>
+          ) : (
+            <>
+              {/* Period summary cards */}
+              <div className="grid gap-3 sm:grid-cols-3">
+                {([
+                  { label: "Last Month", data: rollReport.summary.lastMonth },
+                  { label: "Last 3 Months", data: rollReport.summary.last3Months },
+                  { label: "Last Year", data: rollReport.summary.lastYear },
+                ] as const).map(({ label, data }) => (
+                  <div key={label} className="rounded-lg border p-4 space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
+                    <div className="flex items-end gap-1">
+                      <span className="text-2xl font-bold">{data.submitted}</span>
+                      <span className="text-sm text-muted-foreground mb-0.5">/ {data.totalPossible} submitted</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full ${data.submittedPct >= 80 ? "bg-green-500" : data.submittedPct >= 50 ? "bg-amber-500" : "bg-red-500"}`}
+                        style={{ width: `${data.submittedPct}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className={`font-semibold ${data.submittedPct >= 80 ? "text-green-700" : data.submittedPct >= 50 ? "text-amber-700" : "text-red-700"}`}>
+                        {data.submittedPct}% submitted
+                      </span>
+                      <span className="text-muted-foreground">{data.accuratePct}% accurate</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{data.totalWeeks} week{data.totalWeeks !== 1 ? "s" : ""} tracked</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Week-by-week table */}
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Week-by-Week History</p>
+                <div className="rounded-md border overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Week Starting</th>
+                        <th className="text-center px-3 py-2 font-medium text-muted-foreground">Submitted</th>
+                        <th className="text-center px-3 py-2 font-medium text-muted-foreground">Accurate</th>
+                        <th className="text-center px-3 py-2 font-medium text-muted-foreground">% Submitted</th>
+                        <th className="text-center px-3 py-2 font-medium text-muted-foreground">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {rollReport.weeks.map((week) => {
+                        const pct = week.totalSites > 0 ? Math.round((week.submitted / week.totalSites) * 100) : 0;
+                        const isCompliant = week.submitted === week.totalSites && week.accurate === week.totalSites;
+                        const isPartial = week.submitted > 0 && !isCompliant;
+                        return (
+                          <tr key={week.weekStart} className="hover:bg-muted/30 transition-colors">
+                            <td className="px-3 py-2 font-medium">
+                              {format(new Date(week.weekStart + "T00:00:00"), "dd/MM/yyyy")}
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              {week.submitted} / {week.totalSites}
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              {week.accurate} / {week.totalSites}
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <span className={`font-medium ${pct === 100 ? "text-green-700" : pct >= 50 ? "text-amber-700" : "text-red-700"}`}>
+                                {pct}%
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              {isCompliant ? (
+                                <Badge className="bg-green-100 text-green-800 text-xs">Compliant</Badge>
+                              ) : isPartial ? (
+                                <Badge className="bg-amber-100 text-amber-800 text-xs">Partial</Badge>
+                              ) : (
+                                <Badge className="bg-red-100 text-red-800 text-xs">Not submitted</Badge>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="pb-3">

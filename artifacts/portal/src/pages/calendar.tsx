@@ -4,7 +4,7 @@ import {
   useListWeeklyReviews, useCreateWeeklyReview, useUpdateWeeklyReview, useDeleteWeeklyReview,
   useGetWeeklyReviewStats, useListStaff,
   getListPlanningExperiencesQueryKey, getListWeeklyReviewsQueryKey, getGetWeeklyReviewStatsQueryKey,
-  WeeklyReview as WeeklyReviewItem, Site,
+  WeeklyReview as WeeklyReviewItem, Site, PlanningExperience,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -482,22 +482,25 @@ function pastMondayOptions(n = 24): Date[] {
 interface WeeklyReviewSectionProps {
   siteId: number | undefined;
   sites: Site[];
+  pastPublishedWeeks: PlanningExperience[];
 }
 
-function WeeklyReviewSection({ siteId, sites }: WeeklyReviewSectionProps) {
+function WeeklyReviewSection({ siteId, sites, pastPublishedWeeks }: WeeklyReviewSectionProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<WeeklyReviewItem | null>(null);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [viewPlan, setViewPlan] = useState<PlanningExperience | null>(null);
+  const [expandedReviewId, setExpandedReviewId] = useState<number | null>(null);
 
   const weekOptions = pastMondayOptions(24);
   const defaultWeek = weekOptions[0] ? format(weekOptions[0], "yyyy-MM-dd") : "";
 
   const [formSiteId, setFormSiteId]           = useState<string>("");
   const [formWeekStart, setFormWeekStart]     = useState<string>(defaultWeek);
+  const [formPlanTitle, setFormPlanTitle]     = useState<string>("");
   const [formCompletedById, setFormCompletedById] = useState<string>("");
   const [formWeeklySummary, setFormWeeklySummary]         = useState("");
   const [formGoalsAchieved, setFormGoalsAchieved]         = useState("");
@@ -506,7 +509,7 @@ function WeeklyReviewSection({ siteId, sites }: WeeklyReviewSectionProps) {
   const [formProfessionalEnquiry, setFormProfessionalEnquiry] = useState("");
   const [formChildEngagement, setFormChildEngagement]     = useState("");
 
-  const { data: reviews, isLoading } = useListWeeklyReviews();
+  const { data: reviews, isLoading: reviewsLoading } = useListWeeklyReviews();
   const { data: staff } = useListStaff();
   const { mutateAsync: create, isPending: isCreating } = useCreateWeeklyReview();
   const { mutateAsync: update, isPending: isUpdating } = useUpdateWeeklyReview();
@@ -526,39 +529,44 @@ function WeeklyReviewSection({ siteId, sites }: WeeklyReviewSectionProps) {
     !formSiteId || s.siteId === Number(formSiteId)
   );
 
-  const filteredReviews = (reviews ?? [])
-    .filter((r) => !siteId || r.siteId === siteId)
-    .sort((a, b) => b.weekStart.localeCompare(a.weekStart));
-
-  function openNew() {
-    const defaultSiteId = siteId ? String(siteId) : (sites[0] ? String(sites[0].id) : "");
-    const matchingStaff = (staff ?? []).find(
-      (s) => s.email === user?.email && (!siteId || s.siteId === siteId)
+  function reviewForPlan(plan: PlanningExperience): WeeklyReviewItem | undefined {
+    const weekStart = plan.startDate?.slice(0, 10);
+    if (!weekStart) return undefined;
+    return (reviews ?? []).find(
+      (r) => r.weekStart === weekStart && r.siteId === (plan.siteId ?? siteId)
     );
-    setEditing(null);
-    setFormSiteId(defaultSiteId);
-    setFormWeekStart(defaultWeek);
-    setFormCompletedById(matchingStaff ? String(matchingStaff.id) : "");
-    setFormWeeklySummary("");
-    setFormGoalsAchieved("");
-    setFormEnvironmentChanges("");
-    setFormWeekQuality("");
-    setFormProfessionalEnquiry("");
-    setFormChildEngagement("");
-    setSheetOpen(true);
   }
 
-  function openEdit(r: WeeklyReviewItem) {
-    setEditing(r);
-    setFormSiteId(String(r.siteId));
-    setFormWeekStart(r.weekStart);
-    setFormCompletedById(String(r.completedById));
-    setFormWeeklySummary(r.weeklySummary ?? "");
-    setFormGoalsAchieved(r.goalsAchieved ?? "");
-    setFormEnvironmentChanges(r.environmentChanges ?? "");
-    setFormWeekQuality(r.weekQuality ?? "");
-    setFormProfessionalEnquiry(r.professionalEnquiry ?? "");
-    setFormChildEngagement(r.childEngagement ?? "");
+  function openReviewForm(plan: PlanningExperience, existing?: WeeklyReviewItem) {
+    const weekStart = plan.startDate?.slice(0, 10) ?? defaultWeek;
+    const planSiteId = plan.siteId ?? siteId;
+    const matchingStaff = (staff ?? []).find(
+      (s) => s.email === user?.email && (!planSiteId || s.siteId === planSiteId)
+    );
+    if (existing) {
+      setEditing(existing);
+      setFormSiteId(String(existing.siteId));
+      setFormWeekStart(existing.weekStart);
+      setFormCompletedById(String(existing.completedById));
+      setFormWeeklySummary(existing.weeklySummary ?? "");
+      setFormGoalsAchieved(existing.goalsAchieved ?? "");
+      setFormEnvironmentChanges(existing.environmentChanges ?? "");
+      setFormWeekQuality(existing.weekQuality ?? "");
+      setFormProfessionalEnquiry(existing.professionalEnquiry ?? "");
+      setFormChildEngagement(existing.childEngagement ?? "");
+    } else {
+      setEditing(null);
+      setFormSiteId(planSiteId ? String(planSiteId) : "");
+      setFormWeekStart(weekStart);
+      setFormCompletedById(matchingStaff ? String(matchingStaff.id) : "");
+      setFormWeeklySummary("");
+      setFormGoalsAchieved("");
+      setFormEnvironmentChanges("");
+      setFormWeekQuality("");
+      setFormProfessionalEnquiry("");
+      setFormChildEngagement("");
+    }
+    setFormPlanTitle(plan.title ?? "");
     setSheetOpen(true);
   }
 
@@ -602,105 +610,133 @@ function WeeklyReviewSection({ siteId, sites }: WeeklyReviewSectionProps) {
 
   const isPending = isCreating || isUpdating;
 
+  const pendingCount = pastPublishedWeeks.filter((p) => !reviewForPlan(p)).length;
+
   return (
     <>
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-base">Weekly Review</CardTitle>
-              {filteredReviews.length > 0 && (
-                <Badge variant="secondary" className="text-xs">{filteredReviews.length}</Badge>
-              )}
-            </div>
-            <Button size="sm" className="gap-1.5" onClick={openNew}>
-              <Plus className="h-4 w-4" /> New Review
-            </Button>
+          <div className="flex items-center gap-2">
+            <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-base">Weekly Review</CardTitle>
+            {pendingCount > 0 && (
+              <Badge className="bg-amber-100 text-amber-800 text-xs">{pendingCount} pending</Badge>
+            )}
+            {pastPublishedWeeks.length > 0 && pendingCount === 0 && (
+              <Badge className="bg-green-100 text-green-800 text-xs">All reviewed</Badge>
+            )}
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Reflect on the week — summarise what happened, what worked, and what to carry forward.
+            Past published weeks — click a row to view the programme, then write your review.
           </p>
         </CardHeader>
         <CardContent className="p-0">
-          {isLoading ? (
+          {reviewsLoading ? (
             <div className="px-6 pb-4 space-y-2">
               {[1, 2].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
             </div>
-          ) : filteredReviews.length === 0 ? (
+          ) : pastPublishedWeeks.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8 px-6">
-              No reviews yet — click <strong>New Review</strong> to add the first one.
+              No past published weekly plans yet — publish a weekly plan and it will appear here once the week ends.
             </p>
           ) : (
             <div className="divide-y">
-              {filteredReviews.map((r) => {
-                const isExpanded = expandedId === r.id;
-                const siteName = sites.find((s) => s.id === r.siteId)?.name ?? r.siteName;
+              {pastPublishedWeeks.map((plan) => {
+                const existingReview = reviewForPlan(plan);
+                const isReviewed = !!existingReview;
+                const isExpanded = expandedReviewId === plan.id;
+                const siteName = sites.find((s) => s.id === plan.siteId)?.name ?? "";
+                const weekLabel = plan.startDate
+                  ? `Week of ${format(parseISO(plan.startDate.slice(0, 10)), "dd/MM/yyyy")}`
+                  : "";
                 return (
-                  <div key={r.id}>
+                  <div key={plan.id}>
                     <div
-                      className="flex items-center justify-between px-6 py-3 cursor-pointer hover:bg-muted/40 transition-colors"
-                      onClick={() => setExpandedId(isExpanded ? null : r.id)}
+                      className="flex items-center justify-between px-6 py-3 cursor-pointer hover:bg-muted/40 transition-colors group"
+                      onClick={() => setViewPlan(plan)}
                     >
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium">
-                          Week of {format(parseISO(r.weekStart), "dd/MM/yyyy")}
-                        </p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-medium">{plan.title}</p>
+                          {isReviewed ? (
+                            <Badge className="bg-green-100 text-green-800 text-xs gap-1 shrink-0">
+                              <CheckCircle2 className="h-3 w-3" /> Reviewed
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-amber-100 text-amber-800 text-xs shrink-0">
+                              Needs review
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {siteName} · {r.completedByName}
-                          {" · "}
-                          <span className="inline-flex items-center gap-2">
-                            <span>{r.jottingsCount} jottings</span>
-                            <span>{r.observationsCount} observations</span>
-                            <span>{r.postsCount} posts</span>
-                          </span>
+                          {weekLabel}{siteName ? ` · ${siteName}` : ""}
+                          {isReviewed && existingReview && (
+                            <> · by {existingReview.completedByName}</>
+                          )}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-4">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={(e) => { e.stopPropagation(); openEdit(r); }}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
+                      <div className="flex items-center gap-1 shrink-0 ml-4" onClick={(e) => e.stopPropagation()}>
+                        {isReviewed && existingReview ? (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs gap-1"
+                              onClick={() => setExpandedReviewId(isExpanded ? null : plan.id)}
+                            >
+                              {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                              {isExpanded ? "Hide" : "View"}
+                            </Button>
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={(e) => e.stopPropagation()}
+                              className="h-7 w-7"
+                              onClick={() => openReviewForm(plan, existingReview)}
                             >
-                              <Trash2 className="h-3.5 w-3.5" />
+                              <Pencil className="h-3.5 w-3.5" />
                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete review?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will permanently delete the weekly review for{" "}
-                                {format(parseISO(r.weekStart), "dd/MM/yyyy")}. This cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(r.id)}>
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                        {isExpanded
-                          ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                          : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete review?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently delete the review for {weekLabel}. This cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(existingReview.id)}>
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs gap-1.5"
+                            onClick={() => openReviewForm(plan)}
+                          >
+                            <Plus className="h-3.5 w-3.5" /> Write review
+                          </Button>
+                        )}
                       </div>
                     </div>
-                    {isExpanded && (
-                      <div className="px-6 pb-5 pt-1 space-y-4 bg-muted/20">
+                    {isExpanded && existingReview && (
+                      <div className="px-6 pb-5 pt-2 space-y-3 bg-muted/20 border-t">
                         {REVIEW_QUESTIONS.map(({ key, label, icon: Icon }) => {
-                          const val = r[key] as string | null | undefined;
+                          const val = existingReview[key] as string | null | undefined;
                           if (!val) return null;
                           return (
                             <div key={key}>
@@ -711,6 +747,9 @@ function WeeklyReviewSection({ siteId, sites }: WeeklyReviewSectionProps) {
                             </div>
                           );
                         })}
+                        {REVIEW_QUESTIONS.every(({ key }) => !existingReview[key as keyof WeeklyReviewItem]) && (
+                          <p className="text-sm text-muted-foreground italic">No reflections recorded.</p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -721,10 +760,21 @@ function WeeklyReviewSection({ siteId, sites }: WeeklyReviewSectionProps) {
         </CardContent>
       </Card>
 
+      {viewPlan && (
+        <ReadOnlyPlanView
+          plan={viewPlan as ExistingPlan}
+          siteName={sites.find((s) => s.id === viewPlan.siteId)?.name}
+          onClose={() => setViewPlan(null)}
+        />
+      )}
+
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader className="mb-4">
-            <SheetTitle>{editing ? "Edit Weekly Review" : "New Weekly Review"}</SheetTitle>
+            <SheetTitle>{editing ? "Edit Weekly Review" : "Weekly Review"}</SheetTitle>
+            {formPlanTitle && (
+              <p className="text-sm text-muted-foreground">{formPlanTitle}</p>
+            )}
           </SheetHeader>
 
           <div className="space-y-4">
@@ -1058,7 +1108,7 @@ export default function Calendar() {
       )}
 
       {!isGuardianMode && (
-        <WeeklyReviewSection siteId={siteIdNum} sites={sites ?? []} />
+        <WeeklyReviewSection siteId={siteIdNum} sites={sites ?? []} pastPublishedWeeks={pastPublishedWeeks} />
       )}
 
       {!isGuardianMode && !isLoading && (

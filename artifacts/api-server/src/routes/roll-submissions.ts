@@ -40,7 +40,7 @@ router.get("/roll-submissions/report", async (req, res): Promise<void> => {
 
   // Period cutoffs (week-aligned)
   const now = new Date();
-  const cutoff = (weeks: number) => toDateStr(getWeekStart(new Date(now.getTime() - weeks * 7 * 24 * 60 * 60 * 1000)));
+  const cutoff = (weeks: number) => toDateStr(getWeekStart(new Date(now.getTime() - (weeks - 1) * 7 * 24 * 60 * 60 * 1000)));
   const cutoff4 = cutoff(4);
   const cutoff12 = cutoff(12);
   const cutoff52 = cutoff(52);

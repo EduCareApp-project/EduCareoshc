@@ -170,57 +170,6 @@ export default function ReportsService() {
                 </table>
               </div>
 
-              {/* Week-by-week table */}
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Week-by-Week History</p>
-                <div className="rounded-md border overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/50">
-                      <tr>
-                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Week Starting</th>
-                        <th className="text-center px-3 py-2 font-medium text-muted-foreground">Submitted</th>
-                        <th className="text-center px-3 py-2 font-medium text-muted-foreground">Accurate</th>
-                        <th className="text-center px-3 py-2 font-medium text-muted-foreground">% Submitted</th>
-                        <th className="text-center px-3 py-2 font-medium text-muted-foreground">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {rollReport.weeks.map((week) => {
-                        const pct = week.totalSites > 0 ? Math.round((week.submitted / week.totalSites) * 100) : 0;
-                        const isCompliant = week.submitted === week.totalSites && week.accurate === week.totalSites;
-                        const isPartial = week.submitted > 0 && !isCompliant;
-                        return (
-                          <tr key={week.weekStart} className="hover:bg-muted/30 transition-colors">
-                            <td className="px-3 py-2 font-medium">
-                              {format(new Date(week.weekStart + "T00:00:00"), "dd/MM/yyyy")}
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              {week.submitted} / {week.totalSites}
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              {week.accurate} / {week.totalSites}
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              <span className={`font-medium ${pct === 100 ? "text-green-700" : pct >= 50 ? "text-amber-700" : "text-red-700"}`}>
-                                {pct}%
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              {isCompliant ? (
-                                <Badge className="bg-green-100 text-green-800 text-xs">Compliant</Badge>
-                              ) : isPartial ? (
-                                <Badge className="bg-amber-100 text-amber-800 text-xs">Partial</Badge>
-                              ) : (
-                                <Badge className="bg-red-100 text-red-800 text-xs">Not submitted</Badge>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
             </>
           )}
         </CardContent>

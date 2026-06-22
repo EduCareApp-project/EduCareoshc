@@ -740,7 +740,7 @@ function WeeklyReviewSection({ siteId, sites, pastPublishedWeeks }: WeeklyReview
                           if (!val) return null;
                           return (
                             <div key={key}>
-                              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 mb-1">
+                              <p className="text-xs font-bold text-foreground flex items-center gap-1.5 mb-1">
                                 <Icon className="h-3.5 w-3.5" />{label}
                               </p>
                               <p className="text-sm whitespace-pre-wrap">{val}</p>
@@ -846,8 +846,8 @@ function WeeklyReviewSection({ siteId, sites, pastPublishedWeeks }: WeeklyReview
               const [val, setVal] = fieldMap[key as string];
               return (
                 <div key={key} className="space-y-1.5">
-                  <Label className="flex items-center gap-1.5">
-                    <Icon className="h-3.5 w-3.5 text-muted-foreground" />{label}
+                  <Label className="flex items-center gap-1.5 font-bold">
+                    <Icon className="h-3.5 w-3.5" />{label}
                   </Label>
                   <Textarea
                     value={val}

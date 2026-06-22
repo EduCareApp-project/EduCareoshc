@@ -5,17 +5,18 @@ import { GetRollComplianceReportResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-function getWeekStart(d: Date): Date {
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  const monday = new Date(d);
-  monday.setDate(d.getDate() + diff);
-  monday.setHours(0, 0, 0, 0);
-  return monday;
+// All date helpers work in UTC to avoid server-timezone skew
+function getWeekStartUTC(d: Date): string {
+  const day = d.getUTCDay(); // 0=Sun … 6=Sat
+  const diff = day === 0 ? -6 : 1 - day; // days back to Monday
+  const monday = new Date(d.getTime() + diff * 86400000);
+  return `${monday.getUTCFullYear()}-${String(monday.getUTCMonth() + 1).padStart(2, "0")}-${String(monday.getUTCDate()).padStart(2, "0")}`;
 }
 
-function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10);
+function subtractWeeks(dateStr: string, n: number): string {
+  const ms = new Date(dateStr + "T00:00:00Z").getTime() - n * 7 * 86400000;
+  const d = new Date(ms);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
 // GET /api/roll-submissions/report?siteId=N
@@ -38,68 +39,34 @@ router.get("/roll-submissions/report", async (req, res): Promise<void> => {
     return;
   }
 
-  // Period cutoffs (week-aligned, excluding the current week)
-  const currentWeekStart = toDateStr(getWeekStart(new Date()));
-  const cutoff = (weeks: number) => toDateStr(getWeekStart(new Date(new Date(currentWeekStart + "T00:00:00").getTime() - weeks * 7 * 24 * 60 * 60 * 1000)));
-  const cutoff4 = cutoff(4);
-  const cutoff12 = cutoff(12);
-  const cutoff52 = cutoff(52);
+  // All cutoffs in UTC — "4 weeks" = the 4 complete weeks immediately before this week
+  const currentWeekStart = getWeekStartUTC(new Date());
+  const cutoff4  = subtractWeeks(currentWeekStart, 4);
+  const cutoff12 = subtractWeeks(currentWeekStart, 12);
+  const cutoff52 = subtractWeeks(currentWeekStart, 52);
 
-  // Per-site period cells (from cutoff up to but not including current week)
   function siteCell(siteId: number, fromCutoff: string, weeksCount: number) {
-    const totalPossible = weeksCount;
     const submitted = allSubmissions.filter(
-      (s) => s.siteId === siteId && s.submitted && (s.weekStart as string) >= fromCutoff && (s.weekStart as string) < currentWeekStart
+      (s) => s.siteId === siteId && s.submitted &&
+             (s.weekStart as string) >= fromCutoff &&
+             (s.weekStart as string) < currentWeekStart
     ).length;
     return {
       submitted,
-      totalPossible,
-      pct: totalPossible > 0 ? Math.round((submitted / totalPossible) * 100) : 0,
+      totalPossible: weeksCount,
+      pct: weeksCount > 0 ? Math.round((submitted / weeksCount) * 100) : 0,
     };
   }
 
   const sites = filteredSites.map((site) => ({
     siteId: site.id,
     siteName: site.name,
-    last4Weeks: siteCell(site.id, cutoff4, 4),
+    last4Weeks:  siteCell(site.id, cutoff4,  4),
     last12Weeks: siteCell(site.id, cutoff12, 12),
     last52Weeks: siteCell(site.id, cutoff52, 52),
   }));
 
-  // Week-by-week history (newest first)
-  const weekStarts = allSubmissions.map((s) => s.weekStart as string);
-  if (weekStarts.length === 0) {
-    res.json(GetRollComplianceReportResponse.parse({ sites, weeks: [] }));
-    return;
-  }
-
-  const earliest = weekStarts.reduce((a, b) => (a < b ? a : b));
-  const allWeeks: string[] = [];
-  const cursor = new Date(earliest + "T00:00:00");
-  const endDate = new Date(currentWeekStart + "T00:00:00");
-  while (cursor <= endDate) {
-    allWeeks.push(toDateStr(cursor));
-    cursor.setDate(cursor.getDate() + 7);
-  }
-
-  const byWeek = new Map<string, typeof allSubmissions>();
-  for (const sub of allSubmissions) {
-    const ws = sub.weekStart as string;
-    if (!byWeek.has(ws)) byWeek.set(ws, []);
-    byWeek.get(ws)!.push(sub);
-  }
-
-  const weeks = allWeeks.map((weekStart) => {
-    const subs = byWeek.get(weekStart) ?? [];
-    return {
-      weekStart,
-      totalSites: totalSitesCount,
-      submitted: subs.filter((s) => s.submitted).length,
-      accurate: subs.filter((s) => s.accurate).length,
-    };
-  }).reverse();
-
-  res.json(GetRollComplianceReportResponse.parse({ sites, weeks }));
+  res.json(GetRollComplianceReportResponse.parse({ sites, weeks: [] }));
 });
 
 // GET /api/roll-submissions?weekStart=YYYY-MM-DD
@@ -108,7 +75,7 @@ router.get("/roll-submissions/report", async (req, res): Promise<void> => {
 router.get("/roll-submissions", async (req, res): Promise<void> => {
   const weekStart = typeof req.query.weekStart === "string"
     ? req.query.weekStart
-    : toDateStr(getWeekStart(new Date()));
+    : getWeekStartUTC(new Date());
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) {
     res.status(400).json({ error: "weekStart must be YYYY-MM-DD" });

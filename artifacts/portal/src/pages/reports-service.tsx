@@ -141,34 +141,44 @@ export default function ReportsService() {
             <p className="text-sm text-muted-foreground py-4 text-center">No roll data recorded yet.</p>
           ) : (
             <>
-              {/* Period summary cards */}
-              <div className="grid gap-3 sm:grid-cols-3">
-                {([
-                  { label: "Last Month", data: rollReport.summary.lastMonth },
-                  { label: "Last 3 Months", data: rollReport.summary.last3Months },
-                  { label: "Last Year", data: rollReport.summary.lastYear },
-                ] as const).map(({ label, data }) => (
-                  <div key={label} className="rounded-lg border p-4 space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
-                    <div className="flex items-end gap-1">
-                      <span className="text-2xl font-bold">{data.submitted}</span>
-                      <span className="text-sm text-muted-foreground mb-0.5">/ {data.totalPossible} submitted</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full ${data.submittedPct >= 80 ? "bg-green-500" : data.submittedPct >= 50 ? "bg-amber-500" : "bg-red-500"}`}
-                        style={{ width: `${data.submittedPct}%` }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className={`font-semibold ${data.submittedPct >= 80 ? "text-green-700" : data.submittedPct >= 50 ? "text-amber-700" : "text-red-700"}`}>
-                        {data.submittedPct}% submitted
-                      </span>
-                      <span className="text-muted-foreground">{data.accuratePct}% accurate</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{data.totalWeeks} week{data.totalWeeks !== 1 ? "s" : ""} tracked</p>
-                  </div>
-                ))}
+              {/* Period summary table */}
+              <div className="rounded-md border overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">Period</th>
+                      <th className="text-center px-3 py-2 font-medium text-muted-foreground">Weeks</th>
+                      <th className="text-center px-3 py-2 font-medium text-muted-foreground">Submitted</th>
+                      <th className="text-center px-3 py-2 font-medium text-muted-foreground">Accurate</th>
+                      <th className="text-center px-3 py-2 font-medium text-muted-foreground">% Submitted</th>
+                      <th className="text-center px-3 py-2 font-medium text-muted-foreground">% Accurate</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {([
+                      { label: "Last Month", data: rollReport.summary.lastMonth },
+                      { label: "Last 3 Months", data: rollReport.summary.last3Months },
+                      { label: "Last Year", data: rollReport.summary.lastYear },
+                    ] as const).map(({ label, data }) => (
+                      <tr key={label} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-3 py-2 font-medium">{label}</td>
+                        <td className="px-3 py-2 text-center text-muted-foreground">{data.totalWeeks}</td>
+                        <td className="px-3 py-2 text-center">{data.submitted} / {data.totalPossible}</td>
+                        <td className="px-3 py-2 text-center">{data.accurate} / {data.totalPossible}</td>
+                        <td className="px-3 py-2 text-center">
+                          <span className={`font-medium ${data.submittedPct >= 80 ? "text-green-700" : data.submittedPct >= 50 ? "text-amber-700" : "text-red-700"}`}>
+                            {data.submittedPct}%
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <span className={`font-medium ${data.accuratePct >= 80 ? "text-green-700" : data.accuratePct >= 50 ? "text-amber-700" : "text-red-700"}`}>
+                            {data.accuratePct}%
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
               {/* Week-by-week table */}

@@ -7,6 +7,7 @@ export type RowKey =
   | "experiencesThemes"
   | "active"
   | "creative"
+  | "construction"
   | "wellbeing"
   | "imaginative"
   | "spontaneousChoice";
@@ -15,6 +16,7 @@ export const ROW_LABELS: { key: RowKey; label: string }[] = [
   { key: "experiencesThemes", label: "Experiences / Themes" },
   { key: "active",            label: "Active" },
   { key: "creative",         label: "Creative" },
+  { key: "construction",     label: "Construction" },
   { key: "wellbeing",        label: "Wellbeing" },
   { key: "imaginative",      label: "Imaginative" },
   { key: "spontaneousChoice",label: "Spontaneous Choice" },

@@ -6380,6 +6380,8 @@ components:
     WeeklyReviewPatch:
       type: object
       properties:
+        completedById:
+          type: integer
         weeklySummary:
           type: string
         goalsAchieved:

@@ -7,6 +7,7 @@
  */
 
 export interface WeeklyReviewPatch {
+  completedById?: number;
   weeklySummary?: string;
   goalsAchieved?: string;
   environmentChanges?: string;

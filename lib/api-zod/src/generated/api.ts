@@ -3899,6 +3899,7 @@ export const UpdateWeeklyReviewParams = zod.object({
 });
 
 export const UpdateWeeklyReviewBody = zod.object({
+  completedById: zod.number().optional(),
   weeklySummary: zod.string().optional(),
   goalsAchieved: zod.string().optional(),
   environmentChanges: zod.string().optional(),

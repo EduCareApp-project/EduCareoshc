@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef, useLayoutEffect } from "react";
-import { useListPlanningExperiences, useCreatePlanningExperience, useUpdatePlanningExperience, useListSites } from "@workspace/api-client-react";
+import {
+  useListPlanningExperiences, useCreatePlanningExperience, useUpdatePlanningExperience, useListSites,
+  useListWeeklyReviews, useCreateWeeklyReview, useUpdateWeeklyReview, useDeleteWeeklyReview,
+  useGetWeeklyReviewStats, useListStaff,
+  getListPlanningExperiencesQueryKey, getListWeeklyReviewsQueryKey, getGetWeeklyReviewStatsQueryKey,
+  WeeklyReview as WeeklyReviewItem, Site,
+} from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,18 +14,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronLeft, ChevronRight, Layers, ArrowRight, CheckCircle2, Plus, X, Send, AlertTriangle, CopyCheck, ClipboardList, Copy } from "lucide-react";
+import {
+  ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
+  Layers, ArrowRight, CheckCircle2, Plus, X, Send, AlertTriangle, CopyCheck, ClipboardList, Copy,
+  ClipboardCheck, User, StickyNote, BookOpen, Newspaper, Pencil, Trash2,
+} from "lucide-react";
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-  addMonths, subMonths, format, parseISO, isBefore, isAfter, addDays, startOfToday,
+  addMonths, subMonths, subWeeks, format, parseISO, isBefore, isAfter, addDays, startOfToday,
 } from "date-fns";
 import { Link, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
-import { getListPlanningExperiencesQueryKey } from "@workspace/api-client-react";
+import { useAuth } from "@/contexts/auth";
 import {
   ReadOnlyPlanView, ExistingPlan,
   DayKey, RowKey, ROW_LABELS, DAY_KEYS, DAY_LABELS,
@@ -450,6 +463,366 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
   );
 }
 
+const REVIEW_QUESTIONS: { key: keyof WeeklyReviewItem; label: string; icon: React.ElementType }[] = [
+  { key: "weeklySummary",       label: "Weekly summary",                    icon: StickyNote },
+  { key: "goalsAchieved",       label: "Goals achieved",                    icon: CheckCircle2 },
+  { key: "environmentChanges",  label: "Environment changes",               icon: Layers },
+  { key: "weekQuality",         label: "Quality of the week",               icon: BookOpen },
+  { key: "professionalEnquiry", label: "Professional enquiry / reflection", icon: User },
+  { key: "childEngagement",     label: "Child engagement highlights",       icon: Newspaper },
+];
+
+function pastMondayOptions(n = 24): Date[] {
+  const today = startOfToday();
+  const thisMonday = startOfWeek(today, { weekStartsOn: 1 });
+  const start = isBefore(thisMonday, today) ? thisMonday : subWeeks(thisMonday, 1);
+  return Array.from({ length: n }, (_, i) => subWeeks(start, i));
+}
+
+interface WeeklyReviewSectionProps {
+  siteId: number | undefined;
+  sites: Site[];
+}
+
+function WeeklyReviewSection({ siteId, sites }: WeeklyReviewSectionProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editing, setEditing] = useState<WeeklyReviewItem | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  const weekOptions = pastMondayOptions(24);
+  const defaultWeek = weekOptions[0] ? format(weekOptions[0], "yyyy-MM-dd") : "";
+
+  const [formSiteId, setFormSiteId]           = useState<string>("");
+  const [formWeekStart, setFormWeekStart]     = useState<string>(defaultWeek);
+  const [formCompletedById, setFormCompletedById] = useState<string>("");
+  const [formWeeklySummary, setFormWeeklySummary]         = useState("");
+  const [formGoalsAchieved, setFormGoalsAchieved]         = useState("");
+  const [formEnvironmentChanges, setFormEnvironmentChanges] = useState("");
+  const [formWeekQuality, setFormWeekQuality]             = useState("");
+  const [formProfessionalEnquiry, setFormProfessionalEnquiry] = useState("");
+  const [formChildEngagement, setFormChildEngagement]     = useState("");
+
+  const { data: reviews, isLoading } = useListWeeklyReviews();
+  const { data: staff } = useListStaff();
+  const { mutateAsync: create, isPending: isCreating } = useCreateWeeklyReview();
+  const { mutateAsync: update, isPending: isUpdating } = useUpdateWeeklyReview();
+  const { mutateAsync: remove } = useDeleteWeeklyReview();
+
+  const statsParams = formSiteId && formWeekStart
+    ? { siteId: Number(formSiteId), weekStart: formWeekStart }
+    : undefined;
+  const { data: stats } = useGetWeeklyReviewStats(statsParams!, {
+    query: {
+      enabled: !!statsParams,
+      queryKey: getGetWeeklyReviewStatsQueryKey(statsParams),
+    },
+  });
+
+  const siteStaff = (staff ?? []).filter((s) =>
+    !formSiteId || s.siteId === Number(formSiteId)
+  );
+
+  const filteredReviews = (reviews ?? [])
+    .filter((r) => !siteId || r.siteId === siteId)
+    .sort((a, b) => b.weekStart.localeCompare(a.weekStart));
+
+  function openNew() {
+    const defaultSiteId = siteId ? String(siteId) : (sites[0] ? String(sites[0].id) : "");
+    const matchingStaff = (staff ?? []).find(
+      (s) => s.email === user?.email && (!siteId || s.siteId === siteId)
+    );
+    setEditing(null);
+    setFormSiteId(defaultSiteId);
+    setFormWeekStart(defaultWeek);
+    setFormCompletedById(matchingStaff ? String(matchingStaff.id) : "");
+    setFormWeeklySummary("");
+    setFormGoalsAchieved("");
+    setFormEnvironmentChanges("");
+    setFormWeekQuality("");
+    setFormProfessionalEnquiry("");
+    setFormChildEngagement("");
+    setSheetOpen(true);
+  }
+
+  function openEdit(r: WeeklyReviewItem) {
+    setEditing(r);
+    setFormSiteId(String(r.siteId));
+    setFormWeekStart(r.weekStart);
+    setFormCompletedById(String(r.completedById));
+    setFormWeeklySummary(r.weeklySummary ?? "");
+    setFormGoalsAchieved(r.goalsAchieved ?? "");
+    setFormEnvironmentChanges(r.environmentChanges ?? "");
+    setFormWeekQuality(r.weekQuality ?? "");
+    setFormProfessionalEnquiry(r.professionalEnquiry ?? "");
+    setFormChildEngagement(r.childEngagement ?? "");
+    setSheetOpen(true);
+  }
+
+  async function handleSave() {
+    if (!formSiteId || !formWeekStart || !formCompletedById) return;
+    const data = {
+      weekStart: formWeekStart,
+      siteId: Number(formSiteId),
+      completedById: Number(formCompletedById),
+      weeklySummary: formWeeklySummary || undefined,
+      goalsAchieved: formGoalsAchieved || undefined,
+      environmentChanges: formEnvironmentChanges || undefined,
+      weekQuality: formWeekQuality || undefined,
+      professionalEnquiry: formProfessionalEnquiry || undefined,
+      childEngagement: formChildEngagement || undefined,
+    };
+    try {
+      if (editing) {
+        await update({ id: editing.id, data });
+        toast({ title: "Review updated" });
+      } else {
+        await create({ data });
+        toast({ title: "Review saved" });
+      }
+      queryClient.invalidateQueries({ queryKey: getListWeeklyReviewsQueryKey() });
+      setSheetOpen(false);
+    } catch {
+      toast({ title: "Failed to save review", variant: "destructive" });
+    }
+  }
+
+  async function handleDelete(id: number) {
+    try {
+      await remove({ id });
+      queryClient.invalidateQueries({ queryKey: getListWeeklyReviewsQueryKey() });
+      toast({ title: "Review deleted" });
+    } catch {
+      toast({ title: "Failed to delete", variant: "destructive" });
+    }
+  }
+
+  const isPending = isCreating || isUpdating;
+
+  return (
+    <>
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-base">Weekly Review</CardTitle>
+              {filteredReviews.length > 0 && (
+                <Badge variant="secondary" className="text-xs">{filteredReviews.length}</Badge>
+              )}
+            </div>
+            <Button size="sm" className="gap-1.5" onClick={openNew}>
+              <Plus className="h-4 w-4" /> New Review
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            Reflect on the week — summarise what happened, what worked, and what to carry forward.
+          </p>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="px-6 pb-4 space-y-2">
+              {[1, 2].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
+            </div>
+          ) : filteredReviews.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8 px-6">
+              No reviews yet — click <strong>New Review</strong> to add the first one.
+            </p>
+          ) : (
+            <div className="divide-y">
+              {filteredReviews.map((r) => {
+                const isExpanded = expandedId === r.id;
+                const siteName = sites.find((s) => s.id === r.siteId)?.name ?? r.siteName;
+                return (
+                  <div key={r.id}>
+                    <div
+                      className="flex items-center justify-between px-6 py-3 cursor-pointer hover:bg-muted/40 transition-colors"
+                      onClick={() => setExpandedId(isExpanded ? null : r.id)}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">
+                          Week of {format(parseISO(r.weekStart), "dd/MM/yyyy")}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {siteName} · {r.completedByName}
+                          {" · "}
+                          <span className="inline-flex items-center gap-2">
+                            <span>{r.jottingsCount} jottings</span>
+                            <span>{r.observationsCount} observations</span>
+                            <span>{r.postsCount} posts</span>
+                          </span>
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-4">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={(e) => { e.stopPropagation(); openEdit(r); }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete review?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete the weekly review for{" "}
+                                {format(parseISO(r.weekStart), "dd/MM/yyyy")}. This cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(r.id)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                        {isExpanded
+                          ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                          : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="px-6 pb-5 pt-1 space-y-4 bg-muted/20">
+                        {REVIEW_QUESTIONS.map(({ key, label, icon: Icon }) => {
+                          const val = r[key] as string | null | undefined;
+                          if (!val) return null;
+                          return (
+                            <div key={key}>
+                              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 mb-1">
+                                <Icon className="h-3.5 w-3.5" />{label}
+                              </p>
+                              <p className="text-sm whitespace-pre-wrap">{val}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle>{editing ? "Edit Weekly Review" : "New Weekly Review"}</SheetTitle>
+          </SheetHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Week (Monday)</Label>
+                <Select value={formWeekStart} onValueChange={setFormWeekStart}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Select week…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {weekOptions.map((d) => (
+                      <SelectItem key={format(d, "yyyy-MM-dd")} value={format(d, "yyyy-MM-dd")} className="text-sm">
+                        {format(d, "dd/MM/yyyy")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Service</Label>
+                <Select value={formSiteId} onValueChange={setFormSiteId}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Select site…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sites.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)} className="text-sm">{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Completed by</Label>
+              <Select value={formCompletedById} onValueChange={setFormCompletedById}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Select staff member…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {siteStaff.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)} className="text-sm">{s.firstName} {s.lastName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {stats && (
+              <div className="flex items-center gap-3 rounded-md border bg-muted/40 px-4 py-2.5 text-sm">
+                <span className="font-medium text-muted-foreground text-xs">This week:</span>
+                <span className="flex items-center gap-1 text-xs"><StickyNote className="h-3.5 w-3.5 text-muted-foreground" />{stats.jottingsCount} jottings</span>
+                <span className="flex items-center gap-1 text-xs"><BookOpen className="h-3.5 w-3.5 text-muted-foreground" />{stats.observationsCount} obs</span>
+                <span className="flex items-center gap-1 text-xs"><Newspaper className="h-3.5 w-3.5 text-muted-foreground" />{stats.postsCount} posts</span>
+              </div>
+            )}
+
+            <Separator />
+
+            {REVIEW_QUESTIONS.map(({ key, label, icon: Icon }) => {
+              const fieldMap: Record<string, [string, (v: string) => void]> = {
+                weeklySummary:       [formWeeklySummary,       setFormWeeklySummary],
+                goalsAchieved:       [formGoalsAchieved,       setFormGoalsAchieved],
+                environmentChanges:  [formEnvironmentChanges,  setFormEnvironmentChanges],
+                weekQuality:         [formWeekQuality,         setFormWeekQuality],
+                professionalEnquiry: [formProfessionalEnquiry, setFormProfessionalEnquiry],
+                childEngagement:     [formChildEngagement,     setFormChildEngagement],
+              };
+              const [val, setVal] = fieldMap[key as string];
+              return (
+                <div key={key} className="space-y-1.5">
+                  <Label className="flex items-center gap-1.5">
+                    <Icon className="h-3.5 w-3.5 text-muted-foreground" />{label}
+                  </Label>
+                  <Textarea
+                    value={val}
+                    onChange={(e) => setVal(e.target.value)}
+                    placeholder={`Describe ${label.toLowerCase()}…`}
+                    rows={3}
+                    className="text-sm resize-none"
+                  />
+                </div>
+              );
+            })}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setSheetOpen(false)}>Cancel</Button>
+              <Button onClick={handleSave} disabled={isPending || !formSiteId || !formWeekStart || !formCompletedById}>
+                {isPending ? "Saving…" : editing ? "Save Changes" : "Save Review"}
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+}
+
 export default function Calendar() {
   const search = useSearch();
   const isGuardianMode = new URLSearchParams(search).get("mode") === "guardian";
@@ -684,39 +1057,8 @@ export default function Calendar() {
         </Card>
       )}
 
-      {!isGuardianMode && !isLoading && pastPublishedWeeks.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-base">Weekly Review</CardTitle>
-              <Badge variant="secondary" className="text-xs">{pastPublishedWeeks.length}</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Past published weeks — weekly review coming soon.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-0 p-0">
-            <div className="divide-y">
-              {pastPublishedWeeks.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between py-3 px-6 opacity-70"
-                >
-                  <div>
-                    <p className="text-sm font-medium">{p.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {p.startDate ? `Week of ${format(parseISO(p.startDate.slice(0, 10)), "dd/MM/yyyy")}` : ""}
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="text-xs text-muted-foreground">
-                    Past
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {!isGuardianMode && (
+        <WeeklyReviewSection siteId={siteIdNum} sites={sites ?? []} />
       )}
 
       {!isGuardianMode && !isLoading && (

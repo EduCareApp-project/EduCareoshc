@@ -50,7 +50,7 @@ router.get("/roll-submissions/report", async (req, res): Promise<void> => {
 
   function siteCell(siteId: number, fromCutoff: string, weeksCount: number) {
     const submitted = allSubmissions.filter(
-      (s) => s.siteId === siteId && s.submitted &&
+      (s) => s.siteId === siteId && s.submitted && s.accurate &&
              isMonday(s.weekStart as string) &&
              (s.weekStart as string) >= fromCutoff &&
              (s.weekStart as string) < currentWeekStart

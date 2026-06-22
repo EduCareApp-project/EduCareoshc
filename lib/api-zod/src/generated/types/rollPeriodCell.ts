@@ -6,11 +6,8 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export interface RollCompliancePeriod {
-  totalWeeks: number;
-  totalPossible: number;
+export interface RollPeriodCell {
   submitted: number;
-  accurate: number;
-  submittedPct: number;
-  accuratePct: number;
+  totalPossible: number;
+  pct: number;
 }

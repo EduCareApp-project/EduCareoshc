@@ -5,10 +5,10 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
-import type { RollComplianceSummary } from "./rollComplianceSummary";
+import type { RollSiteRow } from "./rollSiteRow";
 import type { RollWeekSummary } from "./rollWeekSummary";
 
 export interface RollComplianceReport {
+  sites: RollSiteRow[];
   weeks: RollWeekSummary[];
-  summary: RollComplianceSummary;
 }

@@ -3772,6 +3772,27 @@ export const GetRollComplianceReportQueryParams = zod.object({
 });
 
 export const GetRollComplianceReportResponse = zod.object({
+  sites: zod.array(
+    zod.object({
+      siteId: zod.number(),
+      siteName: zod.string(),
+      last4Weeks: zod.object({
+        submitted: zod.number(),
+        totalPossible: zod.number(),
+        pct: zod.number(),
+      }),
+      last12Weeks: zod.object({
+        submitted: zod.number(),
+        totalPossible: zod.number(),
+        pct: zod.number(),
+      }),
+      last52Weeks: zod.object({
+        submitted: zod.number(),
+        totalPossible: zod.number(),
+        pct: zod.number(),
+      }),
+    }),
+  ),
   weeks: zod.array(
     zod.object({
       weekStart: zod.string(),
@@ -3780,30 +3801,4 @@ export const GetRollComplianceReportResponse = zod.object({
       accurate: zod.number(),
     }),
   ),
-  summary: zod.object({
-    lastMonth: zod.object({
-      totalWeeks: zod.number(),
-      totalPossible: zod.number(),
-      submitted: zod.number(),
-      accurate: zod.number(),
-      submittedPct: zod.number(),
-      accuratePct: zod.number(),
-    }),
-    last3Months: zod.object({
-      totalWeeks: zod.number(),
-      totalPossible: zod.number(),
-      submitted: zod.number(),
-      accurate: zod.number(),
-      submittedPct: zod.number(),
-      accuratePct: zod.number(),
-    }),
-    lastYear: zod.object({
-      totalWeeks: zod.number(),
-      totalPossible: zod.number(),
-      submitted: zod.number(),
-      accurate: zod.number(),
-      submittedPct: zod.number(),
-      accuratePct: zod.number(),
-    }),
-  }),
 });

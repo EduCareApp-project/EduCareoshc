@@ -137,44 +137,33 @@ export default function ReportsService() {
         <CardContent className="space-y-5">
           {rollLoading ? (
             <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-          ) : !rollReport || rollReport.weeks.length === 0 ? (
+          ) : !rollReport || rollReport.sites.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">No roll data recorded yet.</p>
           ) : (
             <>
-              {/* Period summary table */}
+              {/* Per-site summary table */}
               <div className="rounded-md border overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-muted/50">
                     <tr>
-                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">Period</th>
-                      <th className="text-center px-3 py-2 font-medium text-muted-foreground">Weeks</th>
-                      <th className="text-center px-3 py-2 font-medium text-muted-foreground">Submitted</th>
-                      <th className="text-center px-3 py-2 font-medium text-muted-foreground">Accurate</th>
-                      <th className="text-center px-3 py-2 font-medium text-muted-foreground">% Submitted</th>
-                      <th className="text-center px-3 py-2 font-medium text-muted-foreground">% Accurate</th>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">Site</th>
+                      <th className="text-center px-3 py-2 font-medium text-muted-foreground">4 Weeks</th>
+                      <th className="text-center px-3 py-2 font-medium text-muted-foreground">12 Weeks</th>
+                      <th className="text-center px-3 py-2 font-medium text-muted-foreground">52 Weeks</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {([
-                      { label: "Last Month", data: rollReport.summary.lastMonth },
-                      { label: "Last 3 Months", data: rollReport.summary.last3Months },
-                      { label: "Last Year", data: rollReport.summary.lastYear },
-                    ] as const).map(({ label, data }) => (
-                      <tr key={label} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-3 py-2 font-medium">{label}</td>
-                        <td className="px-3 py-2 text-center text-muted-foreground">{data.totalWeeks}</td>
-                        <td className="px-3 py-2 text-center">{data.submitted} / {data.totalPossible}</td>
-                        <td className="px-3 py-2 text-center">{data.accurate} / {data.totalPossible}</td>
-                        <td className="px-3 py-2 text-center">
-                          <span className={`font-medium ${data.submittedPct >= 80 ? "text-green-700" : data.submittedPct >= 50 ? "text-amber-700" : "text-red-700"}`}>
-                            {data.submittedPct}%
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <span className={`font-medium ${data.accuratePct >= 80 ? "text-green-700" : data.accuratePct >= 50 ? "text-amber-700" : "text-red-700"}`}>
-                            {data.accuratePct}%
-                          </span>
-                        </td>
+                    {rollReport.sites.map((site) => (
+                      <tr key={site.siteId} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-3 py-2 font-medium">{site.siteName}</td>
+                        {([site.last4Weeks, site.last12Weeks, site.last52Weeks] as const).map((cell, i) => (
+                          <td key={i} className="px-3 py-2 text-center">
+                            <span className={`font-medium ${cell.pct === 100 ? "text-green-700" : cell.pct >= 75 ? "text-amber-700" : "text-red-700"}`}>
+                              {cell.submitted}/{cell.totalPossible}
+                            </span>
+                            <span className="text-muted-foreground ml-1.5 text-xs">({cell.pct}%)</span>
+                          </td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>

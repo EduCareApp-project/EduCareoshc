@@ -2075,15 +2075,6 @@ export interface BehaviouralNotificationInput {
   recipientEmails?: string[];
 }
 
-export interface RollCompliancePeriod {
-  totalWeeks: number;
-  totalPossible: number;
-  submitted: number;
-  accurate: number;
-  submittedPct: number;
-  accuratePct: number;
-}
-
 export interface RollWeekSummary {
   weekStart: string;
   totalSites: number;
@@ -2091,15 +2082,23 @@ export interface RollWeekSummary {
   accurate: number;
 }
 
-export interface RollComplianceSummary {
-  lastMonth: RollCompliancePeriod;
-  last3Months: RollCompliancePeriod;
-  lastYear: RollCompliancePeriod;
+export interface RollPeriodCell {
+  submitted: number;
+  totalPossible: number;
+  pct: number;
+}
+
+export interface RollSiteRow {
+  siteId: number;
+  siteName: string;
+  last4Weeks: RollPeriodCell;
+  last12Weeks: RollPeriodCell;
+  last52Weeks: RollPeriodCell;
 }
 
 export interface RollComplianceReport {
+  sites: RollSiteRow[];
   weeks: RollWeekSummary[];
-  summary: RollComplianceSummary;
 }
 
 export type ListNoticesParams = {

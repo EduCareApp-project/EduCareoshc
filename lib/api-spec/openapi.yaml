@@ -6186,23 +6186,6 @@ components:
             type: string
           description: Specific guardian email addresses to notify. Defaults to all guardians on the child's profile if omitted.
 
-    RollCompliancePeriod:
-      type: object
-      required: [totalWeeks, totalPossible, submitted, accurate, submittedPct, accuratePct]
-      properties:
-        totalWeeks:
-          type: integer
-        totalPossible:
-          type: integer
-        submitted:
-          type: integer
-        accurate:
-          type: integer
-        submittedPct:
-          type: number
-        accuratePct:
-          type: number
-
     RollWeekSummary:
       type: object
       required: [weekStart, totalSites, submitted, accurate]
@@ -6216,24 +6199,41 @@ components:
         accurate:
           type: integer
 
-    RollComplianceSummary:
+    RollPeriodCell:
       type: object
-      required: [lastMonth, last3Months, lastYear]
+      required: [submitted, totalPossible, pct]
       properties:
-        lastMonth:
-          $ref: "#/components/schemas/RollCompliancePeriod"
-        last3Months:
-          $ref: "#/components/schemas/RollCompliancePeriod"
-        lastYear:
-          $ref: "#/components/schemas/RollCompliancePeriod"
+        submitted:
+          type: integer
+        totalPossible:
+          type: integer
+        pct:
+          type: integer
+
+    RollSiteRow:
+      type: object
+      required: [siteId, siteName, last4Weeks, last12Weeks, last52Weeks]
+      properties:
+        siteId:
+          type: integer
+        siteName:
+          type: string
+        last4Weeks:
+          $ref: "#/components/schemas/RollPeriodCell"
+        last12Weeks:
+          $ref: "#/components/schemas/RollPeriodCell"
+        last52Weeks:
+          $ref: "#/components/schemas/RollPeriodCell"
 
     RollComplianceReport:
       type: object
-      required: [weeks, summary]
+      required: [sites, weeks]
       properties:
+        sites:
+          type: array
+          items:
+            $ref: "#/components/schemas/RollSiteRow"
         weeks:
           type: array
           items:
             $ref: "#/components/schemas/RollWeekSummary"
-        summary:
-          $ref: "#/components/schemas/RollComplianceSummary"

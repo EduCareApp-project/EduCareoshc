@@ -3116,7 +3116,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/GuardianMedicationLog"
 
-  /api/roll-submissions/report:
+  /roll-submissions/report:
     get:
       tags: [roll-submissions]
       summary: Get roll compliance report across all weeks since records began

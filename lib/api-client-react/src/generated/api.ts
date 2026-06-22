@@ -13784,8 +13784,8 @@ export const getGetRollComplianceReportUrl = (
   const stringifiedParams = normalizedParams.toString();
 
   return stringifiedParams.length > 0
-    ? `/api/api/roll-submissions/report?${stringifiedParams}`
-    : `/api/api/roll-submissions/report`;
+    ? `/api/roll-submissions/report?${stringifiedParams}`
+    : `/api/roll-submissions/report`;
 };
 
 export const getRollComplianceReport = async (
@@ -13804,10 +13804,7 @@ export const getRollComplianceReport = async (
 export const getGetRollComplianceReportQueryKey = (
   params?: GetRollComplianceReportParams,
 ) => {
-  return [
-    `/api/api/roll-submissions/report`,
-    ...(params ? [params] : []),
-  ] as const;
+  return [`/api/roll-submissions/report`, ...(params ? [params] : [])] as const;
 };
 
 export const getGetRollComplianceReportQueryOptions = <

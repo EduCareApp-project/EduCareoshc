@@ -38,18 +38,18 @@ router.get("/roll-submissions/report", async (req, res): Promise<void> => {
     return;
   }
 
-  // Period cutoffs (week-aligned)
-  const now = new Date();
-  const cutoff = (weeks: number) => toDateStr(getWeekStart(new Date(now.getTime() - (weeks - 1) * 7 * 24 * 60 * 60 * 1000)));
+  // Period cutoffs (week-aligned, excluding the current week)
+  const currentWeekStart = toDateStr(getWeekStart(new Date()));
+  const cutoff = (weeks: number) => toDateStr(getWeekStart(new Date(new Date(currentWeekStart + "T00:00:00").getTime() - weeks * 7 * 24 * 60 * 60 * 1000)));
   const cutoff4 = cutoff(4);
   const cutoff12 = cutoff(12);
   const cutoff52 = cutoff(52);
 
-  // Per-site period cells
+  // Per-site period cells (from cutoff up to but not including current week)
   function siteCell(siteId: number, fromCutoff: string, weeksCount: number) {
     const totalPossible = weeksCount;
     const submitted = allSubmissions.filter(
-      (s) => s.siteId === siteId && s.submitted && (s.weekStart as string) >= fromCutoff
+      (s) => s.siteId === siteId && s.submitted && (s.weekStart as string) >= fromCutoff && (s.weekStart as string) < currentWeekStart
     ).length;
     return {
       submitted,
@@ -74,7 +74,6 @@ router.get("/roll-submissions/report", async (req, res): Promise<void> => {
   }
 
   const earliest = weekStarts.reduce((a, b) => (a < b ? a : b));
-  const currentWeekStart = toDateStr(getWeekStart(new Date()));
   const allWeeks: string[] = [];
   const cursor = new Date(earliest + "T00:00:00");
   const endDate = new Date(currentWeekStart + "T00:00:00");

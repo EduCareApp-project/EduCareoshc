@@ -45,9 +45,13 @@ router.get("/roll-submissions/report", async (req, res): Promise<void> => {
   const cutoff12 = subtractWeeks(currentWeekStart, 12);
   const cutoff52 = subtractWeeks(currentWeekStart, 52);
 
+  // Only count rows whose weekStart is actually a Monday (guards against bad data)
+  const isMonday = (ws: string) => new Date(ws + "T00:00:00Z").getUTCDay() === 1;
+
   function siteCell(siteId: number, fromCutoff: string, weeksCount: number) {
     const submitted = allSubmissions.filter(
       (s) => s.siteId === siteId && s.submitted &&
+             isMonday(s.weekStart as string) &&
              (s.weekStart as string) >= fromCutoff &&
              (s.weekStart as string) < currentWeekStart
     ).length;

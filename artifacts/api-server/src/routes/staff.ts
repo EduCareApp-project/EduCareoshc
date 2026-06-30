@@ -21,13 +21,7 @@ function isEducatorRole(role: string | undefined | null): role is EducatorRole {
 const router: IRouter = Router();
 
 router.get("/staff", async (req, res): Promise<void> => {
-  const user = req.session?.user;
-  let staff;
-  if (isEducatorRole(user?.role) && user?.siteId != null) {
-    staff = await db.select().from(staffTable).where(eq(staffTable.siteId, user.siteId)).orderBy(staffTable.lastName);
-  } else {
-    staff = await db.select().from(staffTable).orderBy(staffTable.lastName);
-  }
+  const staff = await db.select().from(staffTable).orderBy(staffTable.lastName);
   res.json(ListStaffResponse.parse(staff));
 });
 

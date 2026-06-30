@@ -621,7 +621,7 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
   }
 
   function addNewMedication() {
-    const usedSlots = medications.map(m => m.slot);
+    const usedSlots = medications.filter(m => m.name).map(m => m.slot);
     const nextSlot = [1, 2, 3, 4].find(s => !usedSlots.includes(s));
     if (nextSlot) startEdit(nextSlot);
   }
@@ -735,7 +735,7 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
           <h3 className="font-semibold">Medications</h3>
           <p className="text-sm text-muted-foreground">Up to 4 medications can be tracked for this child.</p>
         </div>
-        {medications.length < 4 && editingSlot === null && (
+        {medications.filter(m => m.name).length < 4 && editingSlot === null && (
           <Button size="sm" onClick={addNewMedication}>
             <Plus className="h-3.5 w-3.5 mr-1.5" />Add Medication
           </Button>
@@ -743,14 +743,14 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
       </div>
 
       {/* Cards grid — only filled slots + inline edit form */}
-      {(medications.length > 0 || editingSlot !== null) ? (
+      {(medications.filter(m => m.name).length > 0 || editingSlot !== null) ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((slot) => {
             const med = medications.find(m => m.slot === slot);
             const isSelected = selectedSlot === slot;
 
             if (editingSlot === slot) return editForm(slot);
-            if (!med) return null;
+            if (!med || !med.name) return null;
 
             return (
               <Card key={slot} className={`cursor-pointer transition-all ${isSelected ? "ring-2 ring-primary" : "hover:shadow-md"}`} onClick={() => setSelectedSlot(isSelected ? null : slot)}>

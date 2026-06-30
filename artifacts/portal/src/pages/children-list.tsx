@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, LayoutGrid, List, Pill } from "lucide-react";
+import { Plus, Search, LayoutGrid, List, Pill, HeartPulse } from "lucide-react";
 import { useState } from "react";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -47,11 +47,12 @@ export default function ChildrenList() {
   const { data: childSettings } = useGetChildSettings({ query: { queryKey: getGetChildSettingsQueryKey() } });
   const showPhoto = childSettings?.childDisplayMode === "profile_picture";
   // Sync filters to URL so navigating back restores them
-  function syncFiltersToUrl(q: string, site: string, status: string) {
+  function syncFiltersToUrl(q: string, site: string, status: string, medical: boolean) {
     const p = new URLSearchParams();
     if (q) p.set("q", q);
     if (site !== "all") p.set("site", site);
     if (status !== "active") p.set("status", status);
+    if (medical) p.set("medical", "1");
     const qs = p.toString();
     window.history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
   }
@@ -65,9 +66,13 @@ export default function ChildrenList() {
   const [statusFilter, setStatusFilterRaw] = useState<"active" | "inactive" | "all">(() =>
     (new URLSearchParams(window.location.search).get("status") as "active" | "inactive" | "all") ?? "active"
   );
-  function setSearch(v: string) { setSearchRaw(v); syncFiltersToUrl(v, siteFilter, statusFilter); }
-  function setSiteFilter(v: string) { setSiteFilterRaw(v); syncFiltersToUrl(search, v, statusFilter); }
-  function setStatusFilter(v: "active" | "inactive" | "all") { setStatusFilterRaw(v); syncFiltersToUrl(search, siteFilter, v); }
+  const [medicalFilter, setMedicalFilterRaw] = useState(() =>
+    new URLSearchParams(window.location.search).get("medical") === "1"
+  );
+  function setSearch(v: string) { setSearchRaw(v); syncFiltersToUrl(v, siteFilter, statusFilter, medicalFilter); }
+  function setSiteFilter(v: string) { setSiteFilterRaw(v); syncFiltersToUrl(search, v, statusFilter, medicalFilter); }
+  function setStatusFilter(v: "active" | "inactive" | "all") { setStatusFilterRaw(v); syncFiltersToUrl(search, siteFilter, v, medicalFilter); }
+  function setMedicalFilter(v: boolean) { setMedicalFilterRaw(v); syncFiltersToUrl(search, siteFilter, statusFilter, v); }
   const [view, setView] = useViewMode();
 
   const filteredChildren = children?.filter(c => {
@@ -79,7 +84,8 @@ export default function ChildrenList() {
         ? c.siteId == null
         : c.siteId === parseInt(siteFilter);
     const matchesStatus = statusFilter === "all" ? true : c.status === statusFilter;
-    return matchesSearch && matchesSite && matchesStatus;
+    const matchesMedical = !medicalFilter || c.hasMedicalCondition || !!(c as any).hasMedications;
+    return matchesSearch && matchesSite && matchesStatus && matchesMedical;
   });
 
   return (
@@ -135,6 +141,19 @@ export default function ChildrenList() {
             </button>
           ))}
         </div>
+
+        <button
+          onClick={() => setMedicalFilter(!medicalFilter)}
+          title="Show children with medical conditions or medications"
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-md border text-sm font-medium transition-colors ${
+            medicalFilter
+              ? "bg-rose-600 text-white border-rose-600"
+              : "bg-card text-muted-foreground border-input hover:bg-muted"
+          }`}
+        >
+          <HeartPulse className="h-4 w-4" />
+          Medical
+        </button>
 
         <div className="flex rounded-md border border-input bg-card overflow-hidden ml-auto">
           <button

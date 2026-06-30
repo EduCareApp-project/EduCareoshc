@@ -63,6 +63,9 @@ export interface FeatureSettings {
   // Policies
   policiesRequireAcknowledgement?: boolean;
   policiesAcknowledgementDays?: number;
+  // Webmail
+  webmailEnabled?: boolean;
+  webmailUrl?: string;
 }
 
 export const organisationTable = pgTable("organisation", {

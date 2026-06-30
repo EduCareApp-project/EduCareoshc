@@ -65,6 +65,7 @@ import ReportsWeeklyPlans from "@/pages/reports-weekly-plans";
 import Sites from "@/pages/sites";
 import SiteInstructions from "@/pages/site-instructions";
 import Settings from "@/pages/settings";
+import SettingsWebmailConfig from "@/pages/settings-webmail-config";
 import SettingsQip from "@/pages/settings-qip";
 import SettingsEmailNotifications from "@/pages/settings-email-notifications";
 import SettingsOrganisation from "@/pages/settings-organisation";
@@ -204,6 +205,7 @@ function StaffRoutes() {
         <Route path="/sites" component={Sites} />
         <Route path="/sites/:id" component={SiteInstructions} />
         <Route path="/settings" component={Settings} />
+        <Route path="/settings/webmail" component={SettingsWebmailConfig} />
         <Route path="/settings/qip" component={SettingsQip} />
         <Route path="/settings/email-notifications" component={SettingsEmailNotifications} />
         <Route path="/settings/organisation" component={SettingsOrganisation} />

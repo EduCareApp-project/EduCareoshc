@@ -49,6 +49,8 @@ const DEFAULTS: Required<FeatureSettings> = {
   policiesRequireAcknowledgement: true,
   policiesAcknowledgementDays: 7,
   staffCustomRoles: [],
+  webmailEnabled: false,
+  webmailUrl: "https://sh00070.cd.ds.network:2096/",
 };
 
 router.get("/settings/features", async (_req, res): Promise<void> => {

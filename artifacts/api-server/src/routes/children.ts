@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, asc } from "drizzle-orm";
-import { db, childrenTable, observationsTable, staffTable, outcomesTable, programsTable, childDocumentsTable } from "@workspace/db";
+import { eq, asc, inArray } from "drizzle-orm";
+import { db, childrenTable, observationsTable, staffTable, outcomesTable, programsTable, childDocumentsTable, childMedicationsTable } from "@workspace/db";
 import {
   CreateChildBody,
   GetChildParams,
@@ -56,7 +56,14 @@ function normalizeChildPayload(body: unknown): unknown {
 
 router.get("/children", async (_req, res): Promise<void> => {
   const children = await db.select().from(childrenTable).orderBy(asc(childrenTable.firstName), asc(childrenTable.lastName));
-  res.json(ListChildrenResponse.parse(children));
+  const medRows = children.length
+    ? await db.selectDistinct({ childId: childMedicationsTable.childId })
+        .from(childMedicationsTable)
+        .where(inArray(childMedicationsTable.childId, children.map((c) => c.id)))
+    : [];
+  const medChildIds = new Set(medRows.map((r) => r.childId));
+  const result = children.map((c) => ({ ...c, hasMedications: medChildIds.has(c.id) }));
+  res.json(ListChildrenResponse.parse(result));
 });
 
 router.post("/children", async (req, res): Promise<void> => {

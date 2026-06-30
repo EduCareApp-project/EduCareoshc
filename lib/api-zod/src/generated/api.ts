@@ -18,6 +18,7 @@ export const HealthCheckResponse = zod.object({
  * @summary List all enrolled children
  */
 export const listChildrenResponseHasMedicalConditionDefault = false;
+export const listChildrenResponseHasMedicationsDefault = false;
 
 export const ListChildrenResponseItem = zod.object({
   id: zod.number(),
@@ -48,6 +49,12 @@ export const ListChildrenResponseItem = zod.object({
   hasMedicalCondition: zod
     .boolean()
     .default(listChildrenResponseHasMedicalConditionDefault),
+  hasMedications: zod
+    .boolean()
+    .default(listChildrenResponseHasMedicationsDefault)
+    .describe(
+      "Child has at least one active medication listed in their profile",
+    ),
   medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   approvedPickups: zod
@@ -110,6 +117,7 @@ export const GetChildParams = zod.object({
 });
 
 export const getChildResponseHasMedicalConditionDefault = false;
+export const getChildResponseHasMedicationsDefault = false;
 
 export const GetChildResponse = zod.object({
   id: zod.number(),
@@ -140,6 +148,12 @@ export const GetChildResponse = zod.object({
   hasMedicalCondition: zod
     .boolean()
     .default(getChildResponseHasMedicalConditionDefault),
+  hasMedications: zod
+    .boolean()
+    .default(getChildResponseHasMedicationsDefault)
+    .describe(
+      "Child has at least one active medication listed in their profile",
+    ),
   medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   approvedPickups: zod
@@ -200,6 +214,7 @@ export const UpdateChildBody = zod.object({
 });
 
 export const updateChildResponseHasMedicalConditionDefault = false;
+export const updateChildResponseHasMedicationsDefault = false;
 
 export const UpdateChildResponse = zod.object({
   id: zod.number(),
@@ -230,6 +245,12 @@ export const UpdateChildResponse = zod.object({
   hasMedicalCondition: zod
     .boolean()
     .default(updateChildResponseHasMedicalConditionDefault),
+  hasMedications: zod
+    .boolean()
+    .default(updateChildResponseHasMedicationsDefault)
+    .describe(
+      "Child has at least one active medication listed in their profile",
+    ),
   medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   approvedPickups: zod

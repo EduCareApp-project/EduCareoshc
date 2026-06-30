@@ -105,6 +105,8 @@ export interface Child {
   /** Child has a photo restriction — do not include in published photos */
   photoRestriction?: boolean;
   hasMedicalCondition?: boolean;
+  /** Child has at least one active medication listed in their profile */
+  hasMedications?: boolean;
   /** @nullable */
   medicalRiskPlan?: ChildMedicalRiskPlan;
   /** @nullable */

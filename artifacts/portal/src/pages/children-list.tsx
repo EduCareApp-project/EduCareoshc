@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, LayoutGrid, List } from "lucide-react";
+import { Plus, Search, LayoutGrid, List, Pill } from "lucide-react";
 import { useState } from "react";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -207,6 +207,11 @@ export default function ChildrenList() {
                         No Photo
                       </Badge>
                     )}
+                    {(child as any).hasMedications && (
+                      <span title="Has listed medications" className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-blue-100 text-blue-600">
+                        <Pill className="h-3 w-3" />
+                      </span>
+                    )}
                     <Badge variant={child.status === 'active' ? 'default' : 'secondary'} className="capitalize">
                       {child.status}
                     </Badge>
@@ -277,6 +282,11 @@ export default function ChildrenList() {
                         <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-amber-300 text-amber-800 bg-amber-50">
                           No Photo
                         </Badge>
+                      )}
+                      {(child as any).hasMedications && (
+                        <span title="Has listed medications" className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-blue-100 text-blue-600">
+                          <Pill className="h-2.5 w-2.5" />
+                        </span>
                       )}
                       <Badge variant={child.status === 'active' ? 'default' : 'secondary'} className="capitalize w-20 justify-center text-xs">
                         {child.status}

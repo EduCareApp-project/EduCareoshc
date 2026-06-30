@@ -3382,6 +3382,10 @@ components:
         hasMedicalCondition:
           type: boolean
           default: false
+        hasMedications:
+          type: boolean
+          default: false
+          description: Child has at least one active medication listed in their profile
         medicalRiskPlan:
           type: ["object", "null"]
           additionalProperties: true

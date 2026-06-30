@@ -430,7 +430,7 @@ export default function StaffProfile() {
     catch { return false; }
   });
   const totalHoursThisYear = pdThisYear.reduce((s, p) => s + (p.hoursEarned ?? 0), 0);
-  const recordedQualNames = new Set((qualifications ?? []).map((q) => q.name));
+  const recordedQualNames = new Set((qualifications ?? []).filter((q) => !(q as any).archivedAt).map((q) => q.name));
   const missingQualNames = QUALIFICATION_NAMES.filter((n) => !recordedQualNames.has(n));
 
   if (loadingStaff) {
@@ -1237,7 +1237,7 @@ export default function StaffProfile() {
                 <SelectContent>
                   {QUALIFICATION_NAMES.filter((n) => {
                     const usedNames = (qualifications ?? [])
-                      .filter((q) => q.id !== editingQualId)
+                      .filter((q) => q.id !== editingQualId && !(q as any).archivedAt)
                       .map((q) => q.name);
                     return !usedNames.includes(n);
                   }).map((n) => (

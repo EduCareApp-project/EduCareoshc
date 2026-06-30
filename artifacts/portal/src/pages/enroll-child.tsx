@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useCreateChild, useListSites, getListChildrenQueryKey } from "@workspace/api-client-react";
+import { useCreateChild, useListSites, getListChildrenQueryKey, getListGuardiansQueryKey } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,7 @@ export default function EnrollChild() {
       {
         onSuccess: (child) => {
           queryClient.invalidateQueries({ queryKey: getListChildrenQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getListGuardiansQueryKey() });
           toast({
             title: "Success",
             description: "Child enrolled successfully",

@@ -17,6 +17,7 @@ import {
   useListChildBehaviouralNotifications, useSendBehaviouralNotification, useDeleteBehaviouralNotification,
   getListChildBehaviouralNotificationsQueryKey,
   useListIncidents, getListIncidentsQueryKey,
+  getListChildrenQueryKey,
 } from "@workspace/api-client-react";
 import type { Staff } from "@workspace/api-client-react";
 import { useActiveStaff } from "@/hooks/use-active-staff";
@@ -517,7 +518,7 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
   function toggleMedical(val: boolean) {
     setHasMedical(val);
     updateChildMutation.mutate({ id: childId, data: { hasMedicalCondition: val } as any }, {
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetChildQueryKey(childId) }); toast({ title: val ? "Medical condition recorded" : "Medical condition removed" }); },
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetChildQueryKey(childId) }); queryClient.invalidateQueries({ queryKey: getListChildrenQueryKey() }); toast({ title: val ? "Medical condition recorded" : "Medical condition removed" }); },
       onError: () => { setHasMedical(!val); toast({ title: "Failed to update", variant: "destructive" }); },
     });
   }
@@ -587,7 +588,7 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
     upsertMedMutation.mutate(
       { id: childId, slot, data: slotForm },
       {
-        onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListChildMedicationsQueryKey(childId) }); setEditingSlot(null); toast({ title: "Medication saved" }); },
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListChildMedicationsQueryKey(childId) }); queryClient.invalidateQueries({ queryKey: getListChildrenQueryKey() }); setEditingSlot(null); toast({ title: "Medication saved" }); },
         onError: () => toast({ title: "Failed to save medication", variant: "destructive" }),
       }
     );
@@ -602,6 +603,7 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListMedicationLogsQueryKey(childId, selectedMed.id) });
           queryClient.invalidateQueries({ queryKey: getListChildMedicationsQueryKey(childId) });
+          queryClient.invalidateQueries({ queryKey: getListChildrenQueryKey() });
           setAddingLog(false);
           toast({ title: "Log entry added" });
         },
@@ -614,7 +616,7 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
     if (!confirm("Delete this log entry?")) return;
     deleteLogMutation.mutate(
       { id: childId, medicationId: selectedMed!.id, logId },
-      { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListMedicationLogsQueryKey(childId, selectedMed!.id) }); toast({ title: "Deleted" }); } }
+      { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListMedicationLogsQueryKey(childId, selectedMed!.id) }); queryClient.invalidateQueries({ queryKey: getListChildrenQueryKey() }); toast({ title: "Deleted" }); } }
     );
   }
 

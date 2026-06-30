@@ -101,9 +101,11 @@ router.patch("/children/:id", async (req, res): Promise<void> => {
   }
   const parsed = UpdateChildBody.safeParse(req.body);
   if (!parsed.success) {
+    req.log.warn({ body: req.body, issues: parsed.error.issues }, "PATCH /children/:id validation failed");
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  req.log.info({ id: params.data.id, body: req.body, parsedKeys: Object.keys(parsed.data) }, "PATCH /children/:id");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [child] = await db
     .update(childrenTable)
@@ -114,6 +116,7 @@ router.patch("/children/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Child not found" });
     return;
   }
+  req.log.info({ id: params.data.id, hasMedicalCondition: child.hasMedicalCondition }, "PATCH /children/:id result");
   res.json(UpdateChildResponse.parse(child));
 });
 

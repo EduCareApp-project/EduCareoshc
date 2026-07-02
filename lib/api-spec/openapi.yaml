@@ -2222,6 +2222,45 @@ paths:
         "204":
           description: Deleted
 
+  /checklist-period-overrides:
+    get:
+      operationId: getChecklistPeriodOverride
+      tags: [checklists]
+      parameters:
+        - name: routineId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: periodKey
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistPeriodOverride"
+    put:
+      operationId: upsertChecklistPeriodOverride
+      tags: [checklists]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChecklistPeriodOverrideInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistPeriodOverride"
+
   /posts:
     get:
       operationId: listPosts
@@ -5169,8 +5208,39 @@ components:
         itemIndex:
           type: integer
         completedByStaffId:
+          type: ["integer", "null"]
+
+    ChecklistPeriodOverride:
+      type: object
+      required: [id, routineId, periodKey, isNotRequired, isLocked, createdAt]
+      properties:
+        id:
           type: integer
-          nullable: true
+        routineId:
+          type: integer
+        periodKey:
+          type: string
+        isNotRequired:
+          type: boolean
+        isLocked:
+          type: boolean
+        setByStaffId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
+    ChecklistPeriodOverrideInput:
+      type: object
+      required: [routineId, periodKey, isNotRequired, isLocked]
+      properties:
+        routineId:
+          type: integer
+        periodKey:
+          type: string
+        isNotRequired:
+          type: boolean
+        isLocked:
+          type: boolean
 
     Post:
       type: object

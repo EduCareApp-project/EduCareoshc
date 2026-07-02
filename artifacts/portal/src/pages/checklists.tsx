@@ -7,8 +7,10 @@ import {
   useListChecklistTemplates, useCreateChecklistTemplate, useUpdateChecklistTemplate, useDeleteChecklistTemplate,
   useListChecklistRoutines, useCreateChecklistRoutine, useUpdateChecklistRoutine, useDeleteChecklistRoutine,
   useListRoutineItemCompletions, useCreateRoutineItemCompletion, useDeleteRoutineItemCompletion,
+  useGetChecklistPeriodOverride, useUpsertChecklistPeriodOverride,
   useListSites,
   getListChecklistTemplatesQueryKey, getListChecklistRoutinesQueryKey, getListRoutineItemCompletionsQueryKey,
+  getGetChecklistPeriodOverrideQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useActiveStaff } from "@/hooks/use-active-staff";
@@ -26,7 +28,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import {
   CheckSquare, Plus, Trash2, Edit, CalendarClock, X, GripVertical, RefreshCw,
-  ChevronLeft, ChevronRight, Play, User,
+  ChevronLeft, ChevronRight, Play, User, Lock, LockOpen, Ban,
 } from "lucide-react";
 import {
   format, addDays, addWeeks, addMonths, addYears,
@@ -620,24 +622,26 @@ function EditRoutineDialog({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ChecklistDoDialog({
-  routine, open, onOpenChange,
+  routine, open, onOpenChange, initialDate,
 }: {
   routine: any;
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  initialDate?: Date;
 }) {
   const queryClient = useQueryClient();
   const { data: staff } = useActiveStaff();
+  const { isFullAccess } = usePermissions();
 
-  const [currentDate, setCurrentDate] = useState(melbourneDate());
+  const [currentDate, setCurrentDate] = useState(initialDate ?? melbourneDate());
   const [completingAsId, setCompletingAsId] = useState<string>(() => {
     try { return localStorage.getItem("checklist_completing_as") ?? "none"; } catch { return "none"; }
   });
 
   useEffect(() => {
     if (!open) return;
-    setCurrentDate(melbourneDate());
-  }, [open]);
+    setCurrentDate(initialDate ?? melbourneDate());
+  }, [open, initialDate]);
 
   function handleCompletingAsChange(v: string) {
     setCompletingAsId(v);
@@ -647,6 +651,26 @@ function ChecklistDoDialog({
   const freq = routine.frequency ?? "daily";
   const periodKey = getPeriodKey(currentDate, freq);
   const periodLabel = getPeriodLabel(currentDate, freq);
+
+  const overrideQKey = getGetChecklistPeriodOverrideQueryKey({ routineId: routine.id, periodKey });
+  const { data: override } = useGetChecklistPeriodOverride(
+    { routineId: routine.id, periodKey },
+    { query: { queryKey: overrideQKey, enabled: open } }
+  );
+  const overrideMutation = useUpsertChecklistPeriodOverride();
+
+  function setOverride(patch: { isNotRequired?: boolean; isLocked?: boolean }) {
+    overrideMutation.mutate({
+      data: {
+        routineId: routine.id,
+        periodKey,
+        isNotRequired: patch.isNotRequired ?? override?.isNotRequired ?? false,
+        isLocked: patch.isLocked ?? override?.isLocked ?? false,
+      },
+    }, {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: overrideQKey }),
+    });
+  }
 
   const qKey = getListRoutineItemCompletionsQueryKey({ routineId: routine.id, periodKey });
 
@@ -662,6 +686,7 @@ function ChecklistDoDialog({
   }
 
   function toggleItem(si: number, ii: number) {
+    if (override?.isLocked) return;
     const existing = getCompletion(si, ii);
     if (existing) {
       deleteMutation.mutate({ id: existing.id }, {
@@ -730,6 +755,32 @@ function ChecklistDoDialog({
           </Button>
         </div>
 
+        {/* Admin controls */}
+        {isFullAccess && (
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              className={`h-8 text-xs gap-1.5 ${override?.isNotRequired ? "border-amber-400 bg-amber-50 text-amber-800 hover:bg-amber-100" : ""}`}
+              onClick={() => setOverride({ isNotRequired: !override?.isNotRequired })}
+              disabled={overrideMutation.isPending}
+            >
+              <Ban className="h-3.5 w-3.5" />
+              {override?.isNotRequired ? "Mark as Required" : "Not Required"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className={`h-8 text-xs gap-1.5 ${override?.isLocked ? "border-slate-400 bg-slate-100 text-slate-800 hover:bg-slate-200" : ""}`}
+              onClick={() => setOverride({ isLocked: !override?.isLocked })}
+              disabled={overrideMutation.isPending}
+            >
+              {override?.isLocked ? <LockOpen className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+              {override?.isLocked ? "Unlock Period" : "Lock Period"}
+            </Button>
+          </div>
+        )}
+
         {/* Progress */}
         <div className="space-y-1">
           <div className="flex justify-between text-xs text-muted-foreground">
@@ -742,12 +793,24 @@ function ChecklistDoDialog({
         <Separator />
 
         {/* Checklist items */}
-        {isLoading ? (
+        {override?.isNotRequired ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-8 text-center">
+            <Ban className="h-7 w-7 mx-auto mb-2 text-amber-400" />
+            <p className="text-sm font-medium text-amber-800">Not required this period</p>
+            <p className="text-xs text-amber-600 mt-1">This checklist has been marked as not required for this period.</p>
+          </div>
+        ) : isLoading ? (
           <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
         ) : sections.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">No items in this checklist.</p>
         ) : (
           <div className="space-y-4">
+            {override?.isLocked && (
+              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                <Lock className="h-3.5 w-3.5 shrink-0" />
+                <span>This period is locked — items cannot be edited.</span>
+              </div>
+            )}
             {sections.map((section: any, si: number) => (
               <div key={si}>
                 {section.title && (
@@ -760,7 +823,7 @@ function ChecklistDoDialog({
                     return (
                       <label
                         key={ii}
-                        className={`flex items-start gap-3 rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${done ? "bg-green-50" : "hover:bg-muted/40"} ${isPending ? "pointer-events-none opacity-70" : ""}`}
+                        className={`flex items-start gap-3 rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${done ? "bg-green-50" : "hover:bg-muted/40"} ${isPending || override?.isLocked ? "pointer-events-none opacity-70" : ""}`}
                         onClick={() => toggleItem(si, ii)}
                       >
                         <Checkbox
@@ -792,24 +855,34 @@ function ChecklistDoDialog({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ActiveChecklistTile({
-  routine, onOpen,
+  routine, onOpen, viewDate,
 }: {
   routine: any;
   onOpen: () => void;
+  viewDate: Date;
 }) {
   const freq = routine.frequency ?? "daily";
-  const periodKey = getPeriodKey(melbourneDate(), freq);
-  const periodLabel = getPeriodLabel(melbourneDate(), freq);
+  const periodKey = getPeriodKey(viewDate, freq);
+  const periodLabel = getPeriodLabel(viewDate, freq);
 
   const { data: completions } = useListRoutineItemCompletions({ routineId: routine.id, periodKey });
+  const { data: override } = useGetChecklistPeriodOverride({ routineId: routine.id, periodKey });
 
   const totalItems = (routine.sectionsSnapshot ?? []).reduce((n: number, s: any) => n + (s.items?.length ?? 0), 0);
   const doneCount = new Set((completions ?? []).map((c) => `${c.sectionIndex}:${c.itemIndex}`)).size;
   const pct = totalItems > 0 ? Math.round((doneCount / totalItems) * 100) : 0;
   const allDone = totalItems > 0 && doneCount >= totalItems;
 
+  const cardBorder = override?.isNotRequired
+    ? "border-amber-200 bg-amber-50/20"
+    : override?.isLocked
+    ? "border-slate-200 bg-slate-50/30"
+    : allDone
+    ? "border-green-200 bg-green-50/30"
+    : "";
+
   return (
-    <Card className={`flex flex-col transition-shadow hover:shadow-md cursor-pointer ${allDone ? "border-green-200 bg-green-50/30" : ""}`} onClick={onOpen}>
+    <Card className={`flex flex-col transition-shadow hover:shadow-md cursor-pointer ${cardBorder}`} onClick={onOpen}>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
@@ -820,23 +893,29 @@ function ActiveChecklistTile({
               {routine.staffName && <span className="text-xs text-muted-foreground">{routine.staffName}</span>}
             </div>
           </div>
-          {allDone && (
-            <Badge className="bg-green-100 text-green-800 border-green-200 shrink-0 text-xs">Done</Badge>
-          )}
+          <div className="flex gap-1 shrink-0">
+            {override?.isLocked && <Badge className="bg-slate-100 text-slate-700 border-slate-300 text-xs"><Lock className="h-2.5 w-2.5 mr-1" />Locked</Badge>}
+            {override?.isNotRequired && <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-xs"><Ban className="h-2.5 w-2.5 mr-1" />Not Required</Badge>}
+            {!override?.isNotRequired && !override?.isLocked && allDone && <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">Done</Badge>}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="flex-1 pb-3 space-y-3">
         <p className="text-xs text-muted-foreground">{periodLabel}</p>
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{doneCount}/{totalItems} items</span>
-            <span>{pct}%</span>
+        {override?.isNotRequired ? (
+          <p className="text-xs text-amber-700 italic">Marked as not required</p>
+        ) : (
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{doneCount}/{totalItems} items</span>
+              <span>{pct}%</span>
+            </div>
+            <Progress value={pct} className="h-1.5" />
           </div>
-          <Progress value={pct} className="h-1.5" />
-        </div>
+        )}
         <Button size="sm" className="w-full h-8 text-xs gap-1.5" onClick={(e) => { e.stopPropagation(); onOpen(); }}>
-          <Play className="h-3.5 w-3.5" />
-          {allDone ? "Review" : "Open Checklist"}
+          {override?.isLocked ? <Lock className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+          {override?.isLocked ? "View (Locked)" : override?.isNotRequired ? "View" : allDone ? "Review" : "Open Checklist"}
         </Button>
       </CardContent>
     </Card>
@@ -994,6 +1073,7 @@ export default function Checklists() {
   const [editRoutine, setEditRoutine] = useState<any | null>(null);
   const [activeRoutine, setActiveRoutine] = useState<any | null>(null);
   const [syncingRoutineId, setSyncingRoutineId] = useState<number | null>(null);
+  const [viewDate, setViewDate] = useState(melbourneDate);
 
   // Auto-open a routine when navigated here with ?open=<id>
   const autoOpenedRef = useRef<string | null>(null);
@@ -1159,10 +1239,26 @@ export default function Checklists() {
 
       {/* Active Checklists */}
       <section>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
           <div>
             <h2 className="text-lg font-semibold">Active Checklists</h2>
-            <p className="text-sm text-muted-foreground">Complete checklists for the current period. Tick items as you go — progress saves automatically.</p>
+            <p className="text-sm text-muted-foreground">Navigate to any period to view or complete checklists. Tick items as you go — progress saves automatically.</p>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setViewDate((d) => addWeeks(d, -1))}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="px-2 text-center min-w-[150px]">
+              <p className="text-sm font-medium">
+                {format(startOfISOWeek(viewDate), "d MMM")}–{format(endOfISOWeek(viewDate), "d MMM yyyy")}
+              </p>
+            </div>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setViewDate((d) => addWeeks(d, 1))}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 text-xs ml-1" onClick={() => setViewDate(melbourneDate())}>
+              Today
+            </Button>
           </div>
         </div>
         {routinesLoading ? (
@@ -1183,6 +1279,7 @@ export default function Checklists() {
               <ActiveChecklistTile
                 key={r.id}
                 routine={r}
+                viewDate={viewDate}
                 onOpen={() => setActiveRoutine(r)}
               />
             ))}
@@ -1213,6 +1310,7 @@ export default function Checklists() {
           key={activeRoutine.id}
           routine={activeRoutine}
           open={!!activeRoutine}
+          initialDate={viewDate}
           onOpenChange={(o) => { if (!o) setActiveRoutine(null); }}
         />
       )}

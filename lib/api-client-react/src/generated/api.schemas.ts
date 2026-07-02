@@ -1373,7 +1373,26 @@ export interface RoutineItemCompletionInput {
   periodKey: string;
   sectionIndex: number;
   itemIndex: number;
+  /** @nullable */
   completedByStaffId?: number | null;
+}
+
+export interface ChecklistPeriodOverride {
+  id: number;
+  routineId: number;
+  periodKey: string;
+  isNotRequired: boolean;
+  isLocked: boolean;
+  /** @nullable */
+  setByStaffId?: number | null;
+  createdAt: string;
+}
+
+export interface ChecklistPeriodOverrideInput {
+  routineId: number;
+  periodKey: string;
+  isNotRequired: boolean;
+  isLocked: boolean;
 }
 
 export interface Post {
@@ -2180,6 +2199,11 @@ export type ListQipStrengthsParams = {
 };
 
 export type ListRoutineItemCompletionsParams = {
+  routineId: number;
+  periodKey: string;
+};
+
+export type GetChecklistPeriodOverrideParams = {
   routineId: number;
   periodKey: string;
 };

@@ -2214,6 +2214,38 @@ export const DeleteRoutineItemCompletionParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const GetChecklistPeriodOverrideQueryParams = zod.object({
+  routineId: zod.coerce.number(),
+  periodKey: zod.coerce.string(),
+});
+
+export const GetChecklistPeriodOverrideResponse = zod.object({
+  id: zod.number(),
+  routineId: zod.number(),
+  periodKey: zod.string(),
+  isNotRequired: zod.boolean(),
+  isLocked: zod.boolean(),
+  setByStaffId: zod.number().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+export const UpsertChecklistPeriodOverrideBody = zod.object({
+  routineId: zod.number(),
+  periodKey: zod.string(),
+  isNotRequired: zod.boolean(),
+  isLocked: zod.boolean(),
+});
+
+export const UpsertChecklistPeriodOverrideResponse = zod.object({
+  id: zod.number(),
+  routineId: zod.number(),
+  periodKey: zod.string(),
+  isNotRequired: zod.boolean(),
+  isLocked: zod.boolean(),
+  setByStaffId: zod.number().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
 export const listPostsResponseImagesMax = 3;
 
 export const listPostsResponseDocumentPathsDefault = [];

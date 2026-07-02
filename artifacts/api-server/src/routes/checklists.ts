@@ -3,7 +3,7 @@ import { eq, and } from "drizzle-orm";
 import {
   db, checklistsTable, checklistCompletionsTable, staffTable,
   checklistTemplatesTable, checklistRoutinesTable, sitesTable,
-  routineItemCompletionsTable,
+  routineItemCompletionsTable, checklistPeriodOverridesTable,
 } from "@workspace/db";
 import {
   CreateChecklistBody, CompleteChecklistParams, CompleteChecklistBody,
@@ -17,6 +17,8 @@ import {
   DeleteChecklistRoutineParams,
   ListRoutineItemCompletionsQueryParams, ListRoutineItemCompletionsResponse,
   CreateRoutineItemCompletionBody, DeleteRoutineItemCompletionParams,
+  GetChecklistPeriodOverrideQueryParams,
+  UpsertChecklistPeriodOverrideBody,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -232,6 +234,62 @@ router.delete("/routine-item-completions/:id", async (req, res): Promise<void> =
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   await db.delete(routineItemCompletionsTable).where(eq(routineItemCompletionsTable.id, params.data.id));
   res.status(204).send();
+});
+
+// ── Checklist Period Overrides ────────────────────────────────────────────────
+
+const EDUCATOR_ROLES = ["educator", "coordinator"];
+
+router.get("/checklist-period-overrides", async (req, res): Promise<void> => {
+  const params = GetChecklistPeriodOverrideQueryParams.safeParse(req.query);
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const [override] = await db
+    .select()
+    .from(checklistPeriodOverridesTable)
+    .where(
+      and(
+        eq(checklistPeriodOverridesTable.routineId, params.data.routineId),
+        eq(checklistPeriodOverridesTable.periodKey, params.data.periodKey),
+      )
+    );
+  res.json(override ?? {
+    id: 0,
+    routineId: params.data.routineId,
+    periodKey: params.data.periodKey,
+    isNotRequired: false,
+    isLocked: false,
+    setByStaffId: null,
+    createdAt: new Date().toISOString(),
+  });
+});
+
+router.put("/checklist-period-overrides", async (req, res): Promise<void> => {
+  const user = req.session?.user;
+  if (EDUCATOR_ROLES.includes(user?.role ?? "")) {
+    res.status(403).json({ error: "Not permitted" });
+    return;
+  }
+  const parsed = UpsertChecklistPeriodOverrideBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  const [row] = await db
+    .insert(checklistPeriodOverridesTable)
+    .values({
+      routineId: parsed.data.routineId,
+      periodKey: parsed.data.periodKey,
+      isNotRequired: parsed.data.isNotRequired,
+      isLocked: parsed.data.isLocked,
+      setByStaffId: user?.id ?? null,
+    })
+    .onConflictDoUpdate({
+      target: [checklistPeriodOverridesTable.routineId, checklistPeriodOverridesTable.periodKey],
+      set: {
+        isNotRequired: parsed.data.isNotRequired,
+        isLocked: parsed.data.isLocked,
+        setByStaffId: user?.id ?? null,
+      },
+    })
+    .returning();
+  res.json(row);
 });
 
 export default router;

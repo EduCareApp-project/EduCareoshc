@@ -54,6 +54,18 @@ export const routineItemCompletionsTable = pgTable("routine_item_completions", {
   unique("uq_completion_item").on(t.routineId, t.periodKey, t.sectionIndex, t.itemIndex),
 ]);
 
+export const checklistPeriodOverridesTable = pgTable("checklist_period_overrides", {
+  id: serial("id").primaryKey(),
+  routineId: integer("routine_id").notNull().references(() => checklistRoutinesTable.id, { onDelete: "cascade" }),
+  periodKey: text("period_key").notNull(),
+  isNotRequired: boolean("is_not_required").notNull().default(false),
+  isLocked: boolean("is_locked").notNull().default(false),
+  setByStaffId: integer("set_by_staff_id").references(() => staffTable.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  unique("uq_period_override").on(t.routineId, t.periodKey),
+]);
+
 export const insertChecklistSchema = createInsertSchema(checklistsTable).omit({ id: true, createdAt: true });
 export type InsertChecklist = z.infer<typeof insertChecklistSchema>;
 export type Checklist = typeof checklistsTable.$inferSelect;

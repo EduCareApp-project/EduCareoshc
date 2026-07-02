@@ -24,6 +24,8 @@ import type {
   ChecklistCompletion,
   ChecklistCompletionInput,
   ChecklistInput,
+  ChecklistPeriodOverride,
+  ChecklistPeriodOverrideInput,
   ChecklistRoutine,
   ChecklistRoutineInput,
   ChecklistRoutineUpdateInput,
@@ -54,6 +56,7 @@ import type {
   FileCategoryUpdate,
   FileLibraryInput,
   FileLibraryItem,
+  GetChecklistPeriodOverrideParams,
   GetLearningStoriesReportParams,
   GetNotificationCount200,
   GetRollComplianceReportParams,
@@ -9817,6 +9820,192 @@ export const useDeleteRoutineItemCompletion = <
   TContext
 > => {
   return useMutation(getDeleteRoutineItemCompletionMutationOptions(options));
+};
+
+export const getGetChecklistPeriodOverrideUrl = (
+  params: GetChecklistPeriodOverrideParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/checklist-period-overrides?${stringifiedParams}`
+    : `/api/checklist-period-overrides`;
+};
+
+export const getChecklistPeriodOverride = async (
+  params: GetChecklistPeriodOverrideParams,
+  options?: RequestInit,
+): Promise<ChecklistPeriodOverride> => {
+  return customFetch<ChecklistPeriodOverride>(
+    getGetChecklistPeriodOverrideUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetChecklistPeriodOverrideQueryKey = (
+  params?: GetChecklistPeriodOverrideParams,
+) => {
+  return [
+    `/api/checklist-period-overrides`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetChecklistPeriodOverrideQueryOptions = <
+  TData = Awaited<ReturnType<typeof getChecklistPeriodOverride>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetChecklistPeriodOverrideParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChecklistPeriodOverride>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetChecklistPeriodOverrideQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getChecklistPeriodOverride>>
+  > = ({ signal }) =>
+    getChecklistPeriodOverride(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getChecklistPeriodOverride>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetChecklistPeriodOverrideQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getChecklistPeriodOverride>>
+>;
+export type GetChecklistPeriodOverrideQueryError = ErrorType<unknown>;
+
+export function useGetChecklistPeriodOverride<
+  TData = Awaited<ReturnType<typeof getChecklistPeriodOverride>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetChecklistPeriodOverrideParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChecklistPeriodOverride>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetChecklistPeriodOverrideQueryOptions(
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getUpsertChecklistPeriodOverrideUrl = () => {
+  return `/api/checklist-period-overrides`;
+};
+
+export const upsertChecklistPeriodOverride = async (
+  checklistPeriodOverrideInput: ChecklistPeriodOverrideInput,
+  options?: RequestInit,
+): Promise<ChecklistPeriodOverride> => {
+  return customFetch<ChecklistPeriodOverride>(
+    getUpsertChecklistPeriodOverrideUrl(),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(checklistPeriodOverrideInput),
+    },
+  );
+};
+
+export const getUpsertChecklistPeriodOverrideMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upsertChecklistPeriodOverride>>,
+    TError,
+    { data: BodyType<ChecklistPeriodOverrideInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof upsertChecklistPeriodOverride>>,
+  TError,
+  { data: BodyType<ChecklistPeriodOverrideInput> },
+  TContext
+> => {
+  const mutationKey = ["upsertChecklistPeriodOverride"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof upsertChecklistPeriodOverride>>,
+    { data: BodyType<ChecklistPeriodOverrideInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return upsertChecklistPeriodOverride(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpsertChecklistPeriodOverrideMutationResult = NonNullable<
+  Awaited<ReturnType<typeof upsertChecklistPeriodOverride>>
+>;
+export type UpsertChecklistPeriodOverrideMutationBody =
+  BodyType<ChecklistPeriodOverrideInput>;
+export type UpsertChecklistPeriodOverrideMutationError = ErrorType<unknown>;
+
+export const useUpsertChecklistPeriodOverride = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upsertChecklistPeriodOverride>>,
+    TError,
+    { data: BodyType<ChecklistPeriodOverrideInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof upsertChecklistPeriodOverride>>,
+  TError,
+  { data: BodyType<ChecklistPeriodOverrideInput> },
+  TContext
+> => {
+  return useMutation(getUpsertChecklistPeriodOverrideMutationOptions(options));
 };
 
 export const getListPostsUrl = () => {

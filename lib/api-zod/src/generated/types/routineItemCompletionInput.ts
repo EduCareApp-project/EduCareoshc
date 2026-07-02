@@ -11,5 +11,6 @@ export interface RoutineItemCompletionInput {
   periodKey: string;
   sectionIndex: number;
   itemIndex: number;
+  /** @nullable */
   completedByStaffId?: number | null;
 }

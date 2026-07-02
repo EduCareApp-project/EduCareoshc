@@ -1239,26 +1239,28 @@ export default function Checklists() {
 
       {/* Active Checklists */}
       <section>
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
-          <div>
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-1">
             <h2 className="text-lg font-semibold">Active Checklists</h2>
-            <p className="text-sm text-muted-foreground">Navigate to any period to view or complete checklists. Tick items as you go — progress saves automatically.</p>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setViewDate((d) => addWeeks(d, -1))}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="px-2 text-center min-w-[150px]">
-              <p className="text-sm font-medium">
-                {format(startOfISOWeek(viewDate), "d MMM")}–{format(endOfISOWeek(viewDate), "d MMM yyyy")}
-              </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm text-muted-foreground hidden sm:block">Navigate to any period to check compliance across all sites.</p>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setViewDate((d) => addWeeks(d, -1))}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="px-3 py-1 rounded-md border bg-muted/40 text-center min-w-[170px]">
+                <p className="text-sm font-medium tabular-nums">
+                  {format(startOfISOWeek(viewDate), "d MMM")} – {format(endOfISOWeek(viewDate), "d MMM yyyy")}
+                </p>
+              </div>
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setViewDate((d) => addWeeks(d, 1))}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 text-xs ml-1" onClick={() => setViewDate(melbourneDate())}>
+                Today
+              </Button>
             </div>
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setViewDate((d) => addWeeks(d, 1))}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 text-xs ml-1" onClick={() => setViewDate(melbourneDate())}>
-              Today
-            </Button>
           </div>
         </div>
         {routinesLoading ? (

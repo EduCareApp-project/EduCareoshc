@@ -116,16 +116,21 @@ async function computeDeadlineNotifications(): Promise<void> {
       staffId: staffQualificationsTable.staffId,
       name: staffQualificationsTable.name,
       expiryDate: staffQualificationsTable.expiryDate,
-    }).from(staffQualificationsTable);
+      staffFirstName: staffTable.firstName,
+      staffLastName: staffTable.lastName,
+    })
+      .from(staffQualificationsTable)
+      .innerJoin(staffTable, and(
+        eq(staffTable.id, staffQualificationsTable.staffId),
+        eq(staffTable.status, "active"),
+      ));
 
     for (const qual of quals) {
       if (!qual.expiryDate) continue;
       const expiryStr = typeof qual.expiryDate === "string" ? qual.expiryDate : qual.expiryDate;
       if (expiryStr < todayStr || expiryStr > windowEndStr) continue;
 
-      const [member] = await db.select({ firstName: staffTable.firstName, lastName: staffTable.lastName })
-        .from(staffTable).where(eq(staffTable.id, qual.staffId));
-      const name = member ? `${member.firstName} ${member.lastName}` : `Staff #${qual.staffId}`;
+      const name = `${qual.staffFirstName} ${qual.staffLastName}`;
 
       const recipients = await db.select({ id: staffTable.id })
         .from(staffTable)

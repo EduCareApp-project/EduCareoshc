@@ -31,15 +31,24 @@ type AppraisalRow = {
   createdAt: string;
 };
 
-const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+const EDUCATOR_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   stage1: { label: "Stage 1 — Assessment", className: "bg-amber-100 text-amber-800 border-amber-200" },
   stage2: { label: "Stage 2 — Upward Appraisal", className: "bg-blue-100 text-blue-800 border-blue-200" },
   stage3: { label: "Stage 3 — Joint Meeting", className: "bg-purple-100 text-purple-800 border-purple-200" },
   completed: { label: "Completed", className: "bg-emerald-100 text-emerald-800 border-emerald-200" },
 };
 
-function StatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? { label: status, className: "bg-slate-100 text-slate-700 border-slate-200" };
+const COORD_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  stage1: { label: "Stage 1 — Assessment", className: "bg-amber-100 text-amber-800 border-amber-200" },
+  stage2: { label: "Stage 2 — Upward Appraisal", className: "bg-blue-100 text-blue-800 border-blue-200" },
+  stage3: { label: "Stage 3 — Leadership", className: "bg-purple-100 text-purple-800 border-purple-200" },
+  stage4: { label: "Stage 4 — Joint Meeting", className: "bg-indigo-100 text-indigo-800 border-indigo-200" },
+  completed: { label: "Completed", className: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+};
+
+function StatusBadge({ status, type }: { status: string; type: string }) {
+  const config = type === "coordinator_appraisal" ? COORD_STATUS_CONFIG : EDUCATOR_STATUS_CONFIG;
+  const cfg = config[status] ?? { label: status, className: "bg-slate-100 text-slate-700 border-slate-200" };
   return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.className}`}>{cfg.label}</span>;
 }
 
@@ -213,7 +222,7 @@ export default function AppraisalsTab({ staffId }: { staffId?: number }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-sm">Educator Appraisal &amp; Development Plan</span>
-                    <StatusBadge status={a.status} />
+                    <StatusBadge status={a.status} type={a.type} />
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                     {a.reviewerName && <span>Assessor: {a.reviewerName}</span>}

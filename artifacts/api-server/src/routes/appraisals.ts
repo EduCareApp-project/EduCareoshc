@@ -154,10 +154,6 @@ router.put("/appraisals/:id/stage1/reviewer", async (req, res): Promise<void> =>
   const id = Number(req.params.id);
   const [current] = await db.select().from(staffAppraisalsTable).where(eq(staffAppraisalsTable.id, id));
   if (!current) { res.status(404).json({ error: "Appraisal not found" }); return; }
-  if (current.status !== "stage1" && current.status !== "stage2") {
-    res.status(400).json({ error: "Reviewer Stage 1 can only be submitted during Stage 1 or Stage 2" }); return;
-  }
-
   const [row] = await db.update(staffAppraisalsTable).set({
     reviewerStage1: req.body,
     reviewerStage1SubmittedAt: new Date(),

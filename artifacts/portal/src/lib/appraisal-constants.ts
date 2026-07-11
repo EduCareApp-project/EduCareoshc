@@ -364,12 +364,13 @@ export function collectCoordAutoActions(
         const noteParts: string[] = [];
         if ("comment" in item && item.comment?.trim()) noteParts.push(item.comment.trim());
         if ("feedback" in item && item.feedback?.trim()) noteParts.push(item.feedback.trim());
+        const label = questionLabels[item.key] ?? item.key;
         actions.push({
           id: crypto.randomUUID(),
           source: "auto",
-          sourceLabel: questionLabels[item.key] ?? item.key,
+          sourceLabel: label,
           sourceNotes: noteParts.length > 0 ? noteParts.join("\n\n") : undefined,
-          action: "",
+          action: label,
           possibleObstacles: "",
           isSmart: undefined,
           dateForCompletion: "",
@@ -381,12 +382,13 @@ export function collectCoordAutoActions(
   if (leadershipStage3) {
     for (const cap of leadershipStage3.capabilities) {
       if (cap.actionRequired) {
+        const capLabel = capLabels[cap.key] ?? cap.key;
         actions.push({
           id: crypto.randomUUID(),
           source: "auto",
-          sourceLabel: capLabels[cap.key] ?? cap.key,
+          sourceLabel: capLabel,
           sourceNotes: cap.comment?.trim() || undefined,
-          action: "",
+          action: capLabel,
           possibleObstacles: "",
           isSmart: undefined,
           dateForCompletion: "",
@@ -528,12 +530,13 @@ export function collectAutoActions(
         const noteParts: string[] = [];
         if ("comment" in e && e.comment?.trim()) noteParts.push(e.comment.trim());
         if ("feedback" in e && e.feedback?.trim()) noteParts.push(e.feedback.trim());
+        const autoLabel = `${labelMap[e.key] ?? e.key} (${prefix} — ${who})`;
         actions.push({
           id: crypto.randomUUID(),
           source: "auto",
-          sourceLabel: `${labelMap[e.key] ?? e.key} (${prefix} — ${who})`,
+          sourceLabel: autoLabel,
           sourceNotes: noteParts.length > 0 ? noteParts.join("\n\n") : undefined,
-          action: "",
+          action: autoLabel,
           possibleObstacles: "",
           isSmart: undefined,
           dateForCompletion: "",

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, CheckCircle2, Save, Send, Lock, Info } from "lucide-react";
@@ -25,25 +26,21 @@ type Appraisal = {
   completedAt: string | null;
 };
 
-function RatingButtons({ value, onChange, disabled }: { value?: number; onChange: (v: number) => void; disabled: boolean }) {
+function RatingSelect({ value, onChange, disabled }: { value?: number; onChange: (v: number) => void; disabled: boolean }) {
   return (
-    <div className="flex gap-1 flex-wrap">
-      {RATING_SCALE.map((r) => (
-        <button
-          key={r.value}
-          disabled={disabled}
-          onClick={() => onChange(r.value)}
-          title={r.label}
-          className={`w-7 h-7 rounded text-xs font-bold border transition-all ${
-            value === r.value
-              ? "bg-primary text-primary-foreground border-primary"
-              : "border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-          }`}
-        >
-          {r.value}
-        </button>
-      ))}
-    </div>
+    <Select
+      disabled={disabled}
+      value={value != null ? String(value) : "__none__"}
+      onValueChange={(v) => onChange(v === "__none__" ? undefined as any : Number(v))}
+    >
+      <SelectTrigger className="h-8 text-sm w-full min-w-[140px]">
+        <SelectValue placeholder="Rate…" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__none__">Not rated</SelectItem>
+        {RATING_SCALE.map((r) => <SelectItem key={r.value} value={String(r.value)}>{r.label}</SelectItem>)}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -204,14 +201,11 @@ export default function CoordAppraisalStage3() {
                   <tr key={cap.key} className={`border-b last:border-0 ${ci % 2 === 0 ? "" : "bg-muted/5"}`}>
                     <td className="py-3 px-4 font-medium align-top">{cap.label}</td>
                     <td className="py-3 px-3 align-top">
-                      <div className="flex justify-center">
-                        <RatingButtons
-                          value={entry.rating}
-                          onChange={(v) => updateCapability(cap.key, "rating", v)}
-                          disabled={isReadOnly}
-                        />
-                      </div>
-                      {entry.rating && <p className="text-center text-xs text-muted-foreground mt-1">{RATING_SCALE.find((r) => r.value === entry.rating)?.label.split(" – ")[1]}</p>}
+                      <RatingSelect
+                        value={entry.rating}
+                        onChange={(v) => updateCapability(cap.key, "rating", v)}
+                        disabled={isReadOnly}
+                      />
                     </td>
                     <td className="py-3 px-3 align-top">
                       <Textarea

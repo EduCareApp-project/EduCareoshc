@@ -288,7 +288,7 @@ export default function CoordAppraisalStage4() {
         <button onClick={() => navigate(`/appraisals/${id}`)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-2">
           <ArrowLeft className="h-4 w-4" /> Back to Appraisal
         </button>
-        <h1 className="text-2xl font-bold">Stage 4 — Action Plan &amp; Goal Review</h1>
+        <h1 className="text-2xl font-bold">Stage 4 — Joint Meeting</h1>
         <p className="text-sm text-muted-foreground mt-0.5">{appraisal.staffName} · Assessor: {appraisal.reviewerName ?? "Unassigned"}</p>
         {submitted && appraisal.completedAt && (
           <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1 font-medium">

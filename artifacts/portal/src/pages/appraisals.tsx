@@ -34,8 +34,8 @@ type AppraisalRow = {
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   stage1: { label: "Stage 1 — Assessment", className: "bg-amber-100 text-amber-800 border-amber-200" },
   stage2: { label: "Stage 2 — Upward Appraisal", className: "bg-blue-100 text-blue-800 border-blue-200" },
-  stage3: { label: "Stage 3 — Joint Meeting / Leadership Summary", className: "bg-purple-100 text-purple-800 border-purple-200" },
-  stage4: { label: "Stage 4 — Action Plan", className: "bg-indigo-100 text-indigo-800 border-indigo-200" },
+  stage3: { label: "Stage 3 — Leadership / Joint Meeting", className: "bg-purple-100 text-purple-800 border-purple-200" },
+  stage4: { label: "Stage 4 — Joint Meeting", className: "bg-indigo-100 text-indigo-800 border-indigo-200" },
   completed: { label: "Completed", className: "bg-emerald-100 text-emerald-800 border-emerald-200" },
 };
 

@@ -172,7 +172,7 @@ export default function AppraisalDetail() {
         },
         {
           num: 3,
-          label: "Stage 3 — Leadership Summary",
+          label: "Stage 3 — Leadership",
           description: !isAdminOrEL && stageNum < 5
             ? "Completed privately by your Assessor — visible once the appraisal is fully completed."
             : "Assessor rates 7 leadership capabilities and summarises greatest strengths and development priorities.",
@@ -180,15 +180,15 @@ export default function AppraisalDetail() {
           details: [
             { label: "Leadership summary submitted", done: !!appraisal.coordLeadershipSubmittedAt, at: appraisal.coordLeadershipSubmittedAt },
           ],
-          actionLabel: !isAdminOrEL && stageNum < 5 ? "Private — Assessor only" : "Enter Stage 3",
+          actionLabel: !isAdminOrEL && stageNum < 5 ? "Assessor only" : "Enter Stage 3",
           actionPath: `/appraisals/${id}/coord-stage3`,
           available: stageNum >= 3,
           locked: !isAdminOrEL && stageNum < 5,
         },
         {
           num: 4,
-          label: "Stage 4 — Action Plan & Goal Review",
-          description: "Both parties meet to review previous actions, set SMART goals, and sign off.",
+          label: "Stage 4 — Joint Meeting",
+          description: "Both parties meet jointly to review the leadership summary, set SMART goals, and sign off.",
           icon: UserCheck,
           details: [
             { label: "Action plan completed", done: !!appraisal.completedAt, at: appraisal.completedAt },

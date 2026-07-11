@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, CheckCircle2, Save, Send, Lock, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 import { format } from "date-fns";
 import {
   COMPETENCIES, POSITION_REVIEW, PERFORMANCE_DEV_QUESTIONS, RATING_SCALE,
@@ -73,6 +74,7 @@ export default function AppraisalStage1() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isAdminOrEL } = usePermissions();
 
   const { data: appraisal, isLoading } = useQuery<Appraisal>({
     queryKey: [`/api/appraisals/${id}`],
@@ -204,14 +206,14 @@ export default function AppraisalStage1() {
         <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
         <div>
           <strong>Rating Scale:</strong> 5 – Exceptional · 4 – Above Average · 3 – Average · 2 – Below Average · 1 – Unsatisfactory.
-          Tick <strong>Action</strong> if further development is needed for that area.
+          {isAdminOrEL && <> Tick <strong>Action</strong> if further development is needed for that area.</>}
         </div>
       </div>
 
       {/* ── SECTION A: Competency Based Review ────────────────────── */}
       <div className="bg-card border rounded-xl p-6 space-y-4">
         <h2 className="text-lg font-bold border-b pb-3">Section A — Competency Based Review</h2>
-        <p className="text-sm text-muted-foreground">Rate current performance for each competency. Add examples in the comment field. Tick Action if further development is needed.</p>
+        <p className="text-sm text-muted-foreground">Rate current performance for each competency. Add examples in the comment field.{isAdminOrEL && " Tick Action if further development is needed."}</p>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
@@ -221,8 +223,7 @@ export default function AppraisalStage1() {
                 <th className="py-2.5 px-3 text-center font-semibold text-xs uppercase tracking-wide text-blue-700 w-36">Emp. Rating</th>
                 <th className="py-2.5 px-3 text-center font-semibold text-xs uppercase tracking-wide text-primary w-36">Assessor Rating</th>
                 <th className="py-2.5 px-3 text-left font-semibold text-xs uppercase tracking-wide text-muted-foreground">Comment</th>
-                <th className="py-2.5 px-3 text-center font-semibold text-xs uppercase tracking-wide text-blue-700 w-20">Emp.</th>
-                <th className="py-2.5 px-3 text-center font-semibold text-xs uppercase tracking-wide text-primary w-20">Assess.</th>
+                {isAdminOrEL && <th className="py-2.5 px-3 text-center font-semibold text-xs uppercase tracking-wide text-primary w-20">Action</th>}
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -257,12 +258,11 @@ export default function AppraisalStage1() {
                         disabled={empSubmitted && revSubmitted}
                       />
                     </td>
-                    <td className="py-3 px-3 text-center">
-                      <ActionCheckbox checked={ec.actionRequired} onChange={(v) => updateEmpComp(comp.key, "actionRequired", v)} disabled={empSubmitted} />
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <ActionCheckbox checked={rc.actionRequired} onChange={(v) => updateRevComp(comp.key, "actionRequired", v)} disabled={revSubmitted} />
-                    </td>
+                    {isAdminOrEL && (
+                      <td className="py-3 px-3 text-center">
+                        <ActionCheckbox checked={rc.actionRequired} onChange={(v) => updateRevComp(comp.key, "actionRequired", v)} disabled={revSubmitted} />
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -284,8 +284,7 @@ export default function AppraisalStage1() {
                 <th className="py-2.5 px-3 text-center font-semibold text-xs uppercase tracking-wide text-blue-700 w-36">Emp. Rating</th>
                 <th className="py-2.5 px-3 text-center font-semibold text-xs uppercase tracking-wide text-primary w-36">Assessor Rating</th>
                 <th className="py-2.5 px-3 text-left font-semibold text-xs uppercase tracking-wide text-muted-foreground">Comment</th>
-                <th className="py-2.5 px-3 text-center font-semibold text-xs uppercase tracking-wide text-blue-700 w-20">Emp.</th>
-                <th className="py-2.5 px-3 text-center font-semibold text-xs uppercase tracking-wide text-primary w-20">Assess.</th>
+                {isAdminOrEL && <th className="py-2.5 px-3 text-center font-semibold text-xs uppercase tracking-wide text-primary w-20">Action</th>}
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -320,12 +319,11 @@ export default function AppraisalStage1() {
                         disabled={empSubmitted && revSubmitted}
                       />
                     </td>
-                    <td className="py-3 px-3 text-center">
-                      <ActionCheckbox checked={ep.actionRequired} onChange={(v) => updateEmpPos(pos.key, "actionRequired", v)} disabled={empSubmitted} />
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <ActionCheckbox checked={rp.actionRequired} onChange={(v) => updateRevPos(pos.key, "actionRequired", v)} disabled={revSubmitted} />
-                    </td>
+                    {isAdminOrEL && (
+                      <td className="py-3 px-3 text-center">
+                        <ActionCheckbox checked={rp.actionRequired} onChange={(v) => updateRevPos(pos.key, "actionRequired", v)} disabled={revSubmitted} />
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -347,10 +345,7 @@ export default function AppraisalStage1() {
               <p className="font-medium text-sm">{q.question}</p>
               <div className="grid sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-medium text-blue-700 uppercase tracking-wide">Employee Comment</label>
-                    <ActionCheckbox checked={eq.actionRequired} onChange={(v) => updateEmpPd(q.key, "actionRequired", v)} disabled={empSubmitted} />
-                  </div>
+                  <label className="text-xs font-medium text-blue-700 uppercase tracking-wide">Employee Comment</label>
                   <Textarea
                     rows={3}
                     placeholder="Employee's response…"
@@ -363,7 +358,7 @@ export default function AppraisalStage1() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-medium text-primary uppercase tracking-wide">Assessor Feedback</label>
-                    <ActionCheckbox checked={rq.actionRequired} onChange={(v) => updateRevPd(q.key, "actionRequired", v)} disabled={revSubmitted} />
+                    {isAdminOrEL && <ActionCheckbox checked={rq.actionRequired} onChange={(v) => updateRevPd(q.key, "actionRequired", v)} disabled={revSubmitted} />}
                   </div>
                   <Textarea
                     rows={3}

@@ -113,7 +113,285 @@ export const TRAINING_REVIEW_QUESTIONS = [
 
 export const APPRAISAL_TYPES = [
   { value: "educator_appraisal", label: "Educator Appraisal & Development Plan", frequency: "Every 6 months" },
+  { value: "coordinator_appraisal", label: "Program Coordinator Appraisal & Development Plan", frequency: "Annually" },
 ] as const;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COORDINATOR APPRAISAL CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const COORD_POSITION_SECTIONS = [
+  {
+    key: "educational_leadership",
+    label: "Educational Leadership",
+    reviewStatement: "The Coordinator leads a high-quality, reflective educational program that places children at the centre.",
+    questions: [
+      { key: "lead_programming", question: "How effectively do you lead programming rather than simply complete it?" },
+      { key: "evaluate_improve", question: "How well do you evaluate and improve the educational program?" },
+      { key: "children_voices", question: "How well do you ensure children's voices are clearly reflected within the program?" },
+    ],
+  },
+  {
+    key: "quality_improvement",
+    label: "Quality Improvement & Assessment",
+    reviewStatement: "The Coordinator actively engages with quality improvement processes and uses critical reflection to drive continuous development.",
+    questions: [
+      { key: "critical_reflection", question: "How effectively do you use critical reflection to improve practice?" },
+      { key: "identify_strengths", question: "How well do you identify strengths and areas for improvement?" },
+      { key: "maintain_evidence", question: "How well do you maintain evidence that supports assessment and rating?" },
+    ],
+  },
+  {
+    key: "safety_risk",
+    label: "Safety & Risk Management",
+    reviewStatement: "The Coordinator proactively manages safety and ensures legislative compliance across all service operations.",
+    questions: [
+      { key: "identify_hazards", question: "How effectively do you identify hazards before they become incidents?" },
+      { key: "review_risk", question: "How well do you review risk assessments in a meaningful way?" },
+      { key: "legislative_compliance", question: "How well do you ensure legislative compliance in every session?" },
+    ],
+  },
+  {
+    key: "leadership_team",
+    label: "Leadership & Team Development",
+    reviewStatement: "The Coordinator leads, develops, and holds their team accountable to Elysium's standards and expectations.",
+    questions: [
+      { key: "delegate_tasks", question: "How effectively do you delegate tasks?" },
+      { key: "coach_instruct", question: "How effectively do you coach rather than simply instruct?" },
+      { key: "hold_accountable", question: "How well do you hold staff accountable to Elysium expectations?" },
+      { key: "lead_example", question: "How effectively do you lead by example?" },
+    ],
+  },
+  {
+    key: "operational_management",
+    label: "Operational Management",
+    reviewStatement: "The Coordinator ensures the service operates efficiently and in accordance with all requirements.",
+    questions: [
+      { key: "manage_rosters", question: "How effectively do you manage rosters and ratios?" },
+      { key: "complete_documentation", question: "How well do you complete documentation accurately and efficiently?" },
+      { key: "organise_resources", question: "How well do you organise and maintain resources?" },
+      { key: "manage_sessions", question: "How well do you manage sessions smoothly and with minimal intervention?" },
+    ],
+  },
+  {
+    key: "communication_relationships",
+    label: "Communication & Relationships",
+    reviewStatement: "The Coordinator builds and maintains positive relationships with all stakeholders and communicates effectively.",
+    questions: [
+      { key: "build_trust", question: "How effectively do you build trust with families?" },
+      { key: "school_relationships", question: "How well do you maintain relationships with school staff?" },
+      { key: "escalate_concerns", question: "How well do you ensure concerns are escalated appropriately?" },
+      { key: "leadership_comms", question: "How well do you communicate clearly with the Leadership Team?" },
+    ],
+  },
+  {
+    key: "ownership",
+    label: "Ownership of the Service",
+    reviewStatement: "The Coordinator takes full ownership of their service and represents Elysium's values with pride.",
+    questions: [
+      { key: "treat_as_own", question: "How well do you treat the service as if it were your own?" },
+      { key: "demonstrate_initiative", question: "How well do you demonstrate initiative without waiting for direction?" },
+      { key: "continuous_improvement", question: "How well do you promote continuous improvement?" },
+      { key: "represent_elysium", question: "How well do you represent Elysium professionally?" },
+    ],
+  },
+] as const;
+
+export const COORD_SELF_REFLECTION_QUESTIONS = [
+  { key: "proud_achievement", question: "What achievement are you most proud of this year as Coordinator?" },
+  { key: "greatest_challenge", question: "What has been the greatest challenge at your service?" },
+  { key: "positive_improvement", question: "What improvement have you made that has positively impacted children or staff?" },
+  { key: "additional_support", question: "If you had additional support or resources, what would make the greatest difference?" },
+  { key: "leadership_skill", question: "What leadership skill would you most like to develop over the next 12 months?" },
+] as const;
+
+export const COORD_PERFORMANCE_INDICATORS = [
+  { key: "educational_program", label: "Educational Program" },
+  { key: "child_engagement", label: "Child Engagement" },
+  { key: "staff_performance", label: "Staff Performance" },
+  { key: "family_relationships", label: "Family Relationships" },
+  { key: "safety_compliance", label: "Safety & Compliance" },
+  { key: "environment_presentation", label: "Environment & Presentation" },
+  { key: "documentation", label: "Documentation" },
+] as const;
+
+export const COORD_UPWARD_SECTIONS = [
+  {
+    key: "leadership",
+    label: "Leadership",
+    statements: [
+      { key: "clear_direction", statement: "My manager gives me clear direction." },
+      { key: "useful_feedback", statement: "I receive useful feedback on my performance." },
+      { key: "difficult_situations", statement: "I feel supported when managing difficult situations." },
+    ],
+  },
+  {
+    key: "organisation",
+    label: "Organisation",
+    statements: [
+      { key: "resources_available", statement: "I have the resources I need to operate my service." },
+      { key: "timely_communication", statement: "Communication from management is timely and clear." },
+      { key: "professional_development", statement: "Professional development supports my role." },
+    ],
+  },
+  {
+    key: "culture",
+    label: "Culture",
+    statements: [
+      { key: "lives_values", statement: "Elysium lives its stated values." },
+      { key: "trusted_to_lead", statement: "I feel trusted to lead my service." },
+      { key: "recommend_employer", statement: "I would recommend Elysium as an employer." },
+    ],
+  },
+  {
+    key: "finalQuestion",
+    label: "Final Question",
+    statements: [
+      { key: "better_support", statement: "What is one thing Elysium could do to better support you as a Coordinator?" },
+    ],
+  },
+] as const;
+
+export const COORD_LEADERSHIP_CAPABILITIES = [
+  { key: "leads_children", label: "Leads children effectively" },
+  { key: "leads_educators", label: "Leads educators effectively" },
+  { key: "leads_educational_practice", label: "Leads educational practice" },
+  { key: "maintains_compliance", label: "Maintains compliance" },
+  { key: "demonstrates_initiative", label: "Demonstrates initiative" },
+  { key: "represents_elysium", label: "Represents Elysium professionally" },
+  { key: "greater_responsibility", label: "Ready for greater responsibility" },
+] as const;
+
+export interface CoordPositionEntry {
+  key: string;
+  empRating?: number;
+  revRating?: number;
+  comment?: string;
+  actionRequired?: boolean;
+}
+
+export interface CoordSelfReflectionEntry {
+  key: string;
+  comment?: string;
+  feedback?: string;
+  actionRequired?: boolean;
+}
+
+export interface CoordIndicatorEntry {
+  key: string;
+  empRating?: number;
+  revRating?: number;
+  comment?: string;
+  actionRequired?: boolean;
+}
+
+export interface CoordStage1Data {
+  positionItems: CoordPositionEntry[];
+  selfReflection: CoordSelfReflectionEntry[];
+  indicators: CoordIndicatorEntry[];
+}
+
+export interface CoordStage2Data {
+  submittedAt?: string;
+  leadership: LikertEntry[];
+  organisation: LikertEntry[];
+  culture: LikertEntry[];
+  finalQuestion: LikertEntry[];
+}
+
+export interface CoordLeadershipCapEntry {
+  key: string;
+  rating?: number;
+  comment?: string;
+  actionRequired?: boolean;
+}
+
+export interface CoordStage3Data {
+  capabilities: CoordLeadershipCapEntry[];
+  greatestStrength?: string;
+  highestPriority?: string;
+}
+
+export function buildEmptyCoordStage1(): CoordStage1Data {
+  return {
+    positionItems: COORD_POSITION_SECTIONS.flatMap((s) => s.questions.map((q) => ({ key: q.key }))),
+    selfReflection: COORD_SELF_REFLECTION_QUESTIONS.map((q) => ({ key: q.key })),
+    indicators: COORD_PERFORMANCE_INDICATORS.map((i) => ({ key: i.key })),
+  };
+}
+
+export function buildEmptyCoordStage2(): CoordStage2Data {
+  return {
+    leadership: COORD_UPWARD_SECTIONS[0].statements.map((s) => ({ key: s.key })),
+    organisation: COORD_UPWARD_SECTIONS[1].statements.map((s) => ({ key: s.key })),
+    culture: COORD_UPWARD_SECTIONS[2].statements.map((s) => ({ key: s.key })),
+    finalQuestion: COORD_UPWARD_SECTIONS[3].statements.map((s) => ({ key: s.key })),
+  };
+}
+
+export function buildEmptyCoordStage3(): CoordStage3Data {
+  return {
+    capabilities: COORD_LEADERSHIP_CAPABILITIES.map((c) => ({ key: c.key })),
+    greatestStrength: "",
+    highestPriority: "",
+  };
+}
+
+export function collectCoordAutoActions(
+  reviewerStage1?: CoordStage1Data | null,
+  leadershipStage3?: CoordStage3Data | null,
+): AppraisalGoal[] {
+  const actions: AppraisalGoal[] = [];
+
+  const questionLabels: Record<string, string> = {};
+  for (const s of COORD_POSITION_SECTIONS) {
+    for (const q of s.questions) questionLabels[q.key] = `${s.label} — ${q.question}`;
+  }
+  for (const q of COORD_SELF_REFLECTION_QUESTIONS) questionLabels[q.key] = q.question;
+  for (const i of COORD_PERFORMANCE_INDICATORS) questionLabels[i.key] = i.label;
+  const capLabels: Record<string, string> = Object.fromEntries(
+    COORD_LEADERSHIP_CAPABILITIES.map((c) => [c.key, c.label]),
+  );
+
+  if (reviewerStage1) {
+    const allItems = [
+      ...reviewerStage1.positionItems,
+      ...reviewerStage1.selfReflection,
+      ...reviewerStage1.indicators,
+    ];
+    for (const item of allItems) {
+      if (item.actionRequired) {
+        actions.push({
+          id: crypto.randomUUID(),
+          source: "auto",
+          sourceLabel: questionLabels[item.key] ?? item.key,
+          action: "",
+          possibleObstacles: "",
+          isSmart: undefined,
+          dateForCompletion: "",
+        });
+      }
+    }
+  }
+
+  if (leadershipStage3) {
+    for (const cap of leadershipStage3.capabilities) {
+      if (cap.actionRequired) {
+        actions.push({
+          id: crypto.randomUUID(),
+          source: "auto",
+          sourceLabel: capLabels[cap.key] ?? cap.key,
+          action: "",
+          possibleObstacles: "",
+          isSmart: undefined,
+          dateForCompletion: "",
+        });
+      }
+    }
+  }
+
+  return actions;
+}
 
 export type CompetencyKey = typeof COMPETENCIES[number]["key"];
 export type PositionReviewKey = typeof POSITION_REVIEW[number]["key"];

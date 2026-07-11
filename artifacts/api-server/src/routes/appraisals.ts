@@ -212,10 +212,13 @@ router.put("/appraisals/:id/stage2", async (req, res): Promise<void> => {
   const staffMap = await buildStaffMap();
 
   if (current.reviewerId) {
+    const notifTitle = current.type === "coordinator_appraisal"
+      ? "Upward Appraisal submitted — Leadership Summary ready"
+      : "Appraisal ready for Stage 3 joint meeting";
     createNotification({
       staffId: current.reviewerId,
       type: "appraisal_submitted",
-      title: `Appraisal ready for Stage 3 joint meeting`,
+      title: notifTitle,
       href: `/appraisals/${id}`,
       referenceId: id,
       referenceType: "appraisal",
@@ -271,6 +274,90 @@ router.put("/appraisals/:id/stage3", async (req, res): Promise<void> => {
 // ─── Stage 3: Save draft ──────────────────────────────────────────────────────
 
 router.put("/appraisals/:id/stage3/draft", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const [current] = await db.select().from(staffAppraisalsTable).where(eq(staffAppraisalsTable.id, id));
+  if (!current) { res.status(404).json({ error: "Appraisal not found" }); return; }
+
+  const [row] = await db.update(staffAppraisalsTable).set({
+    stage3Data: req.body,
+    updatedAt: new Date(),
+  } as any).where(eq(staffAppraisalsTable.id, id)).returning();
+  const staffMap = await buildStaffMap();
+  res.json(enrichAppraisal(row, staffMap));
+});
+
+// ─── Coordinator Stage 3: Leadership Summary (assessor-only) ─────────────────
+
+router.put("/appraisals/:id/coord-stage3", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const [current] = await db.select().from(staffAppraisalsTable).where(eq(staffAppraisalsTable.id, id));
+  if (!current) { res.status(404).json({ error: "Appraisal not found" }); return; }
+  if (current.type !== "coordinator_appraisal") { res.status(400).json({ error: "Not a coordinator appraisal" }); return; }
+  if (current.status !== "stage3") { res.status(400).json({ error: "Appraisal is not in Stage 3" }); return; }
+
+  const [row] = await db.update(staffAppraisalsTable).set({
+    coordLeadershipData: req.body,
+    coordLeadershipSubmittedAt: new Date(),
+    status: "stage4",
+    updatedAt: new Date(),
+  } as any).where(eq(staffAppraisalsTable.id, id)).returning();
+  const staffMap = await buildStaffMap();
+
+  createNotification({
+    staffId: current.staffId,
+    type: "appraisal_submitted",
+    title: "Leadership Summary completed — Action Plan ready",
+    href: `/appraisals/${id}`,
+    referenceId: id,
+    referenceType: "appraisal",
+  }).catch((err) => logger.warn({ err }, "Failed to send appraisal_submitted notification"));
+
+  res.json(enrichAppraisal(row, staffMap));
+});
+
+router.put("/appraisals/:id/coord-stage3/draft", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const [current] = await db.select().from(staffAppraisalsTable).where(eq(staffAppraisalsTable.id, id));
+  if (!current) { res.status(404).json({ error: "Appraisal not found" }); return; }
+
+  const [row] = await db.update(staffAppraisalsTable).set({
+    coordLeadershipData: req.body,
+    updatedAt: new Date(),
+  } as any).where(eq(staffAppraisalsTable.id, id)).returning();
+  const staffMap = await buildStaffMap();
+  res.json(enrichAppraisal(row, staffMap));
+});
+
+// ─── Coordinator Stage 4: Action Plan & Goal Review (joint) ──────────────────
+
+router.put("/appraisals/:id/coord-stage4", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const [current] = await db.select().from(staffAppraisalsTable).where(eq(staffAppraisalsTable.id, id));
+  if (!current) { res.status(404).json({ error: "Appraisal not found" }); return; }
+  if (current.type !== "coordinator_appraisal") { res.status(400).json({ error: "Not a coordinator appraisal" }); return; }
+  if (current.status !== "stage4") { res.status(400).json({ error: "Appraisal is not in Stage 4" }); return; }
+
+  const [row] = await db.update(staffAppraisalsTable).set({
+    stage3Data: req.body,
+    status: "completed",
+    completedAt: new Date(),
+    updatedAt: new Date(),
+  } as any).where(eq(staffAppraisalsTable.id, id)).returning();
+  const staffMap = await buildStaffMap();
+
+  createNotification({
+    staffId: current.staffId,
+    type: "appraisal_submitted",
+    title: "Your appraisal has been completed",
+    href: `/appraisals/${id}`,
+    referenceId: id,
+    referenceType: "appraisal",
+  }).catch((err) => logger.warn({ err }, "Failed to send appraisal_submitted notification"));
+
+  res.json(enrichAppraisal(row, staffMap));
+});
+
+router.put("/appraisals/:id/coord-stage4/draft", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
   const [current] = await db.select().from(staffAppraisalsTable).where(eq(staffAppraisalsTable.id, id));
   if (!current) { res.status(404).json({ error: "Appraisal not found" }); return; }

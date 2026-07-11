@@ -19,8 +19,11 @@ export const staffAppraisalsTable = pgTable("staff_appraisals", {
   // Stage 2: employee fills upward appraisal alone
   stage2Data: jsonb("stage2_data"),
   stage2SubmittedAt: timestamp("stage2_submitted_at", { withTimezone: true }),
-  // Stage 3: joint meeting, submitted by EL/admin
+  // Stage 3: joint meeting (educator) OR leadership summary (coordinator, assessor-only)
   stage3Data: jsonb("stage3_data"),
+  // Stage 3 coordinator: leadership summary (assessor-only) — advances to stage4
+  coordLeadershipData: jsonb("coord_leadership_data"),
+  coordLeadershipSubmittedAt: timestamp("coord_leadership_submitted_at", { withTimezone: true }),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

@@ -97,6 +97,10 @@ import ClickUpReports from "@/pages/clickup-reports";
 import AppraisalStage1 from "@/pages/appraisal-stage1";
 import AppraisalStage2 from "@/pages/appraisal-stage2";
 import AppraisalStage3 from "@/pages/appraisal-stage3";
+import CoordAppraisalStage1 from "@/pages/coord-appraisal-stage1";
+import CoordAppraisalStage2 from "@/pages/coord-appraisal-stage2";
+import CoordAppraisalStage3 from "@/pages/coord-appraisal-stage3";
+import CoordAppraisalStage4 from "@/pages/coord-appraisal-stage4";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -200,6 +204,10 @@ function StaffRoutes() {
         <Route path="/appraisals/:id/stage1" component={AppraisalStage1} />
         <Route path="/appraisals/:id/stage2" component={AppraisalStage2} />
         <Route path="/appraisals/:id/stage3" component={AppraisalStage3} />
+        <Route path="/appraisals/:id/coord-stage1" component={CoordAppraisalStage1} />
+        <Route path="/appraisals/:id/coord-stage2" component={CoordAppraisalStage2} />
+        <Route path="/appraisals/:id/coord-stage3" component={CoordAppraisalStage3} />
+        <Route path="/appraisals/:id/coord-stage4" component={CoordAppraisalStage4} />
         <Route path="/appraisals/:id" component={AppraisalDetail} />
 
         <Route path="/sites" component={Sites} />

@@ -164,17 +164,6 @@ export default function AppraisalStage1() {
   }
   if (!appraisal) return <div className="p-6 text-center text-muted-foreground">Appraisal not found.</div>;
 
-  if (appraisal.status !== "stage1") {
-    return (
-      <div className="p-6 max-w-2xl mx-auto text-center space-y-4">
-        <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto" />
-        <h2 className="text-lg font-semibold">Stage 1 Complete</h2>
-        <p className="text-muted-foreground text-sm">Both assessments have been submitted. This stage is now locked.</p>
-        <Button onClick={() => navigate(`/appraisals/${id}`)}>Back to Appraisal</Button>
-      </div>
-    );
-  }
-
   const RatingBadge = ({ value }: { value?: number }) => {
     if (!value) return null;
     const colour = value >= 4 ? "text-emerald-700" : value === 3 ? "text-blue-700" : "text-amber-700";

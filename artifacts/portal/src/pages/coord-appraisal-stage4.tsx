@@ -79,8 +79,13 @@ function GoalRow({
   return (
     <div className="border rounded-lg p-4 space-y-3 bg-card">
       {goal.source === "auto" && goal.sourceLabel && (
-        <div className="flex items-center gap-1.5 text-xs text-primary bg-primary/5 border border-primary/20 rounded-full px-2.5 py-1 w-fit">
-          <Sparkles className="h-3 w-3" /> Auto-generated: {goal.sourceLabel}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs text-primary bg-primary/5 border border-primary/20 rounded-full px-2.5 py-1 w-fit">
+            <Sparkles className="h-3 w-3" /> Auto-generated: {goal.sourceLabel}
+          </div>
+          {goal.sourceNotes && (
+            <p className="text-xs text-muted-foreground italic whitespace-pre-wrap pl-1">{goal.sourceNotes}</p>
+          )}
         </div>
       )}
       <div className="grid sm:grid-cols-2 gap-3">

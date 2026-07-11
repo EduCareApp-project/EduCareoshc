@@ -361,10 +361,14 @@ export function collectCoordAutoActions(
     ];
     for (const item of allItems) {
       if (item.actionRequired) {
+        const noteParts: string[] = [];
+        if ("comment" in item && item.comment?.trim()) noteParts.push(item.comment.trim());
+        if ("feedback" in item && item.feedback?.trim()) noteParts.push(item.feedback.trim());
         actions.push({
           id: crypto.randomUUID(),
           source: "auto",
           sourceLabel: questionLabels[item.key] ?? item.key,
+          sourceNotes: noteParts.length > 0 ? noteParts.join("\n\n") : undefined,
           action: "",
           possibleObstacles: "",
           isSmart: undefined,
@@ -381,6 +385,7 @@ export function collectCoordAutoActions(
           id: crypto.randomUUID(),
           source: "auto",
           sourceLabel: capLabels[cap.key] ?? cap.key,
+          sourceNotes: cap.comment?.trim() || undefined,
           action: "",
           possibleObstacles: "",
           isSmart: undefined,
@@ -449,6 +454,7 @@ export interface AppraisalGoal {
   id: string;
   source: "auto" | "manual";
   sourceLabel?: string;
+  sourceNotes?: string;
   action: string;
   possibleObstacles?: string;
   isSmart?: boolean;
@@ -518,10 +524,14 @@ export function collectAutoActions(
   ) => {
     for (const e of entries) {
       if (e.actionRequired) {
+        const noteParts: string[] = [];
+        if ("comment" in e && e.comment?.trim()) noteParts.push(e.comment.trim());
+        if ("feedback" in e && e.feedback?.trim()) noteParts.push(e.feedback.trim());
         actions.push({
           id: crypto.randomUUID(),
           source: "auto",
           sourceLabel: `${labelMap[e.key] ?? e.key} (${prefix} — ${who})`,
+          sourceNotes: noteParts.length > 0 ? noteParts.join("\n\n") : undefined,
           action: "",
           possibleObstacles: "",
           isSmart: undefined,

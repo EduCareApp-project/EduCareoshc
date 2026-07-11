@@ -361,7 +361,7 @@ export default function AppraisalDetail() {
                         <h3 className="font-semibold text-sm">{stage.label}</h3>
                         <p className="text-xs text-muted-foreground mt-0.5">{stage.description}</p>
                       </div>
-                      {stage.available && !("locked" in stage && stage.locked) && (
+                      {stage.available && (!("locked" in stage && stage.locked) || allDone) && (
                         <Button
                           size="sm"
                           variant={isCurrentStage && !allDone ? "default" : "outline"}
@@ -371,9 +371,9 @@ export default function AppraisalDetail() {
                           {allDone ? "Review" : stage.actionLabel}
                         </Button>
                       )}
-                      {"locked" in stage && stage.locked && stage.available && (
+                      {"locked" in stage && stage.locked && stage.available && !allDone && (
                         <span className="text-xs text-muted-foreground bg-muted rounded-md px-3 py-1.5 border border-border flex-shrink-0">
-                          {allDone ? "Review when complete" : stage.actionLabel}
+                          {stage.actionLabel}
                         </span>
                       )}
                     </div>

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, CheckCircle2, Save, Send, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -26,25 +27,21 @@ type Appraisal = {
   reviewerStage1SubmittedAt: string | null;
 };
 
-function RatingButtons({ value, onChange, disabled }: { value?: number; onChange: (v: number) => void; disabled: boolean }) {
+function RatingSelect({ value, onChange, disabled }: { value?: number; onChange: (v: number) => void; disabled: boolean }) {
   return (
-    <div className="flex gap-1 flex-wrap">
-      {RATING_SCALE.map((r) => (
-        <button
-          key={r.value}
-          disabled={disabled}
-          onClick={() => onChange(r.value)}
-          title={r.label}
-          className={`w-7 h-7 rounded text-xs font-bold border transition-all ${
-            value === r.value
-              ? "bg-primary text-primary-foreground border-primary"
-              : "border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-          }`}
-        >
-          {r.value}
-        </button>
-      ))}
-    </div>
+    <Select
+      disabled={disabled}
+      value={value != null ? String(value) : "__none__"}
+      onValueChange={(v) => onChange(v === "__none__" ? undefined as any : Number(v))}
+    >
+      <SelectTrigger className="h-8 text-sm w-full min-w-[140px]">
+        <SelectValue placeholder="Rate…" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__none__">Not rated</SelectItem>
+        {RATING_SCALE.map((r) => <SelectItem key={r.value} value={String(r.value)}>{r.label}</SelectItem>)}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -203,14 +200,7 @@ export default function CoordAppraisalStage1() {
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex gap-3 text-sm text-blue-800">
         <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-        <span>Both the Coordinator and Assessor complete their ratings independently. Use the 1–5 scale: 1 = Unsatisfactory, 3 = Average, 5 = Exceptional. The comment column is a shared space for discussion notes.</span>
-      </div>
-
-      {/* Rating Legend */}
-      <div className="bg-muted/50 rounded-lg px-4 py-3 flex flex-wrap gap-x-4 gap-y-1">
-        {RATING_SCALE.map((r) => (
-          <span key={r.value} className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{r.value}</span> — {r.label.split(" – ")[1]}</span>
-        ))}
+        <span>Both the Coordinator and Assessor complete their ratings independently using the dropdown (1 = Unsatisfactory → 5 = Exceptional). The comment column is a shared space for discussion notes.</span>
       </div>
 
       {/* ── Position Sections ───────────────────────────────────────── */}
@@ -239,24 +229,18 @@ export default function CoordAppraisalStage1() {
                     <tr key={q.key} className={`border-b last:border-0 ${qi % 2 === 0 ? "" : "bg-muted/5"}`}>
                       <td className="py-3 px-4 text-sm align-top">{q.question}</td>
                       <td className="py-3 px-3 align-top">
-                        <div className="flex justify-center">
-                          <RatingButtons
-                            value={emp.empRating}
-                            onChange={(v) => updateEmpPosition(q.key, "empRating", v)}
-                            disabled={empSubmitted || isLocked || isAdminOrEL}
-                          />
-                        </div>
-                        {emp.empRating && <p className="text-center text-xs text-muted-foreground mt-1">{RATING_SCALE.find((r) => r.value === emp.empRating)?.label.split(" – ")[1]}</p>}
+                        <RatingSelect
+                          value={emp.empRating}
+                          onChange={(v) => updateEmpPosition(q.key, "empRating", v)}
+                          disabled={empSubmitted || isLocked || isAdminOrEL}
+                        />
                       </td>
                       <td className="py-3 px-3 align-top">
-                        <div className="flex justify-center">
-                          <RatingButtons
-                            value={rev.revRating}
-                            onChange={(v) => updateRevPosition(q.key, "revRating", v)}
-                            disabled={revSubmitted || isLocked || !isAdminOrEL}
-                          />
-                        </div>
-                        {rev.revRating && <p className="text-center text-xs text-muted-foreground mt-1">{RATING_SCALE.find((r) => r.value === rev.revRating)?.label.split(" – ")[1]}</p>}
+                        <RatingSelect
+                          value={rev.revRating}
+                          onChange={(v) => updateRevPosition(q.key, "revRating", v)}
+                          disabled={revSubmitted || isLocked || !isAdminOrEL}
+                        />
                       </td>
                       <td className="py-3 px-3 align-top">
                         <Textarea
@@ -373,24 +357,18 @@ export default function CoordAppraisalStage1() {
                   <tr key={ind.key} className={`border-b last:border-0 ${ii % 2 === 0 ? "" : "bg-muted/5"}`}>
                     <td className="py-3 px-4 font-medium align-top">{ind.label}</td>
                     <td className="py-3 px-3 align-top">
-                      <div className="flex justify-center">
-                        <RatingButtons
-                          value={emp.empRating}
-                          onChange={(v) => updateEmpIndicator(ind.key, "empRating", v)}
-                          disabled={empSubmitted || isLocked || isAdminOrEL}
-                        />
-                      </div>
-                      {emp.empRating && <p className="text-center text-xs text-muted-foreground mt-1">{RATING_SCALE.find((r) => r.value === emp.empRating)?.label.split(" – ")[1]}</p>}
+                      <RatingSelect
+                        value={emp.empRating}
+                        onChange={(v) => updateEmpIndicator(ind.key, "empRating", v)}
+                        disabled={empSubmitted || isLocked || isAdminOrEL}
+                      />
                     </td>
                     <td className="py-3 px-3 align-top">
-                      <div className="flex justify-center">
-                        <RatingButtons
-                          value={rev.revRating}
-                          onChange={(v) => updateRevIndicator(ind.key, "revRating", v)}
-                          disabled={revSubmitted || isLocked || !isAdminOrEL}
-                        />
-                      </div>
-                      {rev.revRating && <p className="text-center text-xs text-muted-foreground mt-1">{RATING_SCALE.find((r) => r.value === rev.revRating)?.label.split(" – ")[1]}</p>}
+                      <RatingSelect
+                        value={rev.revRating}
+                        onChange={(v) => updateRevIndicator(ind.key, "revRating", v)}
+                        disabled={revSubmitted || isLocked || !isAdminOrEL}
+                      />
                     </td>
                     <td className="py-3 px-3 align-top">
                       <Textarea

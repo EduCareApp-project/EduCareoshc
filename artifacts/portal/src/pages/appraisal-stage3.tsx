@@ -581,10 +581,17 @@ export default function AppraisalStage3() {
             <Save className="h-4 w-4 mr-1.5" />
             {saveDraftMutation.isPending ? "Saving…" : "Save Draft"}
           </Button>
-          <Button onClick={() => submitMutation.mutate()} disabled={submitMutation.isPending}>
+          <Button
+            onClick={() => submitMutation.mutate()}
+            disabled={submitMutation.isPending || !formData.signatures.reviewerSigned || !formData.signatures.employeeSigned}
+            title={!formData.signatures.reviewerSigned || !formData.signatures.employeeSigned ? "Both the assessor and employee must sign off before completing" : undefined}
+          >
             <Send className="h-4 w-4 mr-1.5" />
             {submitMutation.isPending ? "Submitting…" : "Submit & Complete Appraisal"}
           </Button>
+          {(!formData.signatures.reviewerSigned || !formData.signatures.employeeSigned) && (
+            <p className="text-xs text-muted-foreground self-center">Both signatures required to complete.</p>
+          )}
         </div>
       )}
       {submitted && (

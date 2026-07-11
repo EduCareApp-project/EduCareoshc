@@ -429,10 +429,17 @@ export default function CoordAppraisalStage4() {
           <Button variant="outline" onClick={() => saveDraftMutation.mutate()} disabled={saveDraftMutation.isPending}>
             <Save className="h-3.5 w-3.5 mr-1.5" /> Save Draft
           </Button>
-          <Button onClick={() => submitMutation.mutate()} disabled={submitMutation.isPending}>
+          <Button
+            onClick={() => submitMutation.mutate()}
+            disabled={submitMutation.isPending || !formData.signatures?.reviewerSigned || !formData.signatures?.employeeSigned}
+            title={!formData.signatures?.reviewerSigned || !formData.signatures?.employeeSigned ? "Both the assessor and coordinator must sign off before completing" : undefined}
+          >
             <Send className="h-3.5 w-3.5 mr-1.5" />
             {submitMutation.isPending ? "Submitting…" : "Complete Appraisal"}
           </Button>
+          {(!formData.signatures?.reviewerSigned || !formData.signatures?.employeeSigned) && (
+            <p className="text-xs text-muted-foreground self-center">Both signatures required to complete.</p>
+          )}
         </div>
       )}
     </div>

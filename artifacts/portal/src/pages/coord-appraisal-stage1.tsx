@@ -171,7 +171,7 @@ export default function CoordAppraisalStage1() {
   };
 
   const allDone = empSubmitted && revSubmitted;
-  const isLocked = appraisal.status !== "stage1" && appraisal.status !== "stage2";
+  const isLocked = allDone;
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8">

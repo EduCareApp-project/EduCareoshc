@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, CheckCircle2, Save, Send, Lock, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -36,13 +37,13 @@ function LikertRow({
   return (
     <div className="border rounded-lg p-4 space-y-3">
       <p className="font-medium text-sm">{statement}</p>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-1.5 overflow-x-auto pb-0.5">
         {LIKERT_OPTIONS.map((opt) => (
           <button
             key={opt.value}
             disabled={disabled}
             onClick={() => onChange({ ...entry, rating: opt.value })}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-all ${
+            className={`px-2 py-1 rounded-md text-xs font-medium border whitespace-nowrap transition-all flex-shrink-0 ${
               entry.rating === opt.value
                 ? "bg-primary text-primary-foreground border-primary"
                 : "border-border text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
@@ -52,6 +53,43 @@ function LikertRow({
           </button>
         ))}
       </div>
+      <div className="space-y-1">
+        <label className="text-xs text-muted-foreground">Comment (optional)</label>
+        <Textarea
+          rows={2}
+          className="text-xs resize-none"
+          placeholder="Add a comment…"
+          value={entry.comment ?? ""}
+          onChange={(e) => onChange({ ...entry, comment: e.target.value })}
+          disabled={disabled}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TextRow({
+  statement,
+  entry,
+  onChange,
+  disabled,
+}: {
+  statement: string;
+  entry: LikertEntry;
+  onChange: (updated: LikertEntry) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="border rounded-lg p-4 space-y-3">
+      <p className="font-medium text-sm">{statement}</p>
+      <Textarea
+        rows={4}
+        className="text-sm resize-y"
+        placeholder="Your response…"
+        value={entry.comment ?? ""}
+        onChange={(e) => onChange({ ...entry, comment: e.target.value })}
+        disabled={disabled}
+      />
     </div>
   );
 }
@@ -179,8 +217,9 @@ export default function CoordAppraisalStage2() {
             <div className="space-y-4">
               {section.statements.map((stmt) => {
                 const entry = entries.find((e) => e.key === stmt.key) ?? { key: stmt.key };
+                const RowComponent = section.key === "finalQuestion" ? TextRow : LikertRow;
                 return (
-                  <LikertRow
+                  <RowComponent
                     key={stmt.key}
                     statement={stmt.statement}
                     entry={entry}

@@ -433,6 +433,7 @@ export interface Stage1Data {
 export interface LikertEntry {
   key: string;
   rating?: number;
+  comment?: string;
 }
 
 export interface Stage2Data {

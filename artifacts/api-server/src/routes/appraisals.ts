@@ -35,8 +35,8 @@ router.get("/appraisals", async (req, res): Promise<void> => {
   let rows = await db.select().from(staffAppraisalsTable).orderBy(desc(staffAppraisalsTable.createdAt));
 
   if (isEduRole && user) {
-    // Educators and coordinators can only see their own appraisals
-    rows = rows.filter((r) => r.staffId === user.id);
+    // Educators and coordinators can see their own appraisals, plus any they are reviewing
+    rows = rows.filter((r) => r.staffId === user.id || r.reviewerId === user.id);
   } else if (staffIdParam) {
     rows = rows.filter((r) => r.staffId === staffIdParam);
   }
@@ -78,7 +78,7 @@ router.get("/appraisals/:id", async (req, res): Promise<void> => {
   const isEduRole = user && EDUCATOR_ROLES.includes(user.role as (typeof EDUCATOR_ROLES)[number]);
   const [row] = await db.select().from(staffAppraisalsTable).where(eq(staffAppraisalsTable.id, id));
   if (!row) { res.status(404).json({ error: "Appraisal not found" }); return; }
-  if (isEduRole && user && row.staffId !== user.id) {
+  if (isEduRole && user && row.staffId !== user.id && row.reviewerId !== user.id) {
     res.status(403).json({ error: "Not permitted" }); return;
   }
   const staffMap = await buildStaffMap();

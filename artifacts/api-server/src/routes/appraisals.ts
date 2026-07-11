@@ -128,12 +128,8 @@ router.put("/appraisals/:id/stage1/employee", async (req, res): Promise<void> =>
     employeeStage1: req.body,
     employeeStage1SubmittedAt: new Date(),
     updatedAt: new Date(),
+    status: "stage2",
   };
-
-  // Auto-advance to stage2 when both parties have submitted
-  if (current.reviewerStage1SubmittedAt) {
-    update.status = "stage2";
-  }
 
   const [row] = await db.update(staffAppraisalsTable).set(update as any).where(eq(staffAppraisalsTable.id, id)).returning();
   const staffMap = await buildStaffMap();
@@ -158,20 +154,15 @@ router.put("/appraisals/:id/stage1/reviewer", async (req, res): Promise<void> =>
   const id = Number(req.params.id);
   const [current] = await db.select().from(staffAppraisalsTable).where(eq(staffAppraisalsTable.id, id));
   if (!current) { res.status(404).json({ error: "Appraisal not found" }); return; }
-  if (current.status !== "stage1") { res.status(400).json({ error: "Appraisal is not in Stage 1" }); return; }
+  if (current.status !== "stage1" && current.status !== "stage2") {
+    res.status(400).json({ error: "Reviewer Stage 1 can only be submitted during Stage 1 or Stage 2" }); return;
+  }
 
-  const update: Record<string, unknown> = {
+  const [row] = await db.update(staffAppraisalsTable).set({
     reviewerStage1: req.body,
     reviewerStage1SubmittedAt: new Date(),
     updatedAt: new Date(),
-  };
-
-  // Auto-advance to stage2 when both parties have submitted
-  if (current.employeeStage1SubmittedAt) {
-    update.status = "stage2";
-  }
-
-  const [row] = await db.update(staffAppraisalsTable).set(update as any).where(eq(staffAppraisalsTable.id, id)).returning();
+  } as any).where(eq(staffAppraisalsTable.id, id)).returning();
   const staffMap = await buildStaffMap();
 
   createNotification({

@@ -406,8 +406,8 @@ export default function CoordAppraisalStage4() {
           <div className="space-y-1.5">
             <Label className="text-xs font-medium text-blue-700 uppercase tracking-wide">Coordinator Signature</Label>
             <Input className="h-9 text-sm" placeholder="Type full name to sign…" value={formData.signatures?.reviewerSigned ? (appraisal.staffName ?? "") : (formData.signatures?.employeeSignedAt ? appraisal.staffName : "")} disabled={submitted || !!formData.signatures?.employeeSigned} onChange={() => {}} readOnly />
-            <label className={`flex items-center gap-2 cursor-pointer ${submitted ? "opacity-50" : ""}`}>
-              <input type="checkbox" checked={!!formData.signatures?.employeeSigned} onChange={(e) => setFormData((d) => d ? { ...d, signatures: { ...d.signatures, employeeSigned: e.target.checked, employeeSignedAt: e.target.checked ? new Date().toISOString() : undefined } } : d)} disabled={submitted} className="h-4 w-4 accent-primary" />
+            <label className={`flex items-center gap-2 cursor-pointer ${formData.signatures?.employeeSigned ? "opacity-50" : ""}`}>
+              <input type="checkbox" checked={!!formData.signatures?.employeeSigned} onChange={(e) => setFormData((d) => d ? { ...d, signatures: { ...d.signatures, employeeSigned: e.target.checked, employeeSignedAt: e.target.checked ? new Date().toISOString() : undefined } } : d)} disabled={!!formData.signatures?.employeeSigned} className="h-4 w-4 accent-primary" />
               <span className="text-sm">I agree with this appraisal</span>
             </label>
             {formData.signatures?.employeeSignedAt && <p className="text-xs text-muted-foreground">Signed {format(new Date(formData.signatures.employeeSignedAt), "dd/MM/yyyy, h:mm a")}</p>}
@@ -424,6 +424,14 @@ export default function CoordAppraisalStage4() {
         </div>
       </div>
 
+      {submitted && !formData.signatures?.employeeSigned && (
+        <div className="flex justify-end gap-3 pt-2">
+          <Button onClick={() => saveDraftMutation.mutate()} disabled={saveDraftMutation.isPending}>
+            <Save className="h-3.5 w-3.5 mr-1.5" />
+            {saveDraftMutation.isPending ? "Saving…" : "Save My Acknowledgement"}
+          </Button>
+        </div>
+      )}
       {!submitted && (
         <div className="flex justify-end gap-3 pt-2">
           <Button variant="outline" onClick={() => saveDraftMutation.mutate()} disabled={saveDraftMutation.isPending}>

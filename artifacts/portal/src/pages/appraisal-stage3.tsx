@@ -552,11 +552,11 @@ export default function AppraisalStage3() {
               )}
             </div>
           </label>
-          <label className={`flex items-center gap-3 border rounded-lg p-4 cursor-pointer select-none transition-all ${formData.signatures.employeeSigned ? "bg-emerald-50 border-emerald-300" : "hover:bg-muted/50"} ${submitted ? "cursor-default" : ""}`}>
+          <label className={`flex items-center gap-3 border rounded-lg p-4 cursor-pointer select-none transition-all ${formData.signatures.employeeSigned ? "bg-emerald-50 border-emerald-300" : "hover:bg-muted/50"} ${formData.signatures.employeeSigned ? "cursor-default" : ""}`}>
             <input
               type="checkbox"
               checked={!!formData.signatures.employeeSigned}
-              disabled={submitted}
+              disabled={!!formData.signatures.employeeSigned}
               onChange={(e) => {
                 const signed = e.target.checked;
                 setFormData((d) => d ? { ...d, signatures: { ...d.signatures, employeeSigned: signed, employeeSignedAt: signed ? new Date().toISOString() : undefined } } : d);
@@ -595,10 +595,16 @@ export default function AppraisalStage3() {
         </div>
       )}
       {submitted && (
-        <div className="flex gap-3 pb-8">
+        <div className="flex flex-wrap items-center gap-3 pb-8">
           <Button variant="outline" onClick={() => navigate(`/appraisals/${id}`)}>
             <ArrowLeft className="h-4 w-4 mr-1.5" /> Back to Appraisal
           </Button>
+          {!formData.signatures.employeeSigned && (
+            <Button onClick={() => saveDraftMutation.mutate()} disabled={saveDraftMutation.isPending}>
+              <Save className="h-4 w-4 mr-1.5" />
+              {saveDraftMutation.isPending ? "Saving…" : "Save My Acknowledgement"}
+            </Button>
+          )}
         </div>
       )}
     </div>

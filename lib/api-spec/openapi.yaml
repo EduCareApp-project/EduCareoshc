@@ -5869,6 +5869,8 @@ components:
           $ref: "#/components/schemas/WeeklyPlanDayEntry"
         creative:
           $ref: "#/components/schemas/WeeklyPlanDayEntry"
+        construction:
+          $ref: "#/components/schemas/WeeklyPlanDayEntry"
         wellbeing:
           $ref: "#/components/schemas/WeeklyPlanDayEntry"
         imaginative:

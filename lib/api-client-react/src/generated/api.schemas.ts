@@ -1616,6 +1616,7 @@ export interface WeeklyPlanData {
   experiencesThemes?: WeeklyPlanDayEntry;
   active?: WeeklyPlanDayEntry;
   creative?: WeeklyPlanDayEntry;
+  construction?: WeeklyPlanDayEntry;
   wellbeing?: WeeklyPlanDayEntry;
   imaginative?: WeeklyPlanDayEntry;
   spontaneousChoice?: WeeklyPlanDayEntry;

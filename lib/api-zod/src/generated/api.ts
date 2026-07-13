@@ -2581,6 +2581,15 @@ export const ListPlanningExperiencesResponseItem = zod.object({
             fri: zod.string().optional(),
           })
           .optional(),
+        construction: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
         wellbeing: zod
           .object({
             mon: zod.string().optional(),
@@ -2709,6 +2718,15 @@ export const CreatePlanningExperienceBody = zod.object({
           })
           .optional(),
         creative: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        construction: zod
           .object({
             mon: zod.string().optional(),
             tue: zod.string().optional(),
@@ -2856,6 +2874,15 @@ export const GetPlanningExperienceResponse = zod.object({
             fri: zod.string().optional(),
           })
           .optional(),
+        construction: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
         wellbeing: zod
           .object({
             mon: zod.string().optional(),
@@ -2980,6 +3007,15 @@ export const UpdatePlanningExperienceBody = zod.object({
           })
           .optional(),
         creative: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        construction: zod
           .object({
             mon: zod.string().optional(),
             tue: zod.string().optional(),
@@ -3115,6 +3151,15 @@ export const UpdatePlanningExperienceResponse = zod.object({
           })
           .optional(),
         creative: zod
+          .object({
+            mon: zod.string().optional(),
+            tue: zod.string().optional(),
+            wed: zod.string().optional(),
+            thu: zod.string().optional(),
+            fri: zod.string().optional(),
+          })
+          .optional(),
+        construction: zod
           .object({
             mon: zod.string().optional(),
             tue: zod.string().optional(),

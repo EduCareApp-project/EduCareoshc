@@ -241,6 +241,8 @@ function OrgDialog({
   );
 }
 
+type Site = { id: number; name: string };
+
 type ResendResult = {
   posts: number;
   emails: number;
@@ -248,77 +250,149 @@ type ResendResult = {
   errors: string[];
 };
 
+type PreviewPost = { id: number; title: string; publishedAt: string | null; siteId: number | null };
+
 function MaintenancePanel() {
   const { toast } = useToast();
-  const [hours, setHours] = useState("48");
+  const [hours, setHours] = useState("96");
+  const [siteId, setSiteId] = useState<string>("all");
+  const [preview, setPreview] = useState<PreviewPost[] | null>(null);
   const [result, setResult] = useState<ResendResult | null>(null);
 
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const data: ResendResult = await apiFetch(
-        `/super-admin/resend-post-notifications?hours=${encodeURIComponent(hours)}`,
-        { method: "POST" },
-      );
-      return data;
+  const { data: sites = [] } = useQuery<Site[]>({
+    queryKey: ["sa-sites"],
+    queryFn: () => apiFetch("/super-admin/sites"),
+  });
+
+  function buildQs() {
+    const p = new URLSearchParams({ hours });
+    if (siteId !== "all") p.set("siteId", siteId);
+    return p.toString();
+  }
+
+  const previewMutation = useMutation({
+    mutationFn: () => apiFetch(`/super-admin/post-preview?${buildQs()}`),
+    onSuccess: (data: PreviewPost[]) => {
+      setPreview(data);
+      setResult(null);
+      if (data.length === 0) toast({ title: `No published posts found in the last ${hours} hours` });
     },
-    onSuccess: (data) => {
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: () => apiFetch(`/super-admin/resend-post-notifications?${buildQs()}`, { method: "POST" }),
+    onSuccess: (data: ResendResult) => {
       setResult(data);
+      setPreview(null);
       toast({
         title: data.emails > 0
           ? `Sent ${data.emails} email${data.emails !== 1 ? "s" : ""} across ${data.posts} post${data.posts !== 1 ? "s" : ""}`
-          : `No published posts found in the last ${hours} hours`,
+          : "No posts found — nothing sent",
       });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
+
+  const isPending = previewMutation.isPending || sendMutation.isPending;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Resend Post Notifications</CardTitle>
         <CardDescription>
-          Re-send guardian notification emails for all posts published in the last N hours.
-          Use this after a sending failure (e.g. SMTP rate-limit error).
+          Re-send guardian notification emails for posts published in the selected window.
+          Use after a sending failure (e.g. SMTP rate-limit error). Preview first, then send.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="space-y-1">
+      <CardContent className="space-y-5">
+        {/* Filters */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Site</label>
+            <select
+              value={siteId}
+              onChange={e => { setSiteId(e.target.value); setPreview(null); setResult(null); }}
+              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              <option value="all">All sites</option>
+              {sites.map(s => <option key={s.id} value={String(s.id)}>{s.name}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Look-back window (hours)</label>
             <input
               type="number"
               min={1}
-              max={168}
+              max={720}
               value={hours}
-              onChange={e => setHours(e.target.value)}
-              className="w-24 rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              onChange={e => { setHours(e.target.value); setPreview(null); setResult(null); }}
+              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
-          <Button
-            className="mt-5"
-            onClick={() => mutation.mutate()}
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? "Sending…" : "Resend Notifications"}
-          </Button>
         </div>
+
+        {/* Step 1 — preview */}
+        {!preview && !result && (
+          <Button onClick={() => previewMutation.mutate()} disabled={isPending} variant="outline">
+            {previewMutation.isPending ? "Searching…" : "Find Posts"}
+          </Button>
+        )}
+
+        {/* Preview result */}
+        {preview && preview.length > 0 && (
+          <div className="space-y-3">
+            <div className="rounded-md border border-border bg-muted/40 p-4 space-y-2">
+              <p className="text-sm font-medium">{preview.length} post{preview.length !== 1 ? "s" : ""} found — ready to notify guardians</p>
+              {preview.map(p => (
+                <p key={p.id} className="text-xs text-muted-foreground">
+                  • <span className="font-medium text-foreground">{p.title}</span>
+                  {p.publishedAt && (
+                    <span className="ml-1">
+                      — published {new Date(p.publishedAt).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  )}
+                </p>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => sendMutation.mutate()} disabled={isPending}>
+                {sendMutation.isPending ? "Sending…" : `Send Notifications (${preview.length} post${preview.length !== 1 ? "s" : ""})`}
+              </Button>
+              <Button variant="outline" onClick={() => setPreview(null)} disabled={isPending}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {preview && preview.length === 0 && (
+          <div className="rounded-md border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+            No published posts found for the selected filters. Try a longer window or a different site.
+          </div>
+        )}
+
+        {/* Send result */}
         {result && (
-          <div className="rounded-md border border-border bg-muted/40 p-4 text-sm space-y-2">
-            <p className="font-medium">
-              {result.emails > 0
-                ? `✓ Dispatched ${result.emails} email${result.emails !== 1 ? "s" : ""} for ${result.posts} post${result.posts !== 1 ? "s" : ""}`
-                : "No posts found in that window"}
-            </p>
-            {result.summary?.map(s => (
-              <p key={s.postId} className="text-muted-foreground text-xs">
-                • <span className="font-medium text-foreground">{s.title}</span> — {s.sent} recipient{s.sent !== 1 ? "s" : ""}
+          <div className="space-y-3">
+            <div className="rounded-md border border-border bg-muted/40 p-4 text-sm space-y-2">
+              <p className="font-medium">
+                {result.emails > 0
+                  ? `✓ Dispatched ${result.emails} email${result.emails !== 1 ? "s" : ""} across ${result.posts} post${result.posts !== 1 ? "s" : ""}`
+                  : "No posts found — nothing was sent"}
               </p>
-            ))}
-            {result.errors.length > 0 && (
-              <p className="text-destructive text-xs mt-1">
-                Errors: {result.errors.join(", ")}
-              </p>
-            )}
+              {result.summary?.map(s => (
+                <p key={s.postId} className="text-xs text-muted-foreground">
+                  • <span className="font-medium text-foreground">{s.title}</span> — {s.sent} recipient{s.sent !== 1 ? "s" : ""}
+                </p>
+              ))}
+              {result.errors.length > 0 && (
+                <p className="text-destructive text-xs mt-1">Errors: {result.errors.join(", ")}</p>
+              )}
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setResult(null)}>
+              Run Again
+            </Button>
           </div>
         )}
       </CardContent>

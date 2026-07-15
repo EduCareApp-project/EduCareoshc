@@ -1,6 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
-import { pool, db, postsTable, childrenTable, parentAccountsTable } from "@workspace/db";
+import { pool, db, postsTable, childrenTable, parentAccountsTable, sitesTable } from "@workspace/db";
 import { and, eq, gte, isNotNull, isNull } from "drizzle-orm";
 import { sendPostNotificationEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
@@ -85,14 +85,38 @@ router.delete("/super-admin/orgs/:id", requireSuperAdmin, async (req, res) => {
   } finally { client.release(); }
 });
 
-router.post("/super-admin/resend-post-notifications", requireSuperAdmin, async (req, res) => {
-  const hours = Math.min(Math.max(parseInt((req.query.hours as string) ?? "48", 10) || 48, 1), 168);
+router.get("/super-admin/sites", requireSuperAdmin, async (req, res) => {
+  const sites = await db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable).orderBy(sitesTable.name);
+  res.json(sites);
+});
+
+router.get("/super-admin/post-preview", requireSuperAdmin, async (req, res) => {
+  const hours = Math.min(Math.max(parseInt((req.query.hours as string) ?? "96", 10) || 96, 1), 720);
+  const siteId = req.query.siteId ? parseInt(req.query.siteId as string, 10) : null;
   const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+
+  const conditions = [gte(postsTable.publishedAt, since), ...(siteId ? [eq(postsTable.siteId, siteId)] : [])];
+
+  const posts = await db
+    .select({ id: postsTable.id, title: postsTable.title, publishedAt: postsTable.publishedAt, siteId: postsTable.siteId })
+    .from(postsTable)
+    .where(and(...conditions))
+    .orderBy(postsTable.publishedAt);
+
+  res.json(posts);
+});
+
+router.post("/super-admin/resend-post-notifications", requireSuperAdmin, async (req, res) => {
+  const hours = Math.min(Math.max(parseInt((req.query.hours as string) ?? "96", 10) || 96, 1), 720);
+  const siteId = req.query.siteId ? parseInt(req.query.siteId as string, 10) : null;
+  const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+
+  const conditions = [gte(postsTable.publishedAt, since), ...(siteId ? [eq(postsTable.siteId, siteId)] : [])];
 
   const posts = await db
     .select()
     .from(postsTable)
-    .where(gte(postsTable.publishedAt, since));
+    .where(and(...conditions));
 
   if (posts.length === 0) {
     res.json({ posts: 0, emails: 0, summary: [], errors: [] });

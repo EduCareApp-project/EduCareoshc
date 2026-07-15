@@ -28,6 +28,7 @@ export interface PostNotificationEmailOptions {
   postTitle: string;
   excerpt: string | null;
   portalUrl: string;
+  firstImageUrl?: string | null;
 }
 
 export interface LoginInstructionsEmailOptions {
@@ -507,10 +508,32 @@ export async function sendPostNotificationEmail(
   }
 
   const intro = branding?.templates?.postNotification?.intro ?? "A new post has been published on the Family Portal.";
-  const excerptHtml = opts.excerpt
-    ? `<p style="color:#555; margin: 0 0 16px;">${opts.excerpt.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`
-    : "";
   const excerptText = opts.excerpt ? `\n\n${opts.excerpt}` : "";
+
+  // Build preview block: image (1/3) + excerpt text (2/3), or text-only if no image
+  function buildPreviewBlock(): string {
+    const safeExcerpt = (opts.excerpt ?? "").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+    if (!opts.firstImageUrl || !opts.excerpt) {
+      return opts.excerpt
+        ? `<p style="color:#555; margin: 0 0 20px; line-height:1.6;">${safeExcerpt}</p>`
+        : "";
+    }
+    const safeImg = opts.firstImageUrl.replace(/"/g, "&quot;");
+    return `
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 20px; border-collapse: collapse;">
+        <tr>
+          <td width="33%" valign="top" style="padding-right: 14px;">
+            <img src="${safeImg}" alt="Post image"
+              style="width:100%; max-width:180px; height:auto; border-radius:8px; display:block; object-fit:cover;" />
+          </td>
+          <td width="67%" valign="top">
+            <p style="color:#555; margin:0; line-height:1.6; font-size:14px;">${safeExcerpt}</p>
+          </td>
+        </tr>
+      </table>
+    `;
+  }
+  const previewBlockHtml = buildPreviewBlock();
 
   const errors: string[] = [];
   await Promise.all(
@@ -537,7 +560,8 @@ export async function sendPostNotificationEmail(
                 ${buildLogoHtml(branding)}
                 <h2 style="margin: 0 0 8px;">New post published</h2>
                 <h3 style="margin: 0 0 12px; color: #2d6a4f;">${opts.postTitle.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</h3>
-                ${excerptHtml}
+                <p style="color:#555; margin: 0 0 16px; line-height:1.6;">${intro.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+                ${previewBlockHtml}
                 <a href="${opts.portalUrl}" style="
                   display: inline-block;
                   margin: 8px 0 16px;

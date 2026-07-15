@@ -187,15 +187,25 @@ router.patch("/posts/:id", async (req, res): Promise<void> => {
       );
 
     const recipients = guardians.map((g) => g.email);
-    const excerpt = ((post.description ?? post.learning ?? "") as string)
+    const plainText = ((post.description ?? post.learning ?? "") as string)
       .replace(/<[^>]*>/g, "")
-      .trim()
-      .slice(0, 200) || null;
+      .trim();
+    const lines = plainText.split(/\n+/).map((l: string) => l.trim()).filter(Boolean);
+    const excerpt = lines.length > 0
+      ? lines.slice(0, 3).join("\n") || null
+      : (plainText.slice(0, 250) || null);
 
-    const portalUrl = `${getAppUrl()}/notices`;
+    const images: string[] = Array.isArray((post as any).images) ? (post as any).images : [];
+    const firstImage = images[0] ?? null;
+    const appUrl = getAppUrl();
+    const firstImageUrl = firstImage
+      ? `${appUrl}/api/storage/objects/${firstImage.replace(/^\/objects\//, "")}`
+      : null;
+
+    const portalUrl = `${appUrl}/notices`;
 
     getEmailBranding().then((branding) =>
-      sendPostNotificationEmail(recipients, { postTitle: post.title, excerpt, portalUrl }, branding)
+      sendPostNotificationEmail(recipients, { postTitle: post.title, excerpt, portalUrl, firstImageUrl }, branding)
     ).catch((err) => {
       req.log.error({ err }, "Post notification email dispatch failed");
     });

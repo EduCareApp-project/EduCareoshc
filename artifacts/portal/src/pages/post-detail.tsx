@@ -101,17 +101,17 @@ function CommentSection({
           <button
             onClick={onLike}
             disabled={likeDisabled}
-            className={`flex items-center gap-1.5 text-sm transition-colors select-none ${
+            className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full border transition-all select-none active:scale-95 disabled:opacity-50 ${
               likedByMe
-                ? "text-rose-500 hover:text-rose-600"
-                : "text-muted-foreground hover:text-rose-500"
+                ? "bg-rose-50 border-rose-300 text-rose-500 hover:bg-rose-100"
+                : "bg-background border-border text-muted-foreground hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50"
             }`}
           >
             <Heart
               className="h-4 w-4 transition-transform active:scale-110"
               fill={likedByMe ? "currentColor" : "none"}
             />
-            <span>{likeCount && likeCount > 0 ? likeCount : ""}</span>
+            {likeCount && likeCount > 0 ? <span>{likeCount}</span> : null}
             <span>{likedByMe ? "Liked" : "Like"}</span>
           </button>
         )}

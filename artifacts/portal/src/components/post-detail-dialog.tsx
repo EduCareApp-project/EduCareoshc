@@ -288,17 +288,17 @@ export function PostDetailDialog({
                   <button
                     onClick={handleLike}
                     disabled={likeMutation.isPending || unlikeMutation.isPending}
-                    className={`flex items-center gap-1.5 text-sm transition-colors select-none ${
+                    className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full border transition-all select-none active:scale-95 disabled:opacity-50 ${
                       post.likedByMe
-                        ? "text-rose-500 hover:text-rose-600"
-                        : "text-muted-foreground hover:text-rose-500"
+                        ? "bg-rose-50 border-rose-300 text-rose-500 hover:bg-rose-100"
+                        : "bg-background border-border text-muted-foreground hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50"
                     }`}
                   >
                     <Heart
                       className="h-4 w-4 transition-transform active:scale-110"
                       fill={post.likedByMe ? "currentColor" : "none"}
                     />
-                    <span>{post.likeCount && post.likeCount > 0 ? post.likeCount : ""}</span>
+                    {post.likeCount && post.likeCount > 0 ? <span>{post.likeCount}</span> : null}
                     <span>{post.likedByMe ? "Liked" : "Like"}</span>
                   </button>
                 </div>

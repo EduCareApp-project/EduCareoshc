@@ -123,8 +123,23 @@ function buildEmailPreview(
     case "postNotification":
       return shell(`
         <h2 style="margin:0 0 6px;font-size:22px;color:#111;">New post published</h2>
-        <h3 style="margin:0 0 14px;color:${accent};font-size:17px;">Sample Post Title</h3>
-        <p style="color:#555;margin:0 0 20px;">${intro}</p>
+        <h3 style="margin:0 0 14px;color:${accent};font-size:17px;">Afternoon at the Sandpit — Exploring Together</h3>
+        <p style="color:#555;margin:0 0 16px;line-height:1.6;">${intro}</p>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;border-collapse:collapse;">
+          <tr>
+            <td width="33%" valign="top" style="padding-right:14px;">
+              <img src="https://placehold.co/180x120/d8eddf/2d6a4f?text=📸+Photo" alt="Post image"
+                style="width:100%;max-width:180px;height:auto;border-radius:8px;display:block;" />
+            </td>
+            <td width="67%" valign="top">
+              <p style="color:#555;margin:0;line-height:1.6;font-size:14px;">
+                This afternoon the children spent time exploring the sandpit together, building tunnels and sharing tools with their friends.<br>
+                We observed some wonderful collaborative play and problem-solving as they worked to keep their structure from collapsing.<br>
+                A great example of Outcome 2 — contributing to their world through teamwork and shared discovery.
+              </p>
+            </td>
+          </tr>
+        </table>
         <a class="btn" href="#">Read post</a>
         <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
         <p style="color:#aaa;font-size:12px;margin:0;">You received this email because you have a Family Portal account.</p>`);

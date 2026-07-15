@@ -1,6 +1,11 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
-import { pool } from "@workspace/db";
+import { pool, db, postsTable, childrenTable, parentAccountsTable } from "@workspace/db";
+import { and, eq, gte, isNotNull, isNull } from "drizzle-orm";
+import { sendPostNotificationEmail } from "../lib/email";
+import { getEmailBranding } from "../lib/emailBranding";
+import { getAppUrl } from "../lib/appUrl";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -78,6 +83,82 @@ router.delete("/super-admin/orgs/:id", requireSuperAdmin, async (req, res) => {
     await client.query("DELETE FROM super_admin_orgs WHERE id=$1", [id]);
     res.json({ ok: true });
   } finally { client.release(); }
+});
+
+router.post("/super-admin/resend-post-notifications", requireSuperAdmin, async (req, res) => {
+  const hours = Math.min(Math.max(parseInt((req.query.hours as string) ?? "48", 10) || 48, 1), 168);
+  const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+
+  const posts = await db
+    .select()
+    .from(postsTable)
+    .where(gte(postsTable.publishedAt, since));
+
+  if (posts.length === 0) {
+    res.json({ posts: 0, emails: 0, errors: [] });
+    return;
+  }
+
+  const appUrl = getAppUrl();
+  const branding = await getEmailBranding();
+  const portalUrl = `${appUrl}/notices`;
+
+  const summary: { postId: number; title: string; sent: number }[] = [];
+  const allErrors: string[] = [];
+
+  for (const post of posts) {
+    const childJoinConditions = [
+      eq(childrenTable.guardianEmail, parentAccountsTable.guardianEmail),
+      eq(childrenTable.status, "active"),
+      ...(post.siteId ? [eq(childrenTable.siteId, post.siteId)] : []),
+    ];
+
+    const guardians = await db
+      .selectDistinct({ email: parentAccountsTable.guardianEmail })
+      .from(parentAccountsTable)
+      .innerJoin(childrenTable, and(...childJoinConditions))
+      .where(
+        and(
+          isNotNull(parentAccountsTable.passwordHash),
+          isNull(parentAccountsTable.blockedAt),
+        ),
+      );
+
+    const recipients = guardians.map((g) => g.email).filter(Boolean) as string[];
+
+    const plainText = ((post.description ?? (post as any).learning ?? "") as string)
+      .replace(/<[^>]*>/g, "")
+      .trim();
+    const lines = plainText.split(/\n+/).map((l: string) => l.trim()).filter(Boolean);
+    const excerpt = lines.length > 0
+      ? lines.slice(0, 3).join("\n") || null
+      : (plainText.slice(0, 250) || null);
+
+    const images: string[] = Array.isArray((post as any).images) ? (post as any).images : [];
+    const firstImage = images[0] ?? null;
+    const firstImageUrl = firstImage
+      ? `${appUrl}/api/storage/objects/${firstImage.replace(/^\/objects\//, "")}`
+      : null;
+
+    try {
+      await sendPostNotificationEmail(
+        recipients,
+        { postTitle: post.title, excerpt, portalUrl, firstImageUrl },
+        branding,
+      );
+      summary.push({ postId: post.id, title: post.title, sent: recipients.length });
+    } catch (err) {
+      logger.error({ err, postId: post.id }, "Resend post notification failed");
+      allErrors.push(`post:${post.id}`);
+    }
+  }
+
+  res.json({
+    posts: posts.length,
+    emails: summary.reduce((n, s) => n + s.sent, 0),
+    summary,
+    errors: allErrors,
+  });
 });
 
 export default router;

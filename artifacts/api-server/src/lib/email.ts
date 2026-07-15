@@ -17,6 +17,10 @@ import path from "path";
 import nodemailer from "nodemailer";
 import { logger } from "./logger";
 
+/** Resend SMTP allows 2 requests/sec — wait between each send to stay under the limit. */
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const SEND_DELAY_MS = 600;
+
 export interface BehaviouralNotificationEmailOptions {
   childName: string;
   behaviourDescription: string;
@@ -355,10 +359,10 @@ export async function sendGuardianNoticeEmail(
     : "";
 
   const errors: string[] = [];
-  await Promise.all(
-    recipients.map(async (email) => {
-      try {
-        await transport.sendMail({
+  for (let i = 0; i < recipients.length; i++) {
+    const email = recipients[i];
+    try {
+      await transport.sendMail({
           from: `"${fromName(branding)}" <${from}>`,
           to: email,
           subject,
@@ -405,8 +409,8 @@ export async function sendGuardianNoticeEmail(
         errors.push(email);
         logger.error({ email, err }, "Failed to send guardian notice email");
       }
-    }),
-  );
+      if (i < recipients.length - 1) await sleep(SEND_DELAY_MS);
+  }
 
   const sent = recipients.length - errors.length;
   logger.info({ sent, failed: errors.length }, "Guardian notice emails dispatched");
@@ -440,10 +444,10 @@ export async function sendWeeklyPlanPublishedEmail(
     : `<p style="color:#555; margin: 0 0 16px;">A new weekly learning program has been published on the Family Portal.</p>`;
 
   const errors: string[] = [];
-  await Promise.all(
-    recipients.map(async (email) => {
-      try {
-        await transport.sendMail({
+  for (let i = 0; i < recipients.length; i++) {
+    const email = recipients[i];
+    try {
+      await transport.sendMail({
           from: `"${fromName(branding)}" <${from}>`,
           to: email,
           subject,
@@ -485,8 +489,8 @@ export async function sendWeeklyPlanPublishedEmail(
         errors.push(email);
         logger.error({ email, err }, "Failed to send weekly plan email");
       }
-    }),
-  );
+      if (i < recipients.length - 1) await sleep(SEND_DELAY_MS);
+  }
 
   const sent = recipients.length - errors.length;
   logger.info({ sent, failed: errors.length }, "Weekly plan published emails dispatched");
@@ -536,10 +540,10 @@ export async function sendPostNotificationEmail(
   const previewBlockHtml = buildPreviewBlock();
 
   const errors: string[] = [];
-  await Promise.all(
-    recipients.map(async (email) => {
-      try {
-        await transport.sendMail({
+  for (let i = 0; i < recipients.length; i++) {
+    const email = recipients[i];
+    try {
+      await transport.sendMail({
           from: `"${fromName(branding)}" <${from}>`,
           to: email,
           subject: `New post: ${opts.postTitle}`,
@@ -582,8 +586,8 @@ export async function sendPostNotificationEmail(
         errors.push(email);
         logger.error({ email, err }, "Failed to send post notification email");
       }
-    }),
-  );
+      if (i < recipients.length - 1) await sleep(SEND_DELAY_MS);
+  }
 
   const sent = recipients.length - errors.length;
   logger.info({ sent, failed: errors.length }, "Post notification emails dispatched");

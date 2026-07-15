@@ -309,7 +309,7 @@ function MaintenancePanel() {
                 ? `✓ Dispatched ${result.emails} email${result.emails !== 1 ? "s" : ""} for ${result.posts} post${result.posts !== 1 ? "s" : ""}`
                 : "No posts found in that window"}
             </p>
-            {result.summary.map(s => (
+            {result.summary?.map(s => (
               <p key={s.postId} className="text-muted-foreground text-xs">
                 • <span className="font-medium text-foreground">{s.title}</span> — {s.sent} recipient{s.sent !== 1 ? "s" : ""}
               </p>

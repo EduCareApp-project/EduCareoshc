@@ -95,7 +95,7 @@ router.post("/super-admin/resend-post-notifications", requireSuperAdmin, async (
     .where(gte(postsTable.publishedAt, since));
 
   if (posts.length === 0) {
-    res.json({ posts: 0, emails: 0, errors: [] });
+    res.json({ posts: 0, emails: 0, summary: [], errors: [] });
     return;
   }
 

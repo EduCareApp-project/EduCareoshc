@@ -40,7 +40,18 @@ function requireSuperAdmin(req: any, res: any, next: any) {
 router.get("/super-admin/orgs", requireSuperAdmin, async (req, res) => {
   const client = await pool.connect();
   try {
-    const result = await client.query("SELECT * FROM super_admin_orgs ORDER BY created_at DESC");
+    const result = await client.query(`
+      SELECT o.*,
+        COALESCE(
+          json_agg(json_build_object('id', s.id, 'name', s.name) ORDER BY s.name)
+          FILTER (WHERE s.id IS NOT NULL),
+          '[]'::json
+        ) AS sites
+      FROM super_admin_orgs o
+      LEFT JOIN sites s ON s.org_id = o.id
+      GROUP BY o.id
+      ORDER BY o.created_at DESC
+    `);
     res.json(result.rows);
   } finally { client.release(); }
 });

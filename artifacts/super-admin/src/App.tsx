@@ -27,6 +27,8 @@ async function apiFetch(path: string, opts?: RequestInit) {
   return res.json();
 }
 
+type OrgSite = { id: number; name: string };
+
 type Org = {
   id: number;
   name: string;
@@ -37,6 +39,7 @@ type Org = {
   status: "active" | "provisioning" | "archived";
   notes: string | null;
   created_at: string;
+  sites: OrgSite[];
 };
 
 const STATUS_COLOURS: Record<string, string> = {
@@ -550,6 +553,23 @@ function HubPage({ onLogout }: { onLogout: () => void }) {
                       <div className="text-xs text-muted-foreground">
                         {org.contact_name && <p className="font-medium text-foreground">{org.contact_name}</p>}
                         {org.contact_email && <p>{org.contact_email}</p>}
+                      </div>
+                    )}
+                    {org.sites && org.sites.length > 0 && (
+                      <div className="pt-0.5">
+                        <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                          {org.sites.length} site{org.sites.length !== 1 ? "s" : ""}
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {org.sites.map(s => (
+                            <span
+                              key={s.id}
+                              className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground border border-border"
+                            >
+                              {s.name}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
                     {org.notes && (

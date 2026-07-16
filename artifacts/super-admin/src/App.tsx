@@ -255,18 +255,18 @@ type PreviewPost = { id: number; title: string; publishedAt: string | null; site
 function MaintenancePanel() {
   const { toast } = useToast();
   const [hours, setHours] = useState("96");
-  const [siteId, setSiteId] = useState<string>("all");
+  const [orgId, setOrgId] = useState<string>("all");
   const [preview, setPreview] = useState<PreviewPost[] | null>(null);
   const [result, setResult] = useState<ResendResult | null>(null);
 
-  const { data: sites = [] } = useQuery<Site[]>({
-    queryKey: ["sa-sites"],
-    queryFn: () => apiFetch("/super-admin/sites"),
+  const { data: orgs = [] } = useQuery<Org[]>({
+    queryKey: ["sa-orgs"],
+    queryFn: () => apiFetch("/super-admin/orgs"),
   });
 
   function buildQs() {
     const p = new URLSearchParams({ hours });
-    if (siteId !== "all") p.set("siteId", siteId);
+    if (orgId !== "all") p.set("orgId", orgId);
     return p.toString();
   }
 
@@ -309,14 +309,14 @@ function MaintenancePanel() {
         {/* Filters */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Site</label>
+            <label className="text-xs font-medium text-muted-foreground">Organisation</label>
             <select
-              value={siteId}
-              onChange={e => { setSiteId(e.target.value); setPreview(null); setResult(null); }}
+              value={orgId}
+              onChange={e => { setOrgId(e.target.value); setPreview(null); setResult(null); }}
               className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
             >
-              <option value="all">All sites</option>
-              {sites.map(s => <option key={s.id} value={String(s.id)}>{s.name}</option>)}
+              <option value="all">All organisations</option>
+              {orgs.map(o => <option key={o.id} value={String(o.id)}>{o.name}</option>)}
             </select>
           </div>
           <div className="space-y-1.5">

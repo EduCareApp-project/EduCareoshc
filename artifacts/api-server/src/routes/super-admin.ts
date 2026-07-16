@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
 import { pool, db, postsTable, childrenTable, parentAccountsTable, sitesTable } from "@workspace/db";
-import { and, eq, gte, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, isNull } from "drizzle-orm";
 import { sendPostNotificationEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 import { getAppUrl } from "../lib/appUrl";
@@ -86,16 +86,39 @@ router.delete("/super-admin/orgs/:id", requireSuperAdmin, async (req, res) => {
 });
 
 router.get("/super-admin/sites", requireSuperAdmin, async (req, res) => {
-  const sites = await db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable).orderBy(sitesTable.name);
+  const orgId = req.query.orgId ? parseInt(req.query.orgId as string, 10) : null;
+  const sites = await db
+    .select({ id: sitesTable.id, name: sitesTable.name, orgId: sitesTable.orgId })
+    .from(sitesTable)
+    .where(orgId ? eq(sitesTable.orgId, orgId) : undefined)
+    .orderBy(sitesTable.name);
   res.json(sites);
 });
 
+/** Build post WHERE conditions filtered to an org's sites (or all sites if no orgId). */
+async function orgPostConditions(since: Date, orgId: number | null) {
+  const conditions: ReturnType<typeof gte>[] = [gte(postsTable.publishedAt, since)];
+  if (orgId) {
+    const orgSites = await db
+      .select({ id: sitesTable.id })
+      .from(sitesTable)
+      .where(eq(sitesTable.orgId, orgId));
+    const siteIds = orgSites.map((s) => s.id);
+    if (siteIds.length > 0) {
+      conditions.push(inArray(postsTable.siteId, siteIds) as any);
+    } else {
+      // Org has no sites yet — return nothing
+      conditions.push(eq(postsTable.id, -1) as any);
+    }
+  }
+  return conditions;
+}
+
 router.get("/super-admin/post-preview", requireSuperAdmin, async (req, res) => {
   const hours = Math.min(Math.max(parseInt((req.query.hours as string) ?? "96", 10) || 96, 1), 720);
-  const siteId = req.query.siteId ? parseInt(req.query.siteId as string, 10) : null;
+  const orgId = req.query.orgId ? parseInt(req.query.orgId as string, 10) : null;
   const since = new Date(Date.now() - hours * 60 * 60 * 1000);
-
-  const conditions = [gte(postsTable.publishedAt, since), ...(siteId ? [eq(postsTable.siteId, siteId)] : [])];
+  const conditions = await orgPostConditions(since, orgId);
 
   const posts = await db
     .select({ id: postsTable.id, title: postsTable.title, publishedAt: postsTable.publishedAt, siteId: postsTable.siteId })
@@ -108,10 +131,9 @@ router.get("/super-admin/post-preview", requireSuperAdmin, async (req, res) => {
 
 router.post("/super-admin/resend-post-notifications", requireSuperAdmin, async (req, res) => {
   const hours = Math.min(Math.max(parseInt((req.query.hours as string) ?? "96", 10) || 96, 1), 720);
-  const siteId = req.query.siteId ? parseInt(req.query.siteId as string, 10) : null;
+  const orgId = req.query.orgId ? parseInt(req.query.orgId as string, 10) : null;
   const since = new Date(Date.now() - hours * 60 * 60 * 1000);
-
-  const conditions = [gte(postsTable.publishedAt, since), ...(siteId ? [eq(postsTable.siteId, siteId)] : [])];
+  const conditions = await orgPostConditions(since, orgId);
 
   const posts = await db
     .select()

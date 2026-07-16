@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, gte, count, desc, isNotNull, and, lte } from "drizzle-orm";
+import { eq, gte, count, desc, isNotNull, and, lte, ne } from "drizzle-orm";
 import { db, childrenTable, staffTable, observationsTable, programsTable, nqsAreasTable, outcomesTable, postsTable, incidentsTable, conditionReportsTable, sitesTable, planningExperiencesTable, staffQualificationsTable, jottingsTable } from "@workspace/db";
 import {
   GetDashboardSummaryResponse,
@@ -16,7 +16,7 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
     .select({ count: count() })
     .from(childrenTable)
     .where(eq(childrenTable.status, "active"));
-  const [totalStaffResult] = await db.select({ count: count() }).from(staffTable);
+  const [totalStaffResult] = await db.select({ count: count() }).from(staffTable).where(ne(staffTable.isSuperAdmin, true));
   const [totalObsResult] = await db.select({ count: count() }).from(observationsTable);
 
   const sevenDaysAgo = new Date();

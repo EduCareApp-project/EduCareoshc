@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, ne } from "drizzle-orm";
 import { db, staffTable } from "@workspace/db";
 import {
   CreateStaffBody,
@@ -21,7 +21,11 @@ function isEducatorRole(role: string | undefined | null): role is EducatorRole {
 const router: IRouter = Router();
 
 router.get("/staff", async (req, res): Promise<void> => {
-  const staff = await db.select().from(staffTable).orderBy(staffTable.lastName);
+  const staff = await db
+    .select()
+    .from(staffTable)
+    .where(ne(staffTable.isSuperAdmin, true))
+    .orderBy(staffTable.lastName);
   res.json(ListStaffResponse.parse(staff));
 });
 
@@ -60,6 +64,11 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const [existing] = await db.select().from(staffTable).where(eq(staffTable.id, params.data.id));
+  if (existing?.isSuperAdmin) {
+    res.status(403).json({ error: "This account cannot be modified." });
+    return;
+  }
   const user = req.session?.user;
   const updateData = { ...parsed.data };
   if (isEducatorRole(user?.role)) {
@@ -88,6 +97,11 @@ router.patch("/staff/:id/archive", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
+  const [existing] = await db.select().from(staffTable).where(eq(staffTable.id, params.data.id));
+  if (existing?.isSuperAdmin) {
+    res.status(403).json({ error: "This account cannot be modified." });
+    return;
+  }
   const [member] = await db
     .update(staffTable)
     .set({ status: "inactive", blockedAt: new Date() } as any)
@@ -109,6 +123,11 @@ router.delete("/staff/:id", async (req, res): Promise<void> => {
   const params = GetStaffParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const [existing] = await db.select().from(staffTable).where(eq(staffTable.id, params.data.id));
+  if (existing?.isSuperAdmin) {
+    res.status(403).json({ error: "This account cannot be modified." });
     return;
   }
   const [deleted] = await db

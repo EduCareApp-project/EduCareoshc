@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { sitesTable } from "./sites";
@@ -21,6 +21,7 @@ export const staffTable = pgTable("staff", {
   blockedAt: timestamp("blocked_at", { withTimezone: true }),
   passwordHash: text("password_hash"),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  isSuperAdmin: boolean("is_super_admin").notNull().default(false),
 });
 
 export const insertStaffSchema = createInsertSchema(staffTable).omit({ id: true, createdAt: true });

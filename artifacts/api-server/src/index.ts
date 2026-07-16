@@ -86,6 +86,32 @@ async function seedElysiumOshc(): Promise<void> {
       `UPDATE sites SET org_id = $1 WHERE org_id IS NULL`,
       [orgId],
     );
+
+    // Seed the super admin staff account using the same credentials as the
+    // super admin dashboard. Uses ON CONFLICT (email) DO NOTHING so it is
+    // safe to run on every restart.
+    const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
+    const superAdminHash  = process.env.SUPER_ADMIN_PASSWORD_HASH;
+    if (superAdminEmail && superAdminHash) {
+      await client.query(`
+        INSERT INTO staff
+          (first_name, last_name, email, role, qualifications, status,
+           password_hash, is_super_admin, site_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, true, NULL)
+        ON CONFLICT (email) DO UPDATE
+          SET is_super_admin = true,
+              password_hash  = EXCLUDED.password_hash,
+              role           = EXCLUDED.role
+      `, [
+        "EduCare",
+        "Support",
+        superAdminEmail.toLowerCase().trim(),
+        "admin",
+        "",
+        "active",
+        superAdminHash,
+      ]);
+    }
   } finally {
     client.release();
   }

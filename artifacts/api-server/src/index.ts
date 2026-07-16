@@ -1,7 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { logEmailConfig } from "./lib/email";
-import { db, notificationSettingsTable } from "@workspace/db";
+import { db, notificationSettingsTable, pool } from "@workspace/db";
 import { sql } from "drizzle-orm";
 
 const rawPort = process.env["PORT"];
@@ -49,6 +49,48 @@ async function seedNotificationSettings(): Promise<void> {
   }
 }
 
+async function seedElysiumOshc(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    // Insert Elysium OSHC into super_admin_orgs if it doesn't already exist
+    const result = await client.query(`
+      INSERT INTO super_admin_orgs (name, domain, contact_name, contact_email, status, notes, portal_org_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT DO NOTHING
+      RETURNING id
+    `, [
+      "Elysium OSHC",
+      "https://edu-care-framework.replit.app",
+      "Matthew Hine",
+      "matt@elysiumoshc.com.au",
+      "active",
+      "Primary development organisation",
+      "565659A",
+    ]);
+
+    // Determine the org id (either just inserted or pre-existing)
+    let orgId: number;
+    if (result.rows.length > 0) {
+      orgId = result.rows[0].id;
+    } else {
+      const existing = await client.query(
+        `SELECT id FROM super_admin_orgs WHERE name = $1 LIMIT 1`,
+        ["Elysium OSHC"],
+      );
+      if (existing.rows.length === 0) return;
+      orgId = existing.rows[0].id;
+    }
+
+    // Link any unlinked sites to this org
+    await client.query(
+      `UPDATE sites SET org_id = $1 WHERE org_id IS NULL`,
+      [orgId],
+    );
+  } finally {
+    client.release();
+  }
+}
+
 app.listen(port, async (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");
@@ -63,5 +105,12 @@ app.listen(port, async (err) => {
     logger.info("Notification settings seeded");
   } catch (seedErr) {
     logger.warn({ err: seedErr }, "Failed to seed notification settings");
+  }
+
+  try {
+    await seedElysiumOshc();
+    logger.info("Elysium OSHC org seeded");
+  } catch (seedErr) {
+    logger.warn({ err: seedErr }, "Failed to seed Elysium OSHC org");
   }
 });

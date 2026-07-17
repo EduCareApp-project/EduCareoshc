@@ -78,80 +78,83 @@ async function addToLibrary(
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "../..");
 
 const DOCS: { file: string; displayName: string; category: string }[] = [
+  // ── Operations ──────────────────────────────────────────────────────
   {
-    file: "attached_assets/HR-02_EOSHC_Pay_Guide_2025_1784260122506.pdf",
-    displayName: "HR-02 Pay Guide 2025",
-    category: "Human Resources",
+    file: "attached_assets/OP-01_EOSHC_Centre_Policies_and_Procedures_2025_v25.2_SOR_Only_1784260192703.pdf",
+    displayName: "OP-01 Centre Policies & Procedures 2025",
+    category: "Operations",
   },
   {
-    file: "attached_assets/HR-04_Position_Description_-_Coordinator_1784260122507.pdf",
-    displayName: "HR-04 Position Description – Program Coordinator",
-    category: "Human Resources",
+    file: "attached_assets/OP-02_Enrolment_Form_v6_Print_1784260192703.pdf",
+    displayName: "OP-02 Enrolment Form",
+    category: "Operations",
   },
   {
-    file: "attached_assets/HR-05_Position_Description_-_Assistant(s)_1784260122507.pdf",
-    displayName: "HR-05 Position Description – Program Assistant",
-    category: "Human Resources",
+    file: "attached_assets/OP-03_MedicationRecord_1784260192703.pdf",
+    displayName: "OP-03 Medication Record",
+    category: "Operations",
   },
   {
-    file: "attached_assets/HR-08_DET_Staff_Record_v2_1784260122507.pdf",
-    displayName: "HR-08 Staff Record",
-    category: "Human Resources",
+    file: "attached_assets/OP-04_Long_Term_Medications_Form_1784260192703.pdf",
+    displayName: "OP-04 Long Term Medications Form",
+    category: "Operations",
   },
   {
-    file: "attached_assets/HR-09_NS01_NominatedSupervisorConsentForm_v5_1784260122507.pdf",
-    displayName: "HR-09 Nominated Supervisor Consent Form",
-    category: "Human Resources",
+    file: "attached_assets/OP-07_Individual_Dietary_Form_1784260192703.pdf",
+    displayName: "OP-07 Individual Dietary Form",
+    category: "Operations",
   },
   {
-    file: "attached_assets/HR-10_Responsible_Person_Declaration_1784260122507.pdf",
-    displayName: "HR-10 Responsible Person Declaration",
-    category: "Human Resources",
+    file: "attached_assets/OP-11_RP_Diary_Holiday_Program_1784260192704.pdf",
+    displayName: "OP-11 RP Diary – Holiday Program",
+    category: "Operations",
   },
   {
-    file: "attached_assets/HR-11_TFN-declaration-form_1784260122507.pdf",
-    displayName: "HR-11 TFN Declaration Form",
-    category: "Human Resources",
+    file: "attached_assets/OP-12_Incident,_injury,_trauma_and_illness_record_Butler_Versi_1784260192704.pdf",
+    displayName: "OP-12 Incident, Injury, Trauma & Illness Record",
+    category: "Operations",
   },
   {
-    file: "attached_assets/HR-12_Superannuation_Form_1784260122507.pdf",
-    displayName: "HR-12 Superannuation Choice Form",
-    category: "Human Resources",
+    file: "attached_assets/OP-13_Blank_Weekly_Rolls_1784260192704.pdf",
+    displayName: "OP-13 Blank Weekly Rolls",
+    category: "Operations",
   },
   {
-    file: "attached_assets/HR-13_Workplace_relations_fact_sheet_1784260122507.pdf",
-    displayName: "HR-13 Workplace Relations Fact Sheet",
-    category: "Human Resources",
+    file: "attached_assets/OP-15_Emergency-Evacuation-Rehearsal-Record_1784260192704.pdf",
+    displayName: "OP-15 Emergency Evacuation Rehearsal Record",
+    category: "Operations",
+  },
+  // ── Program & Planning ──────────────────────────────────────────────
+  {
+    file: "attached_assets/PA-03_Activity_Evaluation_1784260192704.pdf",
+    displayName: "PA-03 Activity Evaluation",
+    category: "Program & Planning",
   },
   {
-    file: "attached_assets/HR-14_Fair-Work-Information-Statement_1784260122507.pdf",
-    displayName: "HR-14 Fair Work Information Statement",
-    category: "Human Resources",
+    file: "attached_assets/PA-04_Observation-Record-OSHC_v2_1784260192704.pdf",
+    displayName: "PA-04 Observation Record",
+    category: "Program & Planning",
   },
   {
-    file: "attached_assets/HR-18_ComplianceHistoryStatementForAPersonToBeAPersonInDaytoDa_1784260122507.pdf",
-    displayName: "HR-18 Compliance History Statement",
-    category: "Human Resources",
+    file: "attached_assets/PA-06_Child_Profile_1784260192704.pdf",
+    displayName: "PA-06 Child Profile",
+    category: "Program & Planning",
+  },
+  // ── Verification Records ────────────────────────────────────────────
+  {
+    file: "attached_assets/VR-01_Guild_P00044609_CertificateOfCurrencyLiability_1784260192704.pdf",
+    displayName: "VR-01 Certificate of Currency – Liability Insurance",
+    category: "Verification Records",
   },
   {
-    file: "attached_assets/HR-21_Staff_Handbook_OSHC_v2_100722_1784260122507.pdf",
-    displayName: "HR-21 Staff Handbook",
-    category: "Human Resources",
+    file: "attached_assets/VR-02_Work_Cover_CoC_2025-26_1784260192705.pdf",
+    displayName: "VR-02 WorkCover Certificate of Currency 2025–26",
+    category: "Verification Records",
   },
   {
-    file: "attached_assets/HR-22_QA4_Code_of_Conduct_Staff_Acknowledgement_OSHC_V1_1784260122508.pdf",
-    displayName: "HR-22 Code of Conduct & Staff Acknowledgement",
-    category: "Human Resources",
-  },
-  {
-    file: "attached_assets/HR-23_EOSHC_Staff_Policies_2019_1784260122508.pdf",
-    displayName: "HR-23 Staff Policies Manual",
-    category: "Human Resources",
-  },
-  {
-    file: "attached_assets/HR-24_Workplace_Injury_Form_-_Staff_1784260122508.pdf",
-    displayName: "HR-24 Workplace Injury Form – Staff",
-    category: "Human Resources",
+    file: "attached_assets/VR-03_Provider_approval_and_certificate_ELYSIUM_BRANDS_PTY._LT_1784260192705.pdf",
+    displayName: "VR-03 Provider Approval Certificate",
+    category: "Verification Records",
   },
 ];
 
@@ -161,11 +164,13 @@ async function main() {
     const hrId  = await ensureCategory(client, "Human Resources",    10);
     const opId  = await ensureCategory(client, "Operations",         20);
     const paId  = await ensureCategory(client, "Program & Planning", 30);
+    const vrId  = await ensureCategory(client, "Verification Records", 40);
 
     const catMap: Record<string, number> = {
-      "Human Resources":    hrId,
-      "Operations":         opId,
-      "Program & Planning": paId,
+      "Human Resources":      hrId,
+      "Operations":           opId,
+      "Program & Planning":   paId,
+      "Verification Records": vrId,
     };
 
     // Seed position counters from current DB max so new docs append correctly

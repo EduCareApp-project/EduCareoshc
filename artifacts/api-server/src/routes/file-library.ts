@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { db, fileLibraryTable, fileCategoriesTable } from "@workspace/db";
 import {
   CreateFileLibraryItemBody, DeleteFileLibraryItemParams,
@@ -23,6 +23,7 @@ router.get("/file-library", async (_req, res): Promise<void> => {
     })
     .from(fileLibraryTable)
     .leftJoin(fileCategoriesTable, eq(fileLibraryTable.categoryId, fileCategoriesTable.id))
+    .where(isNull(fileLibraryTable.siteId))
     .orderBy(fileCategoriesTable.sortOrder, fileCategoriesTable.name, fileLibraryTable.position, fileLibraryTable.name);
   res.json(ListFileLibraryResponse.parse(rows));
 });

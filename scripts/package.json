@@ -15,5 +15,8 @@
     "bcryptjs": "^3.0.3",
     "pg": "^8.13.3",
     "tsx": "catalog:"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^7.19.0"
   }
 }

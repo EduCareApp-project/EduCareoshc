@@ -1143,6 +1143,10 @@ importers:
         version: 19.2.14
 
   scripts:
+    dependencies:
+      '@google-cloud/storage':
+        specifier: ^7.19.0
+        version: 7.19.0
     devDependencies:
       '@types/bcryptjs':
         specifier: ^3.0.0

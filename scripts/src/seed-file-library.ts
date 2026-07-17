@@ -31,6 +31,12 @@ function parseObjectPath(path: string) {
   return { bucketName: parts[1], objectName: parts.slice(2).join("/") };
 }
 
+function contentTypeForPath(localPath: string): string {
+  if (localPath.endsWith(".pdf")) return "application/pdf";
+  if (localPath.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  return "application/octet-stream";
+}
+
 async function uploadFile(localPath: string): Promise<string> {
   const privateDir = process.env.PRIVATE_OBJECT_DIR;
   if (!privateDir) throw new Error("PRIVATE_OBJECT_DIR not set");
@@ -39,7 +45,7 @@ async function uploadFile(localPath: string): Promise<string> {
   const { bucketName, objectName } = parseObjectPath(fullPath);
   const buf = readFileSync(localPath);
   await gcsClient.bucket(bucketName).file(objectName).save(buf, {
-    contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    contentType: contentTypeForPath(localPath),
   });
   return `/objects/uploads/${uuid}`;
 }
@@ -73,64 +79,79 @@ const ROOT = resolve(new URL(".", import.meta.url).pathname, "../..");
 
 const DOCS: { file: string; displayName: string; category: string }[] = [
   {
-    file: "attached_assets/HR-16_Annual_Qualification_Review_1784260060004.docx",
-    displayName: "HR-16 Annual Qualification Review",
+    file: "attached_assets/HR-02_EOSHC_Pay_Guide_2025_1784260122506.pdf",
+    displayName: "HR-02 Pay Guide 2025",
     category: "Human Resources",
   },
   {
-    file: "attached_assets/HR-17_Appraisal_&_Performance_Development_Plan-_Program_Assis_1784260060004.docx",
-    displayName: "HR-17 Appraisal & Performance Development Plan – Program Assistant",
+    file: "attached_assets/HR-04_Position_Description_-_Coordinator_1784260122507.pdf",
+    displayName: "HR-04 Position Description – Program Coordinator",
     category: "Human Resources",
   },
   {
-    file: "attached_assets/HR-19_Interview_questions_for_new_Employees_1784260060004.docx",
-    displayName: "HR-19 Interview Questions for New Employees",
+    file: "attached_assets/HR-05_Position_Description_-_Assistant(s)_1784260122507.pdf",
+    displayName: "HR-05 Position Description – Program Assistant",
     category: "Human Resources",
   },
   {
-    file: "attached_assets/OP-05_Medical_Condition_Communication_Plan_-_Sample_1784260060004.docx",
-    displayName: "OP-05 Medical Condition Communication Plan – Sample",
-    category: "Operations",
+    file: "attached_assets/HR-08_DET_Staff_Record_v2_1784260122507.pdf",
+    displayName: "HR-08 Staff Record",
+    category: "Human Resources",
   },
   {
-    file: "attached_assets/OP-06_Individual_Medical_RISK_Plan_-_Sample_1784260060005.docx",
-    displayName: "OP-06 Individual Medical Risk Plan – Sample",
-    category: "Operations",
+    file: "attached_assets/HR-09_NS01_NominatedSupervisorConsentForm_v5_1784260122507.pdf",
+    displayName: "HR-09 Nominated Supervisor Consent Form",
+    category: "Human Resources",
   },
   {
-    file: "attached_assets/OP-09_Excursion_Form_Sample_1784260060005.docx",
-    displayName: "OP-09 Excursion Form – Sample",
-    category: "Operations",
+    file: "attached_assets/HR-10_Responsible_Person_Declaration_1784260122507.pdf",
+    displayName: "HR-10 Responsible Person Declaration",
+    category: "Human Resources",
   },
   {
-    file: "attached_assets/OP-10_RAM_Sample_1784260060005.docx",
-    displayName: "OP-10 Risk Assessment & Management – Sample",
-    category: "Operations",
+    file: "attached_assets/HR-11_TFN-declaration-form_1784260122507.pdf",
+    displayName: "HR-11 TFN Declaration Form",
+    category: "Human Resources",
   },
   {
-    file: "attached_assets/OP-16_Individual_Safety_Plan_-_Sample_1784260060005.docx",
-    displayName: "OP-16 Individual Safety Plan – Sample",
-    category: "Operations",
+    file: "attached_assets/HR-12_Superannuation_Form_1784260122507.pdf",
+    displayName: "HR-12 Superannuation Choice Form",
+    category: "Human Resources",
   },
   {
-    file: "attached_assets/OP-17_Restorative_Conversations_and_Self_Reflection_Tool_1784260060005.docx",
-    displayName: "OP-17 Restorative Conversations & Self Reflection Tool",
-    category: "Operations",
+    file: "attached_assets/HR-13_Workplace_relations_fact_sheet_1784260122507.pdf",
+    displayName: "HR-13 Workplace Relations Fact Sheet",
+    category: "Human Resources",
   },
   {
-    file: "attached_assets/PA-01_Planning_Cycle_v2.3_1784260060005.docx",
-    displayName: "PA-01 Planning Cycle v2.3",
-    category: "Program & Planning",
+    file: "attached_assets/HR-14_Fair-Work-Information-Statement_1784260122507.pdf",
+    displayName: "HR-14 Fair Work Information Statement",
+    category: "Human Resources",
   },
   {
-    file: "attached_assets/PA-02_MTOP_Experience_Assessment_1784260060005.docx",
-    displayName: "PA-02 MTOP Experience Assessment",
-    category: "Program & Planning",
+    file: "attached_assets/HR-18_ComplianceHistoryStatementForAPersonToBeAPersonInDaytoDa_1784260122507.pdf",
+    displayName: "HR-18 Compliance History Statement",
+    category: "Human Resources",
   },
   {
-    file: "attached_assets/PA-05_10_Week_Plan_1784260060005.docx",
-    displayName: "PA-05 10 Week Plan",
-    category: "Program & Planning",
+    file: "attached_assets/HR-21_Staff_Handbook_OSHC_v2_100722_1784260122507.pdf",
+    displayName: "HR-21 Staff Handbook",
+    category: "Human Resources",
+  },
+  {
+    file: "attached_assets/HR-22_QA4_Code_of_Conduct_Staff_Acknowledgement_OSHC_V1_1784260122508.pdf",
+    displayName: "HR-22 Code of Conduct & Staff Acknowledgement",
+    category: "Human Resources",
+  },
+  {
+    file: "attached_assets/HR-23_EOSHC_Staff_Policies_2019_1784260122508.pdf",
+    displayName: "HR-23 Staff Policies Manual",
+    category: "Human Resources",
+  },
+  {
+    file: "attached_assets/HR-24_Workplace_Injury_Form_-_Staff_1784260122508.pdf",
+    displayName: "HR-24 Workplace Injury Form – Staff",
+    category: "Human Resources",
   },
 ];
 
@@ -147,7 +168,15 @@ async function main() {
       "Program & Planning": paId,
     };
 
+    // Seed position counters from current DB max so new docs append correctly
+    const maxRes = await client.query<{ category_id: number; max: number }>(
+      `SELECT category_id, COALESCE(MAX(position), -1) AS max FROM file_library
+       WHERE site_id IS NULL GROUP BY category_id`
+    );
     const positionCounters: Record<number, number> = {};
+    for (const row of maxRes.rows) {
+      positionCounters[row.category_id] = row.max + 1;
+    }
 
     for (const doc of DOCS) {
       const catId = catMap[doc.category]!;

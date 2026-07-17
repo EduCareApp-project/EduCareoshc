@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useListEvacuations, useCreateEvacuation, useUpdateEvacuation, useDeleteEvacuation, useListSites, ListEvacuationsQueryResult, ListSitesQueryResult, ListStaffQueryResult } from "@workspace/api-client-react";
+import { useListEvacuations, useCreateEvacuation, useUpdateEvacuation, useDeleteEvacuation, useArchiveEvacuation, useListSites, ListEvacuationsQueryResult, ListSitesQueryResult, ListStaffQueryResult } from "@workspace/api-client-react";
 import { useActiveStaff } from "@/hooks/use-active-staff";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import {
-  ShieldAlert, Plus, AlertCircle, CheckCircle, Clock, Paperclip, Upload, X, FileText, Users, Pencil, Trash2,
+  ShieldAlert, Plus, AlertCircle, CheckCircle, Clock, Paperclip, Upload, X, FileText, Users, Pencil, Trash2, Archive,
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -233,11 +233,13 @@ export default function Evacuations() {
     filterSiteId === "__all__" || String(e.siteId) === filterSiteId
   );
 
-  // Split into current (nextDueAt in future or null) and expired
-  // Evacuation drills always sort to the top; within same type, newest-first
+  // Split into current and archived/expired
+  // A record is archived if manually archived OR its nextDueAt has passed
   const now = new Date();
+  const isArchived = (e: typeof filtered[number]) =>
+    !!e.archivedAt || (!!e.nextDueAt && new Date(e.nextDueAt) < now);
   const current = filtered
-    .filter((e) => !e.nextDueAt || new Date(e.nextDueAt) >= now)
+    .filter((e) => !isArchived(e))
     .sort((a, b) => {
       const aIsEvac = a.drillType === "evacuation" ? 0 : 1;
       const bIsEvac = b.drillType === "evacuation" ? 0 : 1;
@@ -245,7 +247,7 @@ export default function Evacuations() {
       return new Date(b.conductedAt).getTime() - new Date(a.conductedAt).getTime();
     });
   const expired = filtered
-    .filter((e) => e.nextDueAt && new Date(e.nextDueAt) < now)
+    .filter((e) => isArchived(e))
     .sort((a, b) => new Date(b.conductedAt).getTime() - new Date(a.conductedAt).getTime());
 
   // Status banner: most recent evacuation drill in current filter
@@ -510,7 +512,9 @@ function ArchivedDrillRow({ evac }: { evac: EvacRecord }) {
       )}
       <span className="text-muted-foreground/40 shrink-0 ml-auto">·</span>
       <span className="text-muted-foreground shrink-0 text-xs">
-        Expired {evac.nextDueAt ? format(new Date(evac.nextDueAt), "dd/MM/yyyy") : "—"}
+        {evac.archivedAt
+          ? `Archived ${format(new Date(evac.archivedAt), "dd/MM/yyyy")}`
+          : `Expired ${evac.nextDueAt ? format(new Date(evac.nextDueAt), "dd/MM/yyyy") : "—"}`}
       </span>
       {canDelete && (
         <AlertDialog>
@@ -556,6 +560,15 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
         toast({ title: "Record deleted" });
       },
       onError: () => toast({ title: "Failed to delete record", variant: "destructive" }),
+    },
+  });
+  const archiveMutation = useArchiveEvacuation({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/evacuations"] });
+        toast({ title: "Record archived" });
+      },
+      onError: () => toast({ title: "Failed to archive record", variant: "destructive" }),
     },
   });
   const [editOpen, setEditOpen] = useState(false);
@@ -655,6 +668,27 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-amber-600" title="Archive this record">
+                  <Archive className="h-3.5 w-3.5" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Archive this record?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    The {DRILL_LABELS[evac.drillType] ?? evac.drillType} drill record will be moved to the Archived section. It won't be deleted and can still be viewed.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => archiveMutation.mutate({ id: evac.id })}>
+                    Archive
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             {canDelete && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>

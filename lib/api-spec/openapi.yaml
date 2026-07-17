@@ -1225,6 +1225,26 @@ paths:
         "404":
           description: Not found
 
+  /evacuations/{id}/archive:
+    patch:
+      operationId: archiveEvacuation
+      tags: [evacuations]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evacuation"
+        "404":
+          description: Not found
+
   /qip:
     get:
       operationId: listQipItems
@@ -4349,6 +4369,9 @@ components:
           type: ["string", "null"]
         createdAt:
           type: string
+          format: date-time
+        archivedAt:
+          type: ["string", "null"]
           format: date-time
 
     EvacuationInput:

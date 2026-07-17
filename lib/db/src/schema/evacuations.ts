@@ -17,6 +17,7 @@ export const evacuationsTable = pgTable("evacuations", {
   attendanceDocPath: text("attendance_doc_path"),
   attendanceDocName: text("attendance_doc_name"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
 });
 
 export const insertEvacuationSchema = createInsertSchema(evacuationsTable).omit({ id: true, createdAt: true });

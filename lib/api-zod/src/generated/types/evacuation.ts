@@ -34,4 +34,6 @@ export interface Evacuation {
   /** @nullable */
   attendanceDocName?: string | null;
   createdAt: Date;
+  /** @nullable */
+  archivedAt?: Date | null;
 }

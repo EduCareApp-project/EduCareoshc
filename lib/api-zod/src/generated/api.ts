@@ -1309,6 +1309,7 @@ export const ListEvacuationsResponseItem = zod.object({
   attendanceDocPath: zod.string().nullish(),
   attendanceDocName: zod.string().nullish(),
   createdAt: zod.coerce.date(),
+  archivedAt: zod.coerce.date().nullish(),
 });
 export const ListEvacuationsResponse = zod.array(ListEvacuationsResponseItem);
 
@@ -1384,6 +1385,30 @@ export const UpdateEvacuationResponse = zod.object({
   attendanceDocPath: zod.string().nullish(),
   attendanceDocName: zod.string().nullish(),
   createdAt: zod.coerce.date(),
+  archivedAt: zod.coerce.date().nullish(),
+});
+
+export const ArchiveEvacuationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ArchiveEvacuationResponse = zod.object({
+  id: zod.number(),
+  drillType: zod.enum(["evacuation", "lockdown", "shelter_in_place", "other"]),
+  conductedAt: zod.coerce.date(),
+  nextDueAt: zod.coerce.date().nullish(),
+  participantCount: zod.number().nullish(),
+  durationMinutes: zod.number().nullish(),
+  notes: zod.string().nullish(),
+  conductedBy: zod.string().nullish(),
+  siteId: zod.number().nullish(),
+  siteName: zod.string().nullish(),
+  evacuationDocPath: zod.string().nullish(),
+  evacuationDocName: zod.string().nullish(),
+  attendanceDocPath: zod.string().nullish(),
+  attendanceDocName: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  archivedAt: zod.coerce.date().nullish(),
 });
 
 export const ListQipItemsResponseItem = zod.object({

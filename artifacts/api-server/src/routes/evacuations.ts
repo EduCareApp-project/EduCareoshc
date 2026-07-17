@@ -23,6 +23,7 @@ router.get("/evacuations", async (_req, res): Promise<void> => {
       attendanceDocPath: evacuationsTable.attendanceDocPath,
       attendanceDocName: evacuationsTable.attendanceDocName,
       createdAt: evacuationsTable.createdAt,
+      archivedAt: evacuationsTable.archivedAt,
     })
     .from(evacuationsTable)
     .leftJoin(sitesTable, eq(evacuationsTable.siteId, sitesTable.id))
@@ -75,6 +76,26 @@ router.patch("/evacuations/:id", async (req, res): Promise<void> => {
   delete data.validDays;
 
   const [evac] = await db.update(evacuationsTable).set(data as any).where(eq(evacuationsTable.id, id)).returning();
+  if (!evac) { res.status(404).json({ error: "Not found" }); return; }
+
+  let siteName: string | null = null;
+  if (evac.siteId) {
+    const [site] = await db.select({ name: sitesTable.name }).from(sitesTable).where(eq(sitesTable.id, evac.siteId));
+    siteName = site?.name ?? null;
+  }
+
+  res.json(ListEvacuationsResponseItem.parse({ ...evac, siteName }));
+});
+
+router.patch("/evacuations/:id/archive", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [evac] = await db
+    .update(evacuationsTable)
+    .set({ archivedAt: new Date() } as any)
+    .where(eq(evacuationsTable.id, id))
+    .returning();
   if (!evac) { res.status(404).json({ error: "Not found" }); return; }
 
   let siteName: string | null = null;

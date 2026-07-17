@@ -806,6 +806,8 @@ export interface Evacuation {
   /** @nullable */
   attendanceDocName?: string | null;
   createdAt: string;
+  /** @nullable */
+  archivedAt?: string | null;
 }
 
 export type EvacuationInputDrillType =

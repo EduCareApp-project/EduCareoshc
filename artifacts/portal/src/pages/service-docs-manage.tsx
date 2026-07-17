@@ -75,6 +75,7 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
   const createFile = useCreateFileLibraryItem();
   const deleteFile = useDeleteFileLibraryItem();
   const updateFile = useUpdateFileLibraryItem();
+  const [movingAll, setMovingAll] = useState(false);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
@@ -127,6 +128,28 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
     });
   }
 
+  async function handleMoveAllToFileLibrary() {
+    if (files.length === 0) return;
+    setMovingAll(true);
+    try {
+      await Promise.all(
+        files.map((f) =>
+          fetch(`/api/file-library/${f.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ siteId: null }),
+          })
+        )
+      );
+      toast({ title: `${files.length} document${files.length !== 1 ? "s" : ""} moved to File Library` });
+      onRefresh();
+    } catch {
+      toast({ title: "Some documents could not be moved", variant: "destructive" });
+    } finally {
+      setMovingAll(false);
+    }
+  }
+
   async function move(index: number, direction: "up" | "down") {
     const sorted = [...files].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     const swapIndex = direction === "up" ? index - 1 : index + 1;
@@ -153,9 +176,35 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
     <div className="rounded-xl border bg-white">
       <div className="flex items-center justify-between px-5 py-4 border-b">
         <h2 className="text-base font-semibold">{categoryName}</h2>
-        <Button size="sm" variant="outline" onClick={() => setShowForm((v) => !v)}>
-          <Plus className="h-4 w-4 mr-1" /> Add document
-        </Button>
+        <div className="flex items-center gap-2">
+          {files.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50" disabled={movingAll}>
+                  <FolderInput className="h-4 w-4 mr-1" />
+                  {movingAll ? "Moving…" : `Move all ${files.length} to File Library`}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Move all {files.length} documents to File Library?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    All documents in "{categoryName}" will be moved to the internal File Library and removed from the public Service Documentation page.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleMoveAllToFileLibrary}>
+                    Move all to File Library
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <Button size="sm" variant="outline" onClick={() => setShowForm((v) => !v)}>
+            <Plus className="h-4 w-4 mr-1" /> Add document
+          </Button>
+        </div>
       </div>
 
       {showForm && (

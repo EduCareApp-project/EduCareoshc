@@ -8,24 +8,31 @@ import {
 
 const router: IRouter = Router();
 
-router.get("/file-library", async (_req, res): Promise<void> => {
-  const rows = await db
-    .select({
-      id: fileLibraryTable.id,
-      categoryId: fileLibraryTable.categoryId,
-      categoryName: fileCategoriesTable.name,
-      siteId: fileLibraryTable.siteId,
-      name: fileLibraryTable.name,
-      documentPath: fileLibraryTable.documentPath,
-      documentName: fileLibraryTable.documentName,
-      position: fileLibraryTable.position,
-      createdAt: fileLibraryTable.createdAt,
-    })
-    .from(fileLibraryTable)
-    .leftJoin(fileCategoriesTable, eq(fileLibraryTable.categoryId, fileCategoriesTable.id))
-    .where(isNull(fileLibraryTable.siteId))
-    .orderBy(fileCategoriesTable.sortOrder, fileCategoriesTable.name, fileLibraryTable.position, fileLibraryTable.name);
-  res.json(ListFileLibraryResponse.parse(rows));
+router.get("/file-library", async (req, res): Promise<void> => {
+  try {
+    const rows = await db
+      .select({
+        id: fileLibraryTable.id,
+        categoryId: fileLibraryTable.categoryId,
+        categoryName: fileCategoriesTable.name,
+        siteId: fileLibraryTable.siteId,
+        name: fileLibraryTable.name,
+        documentPath: fileLibraryTable.documentPath,
+        documentName: fileLibraryTable.documentName,
+        position: fileLibraryTable.position,
+        createdAt: fileLibraryTable.createdAt,
+      })
+      .from(fileLibraryTable)
+      .leftJoin(fileCategoriesTable, eq(fileLibraryTable.categoryId, fileCategoriesTable.id))
+      .where(isNull(fileLibraryTable.siteId))
+      .orderBy(fileCategoriesTable.sortOrder, fileCategoriesTable.name, fileLibraryTable.position, fileLibraryTable.name);
+    const parsed = ListFileLibraryResponse.parse(rows);
+    res.setHeader("Cache-Control", "no-store");
+    res.json(parsed);
+  } catch (err) {
+    req.log.error({ err }, "file-library GET failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 router.post("/file-library", async (req, res): Promise<void> => {

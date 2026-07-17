@@ -56,6 +56,7 @@ import type {
   FileCategoryUpdate,
   FileLibraryInput,
   FileLibraryItem,
+  FileLibraryUpdate,
   GetChecklistPeriodOverrideParams,
   GetLearningStoriesReportParams,
   GetNotificationCount200,
@@ -8626,6 +8627,87 @@ export const useCreateFileLibraryItem = <
   TContext
 > => {
   return useMutation(getCreateFileLibraryItemMutationOptions(options));
+};
+
+export const getUpdateFileLibraryItemUrl = (id: number) => {
+  return `/api/file-library/${id}`;
+};
+
+export const updateFileLibraryItem = async (
+  id: number,
+  fileLibraryUpdate: FileLibraryUpdate,
+  options?: RequestInit,
+): Promise<FileLibraryItem> => {
+  return customFetch<FileLibraryItem>(getUpdateFileLibraryItemUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(fileLibraryUpdate),
+  });
+};
+
+export const getUpdateFileLibraryItemMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateFileLibraryItem>>,
+    TError,
+    { id: number; data: BodyType<FileLibraryUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateFileLibraryItem>>,
+  TError,
+  { id: number; data: BodyType<FileLibraryUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateFileLibraryItem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateFileLibraryItem>>,
+    { id: number; data: BodyType<FileLibraryUpdate> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateFileLibraryItem(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateFileLibraryItemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateFileLibraryItem>>
+>;
+export type UpdateFileLibraryItemMutationBody = BodyType<FileLibraryUpdate>;
+export type UpdateFileLibraryItemMutationError = ErrorType<void>;
+
+export const useUpdateFileLibraryItem = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateFileLibraryItem>>,
+    TError,
+    { id: number; data: BodyType<FileLibraryUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateFileLibraryItem>>,
+  TError,
+  { id: number; data: BodyType<FileLibraryUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateFileLibraryItemMutationOptions(options));
 };
 
 export const getDeleteFileLibraryItemUrl = (id: number) => {

@@ -1954,6 +1954,29 @@ export const CreateFileLibraryItemBody = zod.object({
   position: zod.number().optional(),
 });
 
+export const UpdateFileLibraryItemParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateFileLibraryItemBody = zod.object({
+  name: zod.string().optional(),
+  position: zod.number().optional(),
+  siteId: zod.number().nullish(),
+  categoryId: zod.number().nullish(),
+});
+
+export const UpdateFileLibraryItemResponse = zod.object({
+  id: zod.number(),
+  categoryId: zod.number().nullish(),
+  categoryName: zod.string().nullish(),
+  siteId: zod.number().nullish(),
+  name: zod.string(),
+  documentPath: zod.string(),
+  documentName: zod.string(),
+  position: zod.number().optional(),
+  createdAt: zod.coerce.date(),
+});
+
 export const DeleteFileLibraryItemParams = zod.object({
   id: zod.coerce.number(),
 });

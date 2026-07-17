@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useLocation } from "wouter";
 import {
-  useCreateFileLibraryItem, useDeleteFileLibraryItem,
+  useCreateFileLibraryItem, useDeleteFileLibraryItem, useUpdateFileLibraryItem,
   useListFileCategories, useCreateFileCategory, useListSites,
 } from "@workspace/api-client-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -13,7 +13,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Upload, Trash2, FileText, FileImage, File, ExternalLink, Plus, ChevronUp, ChevronDown } from "lucide-react";
+import { ArrowLeft, Upload, Trash2, FileText, FileImage, File, ExternalLink, Plus, ChevronUp, ChevronDown, FolderInput } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@workspace/object-storage-web";
@@ -74,6 +74,7 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
 
   const createFile = useCreateFileLibraryItem();
   const deleteFile = useDeleteFileLibraryItem();
+  const updateFile = useUpdateFileLibraryItem();
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
@@ -116,6 +117,13 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
     deleteFile.mutate({ id }, {
       onSuccess: () => { toast({ title: "Document removed" }); onRefresh(); },
       onError: () => toast({ title: "Failed to remove document", variant: "destructive" }),
+    });
+  }
+
+  function handleMoveToFileLibrary(id: number) {
+    updateFile.mutate({ id, data: { siteId: null } }, {
+      onSuccess: () => { toast({ title: "Moved to File Library" }); onRefresh(); },
+      onError: () => toast({ title: "Failed to move document", variant: "destructive" }),
     });
   }
 
@@ -230,6 +238,27 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
               >
                 View
               </a>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-blue-600 shrink-0" title="Move to File Library">
+                    <FolderInput className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Move to File Library?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      "{f.name}" will be moved to the internal File Library and removed from the public Service Documentation page.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleMoveToFileLibrary(f.id)}>
+                      Move to File Library
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0">

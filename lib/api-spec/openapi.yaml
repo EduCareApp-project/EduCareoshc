@@ -1968,6 +1968,30 @@ paths:
                 $ref: "#/components/schemas/FileLibraryItem"
 
   /file-library/{id}:
+    patch:
+      operationId: updateFileLibraryItem
+      tags: [file-library]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FileLibraryUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileLibraryItem"
+        "404":
+          description: Not found
     delete:
       operationId: deleteFileLibraryItem
       tags: [file-library]
@@ -4979,6 +5003,18 @@ components:
           type: string
         position:
           type: integer
+
+    FileLibraryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        position:
+          type: integer
+        siteId:
+          type: ["integer", "null"]
+        categoryId:
+          type: ["integer", "null"]
 
     Checklist:
       type: object

@@ -1221,6 +1221,15 @@ export interface FileLibraryInput {
   position?: number;
 }
 
+export interface FileLibraryUpdate {
+  name?: string;
+  position?: number;
+  /** @nullable */
+  siteId?: number | null;
+  /** @nullable */
+  categoryId?: number | null;
+}
+
 export type ChecklistType = (typeof ChecklistType)[keyof typeof ChecklistType];
 
 export const ChecklistType = {

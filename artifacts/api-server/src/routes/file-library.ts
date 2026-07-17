@@ -68,16 +68,22 @@ router.patch("/file-library/:id", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  const allowed = ["name", "position"] as const;
+  const allowed = ["name", "position", "siteId", "categoryId"] as const;
   const update: Record<string, unknown> = {};
   for (const f of allowed) {
-    if (req.body?.[f] !== undefined) update[f] = req.body[f];
+    if (req.body?.[f] !== undefined) update[f] = req.body[f] === null ? null : req.body[f];
   }
   if (Object.keys(update).length === 0) { res.status(400).json({ error: "Nothing to update" }); return; }
 
   const [row] = await db.update(fileLibraryTable).set(update as any).where(eq(fileLibraryTable.id, id)).returning();
   if (!row) { res.status(404).json({ error: "Not found" }); return; }
-  res.json(row);
+
+  let categoryName: string | null = null;
+  if (row.categoryId) {
+    const [cat] = await db.select({ name: fileCategoriesTable.name }).from(fileCategoriesTable).where(eq(fileCategoriesTable.id, row.categoryId));
+    categoryName = cat?.name ?? null;
+  }
+  res.json({ ...row, categoryName });
 });
 
 router.delete("/file-library/:id", async (req, res): Promise<void> => {

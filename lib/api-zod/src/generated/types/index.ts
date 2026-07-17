@@ -76,6 +76,7 @@ export * from "./fileCategoryInput";
 export * from "./fileCategoryUpdate";
 export * from "./fileLibraryInput";
 export * from "./fileLibraryItem";
+export * from "./fileLibraryUpdate";
 export * from "./getChecklistPeriodOverrideParams";
 export * from "./getLearningStoriesReportParams";
 export * from "./getNotificationCount200";

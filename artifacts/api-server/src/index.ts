@@ -49,69 +49,34 @@ async function seedNotificationSettings(): Promise<void> {
   }
 }
 
-async function seedElysiumOshc(): Promise<void> {
+async function seedSuperAdminStaff(): Promise<void> {
+  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
+  const superAdminHash  = process.env.SUPER_ADMIN_PASSWORD_HASH;
+  if (!superAdminEmail || !superAdminHash) return;
+
   const client = await pool.connect();
   try {
-    // Insert Elysium OSHC into super_admin_orgs if it doesn't already exist
-    const result = await client.query(`
-      INSERT INTO super_admin_orgs (name, domain, contact_name, contact_email, status, notes, portal_org_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      ON CONFLICT DO NOTHING
-      RETURNING id
+    // Upsert the hidden EduCare Support staff account so it always exists
+    // with the correct credentials. It is invisible in the staff list and
+    // cannot be edited or deleted via the portal.
+    await client.query(`
+      INSERT INTO staff
+        (first_name, last_name, email, role, qualifications, status,
+         password_hash, is_super_admin, site_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, true, NULL)
+      ON CONFLICT (email) DO UPDATE
+        SET is_super_admin = true,
+            password_hash  = EXCLUDED.password_hash,
+            role           = EXCLUDED.role
     `, [
-      "Elysium OSHC",
-      "https://edu-care-framework.replit.app",
-      "Matthew Hine",
-      "matt@elysiumoshc.com.au",
+      "EduCare",
+      "Support",
+      superAdminEmail.toLowerCase().trim(),
+      "admin",
+      "",
       "active",
-      "Primary development organisation",
-      "565659A",
+      superAdminHash,
     ]);
-
-    // Determine the org id (either just inserted or pre-existing)
-    let orgId: number;
-    if (result.rows.length > 0) {
-      orgId = result.rows[0].id;
-    } else {
-      const existing = await client.query(
-        `SELECT id FROM super_admin_orgs WHERE name = $1 LIMIT 1`,
-        ["Elysium OSHC"],
-      );
-      if (existing.rows.length === 0) return;
-      orgId = existing.rows[0].id;
-    }
-
-    // Link any unlinked sites to this org
-    await client.query(
-      `UPDATE sites SET org_id = $1 WHERE org_id IS NULL`,
-      [orgId],
-    );
-
-    // Seed the super admin staff account using the same credentials as the
-    // super admin dashboard. Uses ON CONFLICT (email) DO NOTHING so it is
-    // safe to run on every restart.
-    const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
-    const superAdminHash  = process.env.SUPER_ADMIN_PASSWORD_HASH;
-    if (superAdminEmail && superAdminHash) {
-      await client.query(`
-        INSERT INTO staff
-          (first_name, last_name, email, role, qualifications, status,
-           password_hash, is_super_admin, site_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, true, NULL)
-        ON CONFLICT (email) DO UPDATE
-          SET is_super_admin = true,
-              password_hash  = EXCLUDED.password_hash,
-              role           = EXCLUDED.role
-      `, [
-        "EduCare",
-        "Support",
-        superAdminEmail.toLowerCase().trim(),
-        "admin",
-        "",
-        "active",
-        superAdminHash,
-      ]);
-    }
   } finally {
     client.release();
   }
@@ -134,9 +99,9 @@ app.listen(port, async (err) => {
   }
 
   try {
-    await seedElysiumOshc();
-    logger.info("Elysium OSHC org seeded");
+    await seedSuperAdminStaff();
+    logger.info("Super admin staff account ensured");
   } catch (seedErr) {
-    logger.warn({ err: seedErr }, "Failed to seed Elysium OSHC org");
+    logger.warn({ err: seedErr }, "Failed to seed super admin staff account");
   }
 });

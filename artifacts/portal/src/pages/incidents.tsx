@@ -195,8 +195,8 @@ function LogIncidentDialog({ open, onOpenChange }: { open: boolean; onOpenChange
             <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} required placeholder="Describe what happened..." />
           </div>
           <div className="space-y-1">
-            <Label>First Aid Provided</Label>
-            <Textarea value={form.firstAidProvided} onChange={(e) => setForm({ ...form, firstAidProvided: e.target.value })} rows={2} placeholder="Describe any first aid given..." />
+            <Label>Actions Taken</Label>
+            <Textarea value={form.firstAidProvided} onChange={(e) => setForm({ ...form, firstAidProvided: e.target.value })} rows={2} placeholder="Describe actions taken..." />
           </div>
 
           <div className="space-y-1">
@@ -326,7 +326,7 @@ function IncidentSubmitterForm({ incident, onDone }: { incident: any; onDone: ()
         <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} required />
       </div>
       <div className="space-y-1">
-        <Label>First Aid Provided</Label>
+        <Label>Actions Taken</Label>
         <Textarea value={form.firstAidProvided} onChange={(e) => setForm({ ...form, firstAidProvided: e.target.value })} rows={2} />
       </div>
       <div className="flex gap-2 justify-end">
@@ -598,7 +598,7 @@ function IncidentDetail({ incident, onDelete }: { incident: any; onDelete: () =>
             </div>
             <Separator />
             <Field label="Description" value={incident.description} />
-            {incident.firstAidProvided && <Field label="First Aid Provided" value={incident.firstAidProvided} />}
+            {incident.firstAidProvided && <Field label="Actions Taken" value={incident.firstAidProvided} />}
             {incident.attachmentPath && (
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">Attachment</p>

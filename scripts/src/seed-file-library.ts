@@ -80,81 +80,45 @@ const ROOT = resolve(new URL(".", import.meta.url).pathname, "../..");
 const DOCS: { file: string; displayName: string; category: string }[] = [
   // ── Operations ──────────────────────────────────────────────────────
   {
-    file: "attached_assets/OP-01_EOSHC_Centre_Policies_and_Procedures_2025_v25.2_SOR_Only_1784260192703.pdf",
-    displayName: "OP-01 Centre Policies & Procedures 2025",
+    file: "attached_assets/OP-05_Medical_Condition_Communication_Plan_-_Sample_1784260272884.docx",
+    displayName: "OP-05 Medical Condition Communication Plan – Sample",
     category: "Operations",
   },
   {
-    file: "attached_assets/OP-02_Enrolment_Form_v6_Print_1784260192703.pdf",
-    displayName: "OP-02 Enrolment Form",
+    file: "attached_assets/OP-06_Individual_Medical_RISK_Plan_-_Sample_1784260272884.docx",
+    displayName: "OP-06 Individual Medical Risk Plan – Sample",
     category: "Operations",
   },
   {
-    file: "attached_assets/OP-03_MedicationRecord_1784260192703.pdf",
-    displayName: "OP-03 Medication Record",
+    file: "attached_assets/OP-10_RAM_Sample_1784260272884.docx",
+    displayName: "OP-10 Risk Assessment & Management – Sample",
     category: "Operations",
   },
   {
-    file: "attached_assets/OP-04_Long_Term_Medications_Form_1784260192703.pdf",
-    displayName: "OP-04 Long Term Medications Form",
+    file: "attached_assets/OP-16_Individual_Safety_Plan_-_Sample_1784260272884.docx",
+    displayName: "OP-16 Individual Safety Plan – Sample",
     category: "Operations",
   },
   {
-    file: "attached_assets/OP-07_Individual_Dietary_Form_1784260192703.pdf",
-    displayName: "OP-07 Individual Dietary Form",
-    category: "Operations",
-  },
-  {
-    file: "attached_assets/OP-11_RP_Diary_Holiday_Program_1784260192704.pdf",
-    displayName: "OP-11 RP Diary – Holiday Program",
-    category: "Operations",
-  },
-  {
-    file: "attached_assets/OP-12_Incident,_injury,_trauma_and_illness_record_Butler_Versi_1784260192704.pdf",
-    displayName: "OP-12 Incident, Injury, Trauma & Illness Record",
-    category: "Operations",
-  },
-  {
-    file: "attached_assets/OP-13_Blank_Weekly_Rolls_1784260192704.pdf",
-    displayName: "OP-13 Blank Weekly Rolls",
-    category: "Operations",
-  },
-  {
-    file: "attached_assets/OP-15_Emergency-Evacuation-Rehearsal-Record_1784260192704.pdf",
-    displayName: "OP-15 Emergency Evacuation Rehearsal Record",
+    file: "attached_assets/OP-17_Restorative_Conversations_and_Self_Reflection_Tool_1784260272884.docx",
+    displayName: "OP-17 Restorative Conversations & Self Reflection Tool",
     category: "Operations",
   },
   // ── Program & Planning ──────────────────────────────────────────────
   {
-    file: "attached_assets/PA-03_Activity_Evaluation_1784260192704.pdf",
-    displayName: "PA-03 Activity Evaluation",
+    file: "attached_assets/PA-01_Planning_Cycle_v2.3_1784260272884.docx",
+    displayName: "PA-01 Planning Cycle v2.3",
     category: "Program & Planning",
   },
   {
-    file: "attached_assets/PA-04_Observation-Record-OSHC_v2_1784260192704.pdf",
-    displayName: "PA-04 Observation Record",
+    file: "attached_assets/PA-02_MTOP_Experience_Assessment_1784260272884.docx",
+    displayName: "PA-02 MTOP Experience Assessment",
     category: "Program & Planning",
   },
   {
-    file: "attached_assets/PA-06_Child_Profile_1784260192704.pdf",
-    displayName: "PA-06 Child Profile",
+    file: "attached_assets/PA-05_10_Week_Plan_1784260272884.docx",
+    displayName: "PA-05 10 Week Plan",
     category: "Program & Planning",
-  },
-  // ── Verification Records ────────────────────────────────────────────
-  {
-    file: "attached_assets/VR-01_Guild_P00044609_CertificateOfCurrencyLiability_1784260192704.pdf",
-    displayName: "VR-01 Certificate of Currency – Liability Insurance",
-    category: "Verification Records",
-  },
-  {
-    file: "attached_assets/VR-02_Work_Cover_CoC_2025-26_1784260192705.pdf",
-    displayName: "VR-02 WorkCover Certificate of Currency 2025–26",
-    category: "Verification Records",
-  },
-  {
-    file: "attached_assets/VR-03_Provider_approval_and_certificate_ELYSIUM_BRANDS_PTY._LT_1784260192705.pdf",
-    displayName: "VR-03 Provider Approval Certificate",
-    category: "Verification Records",
   },
 ];
 

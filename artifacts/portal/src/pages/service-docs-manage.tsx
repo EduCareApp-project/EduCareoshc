@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
 import { useLocation } from "wouter";
 import {
-  useListFileLibrary, useCreateFileLibraryItem, useDeleteFileLibraryItem,
+  useCreateFileLibraryItem, useDeleteFileLibraryItem,
   useListFileCategories, useCreateFileCategory, useListSites,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +35,7 @@ function FileIcon({ name }: { name: string }) {
 
 type FileItem = {
   id: number;
+  categoryId?: number | null;
   name: string;
   documentPath: string;
   documentName: string;
@@ -263,7 +264,10 @@ export default function ServiceDocsManage() {
   const queryClient = useQueryClient();
   const createCat = useCreateFileCategory();
 
-  const { data: files, isLoading: filesLoading } = useListFileLibrary();
+  const { data: files, isLoading: filesLoading } = useQuery<FileItem[]>({
+    queryKey: ["/api/service-docs"],
+    queryFn: () => fetch("/api/service-docs").then((r) => r.json()),
+  });
   const { data: categories, isLoading: catsLoading } = useListFileCategories();
   const { data: sites } = useListSites();
   const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
@@ -294,7 +298,7 @@ export default function ServiceDocsManage() {
   }
 
   function refresh() {
-    queryClient.invalidateQueries({ queryKey: ["/api/file-library"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/service-docs"] });
     queryClient.invalidateQueries({ queryKey: ["/api/file-categories"] });
   }
 

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, inArray, asc } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, asc } from "drizzle-orm";
 import { Readable } from "stream";
 import { db, fileLibraryTable, fileCategoriesTable, sitesTable } from "@workspace/db";
 import { ObjectStorageService } from "../lib/objectStorage";
@@ -73,6 +73,27 @@ router.get("/service-docs/public", async (req, res): Promise<void> => {
 
   // Never expose the sites list — each page is locked to one site
   res.json({ sections, siteName: siteRow?.name ?? null });
+});
+
+// Protected: list all service-doc items (siteId IS NOT NULL) for the manage page
+router.get("/service-docs", async (req, res): Promise<void> => {
+  const rows = await db
+    .select({
+      id: fileLibraryTable.id,
+      categoryId: fileLibraryTable.categoryId,
+      categoryName: fileCategoriesTable.name,
+      siteId: fileLibraryTable.siteId,
+      name: fileLibraryTable.name,
+      documentPath: fileLibraryTable.documentPath,
+      documentName: fileLibraryTable.documentName,
+      position: fileLibraryTable.position,
+      createdAt: fileLibraryTable.createdAt,
+    })
+    .from(fileLibraryTable)
+    .leftJoin(fileCategoriesTable, eq(fileLibraryTable.categoryId, fileCategoriesTable.id))
+    .where(isNotNull(fileLibraryTable.siteId))
+    .orderBy(asc(fileCategoriesTable.sortOrder), asc(fileLibraryTable.position), asc(fileLibraryTable.name));
+  res.json(rows);
 });
 
 // Public file serving — streams a file_library item without requiring auth.

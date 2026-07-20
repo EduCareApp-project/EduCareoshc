@@ -36,8 +36,8 @@ function getAvailableWeeks(n: number): Array<{ label: string; value: string }> {
   const dayOfWeek = today.getDay(); // 0=Sun,1=Mon,...,5=Fri,6=Sat
   // Start of the current ISO week (Monday)
   const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
-  // Include the current week from Friday onwards (dayOfWeek >= 5)
-  const startOffset = dayOfWeek >= 5 ? 0 : 1;
+  // Week runs Mon–Sun. Include the current week from Friday (5), Saturday (6), or Sunday (0).
+  const startOffset = dayOfWeek === 0 || dayOfWeek >= 5 ? 0 : 1;
   const results = [];
   for (let i = startOffset; i <= n; i++) {
     const monday = subWeeks(currentWeekStart, i);

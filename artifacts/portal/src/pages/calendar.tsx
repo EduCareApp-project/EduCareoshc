@@ -940,7 +940,7 @@ export default function Calendar() {
       if (p.weeklyPlanData == null) return false;
       if (p.stage !== "published") return false;
       if (!p.startDate) return false;
-      return isBefore(addDays(parseISO(p.startDate.slice(0, 10)), 7), today);
+      return isBefore(addDays(parseISO(p.startDate.slice(0, 10)), 4), today);
     })
     .sort((a, b) => (b.startDate ?? "").localeCompare(a.startDate ?? ""));
 

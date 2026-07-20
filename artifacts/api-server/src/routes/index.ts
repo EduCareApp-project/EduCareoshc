@@ -61,11 +61,18 @@ router.use(superAdminRouter);
 router.use("/qip/public", (req: Request, res: Response, next: NextFunction) => next());
 router.use("/service-docs/public", (req: Request, res: Response, next: NextFunction) => next());
 router.use("/email-settings/logo", (req: Request, res: Response, next: NextFunction) => next());
+router.use("/storage/objects", (req: Request, res: Response, next: NextFunction) => next());
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 router.use((req: Request, res: Response, next: NextFunction): void => {
   // Skip public paths already handled above
-  if (req.path.startsWith("/qip/public") || req.path.startsWith("/service-docs/public") || req.path === "/email-settings/logo" || req.path === "/contact-enquiry") {
+  if (
+    req.path.startsWith("/qip/public") ||
+    req.path.startsWith("/service-docs/public") ||
+    req.path.startsWith("/storage/objects") ||
+    req.path === "/email-settings/logo" ||
+    req.path === "/contact-enquiry"
+  ) {
     next();
     return;
   }

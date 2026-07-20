@@ -23,6 +23,8 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@workspace/object-storage-web";
 
+const NEW_CATEGORY_VALUE = "__new__";
+
 export default function FileLibrary() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -45,21 +47,29 @@ export default function FileLibrary() {
   // Add file form
   const [addForm, setAddForm] = useState({ name: "", categoryId: "" });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   // Category settings
   const [newCatName, setNewCatName] = useState("");
   const [editingCatId, setEditingCatId] = useState<number | null>(null);
   const [editingCatName, setEditingCatName] = useState("");
 
+  const isCreatingNewCat = addForm.categoryId === NEW_CATEGORY_VALUE;
+
   function resetAddForm() {
     setAddForm({ name: "", categoryId: "" });
     setSelectedFile(null);
+    setNewCategoryName("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function handleAddFile(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedFile) { toast({ title: "Please select a file", variant: "destructive" }); return; }
+    if (isCreatingNewCat && !newCategoryName.trim()) {
+      toast({ title: "Please enter a category name", variant: "destructive" });
+      return;
+    }
 
     const result = await uploadFile(selectedFile);
     if (!result) {
@@ -68,12 +78,29 @@ export default function FileLibrary() {
     }
     const docPath = result.objectPath;
 
+    let resolvedCategoryId: number | undefined;
+
+    if (isCreatingNewCat) {
+      try {
+        const newCat = await createCatMutation.mutateAsync({
+          data: { name: newCategoryName.trim(), sortOrder: (categories ?? []).length },
+        });
+        resolvedCategoryId = (newCat as any).id;
+        queryClient.invalidateQueries({ queryKey: ["/api/file-categories"] });
+      } catch {
+        toast({ title: "Failed to create category", variant: "destructive" });
+        return;
+      }
+    } else if (addForm.categoryId) {
+      resolvedCategoryId = parseInt(addForm.categoryId);
+    }
+
     const payload: Record<string, unknown> = {
       name: addForm.name || selectedFile.name,
       documentPath: docPath,
       documentName: selectedFile.name,
     };
-    if (addForm.categoryId) payload.categoryId = parseInt(addForm.categoryId);
+    if (resolvedCategoryId) payload.categoryId = resolvedCategoryId;
 
     createFileMutation.mutate({ data: payload as any }, {
       onSuccess: () => {
@@ -121,6 +148,7 @@ export default function FileLibrary() {
   }
 
   const isLoading = filesLoading || catsLoading;
+  const isBusy = isUploading || createFileMutation.isPending || createCatMutation.isPending;
 
   return (
     <div className="space-y-6">
@@ -151,7 +179,7 @@ export default function FileLibrary() {
           <CardContent className="py-16 text-center text-muted-foreground flex flex-col items-center gap-2">
             <FolderOpen className="h-10 w-10 mb-2 text-muted-foreground/50" />
             <p className="font-medium">File library is empty</p>
-            <p className="text-sm">Upload your first file using the button above. Create categories in settings to organise them.</p>
+            <p className="text-sm">Upload your first file using the button above.</p>
           </CardContent>
         </Card>
       ) : (
@@ -249,20 +277,41 @@ export default function FileLibrary() {
 
             <div className="space-y-1.5">
               <Label>Category</Label>
-              <Select value={addForm.categoryId} onValueChange={(v) => setAddForm({ ...addForm, categoryId: v })}>
-                <SelectTrigger><SelectValue placeholder="Select category (optional)" /></SelectTrigger>
+              <Select
+                value={addForm.categoryId}
+                onValueChange={(v) => {
+                  setAddForm({ ...addForm, categoryId: v });
+                  if (v !== NEW_CATEGORY_VALUE) setNewCategoryName("");
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Select or create a category…" /></SelectTrigger>
                 <SelectContent>
                   {(categories ?? []).map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
                   ))}
+                  <SelectItem value={NEW_CATEGORY_VALUE}>
+                    <span className="flex items-center gap-1.5 text-primary">
+                      <Plus className="h-3.5 w-3.5" /> Create new category…
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
+
+              {isCreatingNewCat && (
+                <Input
+                  autoFocus
+                  placeholder="New category name…"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="mt-2"
+                />
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => { setShowAddFile(false); resetAddForm(); }}>Cancel</Button>
-              <Button type="submit" disabled={!selectedFile || isUploading || createFileMutation.isPending}>
-                {isUploading ? "Uploading…" : "Add File"}
+              <Button type="submit" disabled={!selectedFile || isBusy}>
+                {isUploading ? "Uploading…" : createFileMutation.isPending ? "Saving…" : "Add File"}
               </Button>
             </div>
           </form>

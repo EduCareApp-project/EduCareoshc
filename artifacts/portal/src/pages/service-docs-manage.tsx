@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useLocation } from "wouter";
 import {
-  useCreateFileLibraryItem, useDeleteFileLibraryItem, useUpdateFileLibraryItem,
+  useCreateFileLibraryItem, useDeleteFileLibraryItem,
   useListFileCategories, useCreateFileCategory, useListSites,
 } from "@workspace/api-client-react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -13,7 +13,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Upload, Trash2, FileText, FileImage, File, ExternalLink, Plus, ChevronUp, ChevronDown, FolderInput } from "lucide-react";
+import { ArrowLeft, Upload, Trash2, FileText, FileImage, File, ExternalLink, Plus, ChevronUp, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@workspace/object-storage-web";
@@ -74,8 +74,6 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
 
   const createFile = useCreateFileLibraryItem();
   const deleteFile = useDeleteFileLibraryItem();
-  const updateFile = useUpdateFileLibraryItem();
-  const [movingAll, setMovingAll] = useState(false);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
@@ -121,44 +119,12 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
     });
   }
 
-  function handleMoveToFileLibrary(id: number) {
-    updateFile.mutate({ id, data: { siteId: null } }, {
-      onSuccess: () => { toast({ title: "Moved to File Library" }); onRefresh(); },
-      onError: () => toast({ title: "Failed to move document", variant: "destructive" }),
-    });
-  }
-
-  async function handleMoveAllToFileLibrary() {
-    if (files.length === 0) return;
-    setMovingAll(true);
-    try {
-      await Promise.all(
-        files.map((f) =>
-          fetch(`/api/file-library/${f.id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ siteId: null }),
-          })
-        )
-      );
-      toast({ title: `${files.length} document${files.length !== 1 ? "s" : ""} moved to File Library` });
-      onRefresh();
-    } catch {
-      toast({ title: "Some documents could not be moved", variant: "destructive" });
-    } finally {
-      setMovingAll(false);
-    }
-  }
-
   async function move(index: number, direction: "up" | "down") {
     const sorted = [...files].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     const swapIndex = direction === "up" ? index - 1 : index + 1;
     if (swapIndex < 0 || swapIndex >= sorted.length) return;
     setReordering(true);
     try {
-      // Swap the two items in the array, then write sequential positions
-      // (0, 1, 2 …) to every item. This ensures the move always works
-      // even when multiple items share the same stored position value.
       const reordered = [...sorted];
       [reordered[index], reordered[swapIndex]] = [reordered[swapIndex], reordered[index]];
       await Promise.all(reordered.map((f, i) => patchFilePosition(f.id, i)));
@@ -176,35 +142,9 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
     <div className="rounded-xl border bg-white">
       <div className="flex items-center justify-between px-5 py-4 border-b">
         <h2 className="text-base font-semibold">{categoryName}</h2>
-        <div className="flex items-center gap-2">
-          {files.length > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50" disabled={movingAll}>
-                  <FolderInput className="h-4 w-4 mr-1" />
-                  {movingAll ? "Moving…" : `Move all ${files.length} to File Library`}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Move all {files.length} documents to File Library?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    All documents in "{categoryName}" will be moved to the internal File Library and removed from the public Service Documentation page.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleMoveAllToFileLibrary}>
-                    Move all to File Library
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-          <Button size="sm" variant="outline" onClick={() => setShowForm((v) => !v)}>
-            <Plus className="h-4 w-4 mr-1" /> Add document
-          </Button>
-        </div>
+        <Button size="sm" variant="outline" onClick={() => setShowForm((v) => !v)}>
+          <Plus className="h-4 w-4 mr-1" /> Add document
+        </Button>
       </div>
 
       {showForm && (
@@ -287,27 +227,6 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
               >
                 View
               </a>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-blue-600 shrink-0" title="Move to File Library">
-                    <FolderInput className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Move to File Library?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      "{f.name}" will be moved to the internal File Library and removed from the public Service Documentation page.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => handleMoveToFileLibrary(f.id)}>
-                      Move to File Library
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0">

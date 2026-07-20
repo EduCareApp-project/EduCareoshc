@@ -31,23 +31,27 @@ import { useToast } from "@/hooks/use-toast";
 
 // ── Week helpers ─────────────────────────────────────────────────────────────
 
-function getLastCompletedMondays(n: number): Array<{ label: string; value: string }> {
+function getAvailableWeeks(n: number): Array<{ label: string; value: string }> {
   const today = new Date();
+  const dayOfWeek = today.getDay(); // 0=Sun,1=Mon,...,5=Fri,6=Sat
   // Start of the current ISO week (Monday)
   const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+  // Include the current week from Friday onwards (dayOfWeek >= 5)
+  const startOffset = dayOfWeek >= 5 ? 0 : 1;
   const results = [];
-  for (let i = 1; i <= n; i++) {
+  for (let i = startOffset; i <= n; i++) {
     const monday = subWeeks(currentWeekStart, i);
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
     const value = format(monday, "yyyy-MM-dd");
-    const label = `${format(monday, "d MMM")} – ${format(sunday, "d MMM yyyy")}`;
+    const isCurrent = i === 0;
+    const label = `${format(monday, "d MMM")} – ${format(sunday, "d MMM yyyy")}${isCurrent ? " (this week)" : ""}`;
     results.push({ value, label });
   }
   return results;
 }
 
-const PAST_WEEKS = getLastCompletedMondays(24);
+const PAST_WEEKS = getAvailableWeeks(24);
 
 function fmtWeek(weekStart: string) {
   try {

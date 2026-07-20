@@ -31,7 +31,7 @@ const STAGE_ORDER: Record<string, number> = {
 
 export default function Planning() {
   const [, navigate] = useLocation();
-  const { isEducatorRole, ownSiteId } = usePermissions();
+  const { isEducatorRole, ownSiteId, isAdminOrEL } = usePermissions();
   const [siteFilter, setSiteFilter] = useState(() =>
     isEducatorRole && ownSiteId ? String(ownSiteId) : "all"
   );
@@ -78,9 +78,11 @@ export default function Planning() {
               <Award className="h-4 w-4 mr-2" />MTOP Outcomes
             </Button>
           </Link>
-          <Button onClick={() => navigate(siteFilter === "templates" ? "/planning/new?template=1" : "/planning/new")}>
-            <Plus className="h-4 w-4 mr-2" />{siteFilter === "templates" ? "New Template" : "New Planning Cycle"}
-          </Button>
+          {(siteFilter !== "templates" || isAdminOrEL) && (
+            <Button onClick={() => navigate(siteFilter === "templates" ? "/planning/new?template=1" : "/planning/new")}>
+              <Plus className="h-4 w-4 mr-2" />{siteFilter === "templates" ? "New Template" : "New Planning Cycle"}
+            </Button>
+          )}
         </div>
       </div>
 

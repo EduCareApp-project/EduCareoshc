@@ -26,6 +26,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ArrowLeft, Save, Trash2, Users, Upload, FileText, X, Loader2, Copy, Pencil, Link, ExternalLink, Plus, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth";
+import { usePermissions } from "@/hooks/use-permissions";
 import { StaffCommentSection } from "@/components/staff-comment-section";
 import { format } from "date-fns";
 
@@ -205,6 +206,7 @@ export default function PlanningDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { isAdminOrEL } = usePermissions();
   const isGuardian = user?.type === "guardian";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const assessmentFileInputRef = useRef<HTMLInputElement>(null);
@@ -213,6 +215,10 @@ export default function PlanningDetail() {
     id ?? 0,
     { query: { queryKey: getGetPlanningExperienceQueryKey(id ?? 0), enabled: !isNew && id !== null } }
   );
+  // null while the experience is still loading — prevents Edit/Delete button flashing on templates
+  const isTemplate = isNew ? isTemplateQuery : (loadingExp ? null : experience?.isTemplate === true);
+  // true when the user is allowed to edit/delete this cycle (always true for non-templates)
+  const canEditThisCycle = isTemplate !== null && (!isTemplate || isAdminOrEL);
   const { data: allChildren } = useListChildren();
   const { data: sites } = useListSites();
   const { data: staffList } = useActiveStaff();
@@ -233,7 +239,7 @@ export default function PlanningDetail() {
   const [form, setForm] = useState<FormState>(emptyForm());
   const [savedForm, setSavedForm] = useState<FormState>(emptyForm());
   const [initialized, setInitialized] = useState(false);
-  const [isEditing, setIsEditing] = useState(isNew);
+  const [isEditing, setIsEditing] = useState(isNew && (!isTemplateQuery || isAdminOrEL));
   const [activeTab, setActiveTab] = useState("planning");
   const [showLinkForm, setShowLinkForm] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
@@ -541,7 +547,7 @@ export default function PlanningDetail() {
               <Copy className="h-4 w-4 mr-1.5" />Duplicate
             </Button>
           )}
-          {!isNew && !isEditing && (
+          {!isNew && !isEditing && canEditThisCycle && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/5">
@@ -562,7 +568,7 @@ export default function PlanningDetail() {
               </AlertDialogContent>
             </AlertDialog>
           )}
-          {!isEditing && (
+          {!isEditing && canEditThisCycle && (
             <Button onClick={() => setIsEditing(true)}>
               <Pencil className="h-4 w-4 mr-1.5" />Edit
             </Button>

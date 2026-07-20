@@ -28,6 +28,15 @@ function storageUrl(objectPath: string): string {
 
 type ViewMode = "tiles" | "list";
 
+function getMedicalConditionLabels(child: { hasMedicalCondition?: boolean | null; medicalRiskPlan?: unknown }): string[] {
+  if (!child.hasMedicalCondition) return [];
+  const plan = child.medicalRiskPlan as { conditions?: { allergyCondition?: string }[] } | null | undefined;
+  const labels = (plan?.conditions ?? [])
+    .map(c => c.allergyCondition?.trim())
+    .filter(Boolean) as string[];
+  return labels.length > 0 ? labels : ["Medical"];
+}
+
 function useViewMode(): [ViewMode, (v: ViewMode) => void] {
   const [view, setViewState] = useState<ViewMode>(() => {
     try { return (localStorage.getItem("children-view") as ViewMode) ?? "tiles"; }
@@ -216,11 +225,11 @@ export default function ChildrenList() {
                     <CardTitle className="text-lg leading-tight">{child.firstName} {child.lastName}</CardTitle>
                   </div>
                   <div className="flex items-center gap-1 ml-2 shrink-0 flex-wrap justify-end">
-                    {child.hasMedicalCondition && (child.communicationPlan as any)?.medicalCondition && (
-                      <Badge variant="outline" className="text-xs border-red-300 text-red-700 bg-red-50">
-                        {(child.communicationPlan as any).medicalCondition}
+                    {getMedicalConditionLabels(child as any).map(label => (
+                      <Badge key={label} variant="outline" className="text-xs border-red-300 text-red-700 bg-red-50">
+                        {label}
                       </Badge>
-                    )}
+                    ))}
                     {child.photoRestriction && (
                       <Badge variant="outline" className="text-xs border-amber-300 text-amber-800 bg-amber-50">
                         No Photo
@@ -292,11 +301,11 @@ export default function ChildrenList() {
                     <span className="w-28 text-right text-sm text-muted-foreground hidden sm:block">{age}</span>
                     <span className="w-32 text-right text-sm text-muted-foreground truncate hidden md:block">{siteName ?? "—"}</span>
                     <div className="flex items-center gap-1 justify-end">
-                      {child.hasMedicalCondition && (child.communicationPlan as any)?.medicalCondition && (
-                        <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-red-300 text-red-700 bg-red-50">
-                          {(child.communicationPlan as any).medicalCondition}
+                      {getMedicalConditionLabels(child as any).map(label => (
+                        <Badge key={label} variant="outline" className="text-[10px] h-4 px-1.5 border-red-300 text-red-700 bg-red-50">
+                          {label}
                         </Badge>
-                      )}
+                      ))}
                       {child.photoRestriction && (
                         <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-amber-300 text-amber-800 bg-amber-50">
                           No Photo

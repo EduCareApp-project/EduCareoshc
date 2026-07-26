@@ -49,6 +49,24 @@ async function seedNotificationSettings(): Promise<void> {
   }
 }
 
+async function fixRollSubmissionWeekStarts(): Promise<void> {
+  // One-time repair: rows stored with Sunday dates instead of Monday due to a
+  // client timezone bug (toISOString() converting local Monday to UTC Sunday).
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      UPDATE roll_submissions
+      SET week_start = CASE
+        WHEN week_start = '2026-06-07' THEN '2026-06-08'::date
+        WHEN week_start = '2026-05-10' THEN '2026-05-11'::date
+      END
+      WHERE week_start IN ('2026-06-07', '2026-05-10')
+    `);
+  } finally {
+    client.release();
+  }
+}
+
 async function seedSuperAdminStaff(): Promise<void> {
   const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
   const superAdminHash  = process.env.SUPER_ADMIN_PASSWORD_HASH;
@@ -90,6 +108,13 @@ app.listen(port, async (err) => {
 
   logger.info({ port }, "Server listening");
   logEmailConfig();
+
+  try {
+    await fixRollSubmissionWeekStarts();
+    logger.info("Roll submission week starts verified");
+  } catch (fixErr) {
+    logger.warn({ err: fixErr }, "Failed to fix roll submission week starts");
+  }
 
   try {
     await seedNotificationSettings();

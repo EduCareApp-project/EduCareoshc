@@ -625,14 +625,19 @@ type WeekData = {
 };
 
 function getWeekStartForOffset(offset: number): string {
-  // Work entirely in UTC to match the server — mixing local getDay()/setDate()
-  // with toISOString() produces Sunday dates for users in UTC+ timezones when
-  // it is Monday morning locally but still Sunday in UTC.
-  const nowMs = Date.now();
-  const utcDay = new Date(nowMs).getUTCDay(); // 0=Sun … 6=Sat
-  const daysToMonday = utcDay === 0 ? -6 : 1 - utcDay;
-  const mondayMs = nowMs + (daysToMonday + offset * 7) * 86_400_000;
-  return new Date(mondayMs).toISOString().slice(0, 10);
+  // Use LOCAL timezone throughout — format with getFullYear/getMonth/getDate
+  // so we never convert to UTC (toISOString does that and shifts the date for
+  // UTC+ timezones). On Sunday (d=0) advance to the coming Monday so the
+  // tracker already shows next week by end of the weekend.
+  const today = new Date();
+  const d = today.getDay(); // 0=Sun … 6=Sat (local)
+  const diff = d === 0 ? 1 : 1 - d; // Sun→+1 (next Mon), Mon→0, Tue→-1 …
+  const mon = new Date(today);
+  mon.setDate(today.getDate() + diff + offset * 7);
+  const y = mon.getFullYear();
+  const m = String(mon.getMonth() + 1).padStart(2, "0");
+  const day = String(mon.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function RollSubmissionChecklist() {

@@ -37,6 +37,26 @@ function requireSuperAdmin(req: any, res: any, next: any) {
   next();
 }
 
+// ONE-TIME migration: fix roll_submissions rows stored with Sunday dates instead
+// of Monday due to a client-side timezone bug. Safe to call multiple times.
+router.post("/super-admin/migrate-roll-week-starts", requireSuperAdmin, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(`
+      UPDATE roll_submissions
+      SET week_start = CASE
+        WHEN week_start = '2026-06-07' THEN '2026-06-08'::date
+        WHEN week_start = '2026-05-10' THEN '2026-05-11'::date
+      END
+      WHERE week_start IN ('2026-06-07', '2026-05-10')
+      RETURNING id, week_start
+    `);
+    res.json({ fixed: result.rowCount, rows: result.rows });
+  } finally {
+    client.release();
+  }
+});
+
 router.get("/super-admin/orgs", requireSuperAdmin, async (req, res) => {
   const client = await pool.connect();
   try {

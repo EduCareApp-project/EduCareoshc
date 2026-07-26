@@ -625,12 +625,14 @@ type WeekData = {
 };
 
 function getWeekStartForOffset(offset: number): string {
-  const today = new Date();
-  const d = today.getDay();
-  const diff = d === 0 ? -6 : 1 - d;
-  const mon = new Date(today);
-  mon.setDate(today.getDate() + diff + offset * 7);
-  return mon.toISOString().slice(0, 10);
+  // Work entirely in UTC to match the server — mixing local getDay()/setDate()
+  // with toISOString() produces Sunday dates for users in UTC+ timezones when
+  // it is Monday morning locally but still Sunday in UTC.
+  const nowMs = Date.now();
+  const utcDay = new Date(nowMs).getUTCDay(); // 0=Sun … 6=Sat
+  const daysToMonday = utcDay === 0 ? -6 : 1 - utcDay;
+  const mondayMs = nowMs + (daysToMonday + offset * 7) * 86_400_000;
+  return new Date(mondayMs).toISOString().slice(0, 10);
 }
 
 function RollSubmissionChecklist() {

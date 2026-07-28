@@ -756,43 +756,71 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
             if (editingSlot === slot) return editForm(slot);
             if (!med || !med.name) return null;
 
-            return (
-              <Card key={slot} className={`cursor-pointer transition-all ${isSelected ? "ring-2 ring-primary" : "hover:shadow-md"}`} onClick={() => setSelectedSlot(isSelected ? null : slot)}>
-                <CardHeader className="pb-1 pt-4 px-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm flex items-center gap-2 min-w-0">
-                      <Pill className="h-4 w-4 text-primary shrink-0" />
-                      <span className="truncate">{med.name}</span>
-                    </CardTitle>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); startEdit(slot); }}><Pencil className="h-3 w-3" /></Button>
-                      {isSelected ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="px-4 pb-4 space-y-1 text-xs text-muted-foreground">
-                  {med.dosage && <p><span className="font-medium text-foreground">Dosage:</span> {med.dosage}</p>}
-                  {med.methodOfAdministration && <p><span className="font-medium text-foreground">Method:</span> {med.methodOfAdministration}</p>}
-                  {med.frequency && <p><span className="font-medium text-foreground">Frequency:</span> {med.frequency}</p>}
-                  {med.administrationTime && <p><span className="font-medium text-foreground">Time:</span> {med.administrationTime}</p>}
-                  {med.lastAdministered && <p><span className="font-medium text-foreground">Last admin:</span> {med.lastAdministered}</p>}
-                  {med.expiryDate && (() => {
-                    const today = new Date().toISOString().split("T")[0];
-                    const in30 = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
-                    const expired = med.expiryDate <= today;
-                    const expiringSoon = !expired && med.expiryDate <= in30;
-                    return (
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <span className="font-medium text-foreground">Expires:</span>
-                        <span>{med.expiryDate}</span>
-                        {expired && <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4">Expired</Badge>}
-                        {expiringSoon && <Badge className="text-[10px] px-1.5 py-0 h-4 bg-amber-500 hover:bg-amber-500">Expiring soon</Badge>}
+            return (() => {
+              // Compute expiry status for card-level styling
+              const expiryStatus = (() => {
+                if (!med.expiryDate) return null;
+                const todayMs = new Date().setHours(0, 0, 0, 0);
+                const expiryMs = new Date(med.expiryDate + "T00:00:00").getTime();
+                const diffDays = Math.round((expiryMs - todayMs) / 86400000);
+                if (diffDays < 0) return { kind: "expired" as const, diffDays };
+                if (diffDays <= 30) return { kind: "soon" as const, diffDays };
+                return null;
+              })();
+              const cardRing = expiryStatus?.kind === "expired"
+                ? "ring-2 ring-destructive"
+                : expiryStatus?.kind === "soon"
+                  ? "ring-2 ring-amber-400"
+                  : isSelected ? "ring-2 ring-primary" : "hover:shadow-md";
+              return (
+                <Card key={slot} className={`cursor-pointer transition-all ${cardRing}`} onClick={() => setSelectedSlot(isSelected ? null : slot)}>
+                  <CardHeader className="pb-1 pt-4 px-4">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm flex items-center gap-2 min-w-0">
+                        <Pill className={`h-4 w-4 shrink-0 ${expiryStatus?.kind === "expired" ? "text-destructive" : expiryStatus?.kind === "soon" ? "text-amber-500" : "text-primary"}`} />
+                        <span className="truncate">{med.name}</span>
+                      </CardTitle>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); startEdit(slot); }}><Pencil className="h-3 w-3" /></Button>
+                        {isSelected ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                       </div>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
-            );
+                    </div>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4 space-y-1 text-xs text-muted-foreground">
+                    {med.dosage && <p><span className="font-medium text-foreground">Dosage:</span> {med.dosage}</p>}
+                    {med.methodOfAdministration && <p><span className="font-medium text-foreground">Method:</span> {med.methodOfAdministration}</p>}
+                    {med.frequency && <p><span className="font-medium text-foreground">Frequency:</span> {med.frequency}</p>}
+                    {med.administrationTime && <p><span className="font-medium text-foreground">Time:</span> {med.administrationTime}</p>}
+                    {med.lastAdministered && <p><span className="font-medium text-foreground">Last admin:</span> {med.lastAdministered}</p>}
+                    {med.expiryDate && (() => {
+                      const formattedExpiry = safeDate(med.expiryDate, "dd/MM/yyyy");
+                      if (!expiryStatus) {
+                        return <p><span className="font-medium text-foreground">Expires:</span> {formattedExpiry}</p>;
+                      }
+                      const { kind, diffDays } = expiryStatus;
+                      const dayLabel = kind === "expired"
+                        ? `${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? "s" : ""} overdue`
+                        : diffDays === 0
+                          ? "expires today"
+                          : `${diffDays} day${diffDays !== 1 ? "s" : ""} left`;
+                      return (
+                        <div className={`mt-2 rounded-md px-2.5 py-2 flex items-start gap-2 ${kind === "expired" ? "bg-destructive/10 border border-destructive/30" : "bg-amber-50 border border-amber-300"}`}>
+                          <AlertTriangle className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${kind === "expired" ? "text-destructive" : "text-amber-600"}`} />
+                          <div>
+                            <p className={`font-semibold leading-tight ${kind === "expired" ? "text-destructive" : "text-amber-700"}`}>
+                              {kind === "expired" ? "Expired" : "Expiring soon"}
+                            </p>
+                            <p className={`leading-snug ${kind === "expired" ? "text-destructive/80" : "text-amber-600"}`}>
+                              {formattedExpiry} · {dayLabel}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              );
+            })();
           })}
         </div>
       ) : (

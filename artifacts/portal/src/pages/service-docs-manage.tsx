@@ -299,7 +299,7 @@ export default function ServiceDocsManage() {
     queryClient.invalidateQueries({ queryKey: ["/api/file-categories"] });
   }
 
-  const previewUrl = "/service-docs";
+  const previewUrl = selectedSiteId != null ? `/service-docs?siteId=${selectedSiteId}` : "/service-docs";
 
   return (
     <div className="space-y-6">

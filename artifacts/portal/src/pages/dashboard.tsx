@@ -5,7 +5,7 @@ import {
   useListNotices, useCreateNotice, useDeleteNotice, useUpdateNotice,
   useGetServiceComplianceReport, useGetLearningStoriesReport,
   useListPlanningExperiences, useListPosts, useListSites,
-  useListChecklistRoutines, useListChildren,
+  useListChecklistRoutines, useListChildren, useGetExpiringMedications,
 } from "@workspace/api-client-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { Link } from "wouter";
@@ -14,10 +14,10 @@ import { RichTextEditor, RichTextView } from "@/components/rich-text-editor";
 import {
   Baby, Users, BookOpen, ClipboardList, ShieldCheck, Bell, Trash2, Plus,
   AlertTriangle, CheckCircle2, Clock, FileText, Calendar, PenLine, ShoppingCart,
-  Layers, Image, ChevronLeft, ChevronRight, GraduationCap, Paperclip, X, XCircle, Upload, Newspaper, Pencil, ExternalLink, ClipboardCheck, Building2,
+  Layers, Image, ChevronLeft, ChevronRight, GraduationCap, Paperclip, X, XCircle, Upload, Newspaper, Pencil, ExternalLink, ClipboardCheck, Building2, Pill,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format, parseISO, startOfWeek, addDays } from "date-fns";
+import { format, parseISO, startOfWeek, addDays, differenceInCalendarDays } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -838,6 +838,91 @@ function ActivityTypeBadge({ type }: { type: string }) {
 }
 
 // ─── Leadership ───────────────────────────────────────────────────────────────
+// ─── Medication Expiry Widget ────────────────────────────────────────────────
+function MedicationExpiryWidget({ siteId }: { siteId?: number }) {
+  const params = siteId ? { siteId } : undefined;
+  const { data, isLoading } = useGetExpiringMedications(params);
+
+  if (isLoading) {
+    return (
+      <Card className="border-l-4 border-l-orange-400">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Pill className="h-4 w-4 text-orange-500" /> Medications needing attention
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!data || data.length === 0) return null;
+
+  return (
+    <Card className="border-l-4 border-l-orange-400">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center justify-between gap-2">
+          <span className="flex items-center gap-2">
+            <Pill className="h-4 w-4 text-orange-500" /> Medications needing attention
+          </span>
+          <Link href="/children?medical=1">
+            <span className="text-xs text-primary font-normal cursor-pointer hover:underline flex items-center gap-0.5">
+              View all <ChevronRight className="h-3 w-3" />
+            </span>
+          </Link>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {data.map((child) => {
+            const hasExpired = child.medications.some((m) => m.status === "expired");
+            return (
+              <Link key={child.childId} href={`/children/${child.childId}?tab=medical`}>
+                <div className={`flex items-start justify-between gap-3 rounded-md px-3 py-2.5 border cursor-pointer hover:bg-muted/40 transition-colors ${hasExpired ? "border-red-200 bg-red-50/60" : "border-orange-200 bg-orange-50/60"}`}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${hasExpired ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>
+                      {child.childFirstName[0]}{child.childLastName[0]}
+                    </div>
+                    <div className="min-w-0">
+                      <p className={`text-sm font-medium ${hasExpired ? "text-red-800" : "text-orange-800"}`}>
+                        {child.childFirstName} {child.childLastName}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 mt-0.5">
+                        {child.medications.map((med) => {
+                          const expiry = new Date(med.expiryDate + "T00:00:00");
+                          const today = new Date(); today.setHours(0, 0, 0, 0);
+                          const daysLeft = differenceInCalendarDays(expiry, today);
+                          const label = med.status === "expired"
+                            ? `${med.name} — expired ${Math.abs(daysLeft)}d ago`
+                            : `${med.name} — expires in ${daysLeft}d`;
+                          return (
+                            <span
+                              key={med.slot}
+                              className={`text-xs px-1.5 py-0.5 rounded font-medium ${med.status === "expired" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}
+                            >
+                              {label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function LeadershipDashboard() {
   const { data: summary, isLoading: loadingSummary } = useGetDashboardSummary();
   const { data: outcomes, isLoading: loadingOutcomes } = useGetOutcomeCounts();
@@ -897,6 +982,8 @@ function LeadershipDashboard() {
           />
         </div>
       </div>
+
+      <MedicationExpiryWidget />
 
       <NoticeBoard canManage audience="leadership" />
 
@@ -1271,6 +1358,8 @@ function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
           </Card>
         )}
       </div>
+
+      <MedicationExpiryWidget siteId={numericSiteId ?? undefined} />
 
       {/* Groceries button */}
       <a

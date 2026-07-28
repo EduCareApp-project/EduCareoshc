@@ -2944,6 +2944,26 @@ paths:
                   ok:
                     type: boolean
 
+  /medications/expiring:
+    get:
+      tags: [medications]
+      summary: List children with expiring or expired medications (within 30 days)
+      operationId: getExpiringMedications
+      parameters:
+        - name: siteId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExpiringMedicationChild"
+
   /children/{id}/medications:
     get:
       tags: [medications]
@@ -6185,6 +6205,38 @@ components:
         siteId:
           type: ["integer", "null"]
 
+    ExpiringMedicationEntry:
+      type: object
+      required: [slot, name, expiryDate, status]
+      properties:
+        slot:
+          type: integer
+        name:
+          type: string
+        expiryDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [expired, expiring_soon]
+
+    ExpiringMedicationChild:
+      type: object
+      required: [childId, childFirstName, childLastName, medications]
+      properties:
+        childId:
+          type: integer
+        childFirstName:
+          type: string
+        childLastName:
+          type: string
+        siteId:
+          type: ["integer", "null"]
+        medications:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpiringMedicationEntry"
+
     ChildMedication:
       type: object
       required: [id, childId, slot, name, createdAt, updatedAt]
@@ -6209,6 +6261,9 @@ components:
           type: ["string", "null"]
         methodOfAdministration:
           type: ["string", "null"]
+        expiryDate:
+          type: ["string", "null"]
+          format: date
         createdAt:
           type: string
           format: date-time
@@ -6234,6 +6289,9 @@ components:
           type: string
         methodOfAdministration:
           type: string
+        expiryDate:
+          type: string
+          format: date
 
     MedicationLog:
       type: object

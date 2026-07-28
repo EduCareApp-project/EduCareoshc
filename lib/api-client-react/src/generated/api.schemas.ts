@@ -1945,6 +1945,30 @@ export interface NotificationSetting {
   siteId?: number | null;
 }
 
+export type ExpiringMedicationEntryStatus =
+  (typeof ExpiringMedicationEntryStatus)[keyof typeof ExpiringMedicationEntryStatus];
+
+export const ExpiringMedicationEntryStatus = {
+  expired: "expired",
+  expiring_soon: "expiring_soon",
+} as const;
+
+export interface ExpiringMedicationEntry {
+  slot: number;
+  name: string;
+  expiryDate: string;
+  status: ExpiringMedicationEntryStatus;
+}
+
+export interface ExpiringMedicationChild {
+  childId: number;
+  childFirstName: string;
+  childLastName: string;
+  /** @nullable */
+  siteId?: number | null;
+  medications: ExpiringMedicationEntry[];
+}
+
 export interface ChildMedication {
   id: number;
   childId: number;
@@ -1976,7 +2000,7 @@ export interface MedicationSlotPayload {
   administrationTime?: string;
   dosage?: string;
   methodOfAdministration?: string;
-  expiryDate?: string | null;
+  expiryDate?: string;
 }
 
 export interface MedicationLog {
@@ -2255,6 +2279,10 @@ export type ListNotificationSettingsParams = {
 
 export type UpdateNotificationSettings200 = {
   ok: boolean;
+};
+
+export type GetExpiringMedicationsParams = {
+  siteId?: number;
 };
 
 export type DeleteBehaviouralNotification200 = {

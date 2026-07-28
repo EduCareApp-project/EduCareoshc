@@ -23,6 +23,8 @@ export interface ChildMedication {
   dosage?: string | null;
   /** @nullable */
   methodOfAdministration?: string | null;
+  /** @nullable */
+  expiryDate?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

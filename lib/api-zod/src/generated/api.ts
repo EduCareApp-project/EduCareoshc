@@ -3682,6 +3682,31 @@ export const UpdateNotificationSettingsResponse = zod.object({
 });
 
 /**
+ * @summary List children with expiring or expired medications (within 30 days)
+ */
+export const GetExpiringMedicationsQueryParams = zod.object({
+  siteId: zod.coerce.number().optional(),
+});
+
+export const GetExpiringMedicationsResponseItem = zod.object({
+  childId: zod.number(),
+  childFirstName: zod.string(),
+  childLastName: zod.string(),
+  siteId: zod.number().nullish(),
+  medications: zod.array(
+    zod.object({
+      slot: zod.number(),
+      name: zod.string(),
+      expiryDate: zod.coerce.date(),
+      status: zod.enum(["expired", "expiring_soon"]),
+    }),
+  ),
+});
+export const GetExpiringMedicationsResponse = zod.array(
+  GetExpiringMedicationsResponseItem,
+);
+
+/**
  * @summary List medication slots for a child (always returns up to 4)
  */
 export const ListChildMedicationsParams = zod.object({
@@ -3699,6 +3724,7 @@ export const ListChildMedicationsResponseItem = zod.object({
   administrationTime: zod.string().nullish(),
   dosage: zod.string().nullish(),
   methodOfAdministration: zod.string().nullish(),
+  expiryDate: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -3722,6 +3748,7 @@ export const UpsertChildMedicationBody = zod.object({
   administrationTime: zod.string().optional(),
   dosage: zod.string().optional(),
   methodOfAdministration: zod.string().optional(),
+  expiryDate: zod.coerce.date().optional(),
 });
 
 export const UpsertChildMedicationResponse = zod.object({
@@ -3735,6 +3762,7 @@ export const UpsertChildMedicationResponse = zod.object({
   administrationTime: zod.string().nullish(),
   dosage: zod.string().nullish(),
   methodOfAdministration: zod.string().nullish(),
+  expiryDate: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });

@@ -14,5 +14,5 @@ export interface MedicationSlotPayload {
   administrationTime?: string;
   dosage?: string;
   methodOfAdministration?: string;
-  expiryDate?: string | null;
+  expiryDate?: Date;
 }

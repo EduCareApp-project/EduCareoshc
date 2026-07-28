@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, or, desc } from "drizzle-orm";
+import { eq, and, or, desc, ne, inArray } from "drizzle-orm";
 import { db, childMedicationsTable, medicationLogsTable, childrenTable, staffTable, parentAccountsTable } from "@workspace/db";
 import { sendMedicationLogEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
@@ -224,6 +224,106 @@ router.delete("/children/:id/medications/:medicationId/logs/:logId", async (req,
 
   await db.delete(medicationLogsTable).where(eq(medicationLogsTable.id, logId));
   res.sendStatus(204);
+});
+
+// ── GET /medications/expiring ─────────────────────────────────────────────────
+// Returns children who have at least one named medication slot with an expiry
+// date that is today or in the past (expired) or within the next 30 days
+// (expiring soon).  Optionally filtered by siteId query param.
+router.get("/medications/expiring", async (req, res): Promise<void> => {
+  const rawSiteId = req.query.siteId;
+  const filterSiteId = rawSiteId ? parseInt(String(rawSiteId)) : null;
+
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+  const thirtyDaysOut = new Date(now);
+  thirtyDaysOut.setDate(now.getDate() + 30);
+  const thirtyDaysOutStr = thirtyDaysOut.toISOString().split("T")[0];
+
+  // Fetch all named medication slots that have an expiry date
+  const allMeds = await db
+    .select({
+      id: childMedicationsTable.id,
+      childId: childMedicationsTable.childId,
+      slot: childMedicationsTable.slot,
+      name: childMedicationsTable.name,
+      expiryDate: childMedicationsTable.expiryDate,
+    })
+    .from(childMedicationsTable)
+    .where(
+      and(
+        // Must have a name (slot is in use)
+        ne(childMedicationsTable.name, ""),
+      )
+    );
+
+  // Filter to those expiring within range
+  const relevantMeds = allMeds.filter((m) => {
+    if (!m.expiryDate || !m.name) return false;
+    const d = typeof m.expiryDate === "string" ? m.expiryDate : (m.expiryDate as Date).toISOString().split("T")[0];
+    return d <= thirtyDaysOutStr; // expired or expiring soon
+  });
+
+  if (relevantMeds.length === 0) { res.json([]); return; }
+
+  // Fetch children for those medication entries
+  const childIds = [...new Set(relevantMeds.map((m) => m.childId))];
+  const childRows = await db
+    .select({
+      id: childrenTable.id,
+      firstName: childrenTable.firstName,
+      lastName: childrenTable.lastName,
+      siteId: childrenTable.siteId,
+    })
+    .from(childrenTable)
+    .where(inArray(childrenTable.id, childIds));
+
+  // Apply site filter
+  const filteredChildIds = new Set(
+    childRows
+      .filter((c) => filterSiteId === null || c.siteId === filterSiteId)
+      .map((c) => c.id)
+  );
+
+  const childMap = new Map(childRows.map((c) => [c.id, c]));
+
+  // Group by child
+  type MedEntry = { slot: number; name: string; expiryDate: string; status: "expired" | "expiring_soon" };
+  const byChild = new Map<number, MedEntry[]>();
+
+  for (const med of relevantMeds) {
+    if (!filteredChildIds.has(med.childId)) continue;
+    // expiryDate is guaranteed non-null here (filtered above), but Drizzle types it as string|null
+    const rawExpiry = med.expiryDate as string | Date;
+    const d = typeof rawExpiry === "string" ? rawExpiry : rawExpiry.toISOString().split("T")[0];
+    const status: "expired" | "expiring_soon" = d < todayStr ? "expired" : "expiring_soon";
+    const entry: MedEntry = { slot: med.slot, name: med.name, expiryDate: d, status };
+    const existing = byChild.get(med.childId) ?? [];
+    existing.push(entry);
+    byChild.set(med.childId, existing);
+  }
+
+  const result = Array.from(byChild.entries()).map(([childId, medications]) => {
+    const child = childMap.get(childId)!;
+    return {
+      childId,
+      childFirstName: child.firstName,
+      childLastName: child.lastName,
+      siteId: child.siteId ?? null,
+      medications: medications.sort((a, b) => a.slot - b.slot),
+    };
+  });
+
+  // Sort: expired first, then by child name
+  result.sort((a, b) => {
+    const aHasExpired = a.medications.some((m) => m.status === "expired");
+    const bHasExpired = b.medications.some((m) => m.status === "expired");
+    if (aHasExpired && !bHasExpired) return -1;
+    if (!aHasExpired && bHasExpired) return 1;
+    return `${a.childFirstName} ${a.childLastName}`.localeCompare(`${b.childFirstName} ${b.childLastName}`);
+  });
+
+  res.json(result);
 });
 
 // ── GET /guardian/medication-logs ────────────────────────────────────────────

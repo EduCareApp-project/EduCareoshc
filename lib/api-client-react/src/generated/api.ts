@@ -50,6 +50,7 @@ import type {
   ErrorEnvelope,
   Evacuation,
   EvacuationInput,
+  ExpiringMedicationChild,
   FeatureSettings,
   FileCategory,
   FileCategoryInput,
@@ -58,6 +59,7 @@ import type {
   FileLibraryItem,
   FileLibraryUpdate,
   GetChecklistPeriodOverrideParams,
+  GetExpiringMedicationsParams,
   GetLearningStoriesReportParams,
   GetNotificationCount200,
   GetRollComplianceReportParams,
@@ -13132,6 +13134,109 @@ export const useUpdateNotificationSettings = <
 > => {
   return useMutation(getUpdateNotificationSettingsMutationOptions(options));
 };
+
+/**
+ * @summary List children with expiring or expired medications (within 30 days)
+ */
+export const getGetExpiringMedicationsUrl = (
+  params?: GetExpiringMedicationsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/medications/expiring?${stringifiedParams}`
+    : `/api/medications/expiring`;
+};
+
+export const getExpiringMedications = async (
+  params?: GetExpiringMedicationsParams,
+  options?: RequestInit,
+): Promise<ExpiringMedicationChild[]> => {
+  return customFetch<ExpiringMedicationChild[]>(
+    getGetExpiringMedicationsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetExpiringMedicationsQueryKey = (
+  params?: GetExpiringMedicationsParams,
+) => {
+  return [`/api/medications/expiring`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetExpiringMedicationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getExpiringMedications>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetExpiringMedicationsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getExpiringMedications>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetExpiringMedicationsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getExpiringMedications>>
+  > = ({ signal }) =>
+    getExpiringMedications(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getExpiringMedications>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetExpiringMedicationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getExpiringMedications>>
+>;
+export type GetExpiringMedicationsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List children with expiring or expired medications (within 30 days)
+ */
+
+export function useGetExpiringMedications<
+  TData = Awaited<ReturnType<typeof getExpiringMedications>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetExpiringMedicationsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getExpiringMedications>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetExpiringMedicationsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary List medication slots for a child (always returns up to 4)

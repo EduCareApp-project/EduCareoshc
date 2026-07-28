@@ -15,7 +15,7 @@ import {
   ChevronLeft, Pencil, Check, X, Plus, Trash2, Building2,
   MapPin, Phone, Mail, User, Clock, Camera, Upload, Loader2,
   GripVertical, Shield, Home, UtensilsCrossed, Smartphone,
-  AtSign, Monitor,
+  AtSign, Monitor, FileText, Download,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -33,12 +33,14 @@ type QuickRef = {
 
 type Section = { id: string; title: string; content: string };
 type Contact = { id: string; name: string; role?: string; phone?: string; email?: string; notes?: string };
+type SiteDoc = { id: string; name: string; path: string };
 
 type SiteInstructionsData = {
   quickRef: QuickRef;
   sections: Section[];
   contacts: Contact[];
   photos: string[];
+  documents: SiteDoc[];
   updatedAt: string | null;
 };
 
@@ -77,7 +79,7 @@ async function fetchInstructions(siteId: number): Promise<SiteInstructionsData> 
   return res.json();
 }
 
-async function saveInstructions(siteId: number, data: Omit<SiteInstructionsData, "updatedAt">): Promise<SiteInstructionsData> {
+async function saveInstructions(siteId: number, data: Omit<SiteInstructionsData, "updatedAt" | "documents"> & { documents: SiteDoc[] }): Promise<SiteInstructionsData> {
   const res = await fetch(`/api/site-instructions/${siteId}`, {
     method: "PUT",
     credentials: "include",
@@ -110,8 +112,10 @@ export default function SiteInstructions() {
   const [editSections, setEditSections] = useState<Section[]>([]);
   const [editContacts, setEditContacts] = useState<Contact[]>([]);
   const [editPhotos, setEditPhotos] = useState<string[]>([]);
+  const [editDocuments, setEditDocuments] = useState<SiteDoc[]>([]);
 
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!siteId) return;
@@ -137,6 +141,7 @@ export default function SiteInstructions() {
     );
     setEditContacts(instructions.contacts.map((c) => ({ ...c })));
     setEditPhotos([...instructions.photos]);
+    setEditDocuments([...(instructions.documents ?? [])]);
     setEditing(true);
   }
 
@@ -152,6 +157,7 @@ export default function SiteInstructions() {
         sections: editSections,
         contacts: editContacts,
         photos: editPhotos,
+        documents: editDocuments,
       });
       setInstructions(saved);
       setEditing(false);
@@ -175,6 +181,36 @@ export default function SiteInstructions() {
       toast({ title: "Photo upload failed", variant: "destructive" });
     }
   }, [uploadFile, toast]);
+
+  // ── Document upload ──────────────────────────────────────────────────────────
+  const [isDocUploading, setIsDocUploading] = useState(false);
+
+  const handleDocUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    e.target.value = "";
+    setIsDocUploading(true);
+    try {
+      for (const file of files) {
+        const res = await uploadFile(file);
+        if (res?.objectPath) {
+          setEditDocuments((prev) => [...prev, { id: uid(), name: file.name, path: res.objectPath }]);
+        }
+      }
+    } catch {
+      toast({ title: "Document upload failed", variant: "destructive" });
+    } finally {
+      setIsDocUploading(false);
+    }
+  }, [uploadFile, toast]);
+
+  function removeDocument(id: string) {
+    setEditDocuments((prev) => prev.filter((d) => d.id !== id));
+  }
+
+  function updateDocName(id: string, name: string) {
+    setEditDocuments((prev) => prev.map((d) => d.id === id ? { ...d, name } : d));
+  }
 
   // ── Section helpers ──────────────────────────────────────────────────────────
   function addSection() {
@@ -209,6 +245,7 @@ export default function SiteInstructions() {
 
   const displayQuickRef = editing ? editQuickRef : (instructions?.quickRef ?? {});
   const displayContacts = editing ? editContacts : (instructions?.contacts ?? []);
+  const displayDocuments = editing ? editDocuments : (instructions?.documents ?? []);
   const displayPhotos = editing ? editPhotos : (instructions?.photos ?? []);
   const hasHours = displayQuickRef.hours && Object.values(displayQuickRef.hours).some((h) => h?.open || h?.close);
 
@@ -550,6 +587,95 @@ export default function SiteInstructions() {
                   );
                 })}
               </div>
+            )}
+          </div>
+
+          {/* ── Important Documents ──────────────────────────────────────── */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between bg-sidebar text-sidebar-foreground rounded-full px-5 py-2.5">
+              <h2 className="text-sm font-semibold tracking-wide">Important Documents</h2>
+              {editing && (
+                <>
+                  <Button
+                    variant="outline" size="sm" className="gap-2 text-xs"
+                    onClick={() => docInputRef.current?.click()}
+                    disabled={isDocUploading}
+                  >
+                    {isDocUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                    {isDocUploading ? "Uploading…" : "Upload Documents"}
+                  </Button>
+                  <input
+                    ref={docInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={handleDocUpload}
+                  />
+                </>
+              )}
+            </div>
+
+            {displayDocuments.length === 0 ? (
+              <Card>
+                <CardContent className="py-10 text-center text-muted-foreground text-sm">
+                  {isAdminOrEL
+                    ? (editing
+                        ? <button onClick={() => docInputRef.current?.click()} className="flex flex-col items-center gap-2 w-full cursor-pointer hover:text-primary transition-colors">
+                            <Upload className="h-7 w-7 opacity-40" />
+                            Click Upload Documents to add files
+                          </button>
+                        : "Click Edit Instructions to upload important documents.")
+                    : "No important documents have been added yet."}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-0 divide-y">
+                  {displayDocuments.map((doc) => (
+                    <div key={doc.id} className="flex items-center gap-3 px-4 py-3">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                      {editing ? (
+                        <>
+                          <input
+                            value={doc.name}
+                            onChange={(e) => updateDocName(doc.id, e.target.value)}
+                            className="flex-1 text-sm bg-transparent border-0 border-b border-input focus:outline-none focus:border-primary py-0.5"
+                          />
+                          <Button
+                            variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => removeDocument(doc.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="flex-1 text-sm truncate">{doc.name}</span>
+                          <a
+                            href={`/api/storage/objects/${doc.path.replace(/^\/objects\//, "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 text-primary hover:text-primary/80 transition-colors"
+                            title="Open document"
+                          >
+                            <Download className="h-4 w-4" />
+                          </a>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                  {editing && (
+                    <button
+                      onClick={() => docInputRef.current?.click()}
+                      disabled={isDocUploading}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground hover:text-primary hover:bg-accent/30 transition-colors"
+                    >
+                      {isDocUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                      {isDocUploading ? "Uploading…" : "Add more documents"}
+                    </button>
+                  )}
+                </CardContent>
+              </Card>
             )}
           </div>
 

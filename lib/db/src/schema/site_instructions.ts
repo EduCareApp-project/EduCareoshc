@@ -28,6 +28,12 @@ export type SiteContact = {
   notes?: string;
 };
 
+export type SiteDoc = {
+  id: string;
+  name: string;
+  path: string;
+};
+
 export const siteInstructionsTable = pgTable("site_instructions", {
   id: serial("id").primaryKey(),
   siteId: integer("site_id").notNull().unique().references(() => sitesTable.id, { onDelete: "cascade" }),
@@ -35,6 +41,7 @@ export const siteInstructionsTable = pgTable("site_instructions", {
   sections: jsonb("sections").$type<SiteSection[]>().notNull().default([]),
   contacts: jsonb("contacts").$type<SiteContact[]>().notNull().default([]),
   photos: text("photos").array().notNull().default([]),
+  documents: jsonb("documents").$type<SiteDoc[]>().notNull().default([]),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   updatedById: integer("updated_by_id").references(() => staffTable.id, { onDelete: "set null" }),
 });

@@ -24,7 +24,7 @@ router.get("/site-instructions/:siteId", async (req, res): Promise<void> => {
     .where(eq(siteInstructionsTable.siteId, siteId))
     .limit(1);
   if (!row) {
-    res.json({ siteId, quickRef: {}, sections: [], contacts: [], photos: [], updatedAt: null, updatedById: null });
+    res.json({ siteId, quickRef: {}, sections: [], contacts: [], photos: [], documents: [], updatedAt: null, updatedById: null });
     return;
   }
   res.json(row);
@@ -41,7 +41,7 @@ router.put("/site-instructions/:siteId", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Invalid siteId" });
     return;
   }
-  const { quickRef, sections, contacts, photos } = req.body;
+  const { quickRef, sections, contacts, photos, documents } = req.body;
   const staffId = (req.session as any).user?.id ?? null;
 
   const existing = await db
@@ -55,6 +55,7 @@ router.put("/site-instructions/:siteId", async (req, res): Promise<void> => {
     sections: sections ?? [],
     contacts: contacts ?? [],
     photos: photos ?? [],
+    documents: documents ?? [],
     updatedAt: new Date(),
     updatedById: staffId,
   };

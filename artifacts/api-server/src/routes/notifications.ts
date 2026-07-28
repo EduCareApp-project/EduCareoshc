@@ -17,7 +17,7 @@ import {
   emailSendLogTable,
 } from "@workspace/db";
 import { createNotification, createNotificationsForRoles, getISOWeek, getYearMonth } from "../lib/notify";
-import { sendMedicationExpiryEmail } from "../lib/email";
+import { sendMedicationExpiryEmail, sendGuardianMedicationExpiryEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 import { isEmailChannelEnabled, isInAppChannelEnabled } from "../lib/channelMap";
 import { getAppUrl } from "../lib/appUrl";
@@ -234,6 +234,7 @@ async function computeDeadlineNotifications(): Promise<void> {
 
       const childName = `${child.firstName} ${child.lastName}`;
       const childProfileUrl = `${getAppUrl()}/children/${med.childId}`;
+      const medicationLogsUrl = `${getAppUrl()}/medication-logs`;
 
       // ── In-app notifications → active staff at the child's site ─────────────
       if (await isInAppChannelEnabled("medication_expiry")) {
@@ -261,13 +262,16 @@ async function computeDeadlineNotifications(): Promise<void> {
       // ── Email → site staff + guardians with portal accounts ─────────────────
       if (await isEmailChannelEnabled("medication_expiry")) {
         // Staff emails
-        const staffEmails = await db.select({ email: staffTable.email })
+        const staffEmailRows = await db.select({ email: staffTable.email })
           .from(staffTable)
           .where(and(
             inArray(staffTable.role, ["admin", "educational_leader", "coordinator", "educator"]),
             eq(staffTable.status, "active"),
             ...(child.siteId ? [eq(staffTable.siteId, child.siteId)] : []),
           ));
+        const staffEmailSet = new Set(
+          staffEmailRows.map((s) => s.email).filter((e): e is string => !!e),
+        );
 
         // Guardian emails (only those with parent accounts)
         const guardianCandidates = [child.guardianEmail, child.guardian2Email].filter((e): e is string => !!e);
@@ -276,11 +280,14 @@ async function computeDeadlineNotifications(): Promise<void> {
               .from(parentAccountsTable)
               .where(inArray(parentAccountsTable.guardianEmail, guardianCandidates))
           : [];
+        const guardianEmailSet = new Set(
+          guardianAccounts.map((a) => a.guardianEmail).filter((e): e is string => !!e),
+        );
 
         const allCandidateEmails = [
-          ...staffEmails.map((s) => s.email),
-          ...guardianAccounts.map((a) => a.guardianEmail),
-        ].filter((e, idx, arr) => e && arr.indexOf(e) === idx) as string[];
+          ...staffEmailSet,
+          ...guardianEmailSet,
+        ].filter((e, idx, arr) => arr.indexOf(e) === idx);
 
         if (allCandidateEmails.length > 0) {
           // ── Per-recipient monthly deduplification ───────────────────────────
@@ -297,12 +304,23 @@ async function computeDeadlineNotifications(): Promise<void> {
               .limit(1);
             if (existing.length > 0) continue;
 
-            const { sent } = await sendMedicationExpiryEmail([email], {
-              childName,
-              medicationName: med.name,
-              expiryDate: expiryStr,
-              childProfileUrl,
-            }, branding);
+            // Guardians receive a plain-language reminder linking to their portal;
+            // staff receive the detailed admin template linking to the child profile.
+            const isGuardian = guardianEmailSet.has(email) && !staffEmailSet.has(email);
+            const { sent } = isGuardian
+              ? await sendGuardianMedicationExpiryEmail([email], {
+                  childName,
+                  medicationName: med.name,
+                  expiryDate: expiryStr,
+                  medicationLogsUrl,
+                }, branding)
+              : await sendMedicationExpiryEmail([email], {
+                  childName,
+                  medicationName: med.name,
+                  expiryDate: expiryStr,
+                  childProfileUrl,
+                }, branding);
+
             // Only record the dedupe key when delivery was confirmed.
             // If send failed, `sent` is empty and no row is written, so
             // the next scheduled run will retry this recipient.

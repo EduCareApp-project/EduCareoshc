@@ -895,6 +895,104 @@ export async function sendMedicationExpiryEmail(
   return { sent: sentEmails, failed: errors };
 }
 
+export interface GuardianMedicationExpiryEmailOptions {
+  childName: string;
+  medicationName: string;
+  expiryDate: string;
+  medicationLogsUrl: string;
+}
+
+export async function sendGuardianMedicationExpiryEmail(
+  recipients: string[],
+  opts: GuardianMedicationExpiryEmailOptions,
+  branding?: EmailBranding,
+): Promise<{ sent: string[]; failed: string[] }> {
+  if (recipients.length === 0) return { sent: [], failed: [] };
+
+  const from = smtpFrom();
+  const transport = createTransport();
+
+  if (!transport) {
+    logger.warn({ count: recipients.length }, "SMTP not configured — guardian medication expiry emails were not sent");
+    return { sent: [], failed: recipients };
+  }
+
+  const isExpired = opts.expiryDate <= new Date().toISOString().split("T")[0];
+  const accentColor = isExpired ? "#dc2626" : "#d97706";
+
+  const subject = isExpired
+    ? `Action needed — ${opts.medicationName} for ${opts.childName} has expired`
+    : `Reminder — ${opts.medicationName} for ${opts.childName} is expiring soon`;
+
+  const headingText = isExpired ? "Medication has expired" : "Medication expiring soon";
+
+  const introText = isExpired
+    ? `The medication <strong>${opts.medicationName.replace(/</g, "&lt;")}</strong> you have on file for <strong>${opts.childName.replace(/</g, "&lt;")}</strong> expired on ${opts.expiryDate}.`
+    : `The medication <strong>${opts.medicationName.replace(/</g, "&lt;")}</strong> you have on file for <strong>${opts.childName.replace(/</g, "&lt;")}</strong> is due to expire on <strong>${opts.expiryDate}</strong>.`;
+
+  const actionText = isExpired
+    ? "Please bring a new supply to the centre as soon as possible so the medication record can be updated."
+    : "Please arrange a new supply and bring it to the centre before the expiry date.";
+
+  const errors: string[] = [];
+  for (let i = 0; i < recipients.length; i++) {
+    const email = recipients[i];
+    try {
+      await transport.sendMail({
+        from: `"${fromName(branding)}" <${from}>`,
+        to: email,
+        subject,
+        text: [
+          "Hi,",
+          "",
+          isExpired
+            ? `The medication "${opts.medicationName}" for ${opts.childName} expired on ${opts.expiryDate}.`
+            : `The medication "${opts.medicationName}" for ${opts.childName} is due to expire on ${opts.expiryDate}.`,
+          "",
+          isExpired
+            ? "Please bring a new supply to the centre as soon as possible so the medication record can be updated."
+            : "Please arrange a new supply and bring it to the centre before the expiry date.",
+          "",
+          "You can view your child's medication logs here:",
+          opts.medicationLogsUrl,
+          "",
+          `— ${fromName(branding)}`,
+        ].join("\n"),
+        html: `
+          <!DOCTYPE html>
+          <html>
+            <body style="font-family: sans-serif; color: #1a1a1a; max-width: 560px; margin: 0 auto; padding: 24px;">
+              ${buildLogoHtml(branding)}
+              <div style="display:inline-block; margin-bottom:12px; padding:4px 12px; border-radius:99px; background:${accentColor}20; color:${accentColor}; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">
+                ${isExpired ? "Expired" : "Expiring Soon"}
+              </div>
+              <h2 style="margin: 0 0 12px;">${headingText}</h2>
+              <p style="color:#555; margin: 0 0 12px; line-height:1.6;">${introText}</p>
+              <p style="color:#555; margin: 0 0 20px; line-height:1.6;">${actionText}</p>
+              <table style="border-collapse:collapse; width:100%; margin-bottom:24px;">
+                <tr><td style="padding:6px 12px 6px 0; color:#555; white-space:nowrap;">Child</td><td style="padding:6px 0; font-weight:600;">${opts.childName.replace(/</g, "&lt;")}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#555; white-space:nowrap;">Medication</td><td style="padding:6px 0; font-weight:600;">${opts.medicationName.replace(/</g, "&lt;")}</td></tr>
+                <tr><td style="padding:6px 12px 6px 0; color:#555; white-space:nowrap;">Expiry date</td><td style="padding:6px 0; font-weight:600; color:${accentColor};">${opts.expiryDate}</td></tr>
+              </table>
+              <a href="${opts.medicationLogsUrl}" style="display:inline-block;padding:12px 24px;background:#1b5e20;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View medication logs</a>
+              <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
+              <p style="color:#aaa;font-size:12px;">You received this reminder because you have a Family Portal account linked to ${opts.childName.replace(/</g, "&lt;")}. If you have questions, please contact your centre directly.</p>
+            </body>
+          </html>
+        `,
+      });
+    } catch (err) {
+      errors.push(email);
+      logger.error({ email, err }, "Failed to send guardian medication expiry email");
+    }
+    if (i < recipients.length - 1) await sleep(SEND_DELAY_MS);
+  }
+
+  const sentEmails = recipients.filter((e) => !errors.includes(e));
+  logger.info({ sent: sentEmails.length, failed: errors.length }, "Guardian medication expiry emails dispatched");
+  return { sent: sentEmails, failed: errors };
+}
+
 export async function sendBehaviouralNotificationEmail(
   recipients: string[],
   opts: BehaviouralNotificationEmailOptions,

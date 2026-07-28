@@ -488,7 +488,7 @@ const FREQUENCY_OPTIONS = [
   "After food",
 ];
 
-const EMPTY_SLOT_FORM = { name: "", lastAdministered: "", toBeAdministeredBy: "", frequency: "", administrationTime: "", dosage: "", methodOfAdministration: "" };
+const EMPTY_SLOT_FORM = { name: "", lastAdministered: "", toBeAdministeredBy: "", frequency: "", administrationTime: "", dosage: "", methodOfAdministration: "", expiryDate: "" };
 const EMPTY_LOG_FORM = { administeredAt: "", dosageAdministered: "", methodOfAdministration: "", administeredById: 0, witnessId: null as number | null };
 
 type StaffList = Staff[];
@@ -579,7 +579,7 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
 
   function startEdit(slot: number) {
     const med = medications.find(m => m.slot === slot);
-    setSlotForm({ name: med?.name ?? "", lastAdministered: med?.lastAdministered ?? "", toBeAdministeredBy: med?.toBeAdministeredBy ?? "", frequency: med?.frequency ?? "", administrationTime: med?.administrationTime ?? "", dosage: med?.dosage ?? "", methodOfAdministration: med?.methodOfAdministration ?? "" });
+    setSlotForm({ name: med?.name ?? "", lastAdministered: med?.lastAdministered ?? "", toBeAdministeredBy: med?.toBeAdministeredBy ?? "", frequency: med?.frequency ?? "", administrationTime: med?.administrationTime ?? "", dosage: med?.dosage ?? "", methodOfAdministration: med?.methodOfAdministration ?? "", expiryDate: med?.expiryDate ?? "" });
     setEditingSlot(slot);
   }
 
@@ -654,6 +654,10 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
             <Input type="time" value={slotForm.administrationTime} onChange={(e) => setSlotForm(p => ({ ...p, administrationTime: e.target.value }))} className="h-9" />
           </div>
           <div className="space-y-1 sm:col-span-2"><Label className="text-xs">Last Administered</Label><Input value={slotForm.lastAdministered} onChange={(e) => setSlotForm(p => ({ ...p, lastAdministered: e.target.value }))} placeholder="e.g. 25/05/2026" /></div>
+          <div className="space-y-1 sm:col-span-2">
+            <Label className="text-xs">Expiry Date</Label>
+            <Input type="date" value={slotForm.expiryDate} onChange={(e) => setSlotForm(p => ({ ...p, expiryDate: e.target.value }))} className="h-9" />
+          </div>
           <div className="flex gap-2 pt-1 sm:col-span-2">
             <Button type="submit" size="sm" disabled={upsertMedMutation.isPending}>Save</Button>
             <Button type="button" variant="outline" size="sm" onClick={() => setEditingSlot(null)}>Cancel</Button>
@@ -772,6 +776,20 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
                   {med.frequency && <p><span className="font-medium text-foreground">Frequency:</span> {med.frequency}</p>}
                   {med.administrationTime && <p><span className="font-medium text-foreground">Time:</span> {med.administrationTime}</p>}
                   {med.lastAdministered && <p><span className="font-medium text-foreground">Last admin:</span> {med.lastAdministered}</p>}
+                  {med.expiryDate && (() => {
+                    const today = new Date().toISOString().split("T")[0];
+                    const in30 = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
+                    const expired = med.expiryDate <= today;
+                    const expiringSoon = !expired && med.expiryDate <= in30;
+                    return (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="font-medium text-foreground">Expires:</span>
+                        <span>{med.expiryDate}</span>
+                        {expired && <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4">Expired</Badge>}
+                        {expiringSoon && <Badge className="text-[10px] px-1.5 py-0 h-4 bg-amber-500 hover:bg-amber-500">Expiring soon</Badge>}
+                      </div>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             );

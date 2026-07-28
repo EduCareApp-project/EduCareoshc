@@ -1962,6 +1962,8 @@ export interface ChildMedication {
   dosage?: string | null;
   /** @nullable */
   methodOfAdministration?: string | null;
+  /** @nullable */
+  expiryDate?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1974,6 +1976,7 @@ export interface MedicationSlotPayload {
   administrationTime?: string;
   dosage?: string;
   methodOfAdministration?: string;
+  expiryDate?: string | null;
 }
 
 export interface MedicationLog {

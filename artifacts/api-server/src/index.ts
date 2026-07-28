@@ -38,6 +38,7 @@ async function seedNotificationSettings(): Promise<void> {
     { type: "welfare_note_submitted",    label: "Welfare note submitted",           enabled: true,  advanceDays: null },
     { type: "welfare_mandatory_report",  label: "Mandatory report submitted",       enabled: true,  advanceDays: null },
     { type: "medication_administered",   label: "Medication administered",          enabled: true,  advanceDays: null },
+    { type: "medication_expiry",         label: "Medication expiry alert",          enabled: true,  advanceDays: 14   },
   ];
 
   for (const row of defaults) {

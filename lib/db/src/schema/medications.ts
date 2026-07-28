@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, date } from "drizzle-orm/pg-core";
 import { childrenTable } from "./children";
 import { staffTable } from "./staff";
 
@@ -13,6 +13,7 @@ export const childMedicationsTable = pgTable("child_medications", {
   administrationTime: text("administration_time"),
   dosage: text("dosage"),
   methodOfAdministration: text("method_of_administration"),
+  expiryDate: date("expiry_date"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

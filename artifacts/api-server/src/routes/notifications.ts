@@ -11,8 +11,16 @@ import {
   checklistRoutinesTable,
   planningExperiencesTable,
   sitesTable,
+  childMedicationsTable,
+  childrenTable,
+  parentAccountsTable,
+  emailSendLogTable,
 } from "@workspace/db";
 import { createNotification, createNotificationsForRoles, getISOWeek, getYearMonth } from "../lib/notify";
+import { sendMedicationExpiryEmail } from "../lib/email";
+import { getEmailBranding } from "../lib/emailBranding";
+import { isEmailChannelEnabled, isInAppChannelEnabled } from "../lib/channelMap";
+import { getAppUrl } from "../lib/appUrl";
 
 const router: IRouter = Router();
 
@@ -188,7 +196,128 @@ async function computeDeadlineNotifications(): Promise<void> {
     }
   }
 
-  // ── 4. Checklist deadlines ───────────────────────────────────────────────────
+  // ── 4. Medication expiry ─────────────────────────────────────────────────────
+  if (await isEnabled("medication_expiry")) {
+    const advanceDays = await getAdvanceDays("medication_expiry");
+    const monthKey = getYearMonth(today);
+    const todayStr = today.toISOString().split("T")[0];
+    const windowEnd = new Date(today);
+    windowEnd.setDate(today.getDate() + advanceDays);
+    const windowEndStr = windowEnd.toISOString().split("T")[0];
+
+    const meds = await db.select({
+      id: childMedicationsTable.id,
+      name: childMedicationsTable.name,
+      expiryDate: childMedicationsTable.expiryDate,
+      childId: childMedicationsTable.childId,
+    }).from(childMedicationsTable)
+      .where(and(
+        isNotNull(childMedicationsTable.expiryDate),
+        isNotNull(childMedicationsTable.name),
+      ));
+
+    for (const med of meds) {
+      if (!med.expiryDate || !med.name) continue;
+      const expiryStr = typeof med.expiryDate === "string" ? med.expiryDate : (med.expiryDate as Date).toISOString().split("T")[0];
+      // Alert window: from today through advanceDays ahead (or already expired — still alert once per month)
+      if (expiryStr > windowEndStr) continue;
+
+      const [child] = await db.select({
+        firstName: childrenTable.firstName,
+        lastName: childrenTable.lastName,
+        siteId: childrenTable.siteId,
+        guardianEmail: childrenTable.guardianEmail,
+        guardian2Email: childrenTable.guardian2Email,
+      }).from(childrenTable).where(eq(childrenTable.id, med.childId));
+
+      if (!child) continue;
+
+      const childName = `${child.firstName} ${child.lastName}`;
+      const childProfileUrl = `${getAppUrl()}/children/${med.childId}`;
+
+      // ── In-app notifications → active staff at the child's site ─────────────
+      if (await isInAppChannelEnabled("medication_expiry")) {
+        const siteStaff = await db.select({ id: staffTable.id })
+          .from(staffTable)
+          .where(and(
+            inArray(staffTable.role, ["admin", "educational_leader", "coordinator", "educator"]),
+            eq(staffTable.status, "active"),
+            ...(child.siteId ? [eq(staffTable.siteId, child.siteId)] : []),
+          ));
+
+        for (const s of siteStaff) {
+          await createNotification({
+            staffId: s.id,
+            type: "medication_expiry",
+            title: `${childName} — ${med.name} expires ${expiryStr}`,
+            href: `/children/${med.childId}`,
+            referenceId: med.id,
+            referenceType: "child_medication",
+            dedupeKey: `medication_expiry:${med.id}:${monthKey}:${s.id}`,
+          });
+        }
+      }
+
+      // ── Email → site staff + guardians with portal accounts ─────────────────
+      if (await isEmailChannelEnabled("medication_expiry")) {
+        // Staff emails
+        const staffEmails = await db.select({ email: staffTable.email })
+          .from(staffTable)
+          .where(and(
+            inArray(staffTable.role, ["admin", "educational_leader", "coordinator", "educator"]),
+            eq(staffTable.status, "active"),
+            ...(child.siteId ? [eq(staffTable.siteId, child.siteId)] : []),
+          ));
+
+        // Guardian emails (only those with parent accounts)
+        const guardianCandidates = [child.guardianEmail, child.guardian2Email].filter((e): e is string => !!e);
+        const guardianAccounts = guardianCandidates.length > 0
+          ? await db.select({ guardianEmail: parentAccountsTable.guardianEmail })
+              .from(parentAccountsTable)
+              .where(inArray(parentAccountsTable.guardianEmail, guardianCandidates))
+          : [];
+
+        const allCandidateEmails = [
+          ...staffEmails.map((s) => s.email),
+          ...guardianAccounts.map((a) => a.guardianEmail),
+        ].filter((e, idx, arr) => e && arr.indexOf(e) === idx) as string[];
+
+        if (allCandidateEmails.length > 0) {
+          // ── Per-recipient monthly deduplification ───────────────────────────
+          // Attempt to insert a dedupe record for each candidate. ON CONFLICT DO
+          // NOTHING returns 0 rows when the record already exists — meaning this
+          // recipient already received the email this month for this medication.
+          const branding = await getEmailBranding();
+          for (const email of allCandidateEmails) {
+            const key = `medication_expiry_email:${med.id}:${monthKey}:${email}`;
+            // Check dedupe before sending — skip if already recorded this month
+            const existing = await db.select({ id: emailSendLogTable.id })
+              .from(emailSendLogTable)
+              .where(eq(emailSendLogTable.dedupeKey, key))
+              .limit(1);
+            if (existing.length > 0) continue;
+
+            const { sent } = await sendMedicationExpiryEmail([email], {
+              childName,
+              medicationName: med.name,
+              expiryDate: expiryStr,
+              childProfileUrl,
+            }, branding);
+            // Only record the dedupe key when delivery was confirmed.
+            // If send failed, `sent` is empty and no row is written, so
+            // the next scheduled run will retry this recipient.
+            if (sent.includes(email)) {
+              await db.insert(emailSendLogTable)
+                .values({ dedupeKey: key })
+                .onConflictDoNothing();
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // ── 5. Checklist deadlines ───────────────────────────────────────────────────
   if (await isEnabled("checklist_overdue")) {
     const advanceDays = await getAdvanceDays("checklist_overdue");
     const windowEnd = new Date(today);

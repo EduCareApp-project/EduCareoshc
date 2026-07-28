@@ -20,6 +20,7 @@ const DEFAULTS: Record<string, { email: boolean; inApp: boolean }> = {
   welfare_note_submitted:    { email: false, inApp: true },
   welfare_mandatory_report:  { email: false, inApp: true },
   medication_administered:   { email: false, inApp: true },
+  medication_expiry:         { email: true,  inApp: true },
   qip_deadline:              { email: false, inApp: true },
   qip_deadline_expired:      { email: false, inApp: true },
   staff_qualification_expiry:{ email: false, inApp: true },

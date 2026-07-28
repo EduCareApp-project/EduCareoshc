@@ -46,6 +46,7 @@ router.get("/children/:id/medications", async (req, res): Promise<void> => {
     toBeAdministeredBy: null,
     dosage: null,
     methodOfAdministration: null,
+    expiryDate: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
@@ -61,7 +62,9 @@ router.put("/children/:id/medications/:slot", async (req, res): Promise<void> =>
     res.status(400).json({ error: "Invalid id or slot (must be 1–4)" }); return;
   }
 
-  const { name, lastAdministered, toBeAdministeredBy, frequency, administrationTime, dosage, methodOfAdministration } = req.body as Record<string, string>;
+  const { name, lastAdministered, toBeAdministeredBy, frequency, administrationTime, dosage, methodOfAdministration, expiryDate: rawExpiryDate } = req.body as Record<string, string>;
+  // Normalize expiryDate: empty string or whitespace → null (Postgres date column rejects "")
+  const expiryDate = rawExpiryDate?.trim() || null;
 
   const [row] = await db
     .insert(childMedicationsTable)
@@ -75,6 +78,7 @@ router.put("/children/:id/medications/:slot", async (req, res): Promise<void> =>
       administrationTime: administrationTime ?? null,
       dosage: dosage ?? null,
       methodOfAdministration: methodOfAdministration ?? null,
+      expiryDate: expiryDate ?? null,
     })
     .onConflictDoUpdate({
       target: [childMedicationsTable.childId, childMedicationsTable.slot],
@@ -86,6 +90,7 @@ router.put("/children/:id/medications/:slot", async (req, res): Promise<void> =>
         administrationTime: administrationTime ?? null,
         dosage: dosage ?? null,
         methodOfAdministration: methodOfAdministration ?? null,
+        expiryDate: expiryDate ?? null,
         updatedAt: new Date(),
       },
     })

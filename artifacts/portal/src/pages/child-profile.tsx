@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { melbourneDateTimeStr, toMelbourneDate, melbourneLocalToUTCISO } from "@/lib/timezone";
 import {
@@ -544,7 +544,11 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
     });
   }
 
-  const { data: medications = [] } = useListChildMedications(childId);
+  const { data: medications = [], isSuccess: medicationsLoaded } = useListChildMedications(childId);
+
+  // Auto-open the edit form when a ?slot=N param is present (e.g. from the dashboard expiry widget)
+  const deepLinkSlot = parseInt(new URLSearchParams(window.location.search).get("slot") ?? "", 10) || null;
+  const deepLinkHandled = useRef(false);
 
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
@@ -582,6 +586,13 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
     setSlotForm({ name: med?.name ?? "", lastAdministered: med?.lastAdministered ?? "", toBeAdministeredBy: med?.toBeAdministeredBy ?? "", frequency: med?.frequency ?? "", administrationTime: med?.administrationTime ?? "", dosage: med?.dosage ?? "", methodOfAdministration: med?.methodOfAdministration ?? "", expiryDate: med?.expiryDate ?? "" });
     setEditingSlot(slot);
   }
+
+  // When arriving from the dashboard expiry widget via ?slot=N, auto-open the edit form once medications load
+  useEffect(() => {
+    if (!deepLinkSlot || deepLinkHandled.current || !medicationsLoaded) return;
+    deepLinkHandled.current = true;
+    startEdit(deepLinkSlot);
+  }, [medicationsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function saveSlot(e: React.FormEvent, slot: number) {
     e.preventDefault();

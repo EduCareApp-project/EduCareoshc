@@ -6,6 +6,8 @@ import {
   useGetServiceComplianceReport, useGetLearningStoriesReport,
   useListPlanningExperiences, useListPosts, useListSites,
   useListChecklistRoutines, useListChildren, useGetExpiringMedications,
+  useListChildMedications, useUpsertChildMedication,
+  getListChildMedicationsQueryKey,
 } from "@workspace/api-client-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { Link } from "wouter";
@@ -838,10 +840,97 @@ function ActivityTypeBadge({ type }: { type: string }) {
 }
 
 // ─── Leadership ───────────────────────────────────────────────────────────────
+// ─── Quick-renew dialog ───────────────────────────────────────────────────────
+function QuickRenewDialog({
+  childId, slot, medName, onClose,
+}: { childId: number; slot: number; medName: string; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: medications, isLoading } = useListChildMedications(childId);
+  const upsertMed = useUpsertChildMedication();
+
+  const currentMed = medications?.find((m) => m.slot === slot);
+  const [expiryDate, setExpiryDate] = useState(currentMed?.expiryDate ?? "");
+
+  // Sync once the medication data arrives
+  useEffect(() => {
+    if (currentMed?.expiryDate) setExpiryDate(currentMed.expiryDate);
+  }, [currentMed?.expiryDate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleSave() {
+    if (!expiryDate) return;
+    const base = currentMed;
+    upsertMed.mutate(
+      {
+        id: childId,
+        slot,
+        data: {
+          name: base?.name ?? medName,
+          expiryDate,
+          lastAdministered: base?.lastAdministered ?? null,
+          toBeAdministeredBy: base?.toBeAdministeredBy ?? null,
+          frequency: base?.frequency ?? null,
+          administrationTime: base?.administrationTime ?? null,
+          dosage: base?.dosage ?? null,
+          methodOfAdministration: base?.methodOfAdministration ?? null,
+        } as any,
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["/api/medications/expiring"] });
+          queryClient.invalidateQueries({ queryKey: getListChildMedicationsQueryKey(childId) });
+          toast({ title: "Expiry date updated" });
+          onClose();
+        },
+        onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+      }
+    );
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Pill className="h-4 w-4 text-orange-500" />
+            Update expiry — {medName}
+          </DialogTitle>
+        </DialogHeader>
+        {isLoading ? (
+          <div className="py-4 flex justify-center"><Skeleton className="h-9 w-full" /></div>
+        ) : (
+          <div className="space-y-4 pt-1">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">New expiry date</label>
+              <Input
+                type="date"
+                value={expiryDate}
+                onChange={(e) => setExpiryDate(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={!expiryDate || upsertMed.isPending}
+              >
+                {upsertMed.isPending ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Medication Expiry Widget ────────────────────────────────────────────────
 function MedicationExpiryWidget({ siteId }: { siteId?: number }) {
   const params = siteId ? { siteId } : undefined;
   const { data, isLoading } = useGetExpiringMedications(params);
+  const [renewTarget, setRenewTarget] = useState<{ childId: number; slot: number; medName: string } | null>(null);
 
   if (isLoading) {
     return (
@@ -882,43 +971,57 @@ function MedicationExpiryWidget({ siteId }: { siteId?: number }) {
           {data.map((child) => {
             const hasExpired = child.medications.some((m) => m.status === "expired");
             return (
-              <Link key={child.childId} href={`/children/${child.childId}?tab=medical`}>
-                <div className={`flex items-start justify-between gap-3 rounded-md px-3 py-2.5 border cursor-pointer hover:bg-muted/40 transition-colors ${hasExpired ? "border-red-200 bg-red-50/60" : "border-orange-200 bg-orange-50/60"}`}>
-                  <div className="flex items-center gap-2 min-w-0">
+              <div key={child.childId} className={`rounded-md px-3 py-2.5 border ${hasExpired ? "border-red-200 bg-red-50/60" : "border-orange-200 bg-orange-50/60"}`}>
+                {/* Child name row — links to the medical tab */}
+                <Link href={`/children/${child.childId}?tab=medical`}>
+                  <div className="flex items-center gap-2 min-w-0 cursor-pointer hover:opacity-80 transition-opacity mb-1.5">
                     <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${hasExpired ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>
                       {child.childFirstName[0]}{child.childLastName[0]}
                     </div>
-                    <div className="min-w-0">
-                      <p className={`text-sm font-medium ${hasExpired ? "text-red-800" : "text-orange-800"}`}>
-                        {child.childFirstName} {child.childLastName}
-                      </p>
-                      <div className="flex flex-wrap gap-1.5 mt-0.5">
-                        {child.medications.map((med) => {
-                          const expiry = new Date(med.expiryDate + "T00:00:00");
-                          const today = new Date(); today.setHours(0, 0, 0, 0);
-                          const daysLeft = differenceInCalendarDays(expiry, today);
-                          const label = med.status === "expired"
-                            ? `${med.name} — expired ${Math.abs(daysLeft)}d ago`
-                            : `${med.name} — expires in ${daysLeft}d`;
-                          return (
-                            <span
-                              key={med.slot}
-                              className={`text-xs px-1.5 py-0.5 rounded font-medium ${med.status === "expired" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}
-                            >
-                              {label}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <p className={`text-sm font-medium ${hasExpired ? "text-red-800" : "text-orange-800"}`}>
+                      {child.childFirstName} {child.childLastName}
+                    </p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                </Link>
+                {/* Per-medication rows with individual inline-renew buttons */}
+                <div className="flex flex-col gap-1 pl-9">
+                  {child.medications.map((med) => {
+                    const expiry = new Date(med.expiryDate + "T00:00:00");
+                    const today = new Date(); today.setHours(0, 0, 0, 0);
+                    const daysLeft = differenceInCalendarDays(expiry, today);
+                    const label = med.status === "expired"
+                      ? `${med.name} — expired ${Math.abs(daysLeft)}d ago`
+                      : `${med.name} — expires in ${daysLeft}d`;
+                    return (
+                      <div key={med.slot} className="flex items-center gap-2">
+                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${med.status === "expired" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>
+                          {label}
+                        </span>
+                        <button
+                          className="text-xs text-primary hover:underline cursor-pointer whitespace-nowrap font-medium"
+                          onClick={() => setRenewTarget({ childId: child.childId, slot: med.slot, medName: med.name })}
+                        >
+                          Update expiry
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
-              </Link>
+              </div>
             );
           })}
         </div>
       </CardContent>
+
+      {/* Inline quick-renew dialog */}
+      {renewTarget && (
+        <QuickRenewDialog
+          childId={renewTarget.childId}
+          slot={renewTarget.slot}
+          medName={renewTarget.medName}
+          onClose={() => setRenewTarget(null)}
+        />
+      )}
     </Card>
   );
 }

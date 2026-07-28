@@ -1,11 +1,11 @@
-import { useListChildren, useListSites, useGetChildSettings, getGetChildSettingsQueryKey } from "@workspace/api-client-react";
-import { Link } from "wouter";
+import { useListChildren, useListSites, useGetChildSettings, getGetChildSettingsQueryKey, useGetExpiringMedications } from "@workspace/api-client-react";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, LayoutGrid, List, Pill, HeartPulse } from "lucide-react";
+import { Plus, Search, LayoutGrid, List, Pill, HeartPulse, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -28,6 +28,40 @@ function storageUrl(objectPath: string): string {
 
 type ViewMode = "tiles" | "list";
 
+function MedicationExpiryBadge({
+  status,
+  childId,
+  size = "md",
+  onClick,
+}: {
+  status: "expired" | "expiring_soon";
+  childId: number;
+  size?: "sm" | "md";
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  const isExpired = status === "expired";
+  const label = isExpired ? "Medication expired" : "Medication expiring soon";
+  const cls =
+    size === "sm"
+      ? "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold cursor-pointer select-none"
+      : "inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold cursor-pointer select-none";
+  return (
+    <span
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+      className={`${cls} ${
+        isExpired
+          ? "bg-red-100 text-red-700 border border-red-300 hover:bg-red-200"
+          : "bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-200"
+      }`}
+    >
+      <AlertTriangle className={size === "sm" ? "h-2.5 w-2.5" : "h-3 w-3"} />
+      {isExpired ? "Expired Rx" : "Expiring Rx"}
+    </span>
+  );
+}
+
 function getMedicalConditionLabels(child: { hasMedicalCondition?: boolean | null; medicalRiskPlan?: unknown }): string[] {
   if (!child.hasMedicalCondition) return [];
   const plan = child.medicalRiskPlan as { conditions?: { allergyCondition?: string }[] } | null | undefined;
@@ -49,11 +83,24 @@ function useViewMode(): [ViewMode, (v: ViewMode) => void] {
   return [view, setView];
 }
 
+/** Returns the worst expiry status for a child, or null if none. */
+function useMedicationExpiryMap(): Map<number, "expired" | "expiring_soon"> {
+  const { data: expiring = [] } = useGetExpiringMedications();
+  const map = new Map<number, "expired" | "expiring_soon">();
+  for (const child of expiring) {
+    const hasExpired = child.medications.some(m => m.status === "expired");
+    map.set(child.childId, hasExpired ? "expired" : "expiring_soon");
+  }
+  return map;
+}
+
 export default function ChildrenList() {
   const { isEducatorRole, ownSiteId } = usePermissions();
   const { data: children, isLoading } = useListChildren();
   const { data: sites } = useListSites();
   const { data: childSettings } = useGetChildSettings({ query: { queryKey: getGetChildSettingsQueryKey() } });
+  const [, navigate] = useLocation();
+  const expiryMap = useMedicationExpiryMap();
   const showPhoto = childSettings?.childDisplayMode === "profile_picture";
   // Sync filters to URL so navigating back restores them
   function syncFiltersToUrl(q: string, site: string, status: string, medical: boolean) {
@@ -240,6 +287,14 @@ export default function ChildrenList() {
                         <Pill className="h-3 w-3" />
                       </span>
                     )}
+                    {expiryMap.has(child.id) && (
+                      <MedicationExpiryBadge
+                        status={expiryMap.get(child.id)!}
+                        childId={child.id}
+                        size="md"
+                        onClick={(e) => { e.preventDefault(); navigate(`/children/${child.id}?tab=medications`); }}
+                      />
+                    )}
                     <Badge variant={child.status === 'active' ? 'default' : 'secondary'} className="capitalize">
                       {child.status}
                     </Badge>
@@ -315,6 +370,14 @@ export default function ChildrenList() {
                         <span title="Has listed medications" className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-blue-100 text-blue-600">
                           <Pill className="h-2.5 w-2.5" />
                         </span>
+                      )}
+                      {expiryMap.has(child.id) && (
+                        <MedicationExpiryBadge
+                          status={expiryMap.get(child.id)!}
+                          childId={child.id}
+                          size="sm"
+                          onClick={(e) => { e.preventDefault(); navigate(`/children/${child.id}?tab=medications`); }}
+                        />
                       )}
                       <Badge variant={child.status === 'active' ? 'default' : 'secondary'} className="capitalize w-20 justify-center text-xs">
                         {child.status}

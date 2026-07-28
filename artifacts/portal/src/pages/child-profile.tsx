@@ -544,7 +544,9 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
     });
   }
 
-  const { data: medications = [], isSuccess: medicationsLoaded } = useListChildMedications(childId);
+  const { data: medications = [], isSuccess: medicationsLoaded } = useListChildMedications(childId, {
+    query: { queryKey: getListChildMedicationsQueryKey(childId), refetchInterval: 60_000 },
+  });
 
   // Auto-open the edit form when a ?slot=N param is present (e.g. from the dashboard expiry widget)
   const deepLinkSlot = parseInt(new URLSearchParams(window.location.search).get("slot") ?? "", 10) || null;

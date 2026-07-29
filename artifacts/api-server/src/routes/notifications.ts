@@ -197,12 +197,16 @@ async function computeDeadlineNotifications(): Promise<void> {
 
   // ── 4. Medication expiry ─────────────────────────────────────────────────────
   if (await isEnabled("medication_expiry")) {
-    const advanceDays = await getAdvanceDays("medication_expiry");
-    const monthKey = getYearMonth(today);
     const todayStr = today.toISOString().split("T")[0];
-    const windowEnd = new Date(today);
-    windowEnd.setDate(today.getDate() + advanceDays);
-    const windowEndStr = windowEnd.toISOString().split("T")[0];
+
+    // Three fixed milestones per medication per expiry date.
+    // Deduplication keys embed the expiry date, so if staff change the date
+    // the old milestone records become stale and the schedule resets cleanly.
+    const MILESTONES = [
+      { key: "30d", daysBeforeExpiry: 30 },
+      { key: "7d",  daysBeforeExpiry: 7  },
+      { key: "0d",  daysBeforeExpiry: 0  },
+    ] as const;
 
     const meds = await db.select({
       id: childMedicationsTable.id,
@@ -218,8 +222,21 @@ async function computeDeadlineNotifications(): Promise<void> {
     for (const med of meds) {
       if (!med.expiryDate || !med.name) continue;
       const expiryStr = typeof med.expiryDate === "string" ? med.expiryDate : (med.expiryDate as Date).toISOString().split("T")[0];
-      // Alert window: from today through advanceDays ahead (or already expired — still alert once per month)
-      if (expiryStr > windowEndStr) continue;
+
+      // Stop alerting more than 90 days after expiry
+      const expiryDateObj = new Date(expiryStr + "T00:00:00");
+      const cutoff = new Date(today);
+      cutoff.setDate(today.getDate() - 90);
+      if (expiryDateObj < cutoff) continue;
+
+      // Collect milestones whose trigger date has been reached (milestoneDate <= today)
+      const dueMilestones = MILESTONES.filter(({ daysBeforeExpiry }) => {
+        const milestoneDate = new Date(expiryStr + "T00:00:00");
+        milestoneDate.setDate(milestoneDate.getDate() - daysBeforeExpiry);
+        return milestoneDate.toISOString().split("T")[0] <= todayStr;
+      });
+
+      if (dueMilestones.length === 0) continue;
 
       const [child] = await db.select({
         firstName: childrenTable.firstName,
@@ -235,93 +252,87 @@ async function computeDeadlineNotifications(): Promise<void> {
       const childProfileUrl = `${getAppUrl()}/children/${med.childId}`;
       const medicationLogsUrl = `${getAppUrl()}/medication-logs`;
 
-      // ── In-app notifications → active staff at the child's site ─────────────
-      if (await isInAppChannelEnabled("medication_expiry")) {
-        const siteStaff = await db.select({ id: staffTable.id })
-          .from(staffTable)
-          .where(and(
-            inArray(staffTable.role, ["admin", "educational_leader", "coordinator", "educator"]),
-            eq(staffTable.status, "active"),
-            ...(child.siteId ? [eq(staffTable.siteId, child.siteId)] : []),
-          ));
+      for (const milestone of dueMilestones) {
+        // ── In-app notifications → active staff at the child's site ───────────
+        if (await isInAppChannelEnabled("medication_expiry")) {
+          const siteStaff = await db.select({ id: staffTable.id })
+            .from(staffTable)
+            .where(and(
+              inArray(staffTable.role, ["admin", "educational_leader", "coordinator", "educator"]),
+              eq(staffTable.status, "active"),
+              ...(child.siteId ? [eq(staffTable.siteId, child.siteId)] : []),
+            ));
 
-        for (const s of siteStaff) {
-          await createNotification({
-            staffId: s.id,
-            type: "medication_expiry",
-            title: `${childName} — ${med.name} expires ${expiryStr}`,
-            href: `/children/${med.childId}`,
-            referenceId: med.id,
-            referenceType: "child_medication",
-            dedupeKey: `medication_expiry:${med.id}:${monthKey}:${s.id}`,
-          });
+          for (const s of siteStaff) {
+            await createNotification({
+              staffId: s.id,
+              type: "medication_expiry",
+              title: `${childName} — ${med.name} expires ${expiryStr}`,
+              href: `/children/${med.childId}`,
+              referenceId: med.id,
+              referenceType: "child_medication",
+              // Include expiry date + milestone so a date change resets the schedule
+              dedupeKey: `medication_expiry:${med.id}:${expiryStr}:${milestone.key}:${s.id}`,
+            });
+          }
         }
-      }
 
-      // ── Email → site staff + guardians with portal accounts ─────────────────
-      if (await isEmailChannelEnabled("medication_expiry")) {
-        // Staff emails
-        const staffEmailRows = await db.select({ email: staffTable.email })
-          .from(staffTable)
-          .where(and(
-            inArray(staffTable.role, ["admin", "educational_leader", "coordinator", "educator"]),
-            eq(staffTable.status, "active"),
-            ...(child.siteId ? [eq(staffTable.siteId, child.siteId)] : []),
-          ));
-        const staffEmailSet = new Set(
-          staffEmailRows.map((s) => s.email).filter((e): e is string => !!e),
-        );
+        // ── Email → site staff + all guardians with an email address ──────────
+        if (await isEmailChannelEnabled("medication_expiry")) {
+          const staffEmailRows = await db.select({ email: staffTable.email })
+            .from(staffTable)
+            .where(and(
+              inArray(staffTable.role, ["admin", "educational_leader", "coordinator", "educator"]),
+              eq(staffTable.status, "active"),
+              ...(child.siteId ? [eq(staffTable.siteId, child.siteId)] : []),
+            ));
+          const staffEmailSet = new Set(
+            staffEmailRows.map((s) => s.email).filter((e): e is string => !!e),
+          );
 
-        // Guardian emails — all guardians with an email address on the child
-        // record, regardless of whether they have a portal account.
-        const guardianEmailSet = new Set(
-          [child.guardianEmail, child.guardian2Email].filter((e): e is string => !!e),
-        );
+          // All guardians with an email — no portal account required
+          const guardianEmailSet = new Set(
+            [child.guardianEmail, child.guardian2Email].filter((e): e is string => !!e),
+          );
 
-        const allCandidateEmails = [
-          ...staffEmailSet,
-          ...guardianEmailSet,
-        ].filter((e, idx, arr) => arr.indexOf(e) === idx);
+          const allCandidateEmails = [
+            ...staffEmailSet,
+            ...guardianEmailSet,
+          ].filter((e, idx, arr) => arr.indexOf(e) === idx);
 
-        if (allCandidateEmails.length > 0) {
-          // ── Per-recipient monthly deduplification ───────────────────────────
-          // Attempt to insert a dedupe record for each candidate. ON CONFLICT DO
-          // NOTHING returns 0 rows when the record already exists — meaning this
-          // recipient already received the email this month for this medication.
-          const branding = await getEmailBranding();
-          for (const email of allCandidateEmails) {
-            const key = `medication_expiry_email:${med.id}:${monthKey}:${email}`;
-            // Check dedupe before sending — skip if already recorded this month
-            const existing = await db.select({ id: emailSendLogTable.id })
-              .from(emailSendLogTable)
-              .where(eq(emailSendLogTable.dedupeKey, key))
-              .limit(1);
-            if (existing.length > 0) continue;
+          if (allCandidateEmails.length > 0) {
+            const branding = await getEmailBranding();
+            for (const email of allCandidateEmails) {
+              // Key includes expiry date + milestone: date changes invalidate old keys
+              const key = `medication_expiry_email:${med.id}:${expiryStr}:${milestone.key}:${email}`;
+              const existing = await db.select({ id: emailSendLogTable.id })
+                .from(emailSendLogTable)
+                .where(eq(emailSendLogTable.dedupeKey, key))
+                .limit(1);
+              if (existing.length > 0) continue;
 
-            // Guardians receive a plain-language reminder linking to their portal;
-            // staff receive the detailed admin template linking to the child profile.
-            const isGuardian = guardianEmailSet.has(email) && !staffEmailSet.has(email);
-            const { sent } = isGuardian
-              ? await sendGuardianMedicationExpiryEmail([email], {
-                  childName,
-                  medicationName: med.name,
-                  expiryDate: expiryStr,
-                  medicationLogsUrl,
-                }, branding)
-              : await sendMedicationExpiryEmail([email], {
-                  childName,
-                  medicationName: med.name,
-                  expiryDate: expiryStr,
-                  childProfileUrl,
-                }, branding);
+              // Guardians get a plain-language reminder; staff get the detailed template
+              const isGuardian = guardianEmailSet.has(email) && !staffEmailSet.has(email);
+              const { sent } = isGuardian
+                ? await sendGuardianMedicationExpiryEmail([email], {
+                    childName,
+                    medicationName: med.name,
+                    expiryDate: expiryStr,
+                    medicationLogsUrl,
+                  }, branding)
+                : await sendMedicationExpiryEmail([email], {
+                    childName,
+                    medicationName: med.name,
+                    expiryDate: expiryStr,
+                    childProfileUrl,
+                  }, branding);
 
-            // Only record the dedupe key when delivery was confirmed.
-            // If send failed, `sent` is empty and no row is written, so
-            // the next scheduled run will retry this recipient.
-            if (sent.includes(email)) {
-              await db.insert(emailSendLogTable)
-                .values({ dedupeKey: key })
-                .onConflictDoNothing();
+              // Write dedupe record only on confirmed delivery so failed sends are retried
+              if (sent.includes(email)) {
+                await db.insert(emailSendLogTable)
+                  .values({ dedupeKey: key })
+                  .onConflictDoNothing();
+              }
             }
           }
         }

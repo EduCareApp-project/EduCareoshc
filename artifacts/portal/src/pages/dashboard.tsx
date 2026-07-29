@@ -16,7 +16,7 @@ import { RichTextEditor, RichTextView } from "@/components/rich-text-editor";
 import {
   Baby, Users, BookOpen, ClipboardList, ShieldCheck, Bell, Trash2, Plus,
   AlertTriangle, CheckCircle2, Clock, FileText, Calendar, PenLine, ShoppingCart,
-  Layers, Image, ChevronLeft, ChevronRight, GraduationCap, Paperclip, X, XCircle, Upload, Newspaper, Pencil, ExternalLink, ClipboardCheck, Building2, Pill,
+  Layers, Image, ChevronLeft, ChevronRight, GraduationCap, Paperclip, X, XCircle, Upload, Newspaper, Pencil, ExternalLink, ClipboardCheck, Building2, Pill, Loader2,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO, startOfWeek, addDays, differenceInCalendarDays } from "date-fns";
@@ -915,8 +915,14 @@ function QuickRenewDialog({
                 size="sm"
                 onClick={handleSave}
                 disabled={!expiryDate || upsertMed.isPending}
+                className="min-w-[70px]"
               >
-                {upsertMed.isPending ? "Saving…" : "Save"}
+                {upsertMed.isPending ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                    Saving…
+                  </>
+                ) : "Save"}
               </Button>
             </div>
           </div>

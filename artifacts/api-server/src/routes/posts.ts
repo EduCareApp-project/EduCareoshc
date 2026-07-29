@@ -126,6 +126,7 @@ router.get("/posts", async (req, res): Promise<void> => {
 router.post("/posts", async (req, res): Promise<void> => {
   const parsed = CreatePostBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  if (!(parsed.data as any).siteId) { res.status(400).json({ error: "Site is required" }); return; }
 
   const aiSummary = await generateAiSummary(
     parsed.data.title,

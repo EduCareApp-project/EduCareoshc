@@ -95,6 +95,7 @@ export default function EditPost() {
 
   function validate() {
     const e: Record<string, string> = {};
+    if (!form.siteId || form.siteId === "none") e.siteId = "Site is required";
     if (!form.title.trim()) e.title = "Title is required";
     if (!form.date) e.date = "Date is required";
     setErrors(e);
@@ -208,19 +209,19 @@ export default function EditPost() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Site</Label>
+                <Label>Site <span className="text-destructive">*</span></Label>
                 <Select
                   value={form.siteId}
                   onValueChange={(v) => setForm({ ...form, siteId: v, childIds: [] })}
                 >
-                  <SelectTrigger><SelectValue placeholder="Select site" /></SelectTrigger>
+                  <SelectTrigger className={errors.siteId ? "border-destructive" : ""}><SelectValue placeholder="Select site" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">All sites</SelectItem>
                     {(sites ?? []).map((s) => (
                       <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.siteId && <p className="text-xs text-destructive">{errors.siteId}</p>}
               </div>
 
               <div className="space-y-1.5 sm:col-span-2">

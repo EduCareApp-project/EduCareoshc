@@ -602,6 +602,15 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
     startEdit(deepLinkSlot);
   }, [medicationsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  function cancelEdit() {
+    setEditingSlot(null);
+    // Refetch immediately so the list shows fresh server data as soon as the
+    // form closes. Without this, the background interval (60s) is the only
+    // thing that would update the list, meaning a re-opened edit form could
+    // be pre-populated with stale values.
+    queryClient.invalidateQueries({ queryKey: getListChildMedicationsQueryKey(childId) });
+  }
+
   function saveSlot(e: React.FormEvent, slot: number) {
     e.preventDefault();
     upsertMedMutation.mutate(
@@ -679,7 +688,7 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
           </div>
           <div className="flex gap-2 pt-1 sm:col-span-2">
             <Button type="submit" size="sm" disabled={upsertMedMutation.isPending}>Save</Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => setEditingSlot(null)}>Cancel</Button>
+            <Button type="button" variant="outline" size="sm" onClick={cancelEdit}>Cancel</Button>
           </div>
         </form>
       </CardContent>

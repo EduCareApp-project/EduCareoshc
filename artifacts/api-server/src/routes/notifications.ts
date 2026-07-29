@@ -13,7 +13,6 @@ import {
   sitesTable,
   childMedicationsTable,
   childrenTable,
-  parentAccountsTable,
   emailSendLogTable,
 } from "@workspace/db";
 import { createNotification, createNotificationsForRoles, getISOWeek, getYearMonth } from "../lib/notify";
@@ -273,15 +272,10 @@ async function computeDeadlineNotifications(): Promise<void> {
           staffEmailRows.map((s) => s.email).filter((e): e is string => !!e),
         );
 
-        // Guardian emails (only those with parent accounts)
-        const guardianCandidates = [child.guardianEmail, child.guardian2Email].filter((e): e is string => !!e);
-        const guardianAccounts = guardianCandidates.length > 0
-          ? await db.select({ guardianEmail: parentAccountsTable.guardianEmail })
-              .from(parentAccountsTable)
-              .where(inArray(parentAccountsTable.guardianEmail, guardianCandidates))
-          : [];
+        // Guardian emails — all guardians with an email address on the child
+        // record, regardless of whether they have a portal account.
         const guardianEmailSet = new Set(
-          guardianAccounts.map((a) => a.guardianEmail).filter((e): e is string => !!e),
+          [child.guardianEmail, child.guardian2Email].filter((e): e is string => !!e),
         );
 
         const allCandidateEmails = [

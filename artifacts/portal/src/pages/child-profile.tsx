@@ -43,7 +43,7 @@ import {
   Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2,
   ShieldAlert, AlertTriangle, Paperclip, X, Lock, Pencil, StickyNote, Newspaper,
   Upload, FolderOpen, Pill, ChevronDown, ChevronUp, ClipboardList, MessageSquareWarning,
-  CameraOff, Archive,
+  CameraOff, Archive, Loader2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth";
 import { useUpload } from "@workspace/object-storage-web";
@@ -768,8 +768,10 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
           <p className="text-sm text-muted-foreground">Up to 4 medications can be tracked for this child.</p>
         </div>
         {medications.filter(m => m.name).length < 4 && editingSlot === null && (
-          <Button size="sm" onClick={addNewMedication}>
-            <Plus className="h-3.5 w-3.5 mr-1.5" />Add Medication
+          <Button size="sm" onClick={addNewMedication} disabled={medicationsFetching}>
+            {medicationsFetching
+              ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Loading…</>
+              : <><Plus className="h-3.5 w-3.5 mr-1.5" />Add Medication</>}
           </Button>
         )}
       </div>

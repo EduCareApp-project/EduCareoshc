@@ -546,7 +546,7 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
 
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
 
-  const { data: medications = [], isSuccess: medicationsLoaded } = useListChildMedications(childId, {
+  const { data: medications = [], isSuccess: medicationsLoaded, isFetching: medicationsFetching } = useListChildMedications(childId, {
     query: {
       queryKey: getListChildMedicationsQueryKey(childId),
       // Pause the background refetch while the staff member has an edit form open
@@ -809,7 +809,7 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
                         <span className="truncate">{med.name}</span>
                       </CardTitle>
                       <div className="flex items-center gap-1 shrink-0">
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); startEdit(slot); }}><Pencil className="h-3 w-3" /></Button>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={medicationsFetching} onClick={(e) => { e.stopPropagation(); startEdit(slot); }}><Pencil className="h-3 w-3" /></Button>
                         {isSelected ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                       </div>
                     </div>

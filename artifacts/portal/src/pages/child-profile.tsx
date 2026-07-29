@@ -544,8 +544,15 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
     });
   }
 
+  const [editingSlot, setEditingSlot] = useState<number | null>(null);
+
   const { data: medications = [], isSuccess: medicationsLoaded } = useListChildMedications(childId, {
-    query: { queryKey: getListChildMedicationsQueryKey(childId), refetchInterval: 60_000 },
+    query: {
+      queryKey: getListChildMedicationsQueryKey(childId),
+      // Pause the background refetch while the staff member has an edit form open
+      // to prevent the medications array being replaced mid-edit.
+      refetchInterval: editingSlot !== null ? false : 60_000,
+    },
   });
 
   // Auto-open the edit form when a ?slot=N param is present (e.g. from the dashboard expiry widget)
@@ -553,7 +560,6 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
   const deepLinkHandled = useRef(false);
 
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
-  const [editingSlot, setEditingSlot] = useState<number | null>(null);
   const [slotForm, setSlotForm] = useState(EMPTY_SLOT_FORM);
   const [logForm, setLogForm] = useState({ ...EMPTY_LOG_FORM, administeredById: currentUserId });
   const [addingLog, setAddingLog] = useState(false);

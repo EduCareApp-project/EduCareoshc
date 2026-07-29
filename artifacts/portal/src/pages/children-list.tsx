@@ -256,7 +256,7 @@ export default function ChildrenList() {
           {filteredChildren?.map((child) => (
             <Link key={child.id} href={`/children/${child.id}`}>
               <Card className="hover:border-primary/50 hover:shadow-md transition-all cursor-pointer h-full">
-                <CardHeader className="pb-3 flex flex-row items-start justify-between space-y-0">
+                <CardHeader className="pb-3 space-y-0">
                   <div className="flex items-center gap-3 min-w-0">
                     {showPhoto && child.profilePicturePath ? (
                       <img
@@ -271,7 +271,7 @@ export default function ChildrenList() {
                     )}
                     <CardTitle className="text-lg leading-tight">{child.firstName} {child.lastName}</CardTitle>
                   </div>
-                  <div className="flex items-center gap-1 ml-2 shrink-0 flex-wrap justify-end">
+                  <div className="flex items-center gap-1 flex-wrap pt-2">
                     {getMedicalConditionLabels(child as any).map(label => (
                       <Badge key={label} variant="outline" className="text-xs border-red-300 text-red-700 bg-red-50">
                         {label}

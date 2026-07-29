@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/auth";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,13 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Clear any existing session when the login page mounts so the user
+  // always has to explicitly click Sign in — no auto-login from a saved cookie.
+  useEffect(() => {
+    fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    setUser(null);
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();

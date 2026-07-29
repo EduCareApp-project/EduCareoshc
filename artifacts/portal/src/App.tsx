@@ -259,10 +259,6 @@ function Router() {
     return <ServiceDocsPublic />;
   }
   if (location === "/login") {
-    // If already logged in, redirect away from login
-    if (!isLoading && user) {
-      return <Redirect to="/" />;
-    }
     return <Login />;
   }
   if (location === "/forgot-password") {

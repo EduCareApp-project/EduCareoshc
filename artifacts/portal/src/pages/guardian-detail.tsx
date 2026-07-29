@@ -218,7 +218,7 @@ export default function GuardianDetail() {
   async function handleResetPassword() {
     const result = await resetMutation.mutateAsync({
       email: encodedEmail ?? "",
-      data: customPassword.trim() ? { newPassword: customPassword.trim() } : undefined,
+      data: { newPassword: customPassword.trim() || undefined },
     });
     setNewPassword(result.newPassword);
     setShowNewPassword(true);

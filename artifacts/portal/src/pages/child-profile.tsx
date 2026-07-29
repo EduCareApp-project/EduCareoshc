@@ -607,7 +607,7 @@ function MedicalTab({ childId, child, staffList, currentUserId }: { childId: num
     upsertMedMutation.mutate(
       { id: childId, slot, data: slotForm },
       {
-        onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListChildMedicationsQueryKey(childId) }); queryClient.invalidateQueries({ queryKey: getListChildrenQueryKey() }); setEditingSlot(null); toast({ title: "Medication saved" }); },
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListChildMedicationsQueryKey(childId) }); queryClient.invalidateQueries({ queryKey: getListChildrenQueryKey() }); queryClient.invalidateQueries({ queryKey: ["/api/medications/expiring"] }); setEditingSlot(null); toast({ title: "Medication saved" }); },
         onError: () => toast({ title: "Failed to save medication", variant: "destructive" }),
       }
     );

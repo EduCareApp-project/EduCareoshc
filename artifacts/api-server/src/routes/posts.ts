@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { createNotification } from "../lib/notify";
 import { logger } from "../lib/logger";
-import { eq, and, isNotNull, isNull, sql } from "drizzle-orm";
+import { eq, and, isNotNull, isNull, inArray, sql } from "drizzle-orm";
 import { db, postsTable, postCommentsTable, postLikesTable, childrenTable, staffTable, sitesTable, parentAccountsTable } from "@workspace/db";
 import {
   CreatePostBody, GetPostParams, GetPostResponse,
@@ -168,25 +168,26 @@ router.patch("/posts/:id", async (req, res): Promise<void> => {
   if (!post) { res.status(404).json({ error: "Post not found" }); return; }
 
   const wasPublished = existing.publishedAt == null && post.publishedAt != null;
-  if (wasPublished && notifyGuardians !== false && await isEmailChannelEnabled("guardian_post")) {
-    const childJoinConditions = [
-      eq(childrenTable.guardianEmail, parentAccountsTable.guardianEmail),
-      eq(childrenTable.status, "active"),
-      ...(post.siteId ? [eq(childrenTable.siteId, post.siteId)] : []),
+  const taggedChildIds = Array.isArray(post.childIds) ? (post.childIds as number[]) : [];
+  // Notification requires a site AND at least one tagged child.
+  // Without both we cannot reliably scope recipients, so we skip silently.
+  if (wasPublished && notifyGuardians !== false && await isEmailChannelEnabled("guardian_post") && post.siteId && taggedChildIds.length > 0) {
+    // Collect guardian emails directly from the tagged children's records.
+    // Both guardian 1 and guardian 2 emails are included; no portal account required.
+    const taggedChildren = await db
+      .select({ guardianEmail: childrenTable.guardianEmail, guardian2Email: childrenTable.guardian2Email })
+      .from(childrenTable)
+      .where(and(
+        inArray(childrenTable.id, taggedChildIds),
+        eq(childrenTable.status, "active"),
+        eq(childrenTable.siteId, post.siteId),
+      ));
+
+    const recipients = [
+      ...new Set(
+        taggedChildren.flatMap((c) => [c.guardianEmail, c.guardian2Email]).filter((e): e is string => !!e),
+      ),
     ];
-
-    const guardians = await db
-      .selectDistinct({ email: parentAccountsTable.guardianEmail })
-      .from(parentAccountsTable)
-      .innerJoin(childrenTable, and(...childJoinConditions))
-      .where(
-        and(
-          isNotNull(parentAccountsTable.passwordHash),
-          isNull(parentAccountsTable.blockedAt),
-        ),
-      );
-
-    const recipients = guardians.map((g) => g.email);
     const plainText = ((post.description ?? post.learning ?? "") as string)
       .replace(/<[^>]*>/g, "")
       .trim();

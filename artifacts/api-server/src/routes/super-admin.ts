@@ -184,24 +184,28 @@ router.post("/super-admin/resend-post-notifications", requireSuperAdmin, async (
   const allErrors: string[] = [];
 
   for (const post of posts) {
-    const childJoinConditions = [
-      eq(childrenTable.guardianEmail, parentAccountsTable.guardianEmail),
-      eq(childrenTable.status, "active"),
-      ...(post.siteId ? [eq(childrenTable.siteId, post.siteId)] : []),
+    const taggedChildIds = Array.isArray(post.childIds) ? (post.childIds as number[]) : [];
+
+    // Skip posts with no site or no tagged children — cannot scope recipients safely
+    if (!post.siteId || taggedChildIds.length === 0) {
+      logger.warn({ postId: post.id }, "Skipping resend — post has no site or no tagged children");
+      continue;
+    }
+
+    const taggedChildren = await db
+      .select({ guardianEmail: childrenTable.guardianEmail, guardian2Email: childrenTable.guardian2Email })
+      .from(childrenTable)
+      .where(and(
+        inArray(childrenTable.id, taggedChildIds),
+        eq(childrenTable.status, "active"),
+        eq(childrenTable.siteId, post.siteId),
+      ));
+
+    const recipients = [
+      ...new Set(
+        taggedChildren.flatMap((c) => [c.guardianEmail, c.guardian2Email]).filter((e): e is string => !!e),
+      ),
     ];
-
-    const guardians = await db
-      .selectDistinct({ email: parentAccountsTable.guardianEmail })
-      .from(parentAccountsTable)
-      .innerJoin(childrenTable, and(...childJoinConditions))
-      .where(
-        and(
-          isNotNull(parentAccountsTable.passwordHash),
-          isNull(parentAccountsTable.blockedAt),
-        ),
-      );
-
-    const recipients = guardians.map((g) => g.email).filter(Boolean) as string[];
 
     const plainText = ((post.description ?? (post as any).learning ?? "") as string)
       .replace(/<[^>]*>/g, "")

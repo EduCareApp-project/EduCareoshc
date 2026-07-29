@@ -493,7 +493,7 @@ const EMPTY_LOG_FORM = { administeredAt: "", dosageAdministered: "", methodOfAdm
 
 type StaffList = Staff[];
 
-function MedicalTab({ childId, child, staffList, currentUserId }: { childId: number; child: { hasMedicalCondition?: boolean; medicalRiskPlan?: unknown; communicationPlan?: unknown }; staffList: StaffList; currentUserId: number }) {
+export function MedicalTab({ childId, child, staffList, currentUserId }: { childId: number; child: { hasMedicalCondition?: boolean; medicalRiskPlan?: unknown; communicationPlan?: unknown }; staffList: StaffList; currentUserId: number }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const updateChildMutation = useUpdateChild();

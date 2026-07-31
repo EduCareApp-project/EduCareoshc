@@ -19,7 +19,7 @@ export const RP_QUALS = [
 
 export const CANNOT_WORK_QUALS = ["WWCC", "CPR Renewal", "First Aid"];
 
-export type QualItem = { name: string; status: string; expiryDate?: Date | string | null };
+export type QualItem = { name: string; status: string; expiryDate?: Date | string | null; archivedAt?: Date | string | null };
 export type QualLevel = "cannot-work" | "responsible-person" | "educator" | "incomplete";
 
 export function isQualExpired(q: QualItem): boolean {
@@ -29,9 +29,10 @@ export function isQualExpired(q: QualItem): boolean {
 }
 
 export function computeQualLevel(quals: QualItem[]): QualLevel {
-  const expiredNames = new Set(quals.filter(isQualExpired).map((q) => q.name));
+  const active = quals.filter((q) => !q.archivedAt);
+  const expiredNames = new Set(active.filter(isQualExpired).map((q) => q.name));
   if (CANNOT_WORK_QUALS.some((n) => expiredNames.has(n))) return "cannot-work";
-  const currentNames = new Set(quals.filter((q) => !isQualExpired(q)).map((q) => q.name));
+  const currentNames = new Set(active.filter((q) => !isQualExpired(q)).map((q) => q.name));
   if (RP_QUALS.every((n) => currentNames.has(n))) return "responsible-person";
   if (EDUCATOR_QUALS.every((n) => currentNames.has(n))) return "educator";
   return "incomplete";

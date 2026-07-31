@@ -110,7 +110,7 @@ export default function StaffProfile() {
 
   const { data: staff, isLoading: loadingStaff } = useGetStaff(staffId, { query: { queryKey: getGetStaffQueryKey(staffId), enabled: !!staffId } });
   const { data: pdList, isLoading: loadingPd } = useGetStaffProfessionalDevelopment(staffId, { query: { queryKey: getGetStaffProfessionalDevelopmentQueryKey(staffId), enabled: !!staffId } });
-  const { data: qualifications, isLoading: loadingQuals } = useGetStaffQualifications(staffId, { query: { queryKey: getGetStaffQualificationsQueryKey(staffId), enabled: !!staffId } });
+  const { data: qualifications, isLoading: loadingQuals } = useGetStaffQualifications(staffId, { query: { queryKey: getGetStaffQualificationsQueryKey(staffId), enabled: !!staffId, refetchInterval: 5 * 60 * 1000 } });
 
   const [, navigate] = useLocation();
   const { data: sites } = useListSites();

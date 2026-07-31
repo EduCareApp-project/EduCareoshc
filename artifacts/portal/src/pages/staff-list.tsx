@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useListStaff, useGetStaffQualifications, useListSites } from "@workspace/api-client-react";
+import { useListStaff, useGetStaffQualifications, getGetStaffQualificationsQueryKey, useListSites } from "@workspace/api-client-react";
 import { Link, Redirect } from "wouter";
 import { useAuth } from "@/contexts/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,9 @@ import { computeQualLevel, QUAL_LEVEL_LABELS, QUAL_LEVEL_STYLES, type QualItem }
 const ROLE_LABELS: Record<string, string> = { admin: "Admin", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
 
 function QualLevelBadge({ staffId }: { staffId: number }) {
-  const { data: qualifications, isLoading } = useGetStaffQualifications(staffId);
+  const { data: qualifications, isLoading } = useGetStaffQualifications(staffId, {
+    query: { queryKey: getGetStaffQualificationsQueryKey(staffId), refetchInterval: 5 * 60 * 1000 },
+  });
   if (isLoading) return <span className="text-xs text-muted-foreground">—</span>;
   if (!qualifications?.length) return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-amber-100 text-amber-800 border-amber-200">

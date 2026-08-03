@@ -1351,6 +1351,7 @@ export default function ChildProfile() {
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="medications" className="flex items-center gap-1.5"><Pill className="h-3.5 w-3.5" />Medical</TabsTrigger>
           <TabsTrigger value="behaviour" className="flex items-center gap-1.5"><MessageSquareWarning className="h-3.5 w-3.5" />Behaviour</TabsTrigger>
+          <TabsTrigger value="welfare" className="flex items-center gap-1.5"><ShieldAlert className="h-3.5 w-3.5" />Welfare</TabsTrigger>
         </TabsList>
 
         {/* ── Overview ── */}
@@ -1549,135 +1550,6 @@ export default function ChildProfile() {
           </Card>
         )}
       </div>
-      {/* Welfare Notification Log */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5 text-amber-600" />
-            Welfare Notification Log
-          </CardTitle>
-          <Button size="sm" onClick={() => { setWelfareForm(EMPTY_WELFARE_FORM); setEvidenceObjectPath(null); setEvidenceFileName(null); setEditingWelfareNoteId(null); setWelfareOpen(true); }}>
-            <Plus className="h-4 w-4 mr-1" />New Welfare Note
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {welfareLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-            </div>
-          ) : !welfareNotes || welfareNotes.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
-              <ShieldAlert className="h-8 w-8 mx-auto mb-2 opacity-20" />
-              <p className="text-sm">No welfare notifications recorded</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {[...welfareNotes].reverse().map((note) => (
-                <div key={note.id} className="rounded-lg border bg-card p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <span className="text-sm font-medium">
-                          {safeDate(note.occurredAt, "dd/MM/yyyy, h:mm a")}
-                        </span>
-                        {note.staffName && (
-                          <span className="text-xs text-muted-foreground">Recorded by {note.staffName}</span>
-                        )}
-                      </div>
-                      <div className="flex gap-2 flex-wrap mt-1">
-                        {note.mandatoryReportRequired && (
-                          <Badge variant="destructive" className="text-xs">Mandatory Report</Badge>
-                        )}
-                        {note.cissThresholdMet && (
-                          <Badge className="text-xs bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">CISS Threshold</Badge>
-                        )}
-                        {note.fvissThresholdMet && (
-                          <Badge className="text-xs bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100">FVISS Threshold</Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openEditWelfareNote(note)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    {canDelete && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete welfare note?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently remove this welfare notification record. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            onClick={() => handleDeleteWelfareNote(note.id)}
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                    )}
-                    </div>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-3 text-sm">
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Concerns</p>
-                      <p className="leading-relaxed">{note.concerns}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Risk Factors</p>
-                      <p className="leading-relaxed">{note.riskFactors}</p>
-                    </div>
-                    {note.evidence && (
-                      <div className="space-y-1 md:col-span-2">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Evidence / Observations</p>
-                        <p className="leading-relaxed">{note.evidence}</p>
-                      </div>
-                    )}
-                    {note.mandatoryReportRequired && note.mandatoryReportNotes && (
-                      <div className="space-y-1 md:col-span-2 bg-destructive/5 border border-destructive/20 rounded p-2">
-                        <p className="text-xs font-medium text-destructive uppercase tracking-wide">Mandatory Report Notes</p>
-                        <p className="leading-relaxed">{note.mandatoryReportNotes}</p>
-                      </div>
-                    )}
-                    {note.cissThresholdMet && note.cissNotes && (
-                      <div className="space-y-1 bg-amber-50 border border-amber-200 rounded p-2">
-                        <p className="text-xs font-medium text-amber-700 uppercase tracking-wide">CISS Notes</p>
-                        <p className="leading-relaxed">{note.cissNotes}</p>
-                      </div>
-                    )}
-                    {note.fvissThresholdMet && note.fvissNotes && (
-                      <div className="space-y-1 bg-orange-50 border border-orange-200 rounded p-2">
-                        <p className="text-xs font-medium text-orange-700 uppercase tracking-wide">FVISS Notes</p>
-                        <p className="leading-relaxed">{note.fvissNotes}</p>
-                      </div>
-                    )}
-                    {note.confidentialNotes && (
-                      <div className="space-y-1 md:col-span-2 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded p-2">
-                        <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
-                          <Lock className="h-3 w-3" />Confidential Notes
-                        </p>
-                        <p className="leading-relaxed">{note.confidentialNotes}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Confidential Notes — Admin & Educational Leader only */}
       {!isEducatorRole && <Card className="border-slate-300 dark:border-slate-600">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -2105,6 +1977,137 @@ export default function ChildProfile() {
                 : null,
             ].filter((g): g is GuardianOption => g !== null)}
           />
+        </TabsContent>
+
+        {/* ── Welfare ── */}
+        <TabsContent value="welfare">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5 text-amber-600" />
+                Welfare Notification Log
+              </CardTitle>
+              <Button size="sm" onClick={() => { setWelfareForm(EMPTY_WELFARE_FORM); setEvidenceObjectPath(null); setEvidenceFileName(null); setEditingWelfareNoteId(null); setWelfareOpen(true); }}>
+                <Plus className="h-4 w-4 mr-1" />New Welfare Note
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {welfareLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                </div>
+              ) : !welfareNotes || welfareNotes.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">
+                  <ShieldAlert className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                  <p className="text-sm">No welfare notifications recorded</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {[...welfareNotes].reverse().map((note) => (
+                    <div key={note.id} className="rounded-lg border bg-card p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <span className="text-sm font-medium">
+                              {safeDate(note.occurredAt, "dd/MM/yyyy, h:mm a")}
+                            </span>
+                            {note.staffName && (
+                              <span className="text-xs text-muted-foreground">Recorded by {note.staffName}</span>
+                            )}
+                          </div>
+                          <div className="flex gap-2 flex-wrap mt-1">
+                            {note.mandatoryReportRequired && (
+                              <Badge variant="destructive" className="text-xs">Mandatory Report</Badge>
+                            )}
+                            {note.cissThresholdMet && (
+                              <Badge className="text-xs bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">CISS Threshold</Badge>
+                            )}
+                            {note.fvissThresholdMet && (
+                              <Badge className="text-xs bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100">FVISS Threshold</Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openEditWelfareNote(note)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          {canDelete && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete welfare note?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently remove this welfare notification record. This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    onClick={() => handleDeleteWelfareNote(note.id)}
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-3 text-sm">
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Concerns</p>
+                          <p className="leading-relaxed">{note.concerns}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Risk Factors</p>
+                          <p className="leading-relaxed">{note.riskFactors}</p>
+                        </div>
+                        {note.evidence && (
+                          <div className="space-y-1 md:col-span-2">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Evidence / Observations</p>
+                            <p className="leading-relaxed">{note.evidence}</p>
+                          </div>
+                        )}
+                        {note.mandatoryReportRequired && note.mandatoryReportNotes && (
+                          <div className="space-y-1 md:col-span-2 bg-destructive/5 border border-destructive/20 rounded p-2">
+                            <p className="text-xs font-medium text-destructive uppercase tracking-wide">Mandatory Report Notes</p>
+                            <p className="leading-relaxed">{note.mandatoryReportNotes}</p>
+                          </div>
+                        )}
+                        {note.cissThresholdMet && note.cissNotes && (
+                          <div className="space-y-1 bg-amber-50 border border-amber-200 rounded p-2">
+                            <p className="text-xs font-medium text-amber-700 uppercase tracking-wide">CISS Notes</p>
+                            <p className="leading-relaxed">{note.cissNotes}</p>
+                          </div>
+                        )}
+                        {note.fvissThresholdMet && note.fvissNotes && (
+                          <div className="space-y-1 bg-orange-50 border border-orange-200 rounded p-2">
+                            <p className="text-xs font-medium text-orange-700 uppercase tracking-wide">FVISS Notes</p>
+                            <p className="leading-relaxed">{note.fvissNotes}</p>
+                          </div>
+                        )}
+                        {note.confidentialNotes && (
+                          <div className="space-y-1 md:col-span-2 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded p-2">
+                            <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
+                              <Lock className="h-3 w-3" />Confidential Notes
+                            </p>
+                            <p className="leading-relaxed">{note.confidentialNotes}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
       </Tabs>

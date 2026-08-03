@@ -269,7 +269,7 @@ router.get("/dashboard/recent-activity", async (_req, res): Promise<void> => {
       actor: staff ? `${staff.firstName} ${staff.lastName}` : null,
       siteName: site ? site.name : null,
       timestamp: wn.createdAt.toISOString(),
-      href: `/children/${wn.childId}`,
+      href: `/children/${wn.childId}?tab=welfare`,
     });
   }
 

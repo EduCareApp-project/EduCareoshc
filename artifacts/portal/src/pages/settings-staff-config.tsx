@@ -18,6 +18,24 @@ import {
   useUpdateFeatureSettings,
 } from "@workspace/api-client-react";
 
+const DEFAULT_QUAL_NAMES = [
+  "Child Safety - Foundation Child Safety Training (GECCKO)",
+  "Child Safety - Mandatory Reporting and Other Obligations",
+  "Child Wellbeing",
+  "CPR Renewal",
+  "Education Qualifications",
+  "First Aid",
+  "Food Safety",
+  "History & Compliance",
+  "Managing Challenging Behaviour (DET)",
+  "National Police Check",
+  "Responsible Person Declaration",
+  "Resume",
+  "Risk Management (DET)",
+  "Staff Details (DET)",
+  "WWCC",
+];
+
 export default function SettingsStaffConfig() {
   const { isFullAccess } = usePermissions();
   const { toast } = useToast();
@@ -33,6 +51,8 @@ export default function SettingsStaffConfig() {
   const [profilesVisibleToPeers, setProfilesVisibleToPeers] = useState(false);
   const [customRoles, setCustomRoles] = useState<string[]>([]);
   const [newRole, setNewRole] = useState("");
+  const [qualNames, setQualNames] = useState<string[]>(DEFAULT_QUAL_NAMES);
+  const [newQualName, setNewQualName] = useState("");
 
   useEffect(() => {
     if (!settings) return;
@@ -40,7 +60,23 @@ export default function SettingsStaffConfig() {
     setAppraisalCycle(String(settings.staffAppraisalCycleDays ?? 365));
     setProfilesVisibleToPeers(settings.staffProfilesVisibleToPeers ?? false);
     setCustomRoles(settings.staffCustomRoles ?? []);
+    setQualNames(settings.staffQualificationNames ?? DEFAULT_QUAL_NAMES);
   }, [settings]);
+
+  function handleAddQualName() {
+    const trimmed = newQualName.trim();
+    if (!trimmed) return;
+    if (qualNames.map((n) => n.toLowerCase()).includes(trimmed.toLowerCase())) {
+      toast({ title: "Qualification name already exists", variant: "destructive" });
+      return;
+    }
+    setQualNames((prev) => [...prev, trimmed]);
+    setNewQualName("");
+  }
+
+  function handleRemoveQualName(name: string) {
+    setQualNames((prev) => prev.filter((n) => n !== name));
+  }
 
   function handleAddRole() {
     const trimmed = newRole.trim();
@@ -66,6 +102,7 @@ export default function SettingsStaffConfig() {
           staffAppraisalCycleDays: parseInt(appraisalCycle) || 365,
           staffProfilesVisibleToPeers: profilesVisibleToPeers,
           staffCustomRoles: customRoles,
+          staffQualificationNames: qualNames,
         },
       },
       {
@@ -222,6 +259,57 @@ export default function SettingsStaffConfig() {
               </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Qualification Names</CardTitle>
+          <CardDescription>
+            The list of qualification types available when adding qualifications to a staff profile.
+            These names also drive the compliance tier configuration in Staff Compliance Settings.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isLoading ? (
+            <div className="h-24 bg-muted/30 rounded animate-pulse" />
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-2">
+                {qualNames.map((name) => (
+                  <span
+                    key={name}
+                    className="flex items-center gap-1.5 text-sm bg-primary/10 text-primary rounded-md px-3 py-1.5 border border-primary/20"
+                  >
+                    {name}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveQualName(name)}
+                      className="ml-0.5 text-primary/60 hover:text-destructive transition-colors"
+                      aria-label={`Remove ${name}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                ))}
+                {qualNames.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic">No qualification names configured.</p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="e.g. Anaphylaxis Management"
+                  value={newQualName}
+                  onChange={(e) => setNewQualName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddQualName(); } }}
+                  className="max-w-sm"
+                />
+                <Button type="button" variant="outline" onClick={handleAddQualName} disabled={!newQualName.trim()}>
+                  <Plus className="h-4 w-4 mr-1" /> Add
+                </Button>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

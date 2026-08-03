@@ -1,7 +1,17 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, childrenTable, staffTable, observationsTable, outcomesTable, evacuationsTable, incidentsTable, conditionReportsTable, qipItemsTable, checklistRoutinesTable, professionalDevelopmentTable, staffQualificationsTable, postsTable } from "@workspace/db";
+import { db, childrenTable, staffTable, observationsTable, outcomesTable, evacuationsTable, incidentsTable, conditionReportsTable, qipItemsTable, checklistRoutinesTable, professionalDevelopmentTable, staffQualificationsTable, postsTable, organisationTable } from "@workspace/db";
 import { GetLearningStoriesReportResponse, GetServiceComplianceReportResponse, GetStaffComplianceReportResponse } from "@workspace/api-zod";
+
+const DEFAULT_CANNOT_WORK_QUALS = ["WWCC", "CPR Renewal", "First Aid"];
+const DEFAULT_RP_QUALS = [
+  "Child Safety - Mandatory Reporting and Other Obligations", "CPR Renewal",
+  "Education Qualifications", "First Aid", "Food Safety", "History & Compliance",
+  "Responsible Person Declaration", "Risk Management (DET)", "Staff Details (DET)", "WWCC",
+];
+const DEFAULT_EDUCATOR_QUALS = [
+  "Staff Details (DET)", "WWCC", "Child Safety - Mandatory Reporting and Other Obligations",
+];
 
 const router: IRouter = Router();
 
@@ -93,12 +103,6 @@ router.get("/reports/service-compliance", async (req, res): Promise<void> => {
   }));
 });
 
-// Returns true if a qualification name contains every part (case-insensitive)
-function qualMatches(name: string, ...parts: string[]) {
-  const lower = name.toLowerCase();
-  return parts.every((p) => lower.includes(p.toLowerCase()));
-}
-
 // Returns true if a qualification is expired (status flag or date has passed)
 function qualIsExpired(q: { status: string; expiryDate: string | null }) {
   if (q.status === "expired") return true;
@@ -111,56 +115,57 @@ function qualIsExpired(q: { status: string; expiryDate: string | null }) {
 
 type StaffQual = { staffId: number; name: string; status: string; expiryDate: string | null };
 
-// True if the staff member has this qual recorded AND it is not expired
-function hasCurrent(quals: StaffQual[], ...nameParts: string[]) {
-  return quals.some((q) => qualMatches(q.name, ...nameParts) && !qualIsExpired(q));
+interface ComplianceTierConfig {
+  cannotWorkQuals: string[];
+  rpQuals: string[];
+  educatorQuals: string[];
 }
 
-// True if the staff member has this qual recorded AND it IS expired
-function hasExpired(quals: StaffQual[], ...nameParts: string[]) {
-  return quals.some((q) => qualMatches(q.name, ...nameParts) && qualIsExpired(q));
-}
+function deriveComplianceStatus(
+  quals: StaffQual[],
+  wwccOnRecord: boolean,
+  config: ComplianceTierConfig,
+): "cannot_work" | "responsible_person" | "educator" | "incomplete" {
+  const nameLower = (n: string) => n.toLowerCase();
 
-function deriveComplianceStatus(quals: StaffQual[], wwccOnRecord: boolean): "cannot_work" | "responsible_person" | "educator" | "incomplete" {
-  // Cannot Work: any critical qual is explicitly expired
-  const criticalExpired =
-    hasExpired(quals, "wwcc") ||
-    hasExpired(quals, "cpr") ||
-    hasExpired(quals, "first aid");
+  // Cannot Work: any configured critical qual is expired
+  const criticalExpired = config.cannotWorkQuals.some((cw) =>
+    quals.some((q) => nameLower(q.name) === nameLower(cw) && qualIsExpired(q))
+  );
   if (criticalExpired) return "cannot_work";
 
-  // WWCC is current via staff record or qualification
-  const wwccCurrent = wwccOnRecord || hasCurrent(quals, "wwcc");
+  const currentNames = new Set(quals.filter((q) => !qualIsExpired(q)).map((q) => nameLower(q.name)));
+  const wwccCurrent = wwccOnRecord || currentNames.has("wwcc");
 
-  // Core three required for Educator tier
-  const coreThreeCurrent =
-    wwccCurrent &&
-    hasCurrent(quals, "staff details") &&
-    hasCurrent(quals, "child safety") &&
-    hasCurrent(quals, "mandatory reporting");
+  // Educator tier — all educator quals must be current (WWCC handled via record too)
+  const educatorMet = config.educatorQuals.every((n) =>
+    nameLower(n) === "wwcc" ? wwccCurrent : currentNames.has(nameLower(n))
+  );
+  if (!educatorMet) return "incomplete";
 
-  if (!coreThreeCurrent) return "incomplete";
-
-  // Responsible Person: all required quals present and current
-  const responsiblePersonQuals =
-    coreThreeCurrent &&
-    hasCurrent(quals, "first aid") &&
-    hasCurrent(quals, "cpr") &&
-    hasCurrent(quals, "food safety") &&
-    hasCurrent(quals, "responsible person") &&
-    hasCurrent(quals, "education qualifications") &&
-    hasCurrent(quals, "history");
-  if (responsiblePersonQuals) return "responsible_person";
-
-  return "educator";
+  // Responsible Person — all RP quals current
+  const rpMet = config.rpQuals.every((n) =>
+    nameLower(n) === "wwcc" ? wwccCurrent : currentNames.has(nameLower(n))
+  );
+  return rpMet ? "responsible_person" : "educator";
 }
 
 router.get("/reports/staff-compliance", async (_req, res): Promise<void> => {
-  const allStaff = await db.select().from(staffTable).where(eq(staffTable.status, "active"));
-  const allPd = await db.select().from(professionalDevelopmentTable);
-  const allQuals = await db.select().from(staffQualificationsTable);
-  const currentYear = new Date().getFullYear();
+  const [allStaff, allPd, allQuals, orgRow] = await Promise.all([
+    db.select().from(staffTable).where(eq(staffTable.status, "active")),
+    db.select().from(professionalDevelopmentTable),
+    db.select().from(staffQualificationsTable),
+    db.select({ featureSettings: organisationTable.featureSettings }).from(organisationTable).limit(1),
+  ]);
 
+  const fs = (orgRow[0]?.featureSettings ?? {}) as any;
+  const tierConfig: ComplianceTierConfig = {
+    cannotWorkQuals: fs.staffCannotWorkQuals ?? DEFAULT_CANNOT_WORK_QUALS,
+    rpQuals:         fs.staffResponsiblePersonQuals ?? DEFAULT_RP_QUALS,
+    educatorQuals:   fs.staffEducatorQuals ?? DEFAULT_EDUCATOR_QUALS,
+  };
+
+  const currentYear = new Date().getFullYear();
   const staffById = new Map(allStaff.map((s) => [s.id, s]));
 
   const staffData = allStaff.map((s) => {
@@ -171,9 +176,8 @@ router.get("/reports/staff-compliance", async (_req, res): Promise<void> => {
     const pdHours = pdThisYear.reduce((sum, p) => sum + (p.hoursEarned ?? 0), 0);
 
     const myQuals = allQuals.filter((q) => q.staffId === s.id && !q.archivedAt);
-    const hasWwccQual = hasCurrent(myQuals, "wwcc");
-    const hasWwcc = !!s.wwccNumber || hasWwccQual;
-    const complianceStatus = deriveComplianceStatus(myQuals, !!s.wwccNumber);
+    const hasWwcc = !!s.wwccNumber || myQuals.some((q) => q.name.toLowerCase() === "wwcc" && !qualIsExpired(q));
+    const complianceStatus = deriveComplianceStatus(myQuals, !!s.wwccNumber, tierConfig);
 
     return {
       staffId: s.id,

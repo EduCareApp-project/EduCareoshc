@@ -54,6 +54,12 @@ export interface FeatureSettings {
   // Staff Compliance
   staffComplianceWarnDays?: number;
   staffComplianceSuspendOnExpiry?: boolean;
+  // Managed qualification name list — drives the dropdown on staff profiles
+  staffQualificationNames?: string[];
+  // Compliance tier membership — which quals belong to each tier
+  staffCannotWorkQuals?: string[];
+  staffResponsiblePersonQuals?: string[];
+  staffEducatorQuals?: string[];
   // Jottings
   jottingsVisibleToGuardians?: boolean;
   jottingsRequireChild?: boolean;

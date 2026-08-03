@@ -16,6 +16,7 @@ import {
   useDeleteQualificationDocument,
   useArchiveStaffQualification,
   useArchiveStaff,
+  useGetFeatureSettings, getGetFeatureSettingsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useUpload } from "@workspace/object-storage-web";
@@ -111,6 +112,8 @@ export default function StaffProfile() {
   const { data: staff, isLoading: loadingStaff } = useGetStaff(staffId, { query: { queryKey: getGetStaffQueryKey(staffId), enabled: !!staffId } });
   const { data: pdList, isLoading: loadingPd } = useGetStaffProfessionalDevelopment(staffId, { query: { queryKey: getGetStaffProfessionalDevelopmentQueryKey(staffId), enabled: !!staffId } });
   const { data: qualifications, isLoading: loadingQuals } = useGetStaffQualifications(staffId, { query: { queryKey: getGetStaffQualificationsQueryKey(staffId), enabled: !!staffId, refetchInterval: 5 * 60 * 1000 } });
+  const { data: featureSettings } = useGetFeatureSettings({ query: { queryKey: getGetFeatureSettingsQueryKey() } });
+  const qualificationNames = featureSettings?.staffQualificationNames ?? QUALIFICATION_NAMES;
 
   const [, navigate] = useLocation();
   const { data: sites } = useListSites();
@@ -431,7 +434,7 @@ export default function StaffProfile() {
   });
   const totalHoursThisYear = pdThisYear.reduce((s, p) => s + (p.hoursEarned ?? 0), 0);
   const recordedQualNames = new Set((qualifications ?? []).filter((q) => !(q as any).archivedAt).map((q) => q.name));
-  const missingQualNames = QUALIFICATION_NAMES.filter((n) => !recordedQualNames.has(n));
+  const missingQualNames = qualificationNames.filter((n) => !recordedQualNames.has(n));
 
   if (loadingStaff) {
     return (
@@ -845,7 +848,7 @@ export default function StaffProfile() {
                 };
                 if (isExp(a) && !isExp(b)) return -1;
                 if (!isExp(a) && isExp(b)) return 1;
-                return QUALIFICATION_NAMES.indexOf(a.name) - QUALIFICATION_NAMES.indexOf(b.name);
+                return qualificationNames.indexOf(a.name) - qualificationNames.indexOf(b.name);
               });
 
             const renderQualCard = (q: typeof allQuals[number], isArchived: boolean) => {
@@ -1235,7 +1238,7 @@ export default function StaffProfile() {
                   <SelectValue placeholder="Select qualification type..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {QUALIFICATION_NAMES.filter((n) => {
+                  {qualificationNames.filter((n) => {
                     const usedNames = (qualifications ?? [])
                       .filter((q) => q.id !== editingQualId && !(q as any).archivedAt)
                       .map((q) => q.name);

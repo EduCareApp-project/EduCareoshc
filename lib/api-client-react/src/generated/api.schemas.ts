@@ -1896,6 +1896,10 @@ export interface FeatureSettings {
   complianceReviewCycleDays?: number;
   staffComplianceWarnDays?: number;
   staffComplianceSuspendOnExpiry?: boolean;
+  staffQualificationNames?: string[];
+  staffCannotWorkQuals?: string[];
+  staffResponsiblePersonQuals?: string[];
+  staffEducatorQuals?: string[];
   jottingsVisibleToGuardians?: boolean;
   jottingsRequireChild?: boolean;
   evacuationDrillFrequencyDays?: number;

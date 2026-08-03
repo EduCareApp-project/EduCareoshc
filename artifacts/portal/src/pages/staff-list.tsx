@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useListStaff, useGetStaffQualifications, getGetStaffQualificationsQueryKey, useListSites } from "@workspace/api-client-react";
+import { useListStaff, useGetStaffQualifications, getGetStaffQualificationsQueryKey, useListSites, useGetFeatureSettings, getGetFeatureSettingsQueryKey } from "@workspace/api-client-react";
 import { Link, Redirect } from "wouter";
 import { useAuth } from "@/contexts/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, UserCog, Mail, Phone, Award, Building2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { computeQualLevel, QUAL_LEVEL_LABELS, QUAL_LEVEL_STYLES, type QualItem } from "@/lib/qual-level";
+import { computeQualLevel, QUAL_LEVEL_LABELS, QUAL_LEVEL_STYLES, type QualItem, type QualLevelConfig } from "@/lib/qual-level";
 
 const ROLE_LABELS: Record<string, string> = { admin: "Admin", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
 
-function QualLevelBadge({ staffId }: { staffId: number }) {
+function QualLevelBadge({ staffId, config }: { staffId: number; config?: QualLevelConfig }) {
   const { data: qualifications, isLoading } = useGetStaffQualifications(staffId, {
     query: { queryKey: getGetStaffQualificationsQueryKey(staffId), refetchInterval: 30 * 1000 },
   });
@@ -22,7 +22,7 @@ function QualLevelBadge({ staffId }: { staffId: number }) {
       Incomplete
     </span>
   );
-  const level = computeQualLevel(qualifications as QualItem[]);
+  const level = computeQualLevel(qualifications as QualItem[], config);
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${QUAL_LEVEL_STYLES[level]}`}>
       {QUAL_LEVEL_LABELS[level]}
@@ -38,6 +38,12 @@ export default function StaffList() {
   const { data: sites } = useListSites();
   const siteMap = Object.fromEntries((sites ?? []).map((s) => [s.id, s.name]));
   const [tab, setTab] = useState<TopTab>("active");
+  const { data: featureSettings } = useGetFeatureSettings({ query: { queryKey: getGetFeatureSettingsQueryKey() } });
+  const qualLevelConfig: QualLevelConfig | undefined = featureSettings ? {
+    cannotWorkQuals: featureSettings.staffCannotWorkQuals,
+    responsiblePersonQuals: featureSettings.staffResponsiblePersonQuals,
+    educatorQuals: featureSettings.staffEducatorQuals,
+  } : undefined;
 
   const { data: accessSettings } = useQuery<Record<string, string[]>>({
     queryKey: ["settings-access"],
@@ -165,7 +171,7 @@ export default function StaffList() {
                   )}
                   <div className="mt-2 pt-2 border-t flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Qualification Level</span>
-                    <QualLevelBadge staffId={member.id} />
+                    <QualLevelBadge staffId={member.id} config={qualLevelConfig} />
                   </div>
                 </CardContent>
               </Card>

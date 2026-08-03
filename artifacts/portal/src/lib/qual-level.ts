@@ -22,19 +22,29 @@ export const CANNOT_WORK_QUALS = ["WWCC", "CPR Renewal", "First Aid"];
 export type QualItem = { name: string; status: string; expiryDate?: Date | string | null; archivedAt?: Date | string | null };
 export type QualLevel = "cannot-work" | "responsible-person" | "educator" | "incomplete";
 
+export interface QualLevelConfig {
+  cannotWorkQuals?: string[];
+  responsiblePersonQuals?: string[];
+  educatorQuals?: string[];
+}
+
 export function isQualExpired(q: QualItem): boolean {
   const now = new Date();
   const d = q.expiryDate instanceof Date ? q.expiryDate : q.expiryDate ? new Date(String(q.expiryDate)) : null;
   return Boolean((d && !isNaN(d.getTime()) && d < now) || q.status === "expired");
 }
 
-export function computeQualLevel(quals: QualItem[]): QualLevel {
+export function computeQualLevel(quals: QualItem[], config?: QualLevelConfig): QualLevel {
   const active = quals.filter((q) => !q.archivedAt);
+  const cannotWork = config?.cannotWorkQuals ?? CANNOT_WORK_QUALS;
+  const rpQuals   = config?.responsiblePersonQuals ?? RP_QUALS;
+  const edQuals   = config?.educatorQuals ?? EDUCATOR_QUALS;
+
   const expiredNames = new Set(active.filter(isQualExpired).map((q) => q.name));
-  if (CANNOT_WORK_QUALS.some((n) => expiredNames.has(n))) return "cannot-work";
+  if (cannotWork.some((n) => expiredNames.has(n))) return "cannot-work";
   const currentNames = new Set(active.filter((q) => !isQualExpired(q)).map((q) => q.name));
-  if (RP_QUALS.every((n) => currentNames.has(n))) return "responsible-person";
-  if (EDUCATOR_QUALS.every((n) => currentNames.has(n))) return "educator";
+  if (rpQuals.every((n) => currentNames.has(n))) return "responsible-person";
+  if (edQuals.every((n) => currentNames.has(n))) return "educator";
   return "incomplete";
 }
 

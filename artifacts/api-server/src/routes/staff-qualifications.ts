@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, isNull, and } from "drizzle-orm";
 import { db, staffQualificationsTable, qualificationDocumentsTable } from "@workspace/db";
 import {
   GetStaffQualificationsParams,
@@ -118,14 +118,32 @@ router.delete("/qualification-documents/:id", async (req, res): Promise<void> =>
 router.patch("/qualifications/:id/archive", async (req, res): Promise<void> => {
   const params = ArchiveStaffQualificationParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  const [row] = await db
-    .update(staffQualificationsTable)
-    .set({ archivedAt: new Date() as any })
-    .where(eq(staffQualificationsTable.id, params.data.id))
-    .returning();
-  if (!row) { res.status(404).json({ error: "Qualification not found" }); return; }
-  const [withDocs] = await attachDocuments([row]);
-  res.json(withDocs);
+
+  // Check the record exists before attempting the update
+  const existing = await db
+    .select()
+    .from(staffQualificationsTable)
+    .where(eq(staffQualificationsTable.id, params.data.id));
+  if (!existing[0]) { res.status(404).json({ error: "Qualification not found" }); return; }
+
+  try {
+    const [row] = await db
+      .update(staffQualificationsTable)
+      .set({ archivedAt: new Date() })
+      .where(and(
+        eq(staffQualificationsTable.id, params.data.id),
+        isNull(staffQualificationsTable.archivedAt),
+      ))
+      .returning();
+
+    // If row is undefined the record was already archived — fetch and return it as-is
+    const result = row ?? existing[0];
+    const [withDocs] = await attachDocuments([result]);
+    res.json(withDocs);
+  } catch (err) {
+    req.log.error({ err, qualificationId: params.data.id }, "Failed to archive qualification");
+    res.status(500).json({ error: "Failed to archive qualification" });
+  }
 });
 
 router.delete("/qualifications/:id", async (req, res): Promise<void> => {

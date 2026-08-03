@@ -139,14 +139,14 @@ router.patch("/qualifications/:id/archive", async (req, res): Promise<void> => {
   const params = ArchiveStaffQualificationParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 
-  // Check the record exists before attempting the update
-  const existing = await db
-    .select()
-    .from(staffQualificationsTable)
-    .where(eq(staffQualificationsTable.id, params.data.id));
-  if (!existing[0]) { res.status(404).json({ error: "Qualification not found" }); return; }
-
   try {
+    // Check the record exists before attempting the update
+    const existing = await db
+      .select()
+      .from(staffQualificationsTable)
+      .where(eq(staffQualificationsTable.id, params.data.id));
+    if (!existing[0]) { res.status(404).json({ error: "Qualification not found" }); return; }
+
     const [row] = await db
       .update(staffQualificationsTable)
       .set({ archivedAt: new Date() })

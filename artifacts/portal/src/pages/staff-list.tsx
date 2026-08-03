@@ -14,7 +14,7 @@ const ROLE_LABELS: Record<string, string> = { admin: "Admin", educational_leader
 
 function QualLevelBadge({ staffId }: { staffId: number }) {
   const { data: qualifications, isLoading } = useGetStaffQualifications(staffId, {
-    query: { queryKey: getGetStaffQualificationsQueryKey(staffId), refetchInterval: 5 * 60 * 1000 },
+    query: { queryKey: getGetStaffQualificationsQueryKey(staffId), refetchInterval: 30 * 1000 },
   });
   if (isLoading) return <span className="text-xs text-muted-foreground">—</span>;
   if (!qualifications?.length) return (

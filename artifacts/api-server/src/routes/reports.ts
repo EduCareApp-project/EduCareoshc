@@ -170,7 +170,7 @@ router.get("/reports/staff-compliance", async (_req, res): Promise<void> => {
     });
     const pdHours = pdThisYear.reduce((sum, p) => sum + (p.hoursEarned ?? 0), 0);
 
-    const myQuals = allQuals.filter((q) => q.staffId === s.id);
+    const myQuals = allQuals.filter((q) => q.staffId === s.id && !q.archivedAt);
     const hasWwccQual = hasCurrent(myQuals, "wwcc");
     const hasWwcc = !!s.wwccNumber || hasWwccQual;
     const complianceStatus = deriveComplianceStatus(myQuals, !!s.wwccNumber);
@@ -199,6 +199,7 @@ router.get("/reports/staff-compliance", async (_req, res): Promise<void> => {
 
   const expiringQualifications = allQuals
     .filter((q) => {
+      if (q.archivedAt) return false;
       if (!q.expiryDate) return false;
       const d = toDateStr(q.expiryDate);
       return d >= todayStr && d <= windowEndStr;

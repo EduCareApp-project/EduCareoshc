@@ -815,7 +815,17 @@ export default function StaffProfile() {
         <TabsContent value="qualifications" className="mt-4 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-semibold">Qualifications &amp; Certifications</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="font-semibold">Qualifications &amp; Certifications</h2>
+                {!loadingQuals && qualifications && (() => {
+                  const qualLevel = computeQualLevel(qualifications as QualItem[]);
+                  return (
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${QUAL_LEVEL_STYLES[qualLevel]}`}>
+                      {QUAL_LEVEL_LABELS[qualLevel]}
+                    </span>
+                  );
+                })()}
+              </div>
               <p className="text-sm text-muted-foreground">Licences, certifications, and compliance documents.</p>
             </div>
             <div className="flex items-center gap-2">

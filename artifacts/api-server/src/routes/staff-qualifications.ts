@@ -74,45 +74,55 @@ router.patch("/qualifications/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const existing = await db.select().from(staffQualificationsTable).where(eq(staffQualificationsTable.id, params.data.id));
-  if (!existing[0]) { res.status(404).json({ error: "Qualification not found" }); return; }
+  try {
+    const existing = await db.select().from(staffQualificationsTable).where(eq(staffQualificationsTable.id, params.data.id));
+    if (!existing[0]) { res.status(404).json({ error: "Qualification not found" }); return; }
 
-  const { documentName, ...updateData } = parsed.data as any;
-  const newDocPath: string | undefined = updateData.documentPath;
-  const oldDocPath = existing[0].documentPath;
+    const { documentName, ...updateData } = parsed.data as any;
+    const newDocPath: string | undefined = updateData.documentPath;
+    const oldDocPath = existing[0].documentPath;
 
-  const [row] = await db
-    .update(staffQualificationsTable)
-    .set(updateData as any)
-    .where(eq(staffQualificationsTable.id, params.data.id))
-    .returning();
+    const [row] = await db
+      .update(staffQualificationsTable)
+      .set(updateData as any)
+      .where(eq(staffQualificationsTable.id, params.data.id))
+      .returning();
 
-  if (newDocPath && newDocPath !== oldDocPath) {
-    await db
-      .update(qualificationDocumentsTable)
-      .set({ active: false })
-      .where(eq(qualificationDocumentsTable.qualificationId, params.data.id));
-    await db.insert(qualificationDocumentsTable).values({
-      qualificationId: params.data.id,
-      documentPath: newDocPath,
-      documentName: documentName ?? newDocPath.split("/").pop() ?? null,
-      active: true,
-    });
+    if (newDocPath && newDocPath !== oldDocPath) {
+      await db
+        .update(qualificationDocumentsTable)
+        .set({ active: false })
+        .where(eq(qualificationDocumentsTable.qualificationId, params.data.id));
+      await db.insert(qualificationDocumentsTable).values({
+        qualificationId: params.data.id,
+        documentPath: newDocPath,
+        documentName: documentName ?? newDocPath.split("/").pop() ?? null,
+        active: true,
+      });
+    }
+
+    const [withDocs] = await attachDocuments([row]);
+    res.json(withDocs);
+  } catch (err) {
+    req.log.error({ err, qualificationId: params.data.id }, "Failed to update qualification");
+    res.status(500).json({ error: "Failed to update qualification" });
   }
-
-  const [withDocs] = await attachDocuments([row]);
-  res.json(withDocs);
 });
 
 router.delete("/qualification-documents/:id", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-  const [row] = await db
-    .delete(qualificationDocumentsTable)
-    .where(eq(qualificationDocumentsTable.id, id))
-    .returning();
-  if (!row) { res.status(404).json({ error: "Document not found" }); return; }
-  res.sendStatus(204);
+  try {
+    const [row] = await db
+      .delete(qualificationDocumentsTable)
+      .where(eq(qualificationDocumentsTable.id, id))
+      .returning();
+    if (!row) { res.status(404).json({ error: "Document not found" }); return; }
+    res.sendStatus(204);
+  } catch (err) {
+    req.log.error({ err, documentId: id }, "Failed to delete qualification document");
+    res.status(500).json({ error: "Failed to delete qualification document" });
+  }
 });
 
 router.patch("/qualifications/:id/archive", async (req, res): Promise<void> => {
@@ -149,12 +159,17 @@ router.patch("/qualifications/:id/archive", async (req, res): Promise<void> => {
 router.delete("/qualifications/:id", async (req, res): Promise<void> => {
   const params = ArchiveStaffQualificationParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  const [row] = await db
-    .delete(staffQualificationsTable)
-    .where(eq(staffQualificationsTable.id, params.data.id))
-    .returning();
-  if (!row) { res.status(404).json({ error: "Qualification not found" }); return; }
-  res.sendStatus(204);
+  try {
+    const [row] = await db
+      .delete(staffQualificationsTable)
+      .where(eq(staffQualificationsTable.id, params.data.id))
+      .returning();
+    if (!row) { res.status(404).json({ error: "Qualification not found" }); return; }
+    res.sendStatus(204);
+  } catch (err) {
+    req.log.error({ err, qualificationId: params.data.id }, "Failed to delete qualification");
+    res.status(500).json({ error: "Failed to delete qualification" });
+  }
 });
 
 export default router;

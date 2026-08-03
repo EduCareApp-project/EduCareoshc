@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, gte, count, desc, isNotNull, and, lte, ne } from "drizzle-orm";
-import { db, childrenTable, staffTable, observationsTable, programsTable, nqsAreasTable, outcomesTable, postsTable, incidentsTable, conditionReportsTable, sitesTable, planningExperiencesTable, staffQualificationsTable, jottingsTable } from "@workspace/db";
+import { db, childrenTable, staffTable, observationsTable, programsTable, nqsAreasTable, outcomesTable, postsTable, incidentsTable, conditionReportsTable, sitesTable, planningExperiencesTable, staffQualificationsTable, jottingsTable, welfareNotesTable } from "@workspace/db";
 import {
   GetDashboardSummaryResponse,
   GetRecentObservationsResponse,
@@ -169,16 +169,17 @@ router.get("/dashboard/recent-activity", async (_req, res): Promise<void> => {
     db.select().from(sitesTable),
   ]);
 
-  const [recentObs, recentPosts, recentIncidents, recentConditions] = await Promise.all([
+  const [recentObs, recentPosts, recentIncidents, recentConditions, recentWelfare] = await Promise.all([
     db.select().from(observationsTable).orderBy(desc(observationsTable.createdAt)).limit(20),
     db.select().from(postsTable).orderBy(desc(postsTable.createdAt)).limit(20),
     db.select().from(incidentsTable).orderBy(desc(incidentsTable.createdAt)).limit(20),
     db.select().from(conditionReportsTable).orderBy(desc(conditionReportsTable.createdAt)).limit(20),
+    db.select().from(welfareNotesTable).orderBy(desc(welfareNotesTable.createdAt)).limit(20),
   ]);
 
   type ActivityItem = {
     id: string;
-    type: "observation" | "post" | "incident" | "condition_report";
+    type: "observation" | "post" | "incident" | "condition_report" | "welfare_note";
     label: string;
     detail: string | null;
     actor: string | null;
@@ -248,6 +249,27 @@ router.get("/dashboard/recent-activity", async (_req, res): Promise<void> => {
       siteName: site ? site.name : null,
       timestamp: cr.createdAt.toISOString(),
       href: `/condition-reports/${cr.id}`,
+    });
+  }
+
+  for (const wn of recentWelfare) {
+    const child = childList.find((c) => c.id === wn.childId);
+    const staff = staffList.find((s) => s.id === wn.staffId);
+    const site = child?.siteId ? siteList.find((s) => s.id === child.siteId) : null;
+    const flags = [
+      wn.mandatoryReportRequired ? "Mandatory report" : null,
+      wn.cissThresholdMet ? "CISS" : null,
+      wn.fvissThresholdMet ? "FVISS" : null,
+    ].filter(Boolean).join(" · ");
+    items.push({
+      id: `wn-${wn.id}`,
+      type: "welfare_note",
+      label: child ? `Welfare note — ${child.firstName} ${child.lastName}` : "Welfare note recorded",
+      detail: flags || (wn.concerns.length > 120 ? wn.concerns.slice(0, 120) + "…" : wn.concerns),
+      actor: staff ? `${staff.firstName} ${staff.lastName}` : null,
+      siteName: site ? site.name : null,
+      timestamp: wn.createdAt.toISOString(),
+      href: `/children/${wn.childId}`,
     });
   }
 

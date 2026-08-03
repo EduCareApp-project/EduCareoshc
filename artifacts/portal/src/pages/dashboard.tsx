@@ -825,10 +825,11 @@ function RollSubmissionChecklist() {
 
 // ─── Activity type badge ──────────────────────────────────────────────────────
 const ACTIVITY_CONFIG: Record<string, { label: string; className: string }> = {
-  observation: { label: "Observation", className: "bg-blue-100 text-blue-700 border-blue-200" },
-  post:        { label: "Post",        className: "bg-green-100 text-green-700 border-green-200" },
-  incident:    { label: "Incident",    className: "bg-red-100 text-red-700 border-red-200" },
-  condition_report: { label: "Condition", className: "bg-orange-100 text-orange-700 border-orange-200" },
+  observation:      { label: "Observation",  className: "bg-blue-100 text-blue-700 border-blue-200" },
+  post:             { label: "Post",         className: "bg-green-100 text-green-700 border-green-200" },
+  incident:         { label: "Incident",     className: "bg-red-100 text-red-700 border-red-200" },
+  condition_report: { label: "Condition",    className: "bg-orange-100 text-orange-700 border-orange-200" },
+  welfare_note:     { label: "Welfare Note", className: "bg-purple-100 text-purple-700 border-purple-200" },
 };
 function ActivityTypeBadge({ type }: { type: string }) {
   const cfg = ACTIVITY_CONFIG[type] ?? { label: type, className: "bg-muted text-muted-foreground border-border" };
@@ -1157,7 +1158,7 @@ function LeadershipDashboard() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between text-lg">
             <span>Recent Activity</span>
-            <span className="text-xs text-muted-foreground font-normal">Observations · Posts · Incidents · Condition Reports</span>
+            <span className="text-xs text-muted-foreground font-normal">Observations · Posts · Incidents · Condition Reports · Welfare Notes</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">

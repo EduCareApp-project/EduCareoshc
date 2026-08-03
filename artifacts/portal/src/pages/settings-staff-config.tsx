@@ -107,7 +107,7 @@ export default function SettingsStaffConfig() {
       },
       {
         onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getGetFeatureSettingsQueryKey() });
+          queryClient.refetchQueries({ queryKey: getGetFeatureSettingsQueryKey() });
           toast({ title: "Staff settings saved" });
         },
         onError: () => toast({ title: "Failed to save", variant: "destructive" }),

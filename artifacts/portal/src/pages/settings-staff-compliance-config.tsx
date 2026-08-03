@@ -143,7 +143,7 @@ export default function SettingsStaffComplianceConfig() {
   const queryClient = useQueryClient();
 
   const { data: settings, isLoading } = useGetFeatureSettings({
-    query: { queryKey: getGetFeatureSettingsQueryKey() },
+    query: { queryKey: getGetFeatureSettingsQueryKey(), refetchOnMount: "always" },
   });
   const updateMutation = useUpdateFeatureSettings();
 

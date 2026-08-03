@@ -32,13 +32,18 @@ async function attachDocuments(quals: (typeof staffQualificationsTable.$inferSel
 router.get("/staff/:id/qualifications", async (req, res): Promise<void> => {
   const params = GetStaffQualificationsParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  const rows = await db
-    .select()
-    .from(staffQualificationsTable)
-    .where(eq(staffQualificationsTable.staffId, params.data.id))
-    .orderBy(staffQualificationsTable.createdAt);
-  const withDocs = await attachDocuments(rows);
-  res.json(GetStaffQualificationsResponse.parse(withDocs));
+  try {
+    const rows = await db
+      .select()
+      .from(staffQualificationsTable)
+      .where(eq(staffQualificationsTable.staffId, params.data.id))
+      .orderBy(staffQualificationsTable.createdAt);
+    const withDocs = await attachDocuments(rows);
+    res.json(GetStaffQualificationsResponse.parse(withDocs));
+  } catch (err) {
+    req.log.error({ err, staffId: params.data.id }, "Failed to fetch qualifications");
+    res.status(500).json({ error: "Failed to fetch qualifications" });
+  }
 });
 
 router.post("/staff/:id/qualifications", async (req, res): Promise<void> => {
@@ -50,18 +55,23 @@ router.post("/staff/:id/qualifications", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message, issues: parsed.error.issues });
     return;
   }
-  const { documentName, ...qualData } = parsed.data as any;
-  const [row] = await db.insert(staffQualificationsTable).values(qualData as any).returning();
-  if (row.documentPath) {
-    await db.insert(qualificationDocumentsTable).values({
-      qualificationId: row.id,
-      documentPath: row.documentPath,
-      documentName: documentName ?? row.documentPath.split("/").pop() ?? null,
-      active: true,
-    });
+  try {
+    const { documentName, ...qualData } = parsed.data as any;
+    const [row] = await db.insert(staffQualificationsTable).values(qualData as any).returning();
+    if (row.documentPath) {
+      await db.insert(qualificationDocumentsTable).values({
+        qualificationId: row.id,
+        documentPath: row.documentPath,
+        documentName: documentName ?? row.documentPath.split("/").pop() ?? null,
+        active: true,
+      });
+    }
+    const [withDocs] = await attachDocuments([row]);
+    res.status(201).json(withDocs);
+  } catch (err) {
+    req.log.error({ err, staffId: params.data.id }, "Failed to create qualification");
+    res.status(500).json({ error: "Failed to create qualification" });
   }
-  const [withDocs] = await attachDocuments([row]);
-  res.status(201).json(withDocs);
 });
 
 router.patch("/qualifications/:id", async (req, res): Promise<void> => {

@@ -288,7 +288,7 @@ export default function StaffProfile() {
 
   function downloadAllDocuments() {
     type QualDoc = { id: number; documentPath: string; documentName: string | null; active: boolean };
-    const docs = (qualifications ?? []).flatMap((q) => {
+    const docs = (qualifications ?? []).filter((q) => !(q as any).archivedAt).flatMap((q) => {
       const allDocs = (q as any).documents as QualDoc[] | undefined;
       const activeDoc = allDocs?.find((d) => d.active);
       const docPath = activeDoc?.documentPath ?? q.documentPath ?? null;

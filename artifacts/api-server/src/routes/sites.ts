@@ -12,9 +12,14 @@ import {
 
 const router: IRouter = Router();
 
-router.get("/sites", async (_req, res): Promise<void> => {
-  const sites = await db.select().from(sitesTable).orderBy(sitesTable.name);
-  res.json(ListSitesResponse.parse(sites));
+router.get("/sites", async (req, res): Promise<void> => {
+  try {
+    const sites = await db.select().from(sitesTable).orderBy(sitesTable.name);
+    res.json(ListSitesResponse.parse(sites));
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch sites");
+    res.status(500).json({ error: "Failed to fetch sites" });
+  }
 });
 
 router.post("/sites", async (req, res): Promise<void> => {
@@ -23,8 +28,13 @@ router.post("/sites", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [site] = await db.insert(sitesTable).values(parsed.data).returning();
-  res.status(201).json(UpdateSiteResponse.parse(site));
+  try {
+    const [site] = await db.insert(sitesTable).values(parsed.data).returning();
+    res.status(201).json(UpdateSiteResponse.parse(site));
+  } catch (err) {
+    req.log.error({ err }, "Failed to create site");
+    res.status(500).json({ error: "Failed to create site" });
+  }
 });
 
 router.patch("/sites/:id", async (req, res): Promise<void> => {
@@ -38,16 +48,21 @@ router.patch("/sites/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [site] = await db
-    .update(sitesTable)
-    .set(parsed.data)
-    .where(eq(sitesTable.id, params.data.id))
-    .returning();
-  if (!site) {
-    res.status(404).json({ error: "Site not found" });
-    return;
+  try {
+    const [site] = await db
+      .update(sitesTable)
+      .set(parsed.data)
+      .where(eq(sitesTable.id, params.data.id))
+      .returning();
+    if (!site) {
+      res.status(404).json({ error: "Site not found" });
+      return;
+    }
+    res.json(UpdateSiteResponse.parse(site));
+  } catch (err) {
+    req.log.error({ err, siteId: params.data.id }, "Failed to update site");
+    res.status(500).json({ error: "Failed to update site" });
   }
-  res.json(UpdateSiteResponse.parse(site));
 });
 
 router.delete("/sites/:id", async (req, res): Promise<void> => {
@@ -56,8 +71,13 @@ router.delete("/sites/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  await db.delete(sitesTable).where(eq(sitesTable.id, params.data.id));
-  res.status(204).send();
+  try {
+    await db.delete(sitesTable).where(eq(sitesTable.id, params.data.id));
+    res.status(204).send();
+  } catch (err) {
+    req.log.error({ err, siteId: params.data.id }, "Failed to delete site");
+    res.status(500).json({ error: "Failed to delete site" });
+  }
 });
 
 export default router;

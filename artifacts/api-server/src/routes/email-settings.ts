@@ -18,25 +18,35 @@ async function getOrCreateSettings() {
 
 // GET /email-settings — returns current settings (creates defaults on first access)
 router.get("/email-settings", async (req: Request, res: Response): Promise<void> => {
-  const row = await getOrCreateSettings();
-  res.json(row);
+  try {
+    const row = await getOrCreateSettings();
+    res.json(row);
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch email settings");
+    res.status(500).json({ error: "Failed to fetch email settings" });
+  }
 });
 
 // PUT /email-settings — updates settings
 router.put("/email-settings", async (req: Request, res: Response): Promise<void> => {
   const { senderName, logoPath, templates } = req.body;
-  const row = await getOrCreateSettings();
-  await db
-    .update(emailSettingsTable)
-    .set({
-      senderName: senderName ?? row.senderName,
-      logoPath: logoPath !== undefined ? logoPath : row.logoPath,
-      templates: templates ?? row.templates,
-      updatedAt: new Date(),
-    })
-    .where(eq(emailSettingsTable.id, row.id));
-  const [updated] = await db.select().from(emailSettingsTable).where(eq(emailSettingsTable.id, row.id));
-  res.json(updated);
+  try {
+    const row = await getOrCreateSettings();
+    await db
+      .update(emailSettingsTable)
+      .set({
+        senderName: senderName ?? row.senderName,
+        logoPath: logoPath !== undefined ? logoPath : row.logoPath,
+        templates: templates ?? row.templates,
+        updatedAt: new Date(),
+      })
+      .where(eq(emailSettingsTable.id, row.id));
+    const [updated] = await db.select().from(emailSettingsTable).where(eq(emailSettingsTable.id, row.id));
+    res.json(updated);
+  } catch (err) {
+    req.log.error({ err }, "Failed to update email settings");
+    res.status(500).json({ error: "Failed to update email settings" });
+  }
 });
 
 // GET /email-settings/logo — public: serves the saved logo from object storage

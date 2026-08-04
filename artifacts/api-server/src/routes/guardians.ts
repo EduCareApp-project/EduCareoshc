@@ -91,20 +91,30 @@ async function buildGuardianList() {
   });
 }
 
-router.get("/guardians", async (_req, res): Promise<void> => {
-  const list = await buildGuardianList();
-  res.json(ListGuardiansResponse.parse(list));
+router.get("/guardians", async (req, res): Promise<void> => {
+  try {
+    const list = await buildGuardianList();
+    res.json(ListGuardiansResponse.parse(list));
+  } catch (err) {
+    req.log.error({ err }, "Failed to list guardians");
+    res.status(500).json({ error: "Failed to list guardians" });
+  }
 });
 
 router.get("/guardians/:email", async (req, res): Promise<void> => {
   const email = decodeURIComponent(req.params.email);
-  const list = await buildGuardianList();
-  const guardian = list.find((g) => g.guardianEmail === email);
-  if (!guardian) {
-    res.status(404).json({ error: "Guardian not found" });
-    return;
+  try {
+    const list = await buildGuardianList();
+    const guardian = list.find((g) => g.guardianEmail === email);
+    if (!guardian) {
+      res.status(404).json({ error: "Guardian not found" });
+      return;
+    }
+    res.json(GetGuardianResponse.parse(guardian));
+  } catch (err) {
+    req.log.error({ err, email }, "Failed to get guardian");
+    res.status(500).json({ error: "Failed to get guardian" });
   }
-  res.json(GetGuardianResponse.parse(guardian));
 });
 
 router.patch("/guardians/:email", async (req, res): Promise<void> => {
@@ -115,79 +125,94 @@ router.patch("/guardians/:email", async (req, res): Promise<void> => {
     return;
   }
 
-  await db
-    .insert(parentAccountsTable)
-    .values({ guardianEmail: email, username: parsed.data.username })
-    .onConflictDoUpdate({
-      target: parentAccountsTable.guardianEmail,
-      set: { username: parsed.data.username },
-    });
+  try {
+    await db
+      .insert(parentAccountsTable)
+      .values({ guardianEmail: email, username: parsed.data.username })
+      .onConflictDoUpdate({
+        target: parentAccountsTable.guardianEmail,
+        set: { username: parsed.data.username },
+      });
 
-  const list = await buildGuardianList();
-  const guardian = list.find((g) => g.guardianEmail === email);
-  res.json(GetGuardianResponse.parse(guardian));
+    const list = await buildGuardianList();
+    const guardian = list.find((g) => g.guardianEmail === email);
+    res.json(GetGuardianResponse.parse(guardian));
+  } catch (err) {
+    req.log.error({ err, email }, "Failed to update guardian");
+    res.status(500).json({ error: "Failed to update guardian" });
+  }
 });
 
 router.post("/guardians/:email/send-welcome-email", async (req, res): Promise<void> => {
   const email = decodeURIComponent(req.params.email);
 
-  const [existing] = await db
-    .select()
-    .from(childrenTable)
-    .where(
-      or(
-        eq(childrenTable.guardianEmail, email),
-        eq(childrenTable.guardian2Email, email),
-      )
-    );
+  try {
+    const [existing] = await db
+      .select()
+      .from(childrenTable)
+      .where(
+        or(
+          eq(childrenTable.guardianEmail, email),
+          eq(childrenTable.guardian2Email, email),
+        )
+      );
 
-  if (!existing) {
-    res.status(404).json({ error: "Guardian not found" });
-    return;
+    if (!existing) {
+      res.status(404).json({ error: "Guardian not found" });
+      return;
+    }
+
+    const guardianName =
+      existing.guardianEmail === email
+        ? existing.guardianName
+        : (existing.guardian2Name ?? email);
+
+    const branding = await getEmailBranding();
+    await sendWelcomeEmail(email, guardianName, getAppUrl(), branding);
+
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err, email }, "Failed to send welcome email");
+    res.status(500).json({ error: "Failed to send welcome email" });
   }
-
-  const guardianName =
-    existing.guardianEmail === email
-      ? existing.guardianName
-      : (existing.guardian2Name ?? email);
-
-  const branding = await getEmailBranding();
-  await sendWelcomeEmail(email, guardianName, getAppUrl(), branding);
-
-  res.json({ ok: true });
 });
 
 router.post("/guardians/:email/reset-password", async (req, res): Promise<void> => {
   const email = decodeURIComponent(req.params.email);
 
-  const [existing] = await db
-    .select()
-    .from(childrenTable)
-    .where(
-      or(
-        eq(childrenTable.guardianEmail, email),
-        eq(childrenTable.guardian2Email, email),
-      )
-    );
+  try {
+    const [existing] = await db
+      .select()
+      .from(childrenTable)
+      .where(
+        or(
+          eq(childrenTable.guardianEmail, email),
+          eq(childrenTable.guardian2Email, email),
+        )
+      );
 
-  if (!existing) {
-    res.status(404).json({ error: "Guardian not found" });
-    return;
+    if (!existing) {
+      res.status(404).json({ error: "Guardian not found" });
+      return;
+    }
+
+    const supplied = (req.body as { newPassword?: string })?.newPassword;
+    const newPassword = supplied && supplied.length >= 6 ? supplied : generatePassword();
+    const hash = await hashPassword(newPassword);
+
+    await db
+      .insert(parentAccountsTable)
+      .values({ guardianEmail: email, passwordHash: hash })
+      .onConflictDoUpdate({
+        target: parentAccountsTable.guardianEmail,
+        set: { passwordHash: hash },
+      });
+
+    res.json(ResetGuardianPasswordResponse.parse({ newPassword }));
+  } catch (err) {
+    req.log.error({ err, email }, "Failed to reset guardian password");
+    res.status(500).json({ error: "Failed to reset guardian password" });
   }
-
-  const supplied = (req.body as { newPassword?: string })?.newPassword;
-  const newPassword = supplied && supplied.length >= 6 ? supplied : generatePassword();
-  const hash = await hashPassword(newPassword);
-
-  await db
-    .insert(parentAccountsTable)
-    .values({ guardianEmail: email, passwordHash: hash })
-    .onConflictDoUpdate({
-      target: parentAccountsTable.guardianEmail,
-      set: { passwordHash: hash },
-    });
-
-  res.json(ResetGuardianPasswordResponse.parse({ newPassword }));
 });
 
 export default router;

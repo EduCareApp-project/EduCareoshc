@@ -36,30 +36,40 @@ const withJoins = async () => {
   return rows;
 };
 
-router.get("/condition-reports", async (_req, res): Promise<void> => {
-  const rows = await withJoins();
-  res.json(ListConditionReportsResponse.parse(rows));
+router.get("/condition-reports", async (req, res): Promise<void> => {
+  try {
+    const rows = await withJoins();
+    res.json(ListConditionReportsResponse.parse(rows));
+  } catch (err) {
+    req.log.error({ err }, "Failed to list condition reports");
+    res.status(500).json({ error: "Failed to list condition reports" });
+  }
 });
 
 router.post("/condition-reports", async (req, res): Promise<void> => {
   const parsed = CreateConditionReportBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const { siteId, ...rest } = parsed.data;
-  await db.insert(conditionReportsTable).values({ ...rest, siteId: siteId ?? null } as any);
-  const rows = await withJoins();
-  const report = rows[rows.length - 1];
+  try {
+    const { siteId, ...rest } = parsed.data;
+    await db.insert(conditionReportsTable).values({ ...rest, siteId: siteId ?? null } as any);
+    const rows = await withJoins();
+    const report = rows[rows.length - 1];
 
-  createNotificationsForRoles({
-    roles: ["educational_leader", "admin"],
-    type: "condition_submitted",
-    title: "New condition report submitted",
-    body: parsed.data.description,
-    href: `/condition-reports?highlight=${report.id}`,
-    referenceId: report.id,
-    referenceType: "condition_report",
-  }).catch((err) => logger.warn({ err }, "Failed to send condition_submitted notifications"));
+    createNotificationsForRoles({
+      roles: ["educational_leader", "admin"],
+      type: "condition_submitted",
+      title: "New condition report submitted",
+      body: parsed.data.description,
+      href: `/condition-reports?highlight=${report.id}`,
+      referenceId: report.id,
+      referenceType: "condition_report",
+    }).catch((err) => logger.warn({ err }, "Failed to send condition_submitted notifications"));
 
-  res.status(201).json(ListConditionReportsResponseItem.parse(report));
+    res.status(201).json(ListConditionReportsResponseItem.parse(report));
+  } catch (err) {
+    req.log.error({ err }, "Failed to create condition report");
+    res.status(500).json({ error: "Failed to create condition report" });
+  }
 });
 
 router.patch("/condition-reports/:id", async (req, res): Promise<void> => {
@@ -67,36 +77,45 @@ router.patch("/condition-reports/:id", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = UpdateConditionReportBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  try {
+    const [prev] = await db.select({ status: conditionReportsTable.status, siteId: conditionReportsTable.siteId })
+      .from(conditionReportsTable).where(eq(conditionReportsTable.id, params.data.id));
 
-  const [prev] = await db.select({ status: conditionReportsTable.status, siteId: conditionReportsTable.siteId })
-    .from(conditionReportsTable).where(eq(conditionReportsTable.id, params.data.id));
+    await db.update(conditionReportsTable).set(parsed.data as any).where(eq(conditionReportsTable.id, params.data.id));
+    const rows = await withJoins();
+    const report = rows.find((r) => r.id === params.data.id);
+    if (!report) { res.status(404).json({ error: "Condition report not found" }); return; }
 
-  await db.update(conditionReportsTable).set(parsed.data as any).where(eq(conditionReportsTable.id, params.data.id));
-  const rows = await withJoins();
-  const report = rows.find((r) => r.id === params.data.id);
-  if (!report) { res.status(404).json({ error: "Condition report not found" }); return; }
+    if (prev?.status === "open" && (parsed.data as any).status && (parsed.data as any).status !== "open") {
+      createNotificationsForRoles({
+        roles: ["coordinator"],
+        siteId: prev.siteId,
+        type: "condition_closed",
+        title: "Condition report closed",
+        href: `/condition-reports?highlight=${report.id}`,
+        referenceId: report.id,
+        referenceType: "condition_report",
+      }).catch((err) => logger.warn({ err }, "Failed to send condition_closed notifications"));
+    }
 
-  if (prev?.status === "open" && (parsed.data as any).status && (parsed.data as any).status !== "open") {
-    createNotificationsForRoles({
-      roles: ["coordinator"],
-      siteId: prev.siteId,
-      type: "condition_closed",
-      title: "Condition report closed",
-      href: `/condition-reports?highlight=${report.id}`,
-      referenceId: report.id,
-      referenceType: "condition_report",
-    }).catch((err) => logger.warn({ err }, "Failed to send condition_closed notifications"));
+    res.json(UpdateConditionReportResponse.parse(report));
+  } catch (err) {
+    req.log.error({ err, conditionReportId: params.data.id }, "Failed to update condition report");
+    res.status(500).json({ error: "Failed to update condition report" });
   }
-
-  res.json(UpdateConditionReportResponse.parse(report));
 });
 
 router.delete("/condition-reports/:id", async (req, res): Promise<void> => {
   const params = DeleteConditionReportParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  const [row] = await db.delete(conditionReportsTable).where(eq(conditionReportsTable.id, params.data.id)).returning();
-  if (!row) { res.status(404).json({ error: "Condition report not found" }); return; }
-  res.sendStatus(204);
+  try {
+    const [row] = await db.delete(conditionReportsTable).where(eq(conditionReportsTable.id, params.data.id)).returning();
+    if (!row) { res.status(404).json({ error: "Condition report not found" }); return; }
+    res.sendStatus(204);
+  } catch (err) {
+    req.log.error({ err, conditionReportId: params.data.id }, "Failed to delete condition report");
+    res.status(500).json({ error: "Failed to delete condition report" });
+  }
 });
 
 export default router;

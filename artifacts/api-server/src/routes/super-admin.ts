@@ -52,6 +52,9 @@ router.post("/super-admin/migrate-roll-week-starts", requireSuperAdmin, async (r
       RETURNING id, week_start
     `);
     res.json({ fixed: result.rowCount, rows: result.rows });
+  } catch (err) {
+    req.log.error({ err }, "Failed to migrate roll week starts");
+    res.status(500).json({ error: "Failed to migrate roll week starts" });
   } finally {
     client.release();
   }
@@ -73,7 +76,12 @@ router.get("/super-admin/orgs", requireSuperAdmin, async (req, res) => {
       ORDER BY o.created_at DESC
     `);
     res.json(result.rows);
-  } finally { client.release(); }
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch super-admin orgs");
+    res.status(500).json({ error: "Failed to fetch orgs" });
+  } finally {
+    client.release();
+  }
 });
 
 router.post("/super-admin/orgs", requireSuperAdmin, async (req, res) => {
@@ -87,7 +95,12 @@ router.post("/super-admin/orgs", requireSuperAdmin, async (req, res) => {
       [name, domain || null, logo_url || null, contact_name || null, contact_email || null, status || "active", notes || null]
     );
     res.status(201).json(result.rows[0]);
-  } finally { client.release(); }
+  } catch (err) {
+    req.log.error({ err }, "Failed to create super-admin org");
+    res.status(500).json({ error: "Failed to create org" });
+  } finally {
+    client.release();
+  }
 });
 
 router.patch("/super-admin/orgs/:id", requireSuperAdmin, async (req, res) => {
@@ -104,7 +117,12 @@ router.patch("/super-admin/orgs/:id", requireSuperAdmin, async (req, res) => {
     );
     if (result.rows.length === 0) { res.status(404).json({ error: "Not found" }); return; }
     res.json(result.rows[0]);
-  } finally { client.release(); }
+  } catch (err) {
+    req.log.error({ err, orgId: id }, "Failed to update super-admin org");
+    res.status(500).json({ error: "Failed to update org" });
+  } finally {
+    client.release();
+  }
 });
 
 router.delete("/super-admin/orgs/:id", requireSuperAdmin, async (req, res) => {
@@ -113,17 +131,27 @@ router.delete("/super-admin/orgs/:id", requireSuperAdmin, async (req, res) => {
   try {
     await client.query("DELETE FROM super_admin_orgs WHERE id=$1", [id]);
     res.json({ ok: true });
-  } finally { client.release(); }
+  } catch (err) {
+    req.log.error({ err, orgId: id }, "Failed to delete super-admin org");
+    res.status(500).json({ error: "Failed to delete org" });
+  } finally {
+    client.release();
+  }
 });
 
 router.get("/super-admin/sites", requireSuperAdmin, async (req, res) => {
   const orgId = req.query.orgId ? parseInt(req.query.orgId as string, 10) : null;
-  const sites = await db
-    .select({ id: sitesTable.id, name: sitesTable.name, orgId: sitesTable.orgId })
-    .from(sitesTable)
-    .where(orgId ? eq(sitesTable.orgId, orgId) : undefined)
-    .orderBy(sitesTable.name);
-  res.json(sites);
+  try {
+    const sites = await db
+      .select({ id: sitesTable.id, name: sitesTable.name, orgId: sitesTable.orgId })
+      .from(sitesTable)
+      .where(orgId ? eq(sitesTable.orgId, orgId) : undefined)
+      .orderBy(sitesTable.name);
+    res.json(sites);
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch super-admin sites");
+    res.status(500).json({ error: "Failed to fetch sites" });
+  }
 });
 
 /** Build post WHERE conditions filtered to an org's sites (or all sites if no orgId). */
@@ -149,97 +177,109 @@ router.get("/super-admin/post-preview", requireSuperAdmin, async (req, res) => {
   const hours = Math.min(Math.max(parseInt((req.query.hours as string) ?? "96", 10) || 96, 1), 720);
   const orgId = req.query.orgId ? parseInt(req.query.orgId as string, 10) : null;
   const since = new Date(Date.now() - hours * 60 * 60 * 1000);
-  const conditions = await orgPostConditions(since, orgId);
 
-  const posts = await db
-    .select({ id: postsTable.id, title: postsTable.title, publishedAt: postsTable.publishedAt, siteId: postsTable.siteId })
-    .from(postsTable)
-    .where(and(...conditions))
-    .orderBy(postsTable.publishedAt);
+  try {
+    const conditions = await orgPostConditions(since, orgId);
 
-  res.json(posts);
+    const posts = await db
+      .select({ id: postsTable.id, title: postsTable.title, publishedAt: postsTable.publishedAt, siteId: postsTable.siteId })
+      .from(postsTable)
+      .where(and(...conditions))
+      .orderBy(postsTable.publishedAt);
+
+    res.json(posts);
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch post preview");
+    res.status(500).json({ error: "Failed to fetch post preview" });
+  }
 });
 
 router.post("/super-admin/resend-post-notifications", requireSuperAdmin, async (req, res) => {
   const hours = Math.min(Math.max(parseInt((req.query.hours as string) ?? "96", 10) || 96, 1), 720);
   const orgId = req.query.orgId ? parseInt(req.query.orgId as string, 10) : null;
   const since = new Date(Date.now() - hours * 60 * 60 * 1000);
-  const conditions = await orgPostConditions(since, orgId);
 
-  const posts = await db
-    .select()
-    .from(postsTable)
-    .where(and(...conditions));
+  try {
+    const conditions = await orgPostConditions(since, orgId);
 
-  if (posts.length === 0) {
-    res.json({ posts: 0, emails: 0, summary: [], errors: [] });
-    return;
-  }
+    const posts = await db
+      .select()
+      .from(postsTable)
+      .where(and(...conditions));
 
-  const appUrl = getAppUrl();
-  const branding = await getEmailBranding();
-  const portalUrl = `${appUrl}/notices`;
-
-  const summary: { postId: number; title: string; sent: number }[] = [];
-  const allErrors: string[] = [];
-
-  for (const post of posts) {
-    const taggedChildIds = Array.isArray(post.childIds) ? (post.childIds as number[]) : [];
-
-    // Skip posts with no site or no tagged children — cannot scope recipients safely
-    if (!post.siteId || taggedChildIds.length === 0) {
-      logger.warn({ postId: post.id }, "Skipping resend — post has no site or no tagged children");
-      continue;
+    if (posts.length === 0) {
+      res.json({ posts: 0, emails: 0, summary: [], errors: [] });
+      return;
     }
 
-    const taggedChildren = await db
-      .select({ guardianEmail: childrenTable.guardianEmail, guardian2Email: childrenTable.guardian2Email })
-      .from(childrenTable)
-      .where(and(
-        inArray(childrenTable.id, taggedChildIds),
-        eq(childrenTable.status, "active"),
-        eq(childrenTable.siteId, post.siteId),
-      ));
+    const appUrl = getAppUrl();
+    const branding = await getEmailBranding();
+    const portalUrl = `${appUrl}/notices`;
 
-    const recipients = [
-      ...new Set(
-        taggedChildren.flatMap((c) => [c.guardianEmail, c.guardian2Email]).filter((e): e is string => !!e),
-      ),
-    ];
+    const summary: { postId: number; title: string; sent: number }[] = [];
+    const allErrors: string[] = [];
 
-    const plainText = ((post.description ?? (post as any).learning ?? "") as string)
-      .replace(/<[^>]*>/g, "")
-      .trim();
-    const lines = plainText.split(/\n+/).map((l: string) => l.trim()).filter(Boolean);
-    const excerpt = lines.length > 0
-      ? lines.slice(0, 3).join("\n") || null
-      : (plainText.slice(0, 250) || null);
+    for (const post of posts) {
+      const taggedChildIds = Array.isArray(post.childIds) ? (post.childIds as number[]) : [];
 
-    const images: string[] = Array.isArray((post as any).images) ? (post as any).images : [];
-    const firstImage = images[0] ?? null;
-    const firstImageUrl = firstImage
-      ? `${appUrl}/api/storage/objects/${firstImage.replace(/^\/objects\//, "")}`
-      : null;
+      // Skip posts with no site or no tagged children — cannot scope recipients safely
+      if (!post.siteId || taggedChildIds.length === 0) {
+        logger.warn({ postId: post.id }, "Skipping resend — post has no site or no tagged children");
+        continue;
+      }
 
-    try {
-      await sendPostNotificationEmail(
-        recipients,
-        { postTitle: post.title, excerpt, portalUrl, firstImageUrl },
-        branding,
-      );
-      summary.push({ postId: post.id, title: post.title, sent: recipients.length });
-    } catch (err) {
-      logger.error({ err, postId: post.id }, "Resend post notification failed");
-      allErrors.push(`post:${post.id}`);
+      const taggedChildren = await db
+        .select({ guardianEmail: childrenTable.guardianEmail, guardian2Email: childrenTable.guardian2Email })
+        .from(childrenTable)
+        .where(and(
+          inArray(childrenTable.id, taggedChildIds),
+          eq(childrenTable.status, "active"),
+          eq(childrenTable.siteId, post.siteId),
+        ));
+
+      const recipients = [
+        ...new Set(
+          taggedChildren.flatMap((c) => [c.guardianEmail, c.guardian2Email]).filter((e): e is string => !!e),
+        ),
+      ];
+
+      const plainText = ((post.description ?? (post as any).learning ?? "") as string)
+        .replace(/<[^>]*>/g, "")
+        .trim();
+      const lines = plainText.split(/\n+/).map((l: string) => l.trim()).filter(Boolean);
+      const excerpt = lines.length > 0
+        ? lines.slice(0, 3).join("\n") || null
+        : (plainText.slice(0, 250) || null);
+
+      const images: string[] = Array.isArray((post as any).images) ? (post as any).images : [];
+      const firstImage = images[0] ?? null;
+      const firstImageUrl = firstImage
+        ? `${appUrl}/api/storage/objects/${firstImage.replace(/^\/objects\//, "")}`
+        : null;
+
+      try {
+        await sendPostNotificationEmail(
+          recipients,
+          { postTitle: post.title, excerpt, portalUrl, firstImageUrl },
+          branding,
+        );
+        summary.push({ postId: post.id, title: post.title, sent: recipients.length });
+      } catch (err) {
+        logger.error({ err, postId: post.id }, "Resend post notification failed");
+        allErrors.push(`post:${post.id}`);
+      }
     }
-  }
 
-  res.json({
-    posts: posts.length,
-    emails: summary.reduce((n, s) => n + s.sent, 0),
-    summary,
-    errors: allErrors,
-  });
+    res.json({
+      posts: posts.length,
+      emails: summary.reduce((n, s) => n + s.sent, 0),
+      summary,
+      errors: allErrors,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to resend post notifications");
+    res.status(500).json({ error: "Failed to resend post notifications" });
+  }
 });
 
 export default router;

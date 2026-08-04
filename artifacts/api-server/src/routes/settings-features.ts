@@ -53,34 +53,44 @@ const DEFAULTS: Required<FeatureSettings> = {
   webmailUrl: "https://sh00070.cd.ds.network:2096/",
 };
 
-router.get("/settings/features", async (_req, res): Promise<void> => {
-  const [row] = await db
-    .select({ featureSettings: organisationTable.featureSettings })
-    .from(organisationTable)
-    .limit(1);
-  const merged = { ...DEFAULTS, ...(row?.featureSettings ?? {}) };
-  res.json(merged);
+router.get("/settings/features", async (req, res): Promise<void> => {
+  try {
+    const [row] = await db
+      .select({ featureSettings: organisationTable.featureSettings })
+      .from(organisationTable)
+      .limit(1);
+    const merged = { ...DEFAULTS, ...(row?.featureSettings ?? {}) };
+    res.json(merged);
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch feature settings");
+    res.status(500).json({ error: "Failed to fetch feature settings" });
+  }
 });
 
 router.put("/settings/features", async (req, res): Promise<void> => {
   const patch = req.body ?? {};
 
-  const [existing] = await db.select().from(organisationTable).limit(1);
+  try {
+    const [existing] = await db.select().from(organisationTable).limit(1);
 
-  if (existing) {
-    const current = existing.featureSettings ?? {};
-    const updated = { ...current, ...patch };
-    await db
-      .update(organisationTable)
-      .set({ featureSettings: updated, updatedAt: new Date() })
-      .where(eq(organisationTable.id, existing.id));
-    res.json({ ...DEFAULTS, ...updated });
-  } else {
-    await db.insert(organisationTable).values({
-      featureSettings: patch,
-      updatedAt: new Date(),
-    } as any);
-    res.json({ ...DEFAULTS, ...patch });
+    if (existing) {
+      const current = existing.featureSettings ?? {};
+      const updated = { ...current, ...patch };
+      await db
+        .update(organisationTable)
+        .set({ featureSettings: updated, updatedAt: new Date() })
+        .where(eq(organisationTable.id, existing.id));
+      res.json({ ...DEFAULTS, ...updated });
+    } else {
+      await db.insert(organisationTable).values({
+        featureSettings: patch,
+        updatedAt: new Date(),
+      } as any);
+      res.json({ ...DEFAULTS, ...patch });
+    }
+  } catch (err) {
+    req.log.error({ err }, "Failed to update feature settings");
+    res.status(500).json({ error: "Failed to update feature settings" });
   }
 });
 

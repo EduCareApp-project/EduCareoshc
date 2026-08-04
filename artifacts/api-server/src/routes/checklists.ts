@@ -25,16 +25,26 @@ const router: IRouter = Router();
 
 // ── Legacy flat checklists ──────────────────────────────────────────────────
 
-router.get("/checklists", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(checklistsTable).orderBy(checklistsTable.createdAt);
-  res.json(ListChecklistsResponse.parse(rows));
+router.get("/checklists", async (req, res): Promise<void> => {
+  try {
+    const rows = await db.select().from(checklistsTable).orderBy(checklistsTable.createdAt);
+    res.json(ListChecklistsResponse.parse(rows));
+  } catch (err) {
+    req.log.error({ err }, "Failed to list checklists");
+    res.status(500).json({ error: "Failed to list checklists" });
+  }
 });
 
 router.post("/checklists", async (req, res): Promise<void> => {
   const parsed = CreateChecklistBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [checklist] = await db.insert(checklistsTable).values(parsed.data).returning();
-  res.status(201).json(ListChecklistsResponseItem.parse(checklist));
+  try {
+    const [checklist] = await db.insert(checklistsTable).values(parsed.data).returning();
+    res.status(201).json(ListChecklistsResponseItem.parse(checklist));
+  } catch (err) {
+    req.log.error({ err }, "Failed to create checklist");
+    res.status(500).json({ error: "Failed to create checklist" });
+  }
 });
 
 router.post("/checklists/:id/complete", async (req, res): Promise<void> => {
@@ -42,44 +52,64 @@ router.post("/checklists/:id/complete", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = CompleteChecklistBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [completion] = await db.insert(checklistCompletionsTable).values({ checklistId: params.data.id, ...parsed.data }).returning();
-  const staffList = await db.select().from(staffTable);
-  const staff = staffList.find((s) => s.id === completion.staffId);
-  res.status(201).json(GetChecklistCompletionsResponseItem.parse({
-    ...completion,
-    staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
-  }));
+  try {
+    const [completion] = await db.insert(checklistCompletionsTable).values({ checklistId: params.data.id, ...parsed.data }).returning();
+    const staffList = await db.select().from(staffTable);
+    const staff = staffList.find((s) => s.id === completion.staffId);
+    res.status(201).json(GetChecklistCompletionsResponseItem.parse({
+      ...completion,
+      staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
+    }));
+  } catch (err) {
+    req.log.error({ err, checklistId: params.data.id }, "Failed to complete checklist");
+    res.status(500).json({ error: "Failed to complete checklist" });
+  }
 });
 
 router.get("/checklists/:id/completions", async (req, res): Promise<void> => {
   const params = GetChecklistCompletionsParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  const rows = await db.select().from(checklistCompletionsTable).where(eq(checklistCompletionsTable.checklistId, params.data.id));
-  const staffList = await db.select().from(staffTable);
-  const enriched = rows.map((c) => {
-    const staff = staffList.find((s) => s.id === c.staffId);
-    return { ...c, staffName: staff ? `${staff.firstName} ${staff.lastName}` : null };
-  });
-  res.json(GetChecklistCompletionsResponse.parse(enriched));
+  try {
+    const rows = await db.select().from(checklistCompletionsTable).where(eq(checklistCompletionsTable.checklistId, params.data.id));
+    const staffList = await db.select().from(staffTable);
+    const enriched = rows.map((c) => {
+      const staff = staffList.find((s) => s.id === c.staffId);
+      return { ...c, staffName: staff ? `${staff.firstName} ${staff.lastName}` : null };
+    });
+    res.json(GetChecklistCompletionsResponse.parse(enriched));
+  } catch (err) {
+    req.log.error({ err, checklistId: params.data.id }, "Failed to fetch checklist completions");
+    res.status(500).json({ error: "Failed to fetch checklist completions" });
+  }
 });
 
 // ── Checklist Templates ─────────────────────────────────────────────────────
 
-router.get("/checklist-templates", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(checklistTemplatesTable).orderBy(checklistTemplatesTable.createdAt);
-  res.json(ListChecklistTemplatesResponse.parse(rows));
+router.get("/checklist-templates", async (req, res): Promise<void> => {
+  try {
+    const rows = await db.select().from(checklistTemplatesTable).orderBy(checklistTemplatesTable.createdAt);
+    res.json(ListChecklistTemplatesResponse.parse(rows));
+  } catch (err) {
+    req.log.error({ err }, "Failed to list checklist templates");
+    res.status(500).json({ error: "Failed to list checklist templates" });
+  }
 });
 
 router.post("/checklist-templates", async (req, res): Promise<void> => {
   const parsed = CreateChecklistTemplateBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [row] = await db.insert(checklistTemplatesTable).values({
-    title: parsed.data.title,
-    type: parsed.data.type,
-    commencementMonth: parsed.data.commencementMonth ?? null,
-    sections: parsed.data.sections as any,
-  }).returning();
-  res.status(201).json(ListChecklistTemplatesResponse.element.parse(row));
+  try {
+    const [row] = await db.insert(checklistTemplatesTable).values({
+      title: parsed.data.title,
+      type: parsed.data.type,
+      commencementMonth: parsed.data.commencementMonth ?? null,
+      sections: parsed.data.sections as any,
+    }).returning();
+    res.status(201).json(ListChecklistTemplatesResponse.element.parse(row));
+  } catch (err) {
+    req.log.error({ err }, "Failed to create checklist template");
+    res.status(500).json({ error: "Failed to create checklist template" });
+  }
 });
 
 router.put("/checklist-templates/:id", async (req, res): Promise<void> => {
@@ -87,66 +117,86 @@ router.put("/checklist-templates/:id", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = UpdateChecklistTemplateBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [row] = await db.update(checklistTemplatesTable)
-    .set({
-      title: parsed.data.title,
-      type: parsed.data.type,
-      commencementMonth: parsed.data.commencementMonth ?? null,
-      sections: parsed.data.sections as any,
-    })
-    .where(eq(checklistTemplatesTable.id, params.data.id))
-    .returning();
-  if (!row) { res.status(404).json({ error: "Not found" }); return; }
-  res.json(UpdateChecklistTemplateResponse.parse(row));
+  try {
+    const [row] = await db.update(checklistTemplatesTable)
+      .set({
+        title: parsed.data.title,
+        type: parsed.data.type,
+        commencementMonth: parsed.data.commencementMonth ?? null,
+        sections: parsed.data.sections as any,
+      })
+      .where(eq(checklistTemplatesTable.id, params.data.id))
+      .returning();
+    if (!row) { res.status(404).json({ error: "Not found" }); return; }
+    res.json(UpdateChecklistTemplateResponse.parse(row));
+  } catch (err) {
+    req.log.error({ err, templateId: params.data.id }, "Failed to update checklist template");
+    res.status(500).json({ error: "Failed to update checklist template" });
+  }
 });
 
 router.delete("/checklist-templates/:id", async (req, res): Promise<void> => {
   const params = DeleteChecklistTemplateParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  await db.delete(checklistTemplatesTable).where(eq(checklistTemplatesTable.id, params.data.id));
-  res.status(204).send();
+  try {
+    await db.delete(checklistTemplatesTable).where(eq(checklistTemplatesTable.id, params.data.id));
+    res.status(204).send();
+  } catch (err) {
+    req.log.error({ err, templateId: params.data.id }, "Failed to delete checklist template");
+    res.status(500).json({ error: "Failed to delete checklist template" });
+  }
 });
 
 // ── Checklist Routines ──────────────────────────────────────────────────────
 
-router.get("/checklist-routines", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(checklistRoutinesTable).orderBy(checklistRoutinesTable.createdAt);
-  const sites = await db.select().from(sitesTable);
-  const staff = await db.select().from(staffTable);
-  const enriched = rows.map((r) => {
-    const site = sites.find((s) => s.id === r.siteId);
-    const member = staff.find((s) => s.id === r.staffId);
-    return {
-      ...r,
-      siteName: site?.name ?? null,
-      staffName: member ? `${member.firstName} ${member.lastName}` : null,
-    };
-  });
-  res.json(ListChecklistRoutinesResponse.parse(enriched));
+router.get("/checklist-routines", async (req, res): Promise<void> => {
+  try {
+    const rows = await db.select().from(checklistRoutinesTable).orderBy(checklistRoutinesTable.createdAt);
+    const sites = await db.select().from(sitesTable);
+    const staff = await db.select().from(staffTable);
+    const enriched = rows.map((r) => {
+      const site = sites.find((s) => s.id === r.siteId);
+      const member = staff.find((s) => s.id === r.staffId);
+      return {
+        ...r,
+        siteName: site?.name ?? null,
+        staffName: member ? `${member.firstName} ${member.lastName}` : null,
+      };
+    });
+    res.json(ListChecklistRoutinesResponse.parse(enriched));
+  } catch (err) {
+    req.log.error({ err }, "Failed to list checklist routines");
+    res.status(500).json({ error: "Failed to list checklist routines" });
+  }
 });
 
 router.post("/checklist-routines", async (req, res): Promise<void> => {
   const parsed = CreateChecklistRoutineBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [row] = await db.insert(checklistRoutinesTable).values({
-    templateId: parsed.data.templateId,
-    title: parsed.data.title,
-    siteId: parsed.data.siteId ?? null,
-    staffId: parsed.data.staffId ?? null,
-    targetDate: parsed.data.targetDate as any,
-    isRepeating: parsed.data.isRepeating,
-    frequency: parsed.data.frequency ?? null,
-    sectionsSnapshot: parsed.data.sectionsSnapshot as any,
-  }).returning();
-  const sites = await db.select().from(sitesTable);
-  const staff = await db.select().from(staffTable);
-  const site = sites.find((s) => s.id === row.siteId);
-  const member = staff.find((s) => s.id === row.staffId);
-  res.status(201).json(ListChecklistRoutinesResponse.element.parse({
-    ...row,
-    siteName: site?.name ?? null,
-    staffName: member ? `${member.firstName} ${member.lastName}` : null,
-  }));
+  try {
+    const [row] = await db.insert(checklistRoutinesTable).values({
+      templateId: parsed.data.templateId,
+      title: parsed.data.title,
+      siteId: parsed.data.siteId ?? null,
+      staffId: parsed.data.staffId ?? null,
+      targetDate: parsed.data.targetDate as any,
+      isRepeating: parsed.data.isRepeating,
+      frequency: parsed.data.frequency ?? null,
+      sectionsSnapshot: parsed.data.sectionsSnapshot as any,
+    }).returning();
+    const sites = await db.select().from(sitesTable);
+    const staff = await db.select().from(staffTable);
+    const site = sites.find((s) => s.id === row.siteId);
+    const member = staff.find((s) => s.id === row.staffId);
+    res.status(201).json(ListChecklistRoutinesResponse.element.parse({
+      ...row,
+      siteName: site?.name ?? null,
+      staffName: member ? `${member.firstName} ${member.lastName}` : null,
+    }));
+  } catch (err) {
+    req.log.error({ err }, "Failed to create checklist routine");
+    res.status(500).json({ error: "Failed to create checklist routine" });
+  }
 });
 
 router.put("/checklist-routines/:id", async (req, res): Promise<void> => {
@@ -154,36 +204,46 @@ router.put("/checklist-routines/:id", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = UpdateChecklistRoutineBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [row] = await db.update(checklistRoutinesTable)
-    .set({
-      siteId: parsed.data.siteId ?? null,
-      staffId: parsed.data.staffId ?? null,
-      targetDate: parsed.data.targetDate as any,
-      isRepeating: parsed.data.isRepeating,
-      frequency: parsed.data.frequency ?? null,
-      ...(parsed.data.sectionsSnapshot != null
-        ? { sectionsSnapshot: parsed.data.sectionsSnapshot }
-        : {}),
-    })
-    .where(eq(checklistRoutinesTable.id, params.data.id))
-    .returning();
-  if (!row) { res.status(404).json({ error: "Not found" }); return; }
-  const sites = await db.select().from(sitesTable);
-  const staff = await db.select().from(staffTable);
-  const site = sites.find((s) => s.id === row.siteId);
-  const member = staff.find((s) => s.id === row.staffId);
-  res.json(ListChecklistRoutinesResponse.element.parse({
-    ...row,
-    siteName: site?.name ?? null,
-    staffName: member ? `${member.firstName} ${member.lastName}` : null,
-  }));
+  try {
+    const [row] = await db.update(checklistRoutinesTable)
+      .set({
+        siteId: parsed.data.siteId ?? null,
+        staffId: parsed.data.staffId ?? null,
+        targetDate: parsed.data.targetDate as any,
+        isRepeating: parsed.data.isRepeating,
+        frequency: parsed.data.frequency ?? null,
+        ...(parsed.data.sectionsSnapshot != null
+          ? { sectionsSnapshot: parsed.data.sectionsSnapshot }
+          : {}),
+      })
+      .where(eq(checklistRoutinesTable.id, params.data.id))
+      .returning();
+    if (!row) { res.status(404).json({ error: "Not found" }); return; }
+    const sites = await db.select().from(sitesTable);
+    const staff = await db.select().from(staffTable);
+    const site = sites.find((s) => s.id === row.siteId);
+    const member = staff.find((s) => s.id === row.staffId);
+    res.json(ListChecklistRoutinesResponse.element.parse({
+      ...row,
+      siteName: site?.name ?? null,
+      staffName: member ? `${member.firstName} ${member.lastName}` : null,
+    }));
+  } catch (err) {
+    req.log.error({ err, routineId: params.data.id }, "Failed to update checklist routine");
+    res.status(500).json({ error: "Failed to update checklist routine" });
+  }
 });
 
 router.delete("/checklist-routines/:id", async (req, res): Promise<void> => {
   const params = DeleteChecklistRoutineParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  await db.delete(checklistRoutinesTable).where(eq(checklistRoutinesTable.id, params.data.id));
-  res.status(204).send();
+  try {
+    await db.delete(checklistRoutinesTable).where(eq(checklistRoutinesTable.id, params.data.id));
+    res.status(204).send();
+  } catch (err) {
+    req.log.error({ err, routineId: params.data.id }, "Failed to delete checklist routine");
+    res.status(500).json({ error: "Failed to delete checklist routine" });
+  }
 });
 
 // ── Routine Item Completions ─────────────────────────────────────────────────
@@ -191,49 +251,64 @@ router.delete("/checklist-routines/:id", async (req, res): Promise<void> => {
 router.get("/routine-item-completions", async (req, res): Promise<void> => {
   const params = ListRoutineItemCompletionsQueryParams.safeParse(req.query);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  const rows = await db
-    .select()
-    .from(routineItemCompletionsTable)
-    .where(
-      and(
-        eq(routineItemCompletionsTable.routineId, params.data.routineId),
-        eq(routineItemCompletionsTable.periodKey, params.data.periodKey),
-      )
-    );
-  const staffList = await db.select().from(staffTable);
-  const enriched = rows.map((r) => {
-    const member = staffList.find((s) => s.id === r.completedByStaffId);
-    return {
-      ...r,
-      completedByStaffName: member ? `${member.firstName} ${member.lastName}` : null,
-    };
-  });
-  res.json(ListRoutineItemCompletionsResponse.parse(enriched));
+  try {
+    const rows = await db
+      .select()
+      .from(routineItemCompletionsTable)
+      .where(
+        and(
+          eq(routineItemCompletionsTable.routineId, params.data.routineId),
+          eq(routineItemCompletionsTable.periodKey, params.data.periodKey),
+        )
+      );
+    const staffList = await db.select().from(staffTable);
+    const enriched = rows.map((r) => {
+      const member = staffList.find((s) => s.id === r.completedByStaffId);
+      return {
+        ...r,
+        completedByStaffName: member ? `${member.firstName} ${member.lastName}` : null,
+      };
+    });
+    res.json(ListRoutineItemCompletionsResponse.parse(enriched));
+  } catch (err) {
+    req.log.error({ err, routineId: params.data.routineId }, "Failed to list routine item completions");
+    res.status(500).json({ error: "Failed to list routine item completions" });
+  }
 });
 
 router.post("/routine-item-completions", async (req, res): Promise<void> => {
   const parsed = CreateRoutineItemCompletionBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [row] = await db.insert(routineItemCompletionsTable).values({
-    routineId: parsed.data.routineId,
-    periodKey: parsed.data.periodKey,
-    sectionIndex: parsed.data.sectionIndex,
-    itemIndex: parsed.data.itemIndex,
-    completedByStaffId: parsed.data.completedByStaffId ?? null,
-  }).onConflictDoNothing().returning();
-  const staffList = await db.select().from(staffTable);
-  const member = staffList.find((s) => s.id === row.completedByStaffId);
-  res.status(201).json({
-    ...row,
-    completedByStaffName: member ? `${member.firstName} ${member.lastName}` : null,
-  });
+  try {
+    const [row] = await db.insert(routineItemCompletionsTable).values({
+      routineId: parsed.data.routineId,
+      periodKey: parsed.data.periodKey,
+      sectionIndex: parsed.data.sectionIndex,
+      itemIndex: parsed.data.itemIndex,
+      completedByStaffId: parsed.data.completedByStaffId ?? null,
+    }).onConflictDoNothing().returning();
+    const staffList = await db.select().from(staffTable);
+    const member = staffList.find((s) => s.id === row.completedByStaffId);
+    res.status(201).json({
+      ...row,
+      completedByStaffName: member ? `${member.firstName} ${member.lastName}` : null,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to create routine item completion");
+    res.status(500).json({ error: "Failed to create routine item completion" });
+  }
 });
 
 router.delete("/routine-item-completions/:id", async (req, res): Promise<void> => {
   const params = DeleteRoutineItemCompletionParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  await db.delete(routineItemCompletionsTable).where(eq(routineItemCompletionsTable.id, params.data.id));
-  res.status(204).send();
+  try {
+    await db.delete(routineItemCompletionsTable).where(eq(routineItemCompletionsTable.id, params.data.id));
+    res.status(204).send();
+  } catch (err) {
+    req.log.error({ err, completionId: params.data.id }, "Failed to delete routine item completion");
+    res.status(500).json({ error: "Failed to delete routine item completion" });
+  }
 });
 
 // ── Checklist Period Overrides ────────────────────────────────────────────────
@@ -243,24 +318,29 @@ const EDUCATOR_ROLES = ["educator", "coordinator"];
 router.get("/checklist-period-overrides", async (req, res): Promise<void> => {
   const params = GetChecklistPeriodOverrideQueryParams.safeParse(req.query);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  const [override] = await db
-    .select()
-    .from(checklistPeriodOverridesTable)
-    .where(
-      and(
-        eq(checklistPeriodOverridesTable.routineId, params.data.routineId),
-        eq(checklistPeriodOverridesTable.periodKey, params.data.periodKey),
-      )
-    );
-  res.json(override ?? {
-    id: 0,
-    routineId: params.data.routineId,
-    periodKey: params.data.periodKey,
-    isNotRequired: false,
-    isLocked: false,
-    setByStaffId: null,
-    createdAt: new Date().toISOString(),
-  });
+  try {
+    const [override] = await db
+      .select()
+      .from(checklistPeriodOverridesTable)
+      .where(
+        and(
+          eq(checklistPeriodOverridesTable.routineId, params.data.routineId),
+          eq(checklistPeriodOverridesTable.periodKey, params.data.periodKey),
+        )
+      );
+    res.json(override ?? {
+      id: 0,
+      routineId: params.data.routineId,
+      periodKey: params.data.periodKey,
+      isNotRequired: false,
+      isLocked: false,
+      setByStaffId: null,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    req.log.error({ err, routineId: params.data.routineId }, "Failed to fetch checklist period override");
+    res.status(500).json({ error: "Failed to fetch checklist period override" });
+  }
 });
 
 router.put("/checklist-period-overrides", async (req, res): Promise<void> => {
@@ -271,25 +351,30 @@ router.put("/checklist-period-overrides", async (req, res): Promise<void> => {
   }
   const parsed = UpsertChecklistPeriodOverrideBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [row] = await db
-    .insert(checklistPeriodOverridesTable)
-    .values({
-      routineId: parsed.data.routineId,
-      periodKey: parsed.data.periodKey,
-      isNotRequired: parsed.data.isNotRequired,
-      isLocked: parsed.data.isLocked,
-      setByStaffId: user?.id ?? null,
-    })
-    .onConflictDoUpdate({
-      target: [checklistPeriodOverridesTable.routineId, checklistPeriodOverridesTable.periodKey],
-      set: {
+  try {
+    const [row] = await db
+      .insert(checklistPeriodOverridesTable)
+      .values({
+        routineId: parsed.data.routineId,
+        periodKey: parsed.data.periodKey,
         isNotRequired: parsed.data.isNotRequired,
         isLocked: parsed.data.isLocked,
         setByStaffId: user?.id ?? null,
-      },
-    })
-    .returning();
-  res.json(row);
+      })
+      .onConflictDoUpdate({
+        target: [checklistPeriodOverridesTable.routineId, checklistPeriodOverridesTable.periodKey],
+        set: {
+          isNotRequired: parsed.data.isNotRequired,
+          isLocked: parsed.data.isLocked,
+          setByStaffId: user?.id ?? null,
+        },
+      })
+      .returning();
+    res.json(row);
+  } catch (err) {
+    req.log.error({ err }, "Failed to upsert checklist period override");
+    res.status(500).json({ error: "Failed to upsert checklist period override" });
+  }
 });
 
 export default router;

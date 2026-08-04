@@ -54,16 +54,21 @@ function normalizeChildPayload(body: unknown): unknown {
   return out;
 }
 
-router.get("/children", async (_req, res): Promise<void> => {
-  const children = await db.select().from(childrenTable).orderBy(asc(childrenTable.firstName), asc(childrenTable.lastName));
-  const medRows = children.length
-    ? await db.selectDistinct({ childId: childMedicationsTable.childId })
-        .from(childMedicationsTable)
-        .where(inArray(childMedicationsTable.childId, children.map((c) => c.id)))
-    : [];
-  const medChildIds = new Set(medRows.map((r) => r.childId));
-  const result = children.map((c) => ({ ...c, hasMedications: medChildIds.has(c.id) }));
-  res.json(ListChildrenResponse.parse(result));
+router.get("/children", async (req, res): Promise<void> => {
+  try {
+    const children = await db.select().from(childrenTable).orderBy(asc(childrenTable.firstName), asc(childrenTable.lastName));
+    const medRows = children.length
+      ? await db.selectDistinct({ childId: childMedicationsTable.childId })
+          .from(childMedicationsTable)
+          .where(inArray(childMedicationsTable.childId, children.map((c) => c.id)))
+      : [];
+    const medChildIds = new Set(medRows.map((r) => r.childId));
+    const result = children.map((c) => ({ ...c, hasMedications: medChildIds.has(c.id) }));
+    res.json(ListChildrenResponse.parse(result));
+  } catch (err) {
+    req.log.error({ err }, "Failed to list children");
+    res.status(500).json({ error: "Failed to list children" });
+  }
 });
 
 router.post("/children", async (req, res): Promise<void> => {
@@ -74,9 +79,14 @@ router.post("/children", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message, issues: parsed.error.issues });
     return;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [child] = await db.insert(childrenTable).values(parsed.data as any).returning();
-  res.status(201).json(GetChildResponse.parse(child));
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [child] = await db.insert(childrenTable).values(parsed.data as any).returning();
+    res.status(201).json(GetChildResponse.parse(child));
+  } catch (err) {
+    req.log.error({ err }, "Failed to create child");
+    res.status(500).json({ error: "Failed to create child" });
+  }
 });
 
 router.get("/children/:id", async (req, res): Promise<void> => {
@@ -85,12 +95,17 @@ router.get("/children/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const [child] = await db.select().from(childrenTable).where(eq(childrenTable.id, params.data.id));
-  if (!child) {
-    res.status(404).json({ error: "Child not found" });
-    return;
+  try {
+    const [child] = await db.select().from(childrenTable).where(eq(childrenTable.id, params.data.id));
+    if (!child) {
+      res.status(404).json({ error: "Child not found" });
+      return;
+    }
+    res.json(GetChildResponse.parse(child));
+  } catch (err) {
+    req.log.error({ err, childId: params.data.id }, "Failed to fetch child");
+    res.status(500).json({ error: "Failed to fetch child" });
   }
-  res.json(GetChildResponse.parse(child));
 });
 
 router.patch("/children/:id", async (req, res): Promise<void> => {
@@ -106,18 +121,23 @@ router.patch("/children/:id", async (req, res): Promise<void> => {
     return;
   }
   req.log.info({ id: params.data.id, body: req.body, parsedKeys: Object.keys(parsed.data) }, "PATCH /children/:id");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [child] = await db
-    .update(childrenTable)
-    .set(parsed.data as any)
-    .where(eq(childrenTable.id, params.data.id))
-    .returning();
-  if (!child) {
-    res.status(404).json({ error: "Child not found" });
-    return;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [child] = await db
+      .update(childrenTable)
+      .set(parsed.data as any)
+      .where(eq(childrenTable.id, params.data.id))
+      .returning();
+    if (!child) {
+      res.status(404).json({ error: "Child not found" });
+      return;
+    }
+    req.log.info({ id: params.data.id, hasMedicalCondition: child.hasMedicalCondition }, "PATCH /children/:id result");
+    res.json(UpdateChildResponse.parse(child));
+  } catch (err) {
+    req.log.error({ err, childId: params.data.id }, "Failed to update child");
+    res.status(500).json({ error: "Failed to update child" });
   }
-  req.log.info({ id: params.data.id, hasMedicalCondition: child.hasMedicalCondition }, "PATCH /children/:id result");
-  res.json(UpdateChildResponse.parse(child));
 });
 
 router.delete("/children/:id", async (req, res): Promise<void> => {
@@ -126,19 +146,29 @@ router.delete("/children/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const [child] = await db.delete(childrenTable).where(eq(childrenTable.id, params.data.id)).returning();
-  if (!child) {
-    res.status(404).json({ error: "Child not found" });
-    return;
+  try {
+    const [child] = await db.delete(childrenTable).where(eq(childrenTable.id, params.data.id)).returning();
+    if (!child) {
+      res.status(404).json({ error: "Child not found" });
+      return;
+    }
+    res.sendStatus(204);
+  } catch (err) {
+    req.log.error({ err, childId: params.data.id }, "Failed to delete child");
+    res.status(500).json({ error: "Failed to delete child" });
   }
-  res.sendStatus(204);
 });
 
 router.get("/children/:id/documents", async (req, res): Promise<void> => {
   const params = ListChildDocumentsParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  const docs = await db.select().from(childDocumentsTable).where(eq(childDocumentsTable.childId, params.data.id)).orderBy(childDocumentsTable.uploadedAt);
-  res.json(ListChildDocumentsResponse.parse(docs));
+  try {
+    const docs = await db.select().from(childDocumentsTable).where(eq(childDocumentsTable.childId, params.data.id)).orderBy(childDocumentsTable.uploadedAt);
+    res.json(ListChildDocumentsResponse.parse(docs));
+  } catch (err) {
+    req.log.error({ err, childId: params.data.id }, "Failed to list child documents");
+    res.status(500).json({ error: "Failed to list child documents" });
+  }
 });
 
 router.post("/children/:id/documents", async (req, res): Promise<void> => {
@@ -146,16 +176,26 @@ router.post("/children/:id/documents", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = CreateChildDocumentBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  const [doc] = await db.insert(childDocumentsTable).values({ childId: params.data.id, ...parsed.data }).returning();
-  res.status(201).json(ListChildDocumentsResponseItem.parse(doc));
+  try {
+    const [doc] = await db.insert(childDocumentsTable).values({ childId: params.data.id, ...parsed.data }).returning();
+    res.status(201).json(ListChildDocumentsResponseItem.parse(doc));
+  } catch (err) {
+    req.log.error({ err, childId: params.data.id }, "Failed to create child document");
+    res.status(500).json({ error: "Failed to create child document" });
+  }
 });
 
 router.delete("/children/:id/documents/:docId", async (req, res): Promise<void> => {
   const params = DeleteChildDocumentParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  const [doc] = await db.delete(childDocumentsTable).where(eq(childDocumentsTable.id, params.data.docId)).returning();
-  if (!doc) { res.status(404).json({ error: "Document not found" }); return; }
-  res.sendStatus(204);
+  try {
+    const [doc] = await db.delete(childDocumentsTable).where(eq(childDocumentsTable.id, params.data.docId)).returning();
+    if (!doc) { res.status(404).json({ error: "Document not found" }); return; }
+    res.sendStatus(204);
+  } catch (err) {
+    req.log.error({ err, docId: params.data.docId }, "Failed to delete child document");
+    res.status(500).json({ error: "Failed to delete child document" });
+  }
 });
 
 router.get("/children/:id/observations", async (req, res): Promise<void> => {
@@ -164,29 +204,34 @@ router.get("/children/:id/observations", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const staffList = await db.select().from(staffTable);
-  const childList = await db.select().from(childrenTable);
-  const programList = await db.select().from(programsTable);
+  try {
+    const staffList = await db.select().from(staffTable);
+    const childList = await db.select().from(childrenTable);
+    const programList = await db.select().from(programsTable);
 
-  const observations = await db
-    .select()
-    .from(observationsTable)
-    .where(eq(observationsTable.childId, params.data.id))
-    .orderBy(observationsTable.observationDate);
+    const observations = await db
+      .select()
+      .from(observationsTable)
+      .where(eq(observationsTable.childId, params.data.id))
+      .orderBy(observationsTable.observationDate);
 
-  const enriched = observations.map((obs) => {
-    const child = childList.find((c) => c.id === obs.childId);
-    const staff = staffList.find((s) => s.id === obs.staffId);
-    const program = programList.find((p) => p.id === obs.programId);
-    return {
-      ...obs,
-      childName: child ? `${child.firstName} ${child.lastName}` : null,
-      staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
-      programName: program ? program.title : null,
-    };
-  });
+    const enriched = observations.map((obs) => {
+      const child = childList.find((c) => c.id === obs.childId);
+      const staff = staffList.find((s) => s.id === obs.staffId);
+      const program = programList.find((p) => p.id === obs.programId);
+      return {
+        ...obs,
+        childName: child ? `${child.firstName} ${child.lastName}` : null,
+        staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
+        programName: program ? program.title : null,
+      };
+    });
 
-  res.json(GetChildObservationsResponse.parse(enriched));
+    res.json(GetChildObservationsResponse.parse(enriched));
+  } catch (err) {
+    req.log.error({ err, childId: params.data.id }, "Failed to fetch child observations");
+    res.status(500).json({ error: "Failed to fetch child observations" });
+  }
 });
 
 export default router;

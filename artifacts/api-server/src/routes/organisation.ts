@@ -8,8 +8,13 @@ const ORG_ID_REGEX = /^\d{6}[A-Z]$/;
 
 // GET /api/organisation
 router.get("/organisation", async (req, res): Promise<void> => {
-  const [row] = await db.select().from(organisationTable).limit(1);
-  res.json(row ?? null);
+  try {
+    const [row] = await db.select().from(organisationTable).limit(1);
+    res.json(row ?? null);
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch organisation");
+    res.status(500).json({ error: "Failed to fetch organisation" });
+  }
 });
 
 // PUT /api/organisation
@@ -25,29 +30,34 @@ router.put("/organisation", async (req, res): Promise<void> => {
     }
   }
 
-  const [existing] = await db.select().from(organisationTable).limit(1);
+  try {
+    const [existing] = await db.select().from(organisationTable).limit(1);
 
-  const patch: Record<string, unknown> = { updatedAt: new Date() };
-  if (organisationId !== undefined) patch.organisationId = organisationId ?? null;
-  if (name !== undefined) patch.name = name?.trim() || null;
-  if (approvalNumber !== undefined) patch.approvalNumber = approvalNumber?.trim() || null;
-  if (abn !== undefined) patch.abn = abn?.trim() || null;
-  if (servicePhone !== undefined) patch.servicePhone = servicePhone?.trim() || null;
-  if (serviceEmail !== undefined) patch.serviceEmail = serviceEmail?.trim() || null;
+    const patch: Record<string, unknown> = { updatedAt: new Date() };
+    if (organisationId !== undefined) patch.organisationId = organisationId ?? null;
+    if (name !== undefined) patch.name = name?.trim() || null;
+    if (approvalNumber !== undefined) patch.approvalNumber = approvalNumber?.trim() || null;
+    if (abn !== undefined) patch.abn = abn?.trim() || null;
+    if (servicePhone !== undefined) patch.servicePhone = servicePhone?.trim() || null;
+    if (serviceEmail !== undefined) patch.serviceEmail = serviceEmail?.trim() || null;
 
-  if (existing) {
-    const [updated] = await db
-      .update(organisationTable)
-      .set(patch as any)
-      .where(eq(organisationTable.id, existing.id))
-      .returning();
-    res.json(updated);
-  } else {
-    const [created] = await db
-      .insert(organisationTable)
-      .values(patch as any)
-      .returning();
-    res.status(201).json(created);
+    if (existing) {
+      const [updated] = await db
+        .update(organisationTable)
+        .set(patch as any)
+        .where(eq(organisationTable.id, existing.id))
+        .returning();
+      res.json(updated);
+    } else {
+      const [created] = await db
+        .insert(organisationTable)
+        .values(patch as any)
+        .returning();
+      res.status(201).json(created);
+    }
+  } catch (err) {
+    req.log.error({ err }, "Failed to update organisation");
+    res.status(500).json({ error: "Failed to update organisation" });
   }
 });
 

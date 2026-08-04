@@ -10,9 +10,14 @@ import {
 
 const router: IRouter = Router();
 
-router.get("/nqs", async (_req, res): Promise<void> => {
-  const areas = await db.select().from(nqsAreasTable).orderBy(nqsAreasTable.number);
-  res.json(ListNqsAreasResponse.parse(areas));
+router.get("/nqs", async (req, res): Promise<void> => {
+  try {
+    const areas = await db.select().from(nqsAreasTable).orderBy(nqsAreasTable.number);
+    res.json(ListNqsAreasResponse.parse(areas));
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch NQS areas");
+    res.status(500).json({ error: "Failed to fetch NQS areas" });
+  }
 });
 
 router.patch("/nqs/:id", async (req, res): Promise<void> => {
@@ -26,20 +31,25 @@ router.patch("/nqs/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const updateData: Record<string, unknown> = { ...parsed.data };
-  if (parsed.data.status || parsed.data.notes) {
-    updateData.lastReviewedAt = new Date();
+  try {
+    const updateData: Record<string, unknown> = { ...parsed.data };
+    if (parsed.data.status || parsed.data.notes) {
+      updateData.lastReviewedAt = new Date();
+    }
+    const [area] = await db
+      .update(nqsAreasTable)
+      .set(updateData)
+      .where(eq(nqsAreasTable.id, params.data.id))
+      .returning();
+    if (!area) {
+      res.status(404).json({ error: "NQS area not found" });
+      return;
+    }
+    res.json(UpdateNqsAreaResponse.parse(area));
+  } catch (err) {
+    req.log.error({ err, areaId: params.data.id }, "Failed to update NQS area");
+    res.status(500).json({ error: "Failed to update NQS area" });
   }
-  const [area] = await db
-    .update(nqsAreasTable)
-    .set(updateData)
-    .where(eq(nqsAreasTable.id, params.data.id))
-    .returning();
-  if (!area) {
-    res.status(404).json({ error: "NQS area not found" });
-    return;
-  }
-  res.json(UpdateNqsAreaResponse.parse(area));
 });
 
 export default router;

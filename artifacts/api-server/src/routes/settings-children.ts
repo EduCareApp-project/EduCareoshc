@@ -6,10 +6,15 @@ const router: IRouter = Router();
 
 const VALID_MODES = ["letter_icon", "profile_picture"] as const;
 
-router.get("/settings/children", async (_req, res): Promise<void> => {
-  const [row] = await db.select({ childDisplayMode: organisationTable.childDisplayMode })
-    .from(organisationTable).limit(1);
-  res.json({ childDisplayMode: row?.childDisplayMode ?? "letter_icon" });
+router.get("/settings/children", async (req, res): Promise<void> => {
+  try {
+    const [row] = await db.select({ childDisplayMode: organisationTable.childDisplayMode })
+      .from(organisationTable).limit(1);
+    res.json({ childDisplayMode: row?.childDisplayMode ?? "letter_icon" });
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch children settings");
+    res.status(500).json({ error: "Failed to fetch children settings" });
+  }
 });
 
 router.put("/settings/children", async (req, res): Promise<void> => {
@@ -19,15 +24,20 @@ router.put("/settings/children", async (req, res): Promise<void> => {
     return;
   }
 
-  const [existing] = await db.select().from(organisationTable).limit(1);
-  if (existing) {
-    await db.update(organisationTable)
-      .set({ childDisplayMode, updatedAt: new Date() })
-      .where(eq(organisationTable.id, existing.id));
-  } else {
-    await db.insert(organisationTable).values({ childDisplayMode, updatedAt: new Date() } as any);
+  try {
+    const [existing] = await db.select().from(organisationTable).limit(1);
+    if (existing) {
+      await db.update(organisationTable)
+        .set({ childDisplayMode, updatedAt: new Date() })
+        .where(eq(organisationTable.id, existing.id));
+    } else {
+      await db.insert(organisationTable).values({ childDisplayMode, updatedAt: new Date() } as any);
+    }
+    res.json({ childDisplayMode });
+  } catch (err) {
+    req.log.error({ err }, "Failed to update children settings");
+    res.status(500).json({ error: "Failed to update children settings" });
   }
-  res.json({ childDisplayMode });
 });
 
 export default router;

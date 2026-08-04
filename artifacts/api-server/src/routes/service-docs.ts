@@ -21,79 +21,89 @@ router.get("/service-docs/public", async (req, res): Promise<void> => {
     return;
   }
 
-  const [siteRow] = await db
-    .select({ name: sitesTable.name })
-    .from(sitesTable)
-    .where(eq(sitesTable.id, siteId));
+  try {
+    const [siteRow] = await db
+      .select({ name: sitesTable.name })
+      .from(sitesTable)
+      .where(eq(sitesTable.id, siteId));
 
-  const cats = await db
-    .select({ id: fileCategoriesTable.id, name: fileCategoriesTable.name })
-    .from(fileCategoriesTable)
-    .where(inArray(fileCategoriesTable.name, PUBLIC_CATEGORIES));
+    const cats = await db
+      .select({ id: fileCategoriesTable.id, name: fileCategoriesTable.name })
+      .from(fileCategoriesTable)
+      .where(inArray(fileCategoriesTable.name, PUBLIC_CATEGORIES));
 
-  if (cats.length === 0) {
-    res.json({ sections: [], siteName: siteRow?.name ?? null });
-    return;
+    if (cats.length === 0) {
+      res.json({ sections: [], siteName: siteRow?.name ?? null });
+      return;
+    }
+
+    const catIds = cats.map((c) => c.id);
+
+    const files = await db
+      .select({
+        id: fileLibraryTable.id,
+        categoryId: fileLibraryTable.categoryId,
+        name: fileLibraryTable.name,
+        documentPath: fileLibraryTable.documentPath,
+        documentName: fileLibraryTable.documentName,
+        position: fileLibraryTable.position,
+        createdAt: fileLibraryTable.createdAt,
+      })
+      .from(fileLibraryTable)
+      // Both conditions required — only public-category docs for this site
+      .where(and(inArray(fileLibraryTable.categoryId, catIds), eq(fileLibraryTable.siteId, siteId)))
+      .orderBy(asc(fileLibraryTable.position), asc(fileLibraryTable.name));
+
+    const sections = PUBLIC_CATEGORIES
+      .map((catName) => {
+        const cat = cats.find((c) => c.name === catName);
+        if (!cat) return null;
+        return {
+          category: catName,
+          items: files.filter((f) => f.categoryId === cat.id).map((f) => ({
+            id: f.id,
+            name: f.name,
+            documentPath: f.documentPath,
+            documentName: f.documentName,
+            position: f.position,
+            createdAt: f.createdAt,
+          })),
+        };
+      })
+      .filter(Boolean);
+
+    // Never expose the sites list — each page is locked to one site
+    res.json({ sections, siteName: siteRow?.name ?? null });
+  } catch (err) {
+    req.log.error({ err, siteId }, "Failed to fetch public service docs");
+    res.status(500).json({ error: "Failed to fetch public service docs" });
   }
-
-  const catIds = cats.map((c) => c.id);
-
-  const files = await db
-    .select({
-      id: fileLibraryTable.id,
-      categoryId: fileLibraryTable.categoryId,
-      name: fileLibraryTable.name,
-      documentPath: fileLibraryTable.documentPath,
-      documentName: fileLibraryTable.documentName,
-      position: fileLibraryTable.position,
-      createdAt: fileLibraryTable.createdAt,
-    })
-    .from(fileLibraryTable)
-    // Both conditions required — only public-category docs for this site
-    .where(and(inArray(fileLibraryTable.categoryId, catIds), eq(fileLibraryTable.siteId, siteId)))
-    .orderBy(asc(fileLibraryTable.position), asc(fileLibraryTable.name));
-
-  const sections = PUBLIC_CATEGORIES
-    .map((catName) => {
-      const cat = cats.find((c) => c.name === catName);
-      if (!cat) return null;
-      return {
-        category: catName,
-        items: files.filter((f) => f.categoryId === cat.id).map((f) => ({
-          id: f.id,
-          name: f.name,
-          documentPath: f.documentPath,
-          documentName: f.documentName,
-          position: f.position,
-          createdAt: f.createdAt,
-        })),
-      };
-    })
-    .filter(Boolean);
-
-  // Never expose the sites list — each page is locked to one site
-  res.json({ sections, siteName: siteRow?.name ?? null });
 });
 
 // Protected: list all service-doc items (siteId IS NOT NULL) for the manage page
 router.get("/service-docs", async (req, res): Promise<void> => {
-  const rows = await db
-    .select({
-      id: fileLibraryTable.id,
-      categoryId: fileLibraryTable.categoryId,
-      categoryName: fileCategoriesTable.name,
-      siteId: fileLibraryTable.siteId,
-      name: fileLibraryTable.name,
-      documentPath: fileLibraryTable.documentPath,
-      documentName: fileLibraryTable.documentName,
-      position: fileLibraryTable.position,
-      createdAt: fileLibraryTable.createdAt,
-    })
-    .from(fileLibraryTable)
-    .leftJoin(fileCategoriesTable, eq(fileLibraryTable.categoryId, fileCategoriesTable.id))
-    .where(isNotNull(fileLibraryTable.siteId))
-    .orderBy(asc(fileCategoriesTable.sortOrder), asc(fileLibraryTable.position), asc(fileLibraryTable.name));
-  res.json(rows);
+  try {
+    const rows = await db
+      .select({
+        id: fileLibraryTable.id,
+        categoryId: fileLibraryTable.categoryId,
+        categoryName: fileCategoriesTable.name,
+        siteId: fileLibraryTable.siteId,
+        name: fileLibraryTable.name,
+        documentPath: fileLibraryTable.documentPath,
+        documentName: fileLibraryTable.documentName,
+        position: fileLibraryTable.position,
+        createdAt: fileLibraryTable.createdAt,
+      })
+      .from(fileLibraryTable)
+      .leftJoin(fileCategoriesTable, eq(fileLibraryTable.categoryId, fileCategoriesTable.id))
+      .where(isNotNull(fileLibraryTable.siteId))
+      .orderBy(asc(fileCategoriesTable.sortOrder), asc(fileLibraryTable.position), asc(fileLibraryTable.name));
+    res.json(rows);
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch service docs");
+    res.status(500).json({ error: "Failed to fetch service docs" });
+  }
 });
 
 // Public file serving — streams a file_library item without requiring auth.
@@ -102,29 +112,29 @@ router.get("/service-docs/public/file/:id", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  const [file] = await db
-    .select({
-      documentPath: fileLibraryTable.documentPath,
-      categoryId: fileLibraryTable.categoryId,
-    })
-    .from(fileLibraryTable)
-    .where(eq(fileLibraryTable.id, id))
-    .limit(1);
-
-  if (!file) { res.status(404).json({ error: "Not found" }); return; }
-
-  const cats = await db
-    .select({ id: fileCategoriesTable.id })
-    .from(fileCategoriesTable)
-    .where(inArray(fileCategoriesTable.name, PUBLIC_CATEGORIES));
-
-  const publicCatIds = cats.map((c) => c.id);
-  if (!publicCatIds.includes(file.categoryId!)) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
-
   try {
+    const [file] = await db
+      .select({
+        documentPath: fileLibraryTable.documentPath,
+        categoryId: fileLibraryTable.categoryId,
+      })
+      .from(fileLibraryTable)
+      .where(eq(fileLibraryTable.id, id))
+      .limit(1);
+
+    if (!file) { res.status(404).json({ error: "Not found" }); return; }
+
+    const cats = await db
+      .select({ id: fileCategoriesTable.id })
+      .from(fileCategoriesTable)
+      .where(inArray(fileCategoriesTable.name, PUBLIC_CATEGORIES));
+
+    const publicCatIds = cats.map((c) => c.id);
+    if (!publicCatIds.includes(file.categoryId!)) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
     const objectFile = await objectStorageService.getObjectEntityFile(file.documentPath);
     const response = await objectStorageService.downloadObject(objectFile);
     res.status(response.status);
@@ -135,8 +145,13 @@ router.get("/service-docs/public/file/:id", async (req, res): Promise<void> => {
     } else {
       res.end();
     }
-  } catch {
-    res.status(404).json({ error: "File not found in storage" });
+  } catch (err: any) {
+    if (err?.name === "ObjectNotFoundError" || err?.constructor?.name === "ObjectNotFoundError") {
+      res.status(404).json({ error: "File not found in storage" });
+    } else {
+      req.log.error({ err, fileId: id }, "Failed to serve public service doc file");
+      res.status(500).json({ error: "Failed to serve file" });
+    }
   }
 });
 

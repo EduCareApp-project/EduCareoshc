@@ -107,10 +107,15 @@ async function ensureSeeded() {
   }
 }
 
-router.get("/nqs-elements", async (_req, res): Promise<void> => {
-  await ensureSeeded();
-  const elements = await db.select().from(nqsElementsTable).orderBy(nqsElementsTable.sortOrder);
-  res.json(ListNqsElementsResponse.parse(elements));
+router.get("/nqs-elements", async (req, res): Promise<void> => {
+  try {
+    await ensureSeeded();
+    const elements = await db.select().from(nqsElementsTable).orderBy(nqsElementsTable.sortOrder);
+    res.json(ListNqsElementsResponse.parse(elements));
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch NQS elements");
+    res.status(500).json({ error: "Failed to fetch NQS elements" });
+  }
 });
 
 router.post("/nqs-elements", async (req, res): Promise<void> => {
@@ -121,19 +126,24 @@ router.post("/nqs-elements", async (req, res): Promise<void> => {
   }
   const { code, label, descriptor, isHeader, sortOrder } = parsed.data;
 
-  // Auto-calculate sortOrder if not supplied: max of existing elements + 1
-  let order = sortOrder;
-  if (order == null) {
-    const all = await db.select({ sortOrder: nqsElementsTable.sortOrder }).from(nqsElementsTable);
-    const max = all.reduce((m, r) => Math.max(m, r.sortOrder), 0);
-    order = max + 1;
-  }
+  try {
+    // Auto-calculate sortOrder if not supplied: max of existing elements + 1
+    let order = sortOrder;
+    if (order == null) {
+      const all = await db.select({ sortOrder: nqsElementsTable.sortOrder }).from(nqsElementsTable);
+      const max = all.reduce((m, r) => Math.max(m, r.sortOrder), 0);
+      order = max + 1;
+    }
 
-  const [element] = await db
-    .insert(nqsElementsTable)
-    .values({ code, label, descriptor: descriptor ?? null, isHeader: isHeader ?? false, sortOrder: order })
-    .returning();
-  res.status(201).json(element);
+    const [element] = await db
+      .insert(nqsElementsTable)
+      .values({ code, label, descriptor: descriptor ?? null, isHeader: isHeader ?? false, sortOrder: order })
+      .returning();
+    res.status(201).json(element);
+  } catch (err) {
+    req.log.error({ err }, "Failed to create NQS element");
+    res.status(500).json({ error: "Failed to create NQS element" });
+  }
 });
 
 router.patch("/nqs-elements/:id", async (req, res): Promise<void> => {
@@ -147,16 +157,21 @@ router.patch("/nqs-elements/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [element] = await db
-    .update(nqsElementsTable)
-    .set({ label: parsed.data.label })
-    .where(eq(nqsElementsTable.id, params.data.id))
-    .returning();
-  if (!element) {
-    res.status(404).json({ error: "Element not found" });
-    return;
+  try {
+    const [element] = await db
+      .update(nqsElementsTable)
+      .set({ label: parsed.data.label })
+      .where(eq(nqsElementsTable.id, params.data.id))
+      .returning();
+    if (!element) {
+      res.status(404).json({ error: "Element not found" });
+      return;
+    }
+    res.json(UpdateNqsElementResponse.parse(element));
+  } catch (err) {
+    req.log.error({ err, elementId: params.data.id }, "Failed to update NQS element");
+    res.status(500).json({ error: "Failed to update NQS element" });
   }
-  res.json(UpdateNqsElementResponse.parse(element));
 });
 
 router.delete("/nqs-elements/:id", async (req, res): Promise<void> => {
@@ -165,15 +180,20 @@ router.delete("/nqs-elements/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const [element] = await db
-    .delete(nqsElementsTable)
-    .where(eq(nqsElementsTable.id, params.data.id))
-    .returning();
-  if (!element) {
-    res.status(404).json({ error: "Element not found" });
-    return;
+  try {
+    const [element] = await db
+      .delete(nqsElementsTable)
+      .where(eq(nqsElementsTable.id, params.data.id))
+      .returning();
+    if (!element) {
+      res.status(404).json({ error: "Element not found" });
+      return;
+    }
+    res.sendStatus(204);
+  } catch (err) {
+    req.log.error({ err, elementId: params.data.id }, "Failed to delete NQS element");
+    res.status(500).json({ error: "Failed to delete NQS element" });
   }
-  res.sendStatus(204);
 });
 
 export default router;

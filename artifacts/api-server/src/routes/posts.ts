@@ -83,44 +83,49 @@ function sessionLikerId(req: import("express").Request): LikerId {
 }
 
 router.get("/posts", async (req, res): Promise<void> => {
-  const likerId = sessionLikerId(req);
-  const rows = await db.select().from(postsTable).orderBy(postsTable.createdAt);
-  const [childList, staffList, siteList, allLikes] = await Promise.all([
-    db.select().from(childrenTable),
-    db.select().from(staffTable),
-    db.select().from(sitesTable),
-    db.select().from(postLikesTable),
-  ]);
+  try {
+    const likerId = sessionLikerId(req);
+    const rows = await db.select().from(postsTable).orderBy(postsTable.createdAt);
+    const [childList, staffList, siteList, allLikes] = await Promise.all([
+      db.select().from(childrenTable),
+      db.select().from(staffTable),
+      db.select().from(sitesTable),
+      db.select().from(postLikesTable),
+    ]);
 
-  const likeCountMap = new Map<number, number>();
-  for (const like of allLikes) {
-    likeCountMap.set(like.postId, (likeCountMap.get(like.postId) ?? 0) + 1);
+    const likeCountMap = new Map<number, number>();
+    for (const like of allLikes) {
+      likeCountMap.set(like.postId, (likeCountMap.get(like.postId) ?? 0) + 1);
+    }
+
+    const enriched = rows.map((p) => {
+      const staff = staffList.find((s) => s.id === p.staffId);
+      const site = siteList.find((s) => s.id === p.siteId);
+      const childNames = (p.childIds ?? []).map((cid) => {
+        const c = childList.find((ch) => ch.id === cid);
+        return c ? `${c.firstName} ${c.lastName}` : null;
+      }).filter(Boolean) as string[];
+      const likesForPost = allLikes.filter((l) => l.postId === p.id);
+      const likeCount = likeCountMap.get(p.id) ?? 0;
+      const likedByMe = likerId != null && likesForPost.some((l) =>
+        "staffId" in likerId
+          ? l.staffId === likerId.staffId
+          : l.guardianEmail === likerId.guardianEmail
+      );
+      return {
+        ...p,
+        childNames,
+        staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
+        siteName: site ? site.name : null,
+        likeCount,
+        likedByMe,
+      };
+    });
+    res.json(ListPostsResponse.parse(enriched));
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch posts");
+    res.status(500).json({ error: "Failed to fetch posts" });
   }
-
-  const enriched = rows.map((p) => {
-    const staff = staffList.find((s) => s.id === p.staffId);
-    const site = siteList.find((s) => s.id === p.siteId);
-    const childNames = (p.childIds ?? []).map((cid) => {
-      const c = childList.find((ch) => ch.id === cid);
-      return c ? `${c.firstName} ${c.lastName}` : null;
-    }).filter(Boolean) as string[];
-    const likesForPost = allLikes.filter((l) => l.postId === p.id);
-    const likeCount = likeCountMap.get(p.id) ?? 0;
-    const likedByMe = likerId != null && likesForPost.some((l) =>
-      "staffId" in likerId
-        ? l.staffId === likerId.staffId
-        : l.guardianEmail === likerId.guardianEmail
-    );
-    return {
-      ...p,
-      childNames,
-      staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
-      siteName: site ? site.name : null,
-      likeCount,
-      likedByMe,
-    };
-  });
-  res.json(ListPostsResponse.parse(enriched));
 });
 
 router.post("/posts", async (req, res): Promise<void> => {
@@ -128,30 +133,40 @@ router.post("/posts", async (req, res): Promise<void> => {
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
   if (!(parsed.data as any).siteId) { res.status(400).json({ error: "Site is required" }); return; }
 
-  const aiSummary = await generateAiSummary(
-    parsed.data.title,
-    parsed.data.description,
-    parsed.data.learning,
-  );
+  try {
+    const aiSummary = await generateAiSummary(
+      parsed.data.title,
+      parsed.data.description,
+      parsed.data.learning,
+    );
 
-  const { notifyGuardians: _notifyGuardians, ...postData } = parsed.data as any;
+    const { notifyGuardians: _notifyGuardians, ...postData } = parsed.data as any;
 
-  const [post] = await db.insert(postsTable).values({
-    ...postData,
-    date: postData.date as any,
-    images: postData.images ?? [],
-    childIds: postData.childIds ?? [],
-    aiSummary,
-  }).returning();
-  res.status(201).json(GetPostResponse.parse(await enrichPost(post, sessionLikerId(req))));
+    const [post] = await db.insert(postsTable).values({
+      ...postData,
+      date: postData.date as any,
+      images: postData.images ?? [],
+      childIds: postData.childIds ?? [],
+      aiSummary,
+    }).returning();
+    res.status(201).json(GetPostResponse.parse(await enrichPost(post, sessionLikerId(req))));
+  } catch (err) {
+    req.log.error({ err }, "Failed to create post");
+    res.status(500).json({ error: "Failed to create post" });
+  }
 });
 
 router.get("/posts/:id", async (req, res): Promise<void> => {
   const params = GetPostParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  const [post] = await db.select().from(postsTable).where(eq(postsTable.id, params.data.id));
-  if (!post) { res.status(404).json({ error: "Post not found" }); return; }
-  res.json(GetPostResponse.parse(await enrichPost(post, sessionLikerId(req))));
+  try {
+    const [post] = await db.select().from(postsTable).where(eq(postsTable.id, params.data.id));
+    if (!post) { res.status(404).json({ error: "Post not found" }); return; }
+    res.json(GetPostResponse.parse(await enrichPost(post, sessionLikerId(req))));
+  } catch (err) {
+    req.log.error({ err, postId: params.data.id }, "Failed to fetch post");
+    res.status(500).json({ error: "Failed to fetch post" });
+  }
 });
 
 router.patch("/posts/:id", async (req, res): Promise<void> => {
@@ -160,68 +175,78 @@ router.patch("/posts/:id", async (req, res): Promise<void> => {
   const parsed = UpdatePostBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
-  const { notifyGuardians, ...updateData } = parsed.data as any;
+  try {
+    const { notifyGuardians, ...updateData } = parsed.data as any;
 
-  const [existing] = await db.select().from(postsTable).where(eq(postsTable.id, params.data.id));
-  if (!existing) { res.status(404).json({ error: "Post not found" }); return; }
+    const [existing] = await db.select().from(postsTable).where(eq(postsTable.id, params.data.id));
+    if (!existing) { res.status(404).json({ error: "Post not found" }); return; }
 
-  const [post] = await db.update(postsTable).set({ ...updateData, date: updateData.date as any } as any).where(eq(postsTable.id, params.data.id)).returning();
-  if (!post) { res.status(404).json({ error: "Post not found" }); return; }
+    const [post] = await db.update(postsTable).set({ ...updateData, date: updateData.date as any } as any).where(eq(postsTable.id, params.data.id)).returning();
+    if (!post) { res.status(404).json({ error: "Post not found" }); return; }
 
-  const wasPublished = existing.publishedAt == null && post.publishedAt != null;
-  const taggedChildIds = Array.isArray(post.childIds) ? (post.childIds as number[]) : [];
-  // Notification requires a site AND at least one tagged child.
-  // Without both we cannot reliably scope recipients, so we skip silently.
-  if (wasPublished && notifyGuardians !== false && await isEmailChannelEnabled("guardian_post") && post.siteId && taggedChildIds.length > 0) {
-    // Collect guardian emails directly from the tagged children's records.
-    // Both guardian 1 and guardian 2 emails are included; no portal account required.
-    const taggedChildren = await db
-      .select({ guardianEmail: childrenTable.guardianEmail, guardian2Email: childrenTable.guardian2Email })
-      .from(childrenTable)
-      .where(and(
-        inArray(childrenTable.id, taggedChildIds),
-        eq(childrenTable.status, "active"),
-        eq(childrenTable.siteId, post.siteId),
-      ));
+    const wasPublished = existing.publishedAt == null && post.publishedAt != null;
+    const taggedChildIds = Array.isArray(post.childIds) ? (post.childIds as number[]) : [];
+    // Notification requires a site AND at least one tagged child.
+    // Without both we cannot reliably scope recipients, so we skip silently.
+    if (wasPublished && notifyGuardians !== false && await isEmailChannelEnabled("guardian_post") && post.siteId && taggedChildIds.length > 0) {
+      // Collect guardian emails directly from the tagged children's records.
+      // Both guardian 1 and guardian 2 emails are included; no portal account required.
+      const taggedChildren = await db
+        .select({ guardianEmail: childrenTable.guardianEmail, guardian2Email: childrenTable.guardian2Email })
+        .from(childrenTable)
+        .where(and(
+          inArray(childrenTable.id, taggedChildIds),
+          eq(childrenTable.status, "active"),
+          eq(childrenTable.siteId, post.siteId),
+        ));
 
-    const recipients = [
-      ...new Set(
-        taggedChildren.flatMap((c) => [c.guardianEmail, c.guardian2Email]).filter((e): e is string => !!e),
-      ),
-    ];
-    const plainText = ((post.description ?? post.learning ?? "") as string)
-      .replace(/<[^>]*>/g, "")
-      .trim();
-    const lines = plainText.split(/\n+/).map((l: string) => l.trim()).filter(Boolean);
-    const excerpt = lines.length > 0
-      ? lines.slice(0, 3).join("\n") || null
-      : (plainText.slice(0, 250) || null);
+      const recipients = [
+        ...new Set(
+          taggedChildren.flatMap((c) => [c.guardianEmail, c.guardian2Email]).filter((e): e is string => !!e),
+        ),
+      ];
+      const plainText = ((post.description ?? post.learning ?? "") as string)
+        .replace(/<[^>]*>/g, "")
+        .trim();
+      const lines = plainText.split(/\n+/).map((l: string) => l.trim()).filter(Boolean);
+      const excerpt = lines.length > 0
+        ? lines.slice(0, 3).join("\n") || null
+        : (plainText.slice(0, 250) || null);
 
-    const images: string[] = Array.isArray((post as any).images) ? (post as any).images : [];
-    const firstImage = images[0] ?? null;
-    const appUrl = getAppUrl();
-    const firstImageUrl = firstImage
-      ? `${appUrl}/api/storage/objects/${firstImage.replace(/^\/objects\//, "")}`
-      : null;
+      const images: string[] = Array.isArray((post as any).images) ? (post as any).images : [];
+      const firstImage = images[0] ?? null;
+      const appUrl = getAppUrl();
+      const firstImageUrl = firstImage
+        ? `${appUrl}/api/storage/objects/${firstImage.replace(/^\/objects\//, "")}`
+        : null;
 
-    const portalUrl = `${appUrl}/notices`;
+      const portalUrl = `${appUrl}/notices`;
 
-    getEmailBranding().then((branding) =>
-      sendPostNotificationEmail(recipients, { postTitle: post.title, excerpt, portalUrl, firstImageUrl }, branding)
-    ).catch((err) => {
-      req.log.error({ err }, "Post notification email dispatch failed");
-    });
+      getEmailBranding().then((branding) =>
+        sendPostNotificationEmail(recipients, { postTitle: post.title, excerpt, portalUrl, firstImageUrl }, branding)
+      ).catch((err) => {
+        req.log.error({ err }, "Post notification email dispatch failed");
+      });
+    }
+
+    res.json(UpdatePostResponse.parse(await enrichPost(post, sessionLikerId(req))));
+  } catch (err) {
+    req.log.error({ err, postId: params.data.id }, "Failed to update post");
+    res.status(500).json({ error: "Failed to update post" });
   }
-
-  res.json(UpdatePostResponse.parse(await enrichPost(post, sessionLikerId(req))));
 });
 
 router.delete("/posts/:id", async (req, res): Promise<void> => {
   const params = DeletePostParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  const [post] = await db.delete(postsTable).where(eq(postsTable.id, params.data.id)).returning();
-  if (!post) { res.status(404).json({ error: "Post not found" }); return; }
-  res.sendStatus(204);
+  try {
+    const [post] = await db.delete(postsTable).where(eq(postsTable.id, params.data.id)).returning();
+    if (!post) { res.status(404).json({ error: "Post not found" }); return; }
+    res.sendStatus(204);
+  } catch (err) {
+    req.log.error({ err, postId: params.data.id }, "Failed to delete post");
+    res.status(500).json({ error: "Failed to delete post" });
+  }
 });
 
 router.post("/posts/:id/like", async (req, res): Promise<void> => {
@@ -236,9 +261,11 @@ router.post("/posts/:id/like", async (req, res): Promise<void> => {
     } else {
       await db.insert(postLikesTable).values({ postId: params.data.id, guardianEmail: likerId.guardianEmail }).onConflictDoNothing();
     }
-  } catch {
+    res.sendStatus(204);
+  } catch (err) {
+    req.log.error({ err, postId: params.data.id }, "Failed to like post");
+    res.status(500).json({ error: "Failed to like post" });
   }
-  res.sendStatus(204);
 });
 
 router.delete("/posts/:id/like", async (req, res): Promise<void> => {
@@ -247,25 +274,35 @@ router.delete("/posts/:id/like", async (req, res): Promise<void> => {
   const likerId = sessionLikerId(req);
   if (!likerId) { res.status(401).json({ error: "Not authenticated" }); return; }
 
-  if ("staffId" in likerId) {
-    await db.delete(postLikesTable).where(
-      and(eq(postLikesTable.postId, params.data.id), eq(postLikesTable.staffId, likerId.staffId))
-    );
-  } else {
-    await db.delete(postLikesTable).where(
-      and(eq(postLikesTable.postId, params.data.id), eq(postLikesTable.guardianEmail, likerId.guardianEmail))
-    );
+  try {
+    if ("staffId" in likerId) {
+      await db.delete(postLikesTable).where(
+        and(eq(postLikesTable.postId, params.data.id), eq(postLikesTable.staffId, likerId.staffId))
+      );
+    } else {
+      await db.delete(postLikesTable).where(
+        and(eq(postLikesTable.postId, params.data.id), eq(postLikesTable.guardianEmail, likerId.guardianEmail))
+      );
+    }
+    res.sendStatus(204);
+  } catch (err) {
+    req.log.error({ err, postId: params.data.id }, "Failed to unlike post");
+    res.status(500).json({ error: "Failed to unlike post" });
   }
-  res.sendStatus(204);
 });
 
 router.get("/posts/:id/comments", async (req, res): Promise<void> => {
   const params = ListPostCommentsParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  const rows = await db.select().from(postCommentsTable)
-    .where(eq(postCommentsTable.postId, params.data.id))
-    .orderBy(postCommentsTable.createdAt);
-  res.json(ListPostCommentsResponse.parse(rows));
+  try {
+    const rows = await db.select().from(postCommentsTable)
+      .where(eq(postCommentsTable.postId, params.data.id))
+      .orderBy(postCommentsTable.createdAt);
+    res.json(ListPostCommentsResponse.parse(rows));
+  } catch (err) {
+    req.log.error({ err, postId: params.data.id }, "Failed to fetch post comments");
+    res.status(500).json({ error: "Failed to fetch post comments" });
+  }
 });
 
 router.post("/posts/:id/comments", async (req, res): Promise<void> => {
@@ -273,36 +310,46 @@ router.post("/posts/:id/comments", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const body = CreatePostCommentBody.safeParse(req.body);
   if (!body.success) { res.status(400).json({ error: body.error.message }); return; }
-  const [comment] = await db.insert(postCommentsTable).values({
-    postId: params.data.id,
-    authorName: body.data.authorName,
-    body: body.data.body,
-  }).returning();
+  try {
+    const [comment] = await db.insert(postCommentsTable).values({
+      postId: params.data.id,
+      authorName: body.data.authorName,
+      body: body.data.body,
+    }).returning();
 
-  const [post] = await db.select({ staffId: postsTable.staffId, title: postsTable.title })
-    .from(postsTable).where(eq(postsTable.id, params.data.id));
-  if (post?.staffId) {
-    createNotification({
-      staffId: post.staffId,
-      type: "post_comment",
-      title: `New comment on "${post.title}"`,
-      body: body.data.authorName ? `${body.data.authorName}: ${body.data.body}` : body.data.body,
-      href: `/posts/${params.data.id}`,
-      referenceId: params.data.id,
-      referenceType: "post",
-    }).catch((err) => logger.warn({ err }, "Failed to send post_comment notification"));
+    const [post] = await db.select({ staffId: postsTable.staffId, title: postsTable.title })
+      .from(postsTable).where(eq(postsTable.id, params.data.id));
+    if (post?.staffId) {
+      createNotification({
+        staffId: post.staffId,
+        type: "post_comment",
+        title: `New comment on "${post.title}"`,
+        body: body.data.authorName ? `${body.data.authorName}: ${body.data.body}` : body.data.body,
+        href: `/posts/${params.data.id}`,
+        referenceId: params.data.id,
+        referenceType: "post",
+      }).catch((err) => logger.warn({ err }, "Failed to send post_comment notification"));
+    }
+
+    res.status(201).json(comment);
+  } catch (err) {
+    req.log.error({ err, postId: params.data.id }, "Failed to create post comment");
+    res.status(500).json({ error: "Failed to create post comment" });
   }
-
-  res.status(201).json(comment);
 });
 
 router.delete("/posts/:id/comments/:commentId", async (req, res): Promise<void> => {
   const params = DeletePostCommentParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  await db.delete(postCommentsTable).where(
-    and(eq(postCommentsTable.id, params.data.commentId), eq(postCommentsTable.postId, params.data.id))
-  );
-  res.sendStatus(204);
+  try {
+    await db.delete(postCommentsTable).where(
+      and(eq(postCommentsTable.id, params.data.commentId), eq(postCommentsTable.postId, params.data.id))
+    );
+    res.sendStatus(204);
+  } catch (err) {
+    req.log.error({ err, postId: params.data.id, commentId: params.data.commentId }, "Failed to delete post comment");
+    res.status(500).json({ error: "Failed to delete post comment" });
+  }
 });
 
 export default router;

@@ -392,115 +392,149 @@ router.get("/notifications", async (req, res): Promise<void> => {
 
   computeDeadlineNotifications().catch((err) => logger.warn({ err }, "Deadline notification computation failed"));
 
-  const items = await db.select()
-    .from(notificationsTable)
-    .where(eq(notificationsTable.staffId, userId))
-    .orderBy(desc(notificationsTable.createdAt))
-    .limit(50);
+  try {
+    const items = await db.select()
+      .from(notificationsTable)
+      .where(eq(notificationsTable.staffId, userId))
+      .orderBy(desc(notificationsTable.createdAt))
+      .limit(50);
 
-  res.json(items);
+    res.json(items);
+  } catch (err) {
+    req.log.error({ err, userId }, "Failed to list notifications");
+    res.status(500).json({ error: "Failed to list notifications" });
+  }
 });
 
 // ── GET /notifications/count ─────────────────────────────────────────────────
 router.get("/notifications/count", async (req, res): Promise<void> => {
   const userId = req.session.user!.id;
-  const items = await db.select({ id: notificationsTable.id })
-    .from(notificationsTable)
-    .where(and(
-      eq(notificationsTable.staffId, userId),
-      eq(notificationsTable.read, false),
-    ));
-  res.json({ count: items.length });
+
+  try {
+    const items = await db.select({ id: notificationsTable.id })
+      .from(notificationsTable)
+      .where(and(
+        eq(notificationsTable.staffId, userId),
+        eq(notificationsTable.read, false),
+      ));
+    res.json({ count: items.length });
+  } catch (err) {
+    req.log.error({ err, userId }, "Failed to count notifications");
+    res.status(500).json({ error: "Failed to count notifications" });
+  }
 });
 
 // ── PUT /notifications/mark-all-read ─────────────────────────────────────────
 router.put("/notifications/mark-all-read", async (req, res): Promise<void> => {
   const userId = req.session.user!.id;
-  await db.update(notificationsTable).set({ read: true })
-    .where(and(
-      eq(notificationsTable.staffId, userId),
-      eq(notificationsTable.read, false),
-    ));
-  res.json({ ok: true });
+
+  try {
+    await db.update(notificationsTable).set({ read: true })
+      .where(and(
+        eq(notificationsTable.staffId, userId),
+        eq(notificationsTable.read, false),
+      ));
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err, userId }, "Failed to mark notifications as read");
+    res.status(500).json({ error: "Failed to mark notifications as read" });
+  }
 });
 
 // ── PUT /notifications/:id/read ───────────────────────────────────────────────
 router.put("/notifications/:id/read", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
-  await db.update(notificationsTable).set({ read: true })
-    .where(and(eq(notificationsTable.id, id), eq(notificationsTable.staffId, req.session.user!.id)));
-  res.json({ ok: true });
+
+  try {
+    await db.update(notificationsTable).set({ read: true })
+      .where(and(eq(notificationsTable.id, id), eq(notificationsTable.staffId, req.session.user!.id)));
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err, notificationId: id }, "Failed to mark notification as read");
+    res.status(500).json({ error: "Failed to mark notification as read" });
+  }
 });
 
 // ── GET /notification-settings ────────────────────────────────────────────────
 router.get("/notification-settings", async (req, res): Promise<void> => {
   const siteId = req.query.siteId ? parseInt(req.query.siteId as string) : null;
 
-  // Always fetch global (siteId IS NULL) settings as the base
-  const globalSettings = await db.select()
-    .from(notificationSettingsTable)
-    .where(isNull(notificationSettingsTable.siteId))
-    .orderBy(notificationSettingsTable.id);
+  try {
+    // Always fetch global (siteId IS NULL) settings as the base
+    const globalSettings = await db.select()
+      .from(notificationSettingsTable)
+      .where(isNull(notificationSettingsTable.siteId))
+      .orderBy(notificationSettingsTable.id);
 
-  if (!siteId) {
-    res.json(globalSettings);
-    return;
+    if (!siteId) {
+      res.json(globalSettings);
+      return;
+    }
+
+    // Fetch site-specific overrides
+    const siteSettings = await db.select()
+      .from(notificationSettingsTable)
+      .where(eq(notificationSettingsTable.siteId, siteId));
+
+    // Merge: site-specific overrides take precedence over global
+    const merged = globalSettings.map((g) => {
+      const override = siteSettings.find((s) => s.type === g.type);
+      if (override) return override;
+      // Return a "virtual" site-scoped row from global defaults (id=0 flags it as unsaved)
+      return { ...g, id: 0, siteId };
+    });
+
+    res.json(merged);
+  } catch (err) {
+    req.log.error({ err }, "Failed to get notification settings");
+    res.status(500).json({ error: "Failed to get notification settings" });
   }
-
-  // Fetch site-specific overrides
-  const siteSettings = await db.select()
-    .from(notificationSettingsTable)
-    .where(eq(notificationSettingsTable.siteId, siteId));
-
-  // Merge: site-specific overrides take precedence over global
-  const merged = globalSettings.map((g) => {
-    const override = siteSettings.find((s) => s.type === g.type);
-    if (override) return override;
-    // Return a "virtual" site-scoped row from global defaults (id=0 flags it as unsaved)
-    return { ...g, id: 0, siteId };
-  });
-
-  res.json(merged);
 });
 
 // ── PUT /notification-settings ────────────────────────────────────────────────
 router.put("/notification-settings", async (req, res): Promise<void> => {
   const updates = req.body as Array<{ type: string; enabled: boolean; advanceDays?: number | null; siteId?: number | null }>;
-  for (const u of updates) {
-    if (u.siteId) {
-      // Upsert a site-specific override
-      const [existing] = await db.select({ id: notificationSettingsTable.id })
-        .from(notificationSettingsTable)
-        .where(and(
-          eq(notificationSettingsTable.type, u.type),
-          eq(notificationSettingsTable.siteId, u.siteId),
-        ));
-      if (existing) {
+
+  try {
+    for (const u of updates) {
+      if (u.siteId) {
+        // Upsert a site-specific override
+        const [existing] = await db.select({ id: notificationSettingsTable.id })
+          .from(notificationSettingsTable)
+          .where(and(
+            eq(notificationSettingsTable.type, u.type),
+            eq(notificationSettingsTable.siteId, u.siteId),
+          ));
+        if (existing) {
+          await db.update(notificationSettingsTable)
+            .set({ enabled: u.enabled, advanceDays: u.advanceDays ?? null })
+            .where(eq(notificationSettingsTable.id, existing.id));
+        } else {
+          const [globalRow] = await db.select()
+            .from(notificationSettingsTable)
+            .where(and(eq(notificationSettingsTable.type, u.type), isNull(notificationSettingsTable.siteId)));
+          await db.insert(notificationSettingsTable).values({
+            type: u.type,
+            label: globalRow?.label ?? u.type,
+            description: globalRow?.description,
+            enabled: u.enabled,
+            advanceDays: u.advanceDays ?? null,
+            siteId: u.siteId,
+          });
+        }
+      } else {
+        // Update global setting
         await db.update(notificationSettingsTable)
           .set({ enabled: u.enabled, advanceDays: u.advanceDays ?? null })
-          .where(eq(notificationSettingsTable.id, existing.id));
-      } else {
-        const [globalRow] = await db.select()
-          .from(notificationSettingsTable)
           .where(and(eq(notificationSettingsTable.type, u.type), isNull(notificationSettingsTable.siteId)));
-        await db.insert(notificationSettingsTable).values({
-          type: u.type,
-          label: globalRow?.label ?? u.type,
-          description: globalRow?.description,
-          enabled: u.enabled,
-          advanceDays: u.advanceDays ?? null,
-          siteId: u.siteId,
-        });
       }
-    } else {
-      // Update global setting
-      await db.update(notificationSettingsTable)
-        .set({ enabled: u.enabled, advanceDays: u.advanceDays ?? null })
-        .where(and(eq(notificationSettingsTable.type, u.type), isNull(notificationSettingsTable.siteId)));
     }
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to update notification settings");
+    res.status(500).json({ error: "Failed to update notification settings" });
   }
-  res.json({ ok: true });
 });
 
 export default router;

@@ -21,22 +21,27 @@ router.get("/children/:id/welfare-notes", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const staffList = await db.select().from(staffTable);
-  const notes = await db
-    .select()
-    .from(welfareNotesTable)
-    .where(eq(welfareNotesTable.childId, params.data.id))
-    .orderBy(welfareNotesTable.occurredAt);
+  try {
+    const staffList = await db.select().from(staffTable);
+    const notes = await db
+      .select()
+      .from(welfareNotesTable)
+      .where(eq(welfareNotesTable.childId, params.data.id))
+      .orderBy(welfareNotesTable.occurredAt);
 
-  const enriched = notes.map((n) => {
-    const staff = staffList.find((s) => s.id === n.staffId);
-    return {
-      ...n,
-      staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
-    };
-  });
+    const enriched = notes.map((n) => {
+      const staff = staffList.find((s) => s.id === n.staffId);
+      return {
+        ...n,
+        staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
+      };
+    });
 
-  res.json(GetChildWelfareNotesResponse.parse(enriched));
+    res.json(GetChildWelfareNotesResponse.parse(enriched));
+  } catch (err) {
+    req.log.error({ err, childId: params.data.id }, "Failed to fetch welfare notes");
+    res.status(500).json({ error: "Failed to fetch welfare notes" });
+  }
 });
 
 router.post("/welfare-notes", async (req, res): Promise<void> => {
@@ -45,46 +50,51 @@ router.post("/welfare-notes", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [note] = await db
-    .insert(welfareNotesTable)
-    .values(parsed.data as any)
-    .returning();
-  const staffList = await db.select().from(staffTable);
-  const staff = staffList.find((s) => s.id === note.staffId);
-  res.status(201).json(
-    GetChildWelfareNotesResponseItem.parse({ ...note, staffName: staff ? `${staff.firstName} ${staff.lastName}` : null })
-  );
+  try {
+    const [note] = await db
+      .insert(welfareNotesTable)
+      .values(parsed.data as any)
+      .returning();
+    const staffList = await db.select().from(staffTable);
+    const staff = staffList.find((s) => s.id === note.staffId);
+    res.status(201).json(
+      GetChildWelfareNotesResponseItem.parse({ ...note, staffName: staff ? `${staff.firstName} ${staff.lastName}` : null })
+    );
 
-  setImmediate(async () => {
-    try {
-      const [child] = await db.select({ firstName: childrenTable.firstName, lastName: childrenTable.lastName })
-        .from(childrenTable).where(eq(childrenTable.id, note.childId));
-      const childName = child ? `${child.firstName} ${child.lastName}` : `Child #${note.childId}`;
-      await createNotificationsForRoles({
-        roles: ["admin"],
-        type: "welfare_note_submitted",
-        title: `Welfare note added — ${childName}`,
-        href: `/children/${note.childId}`,
-        referenceId: note.childId,
-        referenceType: "child",
-        dedupeKeyPrefix: `welfare_note_submitted:${note.id}`,
-      });
-      if (note.mandatoryReportRequired) {
+    setImmediate(async () => {
+      try {
+        const [child] = await db.select({ firstName: childrenTable.firstName, lastName: childrenTable.lastName })
+          .from(childrenTable).where(eq(childrenTable.id, note.childId));
+        const childName = child ? `${child.firstName} ${child.lastName}` : `Child #${note.childId}`;
         await createNotificationsForRoles({
-          roles: ["admin", "coordinator", "educational_leader"],
-          type: "welfare_mandatory_report",
-          title: `Mandatory report submitted — ${childName}`,
-          body: note.mandatoryReportNotes ?? undefined,
+          roles: ["admin"],
+          type: "welfare_note_submitted",
+          title: `Welfare note added — ${childName}`,
           href: `/children/${note.childId}`,
           referenceId: note.childId,
           referenceType: "child",
-          dedupeKeyPrefix: `welfare_mandatory_report:${note.id}`,
+          dedupeKeyPrefix: `welfare_note_submitted:${note.id}`,
         });
+        if (note.mandatoryReportRequired) {
+          await createNotificationsForRoles({
+            roles: ["admin", "coordinator", "educational_leader"],
+            type: "welfare_mandatory_report",
+            title: `Mandatory report submitted — ${childName}`,
+            body: note.mandatoryReportNotes ?? undefined,
+            href: `/children/${note.childId}`,
+            referenceId: note.childId,
+            referenceType: "child",
+            dedupeKeyPrefix: `welfare_mandatory_report:${note.id}`,
+          });
+        }
+      } catch (err) {
+        logger.warn({ err }, "Failed to send welfare note notification");
       }
-    } catch (err) {
-      logger.warn({ err }, "Failed to send welfare note notification");
-    }
-  });
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to create welfare note");
+    res.status(500).json({ error: "Failed to create welfare note" });
+  }
 });
 
 router.patch("/welfare-notes/:id", async (req, res): Promise<void> => {
@@ -98,50 +108,55 @@ router.patch("/welfare-notes/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [note] = await db
-    .update(welfareNotesTable)
-    .set(parsed.data as any)
-    .where(eq(welfareNotesTable.id, params.data.id))
-    .returning();
-  if (!note) {
-    res.status(404).json({ error: "Welfare note not found" });
-    return;
-  }
-  const staffList = await db.select().from(staffTable);
-  const staff = staffList.find((s) => s.id === note.staffId);
-  res.json(
-    GetChildWelfareNotesResponseItem.parse({ ...note, staffName: staff ? `${staff.firstName} ${staff.lastName}` : null })
-  );
+  try {
+    const [note] = await db
+      .update(welfareNotesTable)
+      .set(parsed.data as any)
+      .where(eq(welfareNotesTable.id, params.data.id))
+      .returning();
+    if (!note) {
+      res.status(404).json({ error: "Welfare note not found" });
+      return;
+    }
+    const staffList = await db.select().from(staffTable);
+    const staff = staffList.find((s) => s.id === note.staffId);
+    res.json(
+      GetChildWelfareNotesResponseItem.parse({ ...note, staffName: staff ? `${staff.firstName} ${staff.lastName}` : null })
+    );
 
-  setImmediate(async () => {
-    try {
-      const [child] = await db.select({ firstName: childrenTable.firstName, lastName: childrenTable.lastName })
-        .from(childrenTable).where(eq(childrenTable.id, note.childId));
-      const childName = child ? `${child.firstName} ${child.lastName}` : `Child #${note.childId}`;
-      await createNotificationsForRoles({
-        roles: ["admin"],
-        type: "welfare_note_submitted",
-        title: `Welfare note updated — ${childName}`,
-        href: `/children/${note.childId}`,
-        referenceId: note.childId,
-        referenceType: "child",
-      });
-      if (note.mandatoryReportRequired) {
+    setImmediate(async () => {
+      try {
+        const [child] = await db.select({ firstName: childrenTable.firstName, lastName: childrenTable.lastName })
+          .from(childrenTable).where(eq(childrenTable.id, note.childId));
+        const childName = child ? `${child.firstName} ${child.lastName}` : `Child #${note.childId}`;
         await createNotificationsForRoles({
-          roles: ["admin", "coordinator", "educational_leader"],
-          type: "welfare_mandatory_report",
-          title: `Mandatory report updated — ${childName}`,
-          body: note.mandatoryReportNotes ?? undefined,
+          roles: ["admin"],
+          type: "welfare_note_submitted",
+          title: `Welfare note updated — ${childName}`,
           href: `/children/${note.childId}`,
           referenceId: note.childId,
           referenceType: "child",
-          dedupeKeyPrefix: `welfare_mandatory_report:${note.id}`,
         });
+        if (note.mandatoryReportRequired) {
+          await createNotificationsForRoles({
+            roles: ["admin", "coordinator", "educational_leader"],
+            type: "welfare_mandatory_report",
+            title: `Mandatory report updated — ${childName}`,
+            body: note.mandatoryReportNotes ?? undefined,
+            href: `/children/${note.childId}`,
+            referenceId: note.childId,
+            referenceType: "child",
+            dedupeKeyPrefix: `welfare_mandatory_report:${note.id}`,
+          });
+        }
+      } catch (err) {
+        logger.warn({ err }, "Failed to send welfare note notification");
       }
-    } catch (err) {
-      logger.warn({ err }, "Failed to send welfare note notification");
-    }
-  });
+    });
+  } catch (err) {
+    req.log.error({ err, noteId: params.data.id }, "Failed to update welfare note");
+    res.status(500).json({ error: "Failed to update welfare note" });
+  }
 });
 
 router.delete("/welfare-notes/:id", async (req, res): Promise<void> => {
@@ -150,15 +165,20 @@ router.delete("/welfare-notes/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const [note] = await db
-    .delete(welfareNotesTable)
-    .where(eq(welfareNotesTable.id, params.data.id))
-    .returning();
-  if (!note) {
-    res.status(404).json({ error: "Welfare note not found" });
-    return;
+  try {
+    const [note] = await db
+      .delete(welfareNotesTable)
+      .where(eq(welfareNotesTable.id, params.data.id))
+      .returning();
+    if (!note) {
+      res.status(404).json({ error: "Welfare note not found" });
+      return;
+    }
+    res.sendStatus(204);
+  } catch (err) {
+    req.log.error({ err, noteId: params.data.id }, "Failed to delete welfare note");
+    res.status(500).json({ error: "Failed to delete welfare note" });
   }
-  res.sendStatus(204);
 });
 
 export default router;

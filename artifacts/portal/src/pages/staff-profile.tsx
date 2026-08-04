@@ -580,7 +580,8 @@ export default function StaffProfile() {
           {/* Details */}
           {(() => {
             const wwccRef = qualifications?.find((q) => q.name === "WWCC")?.referenceNumber ?? null;
-            const qualLevel = qualifications ? computeQualLevel(qualifications as QualItem[]) : null;
+            const qualLevelConfig = featureSettings ? { cannotWorkQuals: featureSettings.staffCannotWorkQuals, responsiblePersonQuals: featureSettings.staffResponsiblePersonQuals, educatorQuals: featureSettings.staffEducatorQuals } : undefined;
+            const qualLevel = qualifications ? computeQualLevel(qualifications as QualItem[], qualLevelConfig) : null;
             const assignedSite = staff.siteId != null ? (sites ?? []).find((s) => s.id === staff.siteId) : null;
             return (
               <Card>
@@ -818,7 +819,8 @@ export default function StaffProfile() {
               <div className="flex items-center gap-2">
                 <h2 className="font-semibold">Qualifications &amp; Certifications</h2>
                 {!loadingQuals && qualifications && (() => {
-                  const qualLevel = computeQualLevel(qualifications as QualItem[]);
+                  const qualLevelConfig2 = featureSettings ? { cannotWorkQuals: featureSettings.staffCannotWorkQuals, responsiblePersonQuals: featureSettings.staffResponsiblePersonQuals, educatorQuals: featureSettings.staffEducatorQuals } : undefined;
+                  const qualLevel = computeQualLevel(qualifications as QualItem[], qualLevelConfig2);
                   return (
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${QUAL_LEVEL_STYLES[qualLevel]}`}>
                       {QUAL_LEVEL_LABELS[qualLevel]}
@@ -1036,7 +1038,10 @@ export default function StaffProfile() {
           })()}
 
           {!loadingQuals && missingQualNames.length > 0 && (() => {
-            const statusDependentNames = new Set([...RP_QUALS, ...EDUCATOR_QUALS, ...CANNOT_WORK_QUALS]);
+            const cwQuals  = featureSettings?.staffCannotWorkQuals       ?? CANNOT_WORK_QUALS;
+            const rpQuals  = featureSettings?.staffResponsiblePersonQuals ?? RP_QUALS;
+            const edQuals  = featureSettings?.staffEducatorQuals           ?? EDUCATOR_QUALS;
+            const statusDependentNames = new Set([...cwQuals, ...rpQuals, ...edQuals]);
             return (
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Not yet recorded</p>
@@ -1064,29 +1069,37 @@ export default function StaffProfile() {
           })()}
 
           {/* Status logic legend */}
-          <Card className="border-dashed bg-muted/30">
-            <CardContent className="py-4 space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">How Qualification Status is Calculated</p>
-              <div className="space-y-2 text-xs text-muted-foreground">
-                <div className="flex items-start gap-3">
-                  <Badge className="bg-red-100 text-red-800 border-red-200 shrink-0 mt-0.5" variant="outline">Cannot Work</Badge>
-                  <span>Any of the following are <span className="font-medium text-foreground">expired</span>: WWCC, CPR Renewal, First Aid</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Badge className="bg-green-100 text-green-800 border-green-200 shrink-0 mt-0.5" variant="outline">Responsible Person</Badge>
-                  <span>All required qualifications are current — includes Education Qualifications, First Aid, CPR Renewal, Food Safety, Responsible Person Declaration, Risk Management (DET), Staff Details (DET), History &amp; Compliance, WWCC, and Child Safety — Mandatory Reporting</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 shrink-0 mt-0.5" variant="outline">Educator</Badge>
-                  <span>All three core documents are current — Staff Details (DET), WWCC, and Child Safety - Mandatory Reporting and Other Obligations</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Badge className="bg-amber-100 text-amber-800 border-amber-200 shrink-0 mt-0.5" variant="outline">Incomplete</Badge>
-                  <span>One or more of the following are missing or not yet recorded: Staff Details (DET), WWCC, Child Safety - Mandatory Reporting and Other Obligations</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {(() => {
+            const cwQuals  = featureSettings?.staffCannotWorkQuals       ?? CANNOT_WORK_QUALS;
+            const rpQuals  = featureSettings?.staffResponsiblePersonQuals ?? RP_QUALS;
+            const edQuals  = featureSettings?.staffEducatorQuals           ?? EDUCATOR_QUALS;
+            const joinList = (arr: string[]) => arr.join(", ");
+            return (
+              <Card className="border-dashed bg-muted/30">
+                <CardContent className="py-4 space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">How Qualification Status is Calculated</p>
+                  <div className="space-y-2 text-xs text-muted-foreground">
+                    <div className="flex items-start gap-3">
+                      <Badge className="bg-red-100 text-red-800 border-red-200 shrink-0 mt-0.5" variant="outline">Cannot Work</Badge>
+                      <span>Any of the following are <span className="font-medium text-foreground">expired</span>: {joinList(cwQuals)}</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Badge className="bg-green-100 text-green-800 border-green-200 shrink-0 mt-0.5" variant="outline">Responsible Person</Badge>
+                      <span>All of the following are <span className="font-medium text-foreground">current</span>: {joinList(rpQuals)}</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Badge className="bg-blue-100 text-blue-800 border-blue-200 shrink-0 mt-0.5" variant="outline">Educator</Badge>
+                      <span>All of the following core qualifications are <span className="font-medium text-foreground">current</span>: {joinList(edQuals)}</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Badge className="bg-amber-100 text-amber-800 border-amber-200 shrink-0 mt-0.5" variant="outline">Incomplete</Badge>
+                      <span>One or more of the Educator core qualifications is missing or not yet recorded.</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
         </TabsContent>
 
         {/* Professional Development Tab */}

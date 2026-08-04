@@ -985,9 +985,14 @@ function MedicationExpiryWidget({ siteId }: { siteId?: number }) {
                     <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${hasExpired ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>
                       {child.childFirstName[0]}{child.childLastName[0]}
                     </div>
-                    <p className={`text-sm font-medium ${hasExpired ? "text-red-800" : "text-orange-800"}`}>
-                      {child.childFirstName} {child.childLastName}
-                    </p>
+                    <div className="min-w-0">
+                      <p className={`text-sm font-medium leading-tight ${hasExpired ? "text-red-800" : "text-orange-800"}`}>
+                        {child.childFirstName} {child.childLastName}
+                      </p>
+                      {child.siteName && (
+                        <p className="text-xs text-muted-foreground leading-tight">{child.siteName}</p>
+                      )}
+                    </div>
                   </div>
                 </Link>
                 {/* Per-medication rows with individual inline-renew buttons */}

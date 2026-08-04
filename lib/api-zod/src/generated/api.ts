@@ -3705,6 +3705,7 @@ export const GetExpiringMedicationsResponseItem = zod.object({
   childFirstName: zod.string(),
   childLastName: zod.string(),
   siteId: zod.number().nullish(),
+  siteName: zod.string().nullish(),
   medications: zod.array(
     zod.object({
       slot: zod.number(),

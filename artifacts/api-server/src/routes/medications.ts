@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and, or, desc, ne, inArray } from "drizzle-orm";
-import { db, childMedicationsTable, medicationLogsTable, childrenTable, staffTable, parentAccountsTable } from "@workspace/db";
+import { db, childMedicationsTable, medicationLogsTable, childrenTable, staffTable, parentAccountsTable, sitesTable } from "@workspace/db";
 import { sendMedicationLogEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 import { logger } from "../lib/logger";
@@ -292,7 +292,7 @@ router.get("/medications/expiring", async (req, res): Promise<void> => {
 
     if (relevantMeds.length === 0) { res.json([]); return; }
 
-    // Fetch children for those medication entries
+    // Fetch children (with their site name) for those medication entries
     const childIds = [...new Set(relevantMeds.map((m) => m.childId))];
     const childRows = await db
       .select({
@@ -300,8 +300,10 @@ router.get("/medications/expiring", async (req, res): Promise<void> => {
         firstName: childrenTable.firstName,
         lastName: childrenTable.lastName,
         siteId: childrenTable.siteId,
+        siteName: sitesTable.name,
       })
       .from(childrenTable)
+      .leftJoin(sitesTable, eq(sitesTable.id, childrenTable.siteId))
       .where(inArray(childrenTable.id, childIds));
 
     // Apply site filter
@@ -336,6 +338,7 @@ router.get("/medications/expiring", async (req, res): Promise<void> => {
         childFirstName: child.firstName,
         childLastName: child.lastName,
         siteId: child.siteId ?? null,
+        siteName: child.siteName ?? null,
         medications: medications.sort((a, b) => a.slot - b.slot),
       };
     });

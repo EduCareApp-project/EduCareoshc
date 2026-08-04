@@ -12,7 +12,7 @@ import { computeQualLevel, QUAL_LEVEL_LABELS, QUAL_LEVEL_STYLES, type QualItem, 
 
 const ROLE_LABELS: Record<string, string> = { admin: "Admin", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
 
-function QualLevelBadge({ staffId, config }: { staffId: number; config?: QualLevelConfig }) {
+export function QualLevelBadge({ staffId, config }: { staffId: number; config?: QualLevelConfig }) {
   const { data: qualifications, isLoading } = useGetStaffQualifications(staffId, {
     query: { queryKey: getGetStaffQualificationsQueryKey(staffId), refetchInterval: 30 * 1000 },
   });

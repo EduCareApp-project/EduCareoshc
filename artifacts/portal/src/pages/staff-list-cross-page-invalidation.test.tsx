@@ -203,3 +203,118 @@ describe("Staff List — cross-page cache invalidation (real React Query)", () =
     });
   });
 });
+
+// ── Add & Edit path tests ──────────────────────────────────────────────────────
+//
+// These mirror the archive tests above but exercise the add-qual and edit-qual
+// paths. Both paths in staff-profile.tsx call the same invalidate helper:
+//
+//   const invalidate = () =>
+//     queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}/qualifications`] });
+//
+// A regression on either path would leave the staff list badge stale.
+
+describe("Staff List — cross-page cache invalidation after add / edit (real React Query)", () => {
+  /** All three EDUCATOR_QUALS as current — enough to reach the "Educator" level. */
+  const educatorQuals: QualItem[] = [
+    { name: "Staff Details (DET)", status: "current", expiryDate: null, archivedAt: null },
+    { name: "WWCC", status: "current", expiryDate: null, archivedAt: null },
+    {
+      name: "Child Safety - Mandatory Reporting and Other Obligations",
+      status: "current",
+      expiryDate: null,
+      archivedAt: null,
+    },
+  ];
+
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("badge transitions from 'Incomplete' to 'Educator' after handleQualSubmit (add) fires invalidation", async () => {
+    const qc = makeQueryClient();
+
+    // Step 1 — pre-seed cache with no qualifications → "Incomplete" badge.
+    // Simulates the staff list loaded before the manager adds any qualification.
+    qc.setQueryData(getGetStaffQualificationsQueryKey(STAFF_ID), []);
+
+    // Step 2 — mount the badge; data comes from cache only (staleTime: Infinity).
+    renderBadge(qc);
+    expect(screen.getByText("Incomplete")).toBeInTheDocument();
+
+    // Step 3 — simulate the server response after the add succeeds.
+    // The server now returns all three educator-level quals.
+    (fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      makeJsonResponse(educatorQuals)
+    );
+
+    // Step 4 — call invalidateQueries exactly as handleQualSubmit (add path) does in
+    //   artifacts/portal/src/pages/staff-profile.tsx:
+    //   const invalidate = () =>
+    //     queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}/qualifications`] });
+    //   createQualMutation.mutate(..., { onSuccess: () => { closeQualDialog(); invalidate(); ... } })
+    await act(async () => {
+      await qc.invalidateQueries({
+        queryKey: [`/api/staff/${STAFF_ID}/qualifications`],
+      });
+    });
+
+    // Step 5 — badge must now reflect the educator level.
+    await waitFor(() => {
+      expect(screen.queryByText("Incomplete")).not.toBeInTheDocument();
+      expect(screen.getByText("Educator")).toBeInTheDocument();
+    });
+  });
+
+  it("badge transitions from 'Cannot Work' to 'Incomplete' after handleQualSubmit (edit: expired → current) fires invalidation", async () => {
+    const qc = makeQueryClient();
+
+    // Step 1 — pre-seed cache with an expired WWCC → "Cannot Work" badge.
+    // The manager is about to edit the qualification and mark it as current.
+    const expiredWwcc: QualItem = {
+      name: "WWCC",
+      status: "expired",
+      expiryDate: null,
+      archivedAt: null,
+    };
+    qc.setQueryData(getGetStaffQualificationsQueryKey(STAFF_ID), [expiredWwcc]);
+
+    // Step 2 — mount the badge; data comes from cache only (staleTime: Infinity).
+    renderBadge(qc);
+    expect(screen.getByText("Cannot Work")).toBeInTheDocument();
+
+    // Step 3 — simulate the server response after the edit succeeds.
+    // The WWCC is now "current" — no longer triggers the Cannot Work rule.
+    // Only one qual is present so the level stays at "Incomplete" (not full Educator set).
+    const currentWwcc: QualItem = {
+      name: "WWCC",
+      status: "current",
+      expiryDate: null,
+      archivedAt: null,
+    };
+    (fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      makeJsonResponse([currentWwcc])
+    );
+
+    // Step 4 — call invalidateQueries exactly as handleQualSubmit (edit path) does in
+    //   artifacts/portal/src/pages/staff-profile.tsx:
+    //   const invalidate = () =>
+    //     queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}/qualifications`] });
+    //   updateQualMutation.mutate(..., { onSuccess: () => { closeQualDialog(); invalidate(); ... } })
+    await act(async () => {
+      await qc.invalidateQueries({
+        queryKey: [`/api/staff/${STAFF_ID}/qualifications`],
+      });
+    });
+
+    // Step 5 — "Cannot Work" must be gone; badge now reads "Incomplete".
+    await waitFor(() => {
+      expect(screen.queryByText("Cannot Work")).not.toBeInTheDocument();
+      expect(screen.getByText("Incomplete")).toBeInTheDocument();
+    });
+  });
+});

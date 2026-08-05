@@ -43,7 +43,7 @@ import {
   Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2,
   ShieldAlert, AlertTriangle, Paperclip, X, Lock, Pencil, StickyNote, Newspaper,
   Upload, FolderOpen, Pill, ChevronDown, ChevronUp, ClipboardList, MessageSquareWarning,
-  CameraOff, Archive, Loader2,
+  CameraOff, Archive, Loader2, UtensilsCrossed,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth";
 import { useUpload } from "@workspace/object-storage-web";
@@ -493,10 +493,43 @@ const EMPTY_LOG_FORM = { administeredAt: "", dosageAdministered: "", methodOfAdm
 
 type StaffList = Staff[];
 
-export function MedicalTab({ childId, child, staffList, currentUserId }: { childId: number; child: { hasMedicalCondition?: boolean; medicalRiskPlan?: unknown; communicationPlan?: unknown }; staffList: StaffList; currentUserId: number }) {
+export function MedicalTab({ childId, child, staffList, currentUserId }: { childId: number; child: { hasMedicalCondition?: boolean; medicalRiskPlan?: unknown; communicationPlan?: unknown; hasMealConsideration?: boolean; mealConsiderationDetails?: string | null }; staffList: StaffList; currentUserId: number }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const updateChildMutation = useUpdateChild();
+
+  // Meal consideration state
+  const [hasMeal, setHasMeal] = useState<boolean>(child.hasMealConsideration ?? false);
+  const [mealDetails, setMealDetails] = useState<string>(child.mealConsiderationDetails ?? "");
+  const [mealDialogOpen, setMealDialogOpen] = useState(false);
+  const [mealDraft, setMealDraft] = useState<string>("");
+
+  function toggleMeal(val: boolean) {
+    if (val) {
+      setMealDraft(mealDetails);
+      setMealDialogOpen(true);
+    } else {
+      setHasMeal(false);
+      updateChildMutation.mutate({ id: childId, data: { hasMealConsideration: false, mealConsiderationDetails: null } as any }, {
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetChildQueryKey(childId) }); queryClient.invalidateQueries({ queryKey: getListChildrenQueryKey() }); toast({ title: "Meal consideration removed" }); },
+        onError: () => { setHasMeal(true); toast({ title: "Failed to update", variant: "destructive" }); },
+      });
+    }
+  }
+
+  function saveMealDetails() {
+    updateChildMutation.mutate({ id: childId, data: { hasMealConsideration: true, mealConsiderationDetails: mealDraft } as any }, {
+      onSuccess: () => {
+        setHasMeal(true);
+        setMealDetails(mealDraft);
+        setMealDialogOpen(false);
+        queryClient.invalidateQueries({ queryKey: getGetChildQueryKey(childId) });
+        queryClient.invalidateQueries({ queryKey: getListChildrenQueryKey() });
+        toast({ title: "Meal consideration saved" });
+      },
+      onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+    });
+  }
 
   // Medical condition state
   const [hasMedical, setHasMedical] = useState<boolean>((child as any).hasMedicalCondition ?? false);
@@ -697,6 +730,58 @@ export function MedicalTab({ childId, child, staffList, currentUserId }: { child
 
   return (
     <div className="space-y-6">
+      {/* Meal Consideration */}
+      <Card>
+        <CardContent className="pt-4 space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <p className="font-medium flex items-center gap-2"><UtensilsCrossed className="h-4 w-4 text-green-600" />Does this child have a meal consideration?</p>
+              <p className="text-sm text-muted-foreground">Record any dietary requirements, allergies or food-related needs.</p>
+            </div>
+            <Switch checked={hasMeal} onCheckedChange={toggleMeal} />
+          </div>
+          {hasMeal && (
+            <div className="rounded-md bg-green-50 border border-green-200 px-4 py-3 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-green-800 mb-1">Meal Consideration Details</p>
+                {mealDetails ? (
+                  <p className="text-sm text-green-900 whitespace-pre-wrap">{mealDetails}</p>
+                ) : (
+                  <p className="text-sm text-green-700 italic">No details recorded yet.</p>
+                )}
+              </div>
+              <Button size="sm" variant="outline" className="shrink-0" onClick={() => { setMealDraft(mealDetails); setMealDialogOpen(true); }}>
+                <Pencil className="h-3.5 w-3.5 mr-1.5" />{mealDetails ? "Edit" : "Add Details"}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Meal Consideration Dialog */}
+      <Dialog open={mealDialogOpen} onOpenChange={(open) => { if (!open && !hasMeal) setHasMeal(false); setMealDialogOpen(open); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><UtensilsCrossed className="h-4 w-4 text-green-600" />Meal Consideration Details</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <p className="text-sm text-muted-foreground">Describe any dietary requirements, food allergies, intolerances or preparation instructions for this child.</p>
+            <Textarea
+              value={mealDraft}
+              onChange={(e) => setMealDraft(e.target.value)}
+              placeholder="e.g. Nut-free diet — severe peanut allergy. No shellfish. Halal meals only."
+              rows={5}
+            />
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={() => { if (!hasMeal) setHasMeal(false); setMealDialogOpen(false); }}>Cancel</Button>
+              <Button size="sm" onClick={saveMealDetails} disabled={updateChildMutation.isPending || !mealDraft.trim()}>
+                {updateChildMutation.isPending ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Saving…</> : "Save"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Medical Condition Question */}
       <Card>
         <CardContent className="pt-4">
@@ -1479,7 +1564,7 @@ export default function ChildProfile() {
                   ) : null;
                 })()
               )}
-              {(child.photoRestriction || child.medicalNotes || child.hasMedicalCondition) && (
+              {(child.photoRestriction || child.medicalNotes || child.hasMedicalCondition || (child as any).hasMealConsideration) && (
                 <>
                   <Separator />
                   <div className="flex gap-2">
@@ -1492,7 +1577,7 @@ export default function ChildProfile() {
                         </div>
                       </div>
                     )}
-                    {(child.medicalNotes || child.hasMedicalCondition) && (
+                    {(child.medicalNotes || child.hasMedicalCondition || (child as any).hasMealConsideration) && (
                       <div className="flex-1 space-y-1.5 bg-destructive/10 p-3 rounded-md border border-destructive/20 text-destructive">
                         <div className="text-sm font-semibold">Medical Notes</div>
                         {child.hasMedicalCondition && (child.communicationPlan as any)?.medicalCondition && (
@@ -1501,6 +1586,14 @@ export default function ChildProfile() {
                           </span>
                         )}
                         {child.medicalNotes && <p className="text-sm">{child.medicalNotes}</p>}
+                        {(child as any).hasMealConsideration && (
+                          <div className="space-y-0.5">
+                            <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-red-200 text-red-900 border border-red-400">Meal Consideration</span>
+                            {(child as any).mealConsiderationDetails && (
+                              <p className="text-sm">{(child as any).mealConsiderationDetails}</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

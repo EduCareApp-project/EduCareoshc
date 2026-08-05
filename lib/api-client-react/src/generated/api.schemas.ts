@@ -107,6 +107,9 @@ export interface Child {
   hasMedicalCondition?: boolean;
   /** Child has at least one active medication listed in their profile */
   hasMedications?: boolean;
+  hasMealConsideration?: boolean;
+  /** @nullable */
+  mealConsiderationDetails?: string | null;
   /** @nullable */
   medicalRiskPlan?: ChildMedicalRiskPlan;
   /** @nullable */
@@ -193,6 +196,9 @@ export interface ChildUpdate {
   /** Child has a photo restriction — do not include in published photos */
   photoRestriction?: boolean;
   hasMedicalCondition?: boolean;
+  hasMealConsideration?: boolean;
+  /** @nullable */
+  mealConsiderationDetails?: string | null;
   medicalRiskPlan?: ChildUpdateMedicalRiskPlan;
   communicationPlan?: ChildUpdateCommunicationPlan;
   approvedPickups?: ApprovedPickup[];

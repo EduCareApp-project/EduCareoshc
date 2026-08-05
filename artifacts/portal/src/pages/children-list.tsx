@@ -62,13 +62,19 @@ function MedicationExpiryBadge({
   );
 }
 
-function getMedicalConditionLabels(child: { hasMedicalCondition?: boolean | null; medicalRiskPlan?: unknown }): string[] {
-  if (!child.hasMedicalCondition) return [];
-  const plan = child.medicalRiskPlan as { conditions?: { allergyCondition?: string }[] } | null | undefined;
-  const labels = (plan?.conditions ?? [])
-    .map(c => c.allergyCondition?.trim())
-    .filter(Boolean) as string[];
-  return labels.length > 0 ? labels : ["Medical"];
+function getMedicalConditionLabels(child: { hasMedicalCondition?: boolean | null; medicalRiskPlan?: unknown; hasMealConsideration?: boolean | null }): string[] {
+  const labels: string[] = [];
+  if (child.hasMedicalCondition) {
+    const plan = child.medicalRiskPlan as { conditions?: { allergyCondition?: string }[] } | null | undefined;
+    const conditionLabels = (plan?.conditions ?? [])
+      .map(c => c.allergyCondition?.trim())
+      .filter(Boolean) as string[];
+    labels.push(...(conditionLabels.length > 0 ? conditionLabels : ["Medical"]));
+  }
+  if (child.hasMealConsideration) {
+    labels.push("Meal Consideration");
+  }
+  return labels;
 }
 
 function useViewMode(): [ViewMode, (v: ViewMode) => void] {
@@ -140,7 +146,7 @@ export default function ChildrenList() {
         ? c.siteId == null
         : c.siteId === parseInt(siteFilter);
     const matchesStatus = statusFilter === "all" ? true : c.status === statusFilter;
-    const matchesMedical = !medicalFilter || c.hasMedicalCondition || !!(c as any).hasMedications;
+    const matchesMedical = !medicalFilter || c.hasMedicalCondition || !!(c as any).hasMedications || !!(c as any).hasMealConsideration;
     return matchesSearch && matchesSite && matchesStatus && matchesMedical;
   });
 

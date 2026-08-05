@@ -57,6 +57,8 @@ export const ListChildrenResponseItem = zod.object({
     ),
   medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
+  hasMealConsideration: zod.boolean().optional(),
+  mealConsiderationDetails: zod.string().nullish(),
   approvedPickups: zod
     .array(
       zod.object({
@@ -156,6 +158,8 @@ export const GetChildResponse = zod.object({
     ),
   medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
+  hasMealConsideration: zod.boolean().optional(),
+  mealConsiderationDetails: zod.string().nullish(),
   approvedPickups: zod
     .array(
       zod.object({
@@ -201,6 +205,8 @@ export const UpdateChildBody = zod.object({
   hasMedicalCondition: zod.boolean().optional(),
   medicalRiskPlan: zod.record(zod.string(), zod.unknown()).optional(),
   communicationPlan: zod.record(zod.string(), zod.unknown()).optional(),
+  hasMealConsideration: zod.boolean().optional(),
+  mealConsiderationDetails: zod.string().nullish(),
   approvedPickups: zod
     .array(
       zod.object({
@@ -253,6 +259,8 @@ export const UpdateChildResponse = zod.object({
     ),
   medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
+  hasMealConsideration: zod.boolean().optional(),
+  mealConsiderationDetails: zod.string().nullish(),
   approvedPickups: zod
     .array(
       zod.object({

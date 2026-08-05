@@ -28,6 +28,8 @@ export const childrenTable = pgTable("children", {
   medicalRiskPlan: jsonb("medical_risk_plan"),
   communicationPlan: jsonb("communication_plan"),
   approvedPickups: jsonb("approved_pickups"),
+  hasMealConsideration: boolean("has_meal_consideration").notNull().default(false),
+  mealConsiderationDetails: text("meal_consideration_details"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

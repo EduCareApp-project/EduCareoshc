@@ -14,7 +14,15 @@ const ROLE_LABELS: Record<string, string> = { admin: "Admin", educational_leader
 
 export function QualLevelBadge({ staffId, config }: { staffId: number; config?: QualLevelConfig }) {
   const { data: qualifications, isLoading } = useGetStaffQualifications(staffId, {
-    query: { queryKey: getGetStaffQualificationsQueryKey(staffId), refetchInterval: 30 * 1000 },
+    query: {
+      queryKey: getGetStaffQualificationsQueryKey(staffId),
+      refetchInterval: 30 * 1000,
+      // The global QueryClient has refetchOnWindowFocus: false, but we
+      // explicitly opt in here so that a manager returning to a tab left open
+      // overnight gets a fresh fetch immediately on focus rather than waiting
+      // up to 30 s for the next polling cycle.
+      refetchOnWindowFocus: true,
+    },
   });
   if (isLoading) return <span className="text-xs text-muted-foreground">—</span>;
   if (!qualifications?.length) return (

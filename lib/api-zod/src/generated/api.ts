@@ -4117,6 +4117,20 @@ export const UpdateWeeklyReviewResponse = zod.object({
 });
 
 /**
+ * @summary List login logs for a guardian
+ */
+export const ListGuardianLoginLogsParams = zod.object({
+  email: zod.string(),
+});
+
+export const ListGuardianLoginLogsResponseItem = zod.object({
+  id: zod.number(),
+  loggedInAt: zod.coerce.date(),
+});
+
+export const ListGuardianLoginLogsResponse = zod.array(ListGuardianLoginLogsResponseItem);
+
+/**
  * @summary Delete a weekly review
  */
 export const DeleteWeeklyReviewParams = zod.object({

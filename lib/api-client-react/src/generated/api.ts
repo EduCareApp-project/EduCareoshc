@@ -66,6 +66,7 @@ import type {
   GetServiceComplianceReportParams,
   GetWeeklyReviewStatsParams,
   Guardian,
+  GuardianLoginLog,
   GuardianMedicationLog,
   GuardianUpdate,
   HealthStatus,
@@ -14870,3 +14871,80 @@ export const useDeleteWeeklyReview = <
 > => {
   return useMutation(getDeleteWeeklyReviewMutationOptions(options));
 };
+
+// ── Guardian Login Logs ───────────────────────────────────────────────────────
+
+export const getListGuardianLoginLogsUrl = (email: string) => {
+  return `/api/guardians/${email}/login-logs`;
+};
+
+export const listGuardianLoginLogs = async (
+  email: string,
+  options?: RequestInit,
+): Promise<GuardianLoginLog[]> => {
+  return customFetch<GuardianLoginLog[]>(getListGuardianLoginLogsUrl(email), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListGuardianLoginLogsQueryKey = (email: string) => {
+  return [`/api/guardians/${email}/login-logs`] as const;
+};
+
+export const getListGuardianLoginLogsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGuardianLoginLogs>>,
+  TError = ErrorType<unknown>,
+>(
+  email: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listGuardianLoginLogs>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getListGuardianLoginLogsQueryKey(email);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listGuardianLoginLogs>>> = ({ signal }) =>
+    listGuardianLoginLogs(email, { signal, ...requestOptions });
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!email,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listGuardianLoginLogs>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListGuardianLoginLogsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listGuardianLoginLogs>>
+>;
+export type ListGuardianLoginLogsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List login logs for a guardian (by email)
+ */
+export function useListGuardianLoginLogs<
+  TData = Awaited<ReturnType<typeof listGuardianLoginLogs>>,
+  TError = ErrorType<unknown>,
+>(
+  email: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listGuardianLoginLogs>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListGuardianLoginLogsQueryOptions(email, options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return { ...query, queryKey: queryOptions.queryKey };
+}

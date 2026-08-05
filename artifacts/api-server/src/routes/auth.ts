@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { eq, asc, and, or, gt, isNull, isNotNull, inArray, sql } from "drizzle-orm";
-import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, postsTable, sitesTable, planningExperiencesTable, noticesTable } from "@workspace/db";
+import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, postsTable, sitesTable, planningExperiencesTable, noticesTable, guardianLoginLogsTable } from "@workspace/db";
 import { sendPasswordResetEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 import { getAppUrl } from "../lib/appUrl";
@@ -112,11 +112,12 @@ router.post("/auth/login", async (req, res): Promise<void> => {
         req.session.save((err) => (err ? reject(err) : resolve()))
       );
 
-      // Update last login
+      // Update last login and append to login log
       await db
         .update(parentAccountsTable)
         .set({ lastLoginAt: new Date() as any })
         .where(eq(parentAccountsTable.id, guardian.id));
+      await db.insert(guardianLoginLogsTable).values({ guardianEmail: guardian.guardianEmail });
 
       res.json({ user: req.session.user });
       return;

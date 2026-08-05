@@ -2307,3 +2307,8 @@ export type GetWeeklyReviewStatsParams = {
 export type ListWeeklyReviewsParams = {
   siteId?: number;
 };
+
+export interface GuardianLoginLog {
+  id: number;
+  loggedInAt: Date;
+}

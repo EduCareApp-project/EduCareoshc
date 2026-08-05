@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
-import { eq, sql, or } from "drizzle-orm";
+import { eq, sql, or, desc } from "drizzle-orm";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
-import { db, childrenTable, parentAccountsTable } from "@workspace/db";
+import { db, childrenTable, parentAccountsTable, guardianLoginLogsTable } from "@workspace/db";
 import {
   ListGuardiansResponse,
   GetGuardianResponse,
@@ -212,6 +212,23 @@ router.post("/guardians/:email/reset-password", async (req, res): Promise<void> 
   } catch (err) {
     req.log.error({ err, email }, "Failed to reset guardian password");
     res.status(500).json({ error: "Failed to reset guardian password" });
+  }
+});
+
+// ── GET /guardians/:email/login-logs ─────────────────────────────────────────
+router.get("/guardians/:email/login-logs", async (req, res): Promise<void> => {
+  const email = decodeURIComponent(req.params.email).toLowerCase().trim();
+  try {
+    const logs = await db
+      .select({ id: guardianLoginLogsTable.id, loggedInAt: guardianLoginLogsTable.loggedInAt })
+      .from(guardianLoginLogsTable)
+      .where(eq(guardianLoginLogsTable.guardianEmail, email))
+      .orderBy(desc(guardianLoginLogsTable.loggedInAt))
+      .limit(200);
+    res.json(logs);
+  } catch (err) {
+    req.log.error({ err, email }, "Failed to get guardian login logs");
+    res.status(500).json({ error: "Failed to get guardian login logs" });
   }
 });
 

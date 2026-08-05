@@ -3,6 +3,7 @@ import {
   useResetGuardianPassword,
   useListGuardianBehaviouralNotifications,
   getListGuardianBehaviouralNotificationsQueryKey,
+  useListGuardianLoginLogs,
   useListChildren,
   useUpdateChild,
 } from "@workspace/api-client-react";
@@ -33,8 +34,10 @@ import {
   UserCheck,
   Plus,
   Trash2,
-  Pencil,
   Send,
+  LogIn,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -167,10 +170,12 @@ export default function GuardianDetail() {
     encodedEmail ?? "",
     { query: { enabled: !!encodedEmail, queryKey: getListGuardianBehaviouralNotificationsQueryKey(encodedEmail ?? "") } }
   );
+  const { data: loginLogs = [], isLoading: loginLogsLoading } = useListGuardianLoginLogs(encodedEmail ?? "");
   const resetMutation = useResetGuardianPassword();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const [loginLogExpanded, setLoginLogExpanded] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [newPassword, setNewPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -400,6 +405,66 @@ export default function GuardianDetail() {
 
       {/* Approved Pick-ups */}
       <PickupsSection guardian={guardian} />
+
+      {/* App Access Log */}
+      <div className="bg-card border rounded-xl p-6 space-y-4">
+        <div>
+          <h2 className="text-base font-semibold flex items-center gap-2">
+            <LogIn className="h-4 w-4 text-primary" />
+            App Access Log
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Times {guardian.guardianName} has logged into the parent app.
+          </p>
+        </div>
+
+        {loginLogsLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-48" />
+            <Skeleton className="h-5 w-36" />
+          </div>
+        ) : loginLogs.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">No logins recorded yet.</p>
+        ) : (
+          <>
+            {/* Most recent — always visible */}
+            <div className="flex items-center gap-2 text-sm">
+              <span className="font-medium">Last login:</span>
+              <span className="text-muted-foreground">
+                {format(new Date(loginLogs[0].loggedInAt), "dd/MM/yyyy 'at' h:mm a")}
+              </span>
+            </div>
+
+            {/* Full log — collapsible */}
+            {loginLogs.length > 1 && (
+              <div>
+                <button
+                  onClick={() => setLoginLogExpanded((v) => !v)}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+                >
+                  {loginLogExpanded ? (
+                    <><ChevronUp className="h-3.5 w-3.5" /> Hide full history</>
+                  ) : (
+                    <><ChevronDown className="h-3.5 w-3.5" /> Show all {loginLogs.length} logins</>
+                  )}
+                </button>
+                {loginLogExpanded && (
+                  <div className="mt-3 border rounded-lg divide-y max-h-72 overflow-y-auto">
+                    {loginLogs.map((log) => (
+                      <div key={log.id} className="flex items-center gap-2 px-3 py-2 text-sm">
+                        <LogIn className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-muted-foreground">
+                          {format(new Date(log.loggedInAt), "dd/MM/yyyy 'at' h:mm a")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Behavioural Email Log */}
       <div className="bg-card border rounded-xl p-6">

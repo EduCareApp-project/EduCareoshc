@@ -15,11 +15,12 @@ const DAYS: { key: DayKey; label: string }[] = [
   { key: "fri", label: "Fri" },
 ];
 
-type RowKey = "experiencesThemes" | "active" | "creative" | "wellbeing" | "imaginative" | "spontaneousChoice";
+type RowKey = "experiencesThemes" | "active" | "creative" | "construction" | "wellbeing" | "imaginative" | "spontaneousChoice";
 const ROWS: { key: RowKey; label: string; color: string }[] = [
   { key: "experiencesThemes", label: "Theme", color: "bg-amber-50" },
   { key: "active", label: "Active Play", color: "bg-green-50" },
   { key: "creative", label: "Creative", color: "bg-blue-50" },
+  { key: "construction", label: "Construction", color: "bg-yellow-50" },
   { key: "wellbeing", label: "Wellbeing", color: "bg-rose-50" },
   { key: "imaginative", label: "Imaginative Play", color: "bg-purple-50" },
   { key: "spontaneousChoice", label: "Child's Choice", color: "bg-orange-50" },

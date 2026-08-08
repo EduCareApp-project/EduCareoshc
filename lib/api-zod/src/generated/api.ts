@@ -3386,6 +3386,8 @@ export const ListSitesResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
   address: zod.string().nullish(),
+  grouping: zod.string().nullish(),
+  status: zod.string().default("active"),
   createdAt: zod.coerce.date(),
 });
 export const ListSitesResponse = zod.array(ListSitesResponseItem);
@@ -3393,6 +3395,8 @@ export const ListSitesResponse = zod.array(ListSitesResponseItem);
 export const CreateSiteBody = zod.object({
   name: zod.string(),
   address: zod.string().optional(),
+  grouping: zod.string().optional(),
+  status: zod.enum(["active", "pending", "closed"]).optional(),
 });
 
 export const UpdateSiteParams = zod.object({
@@ -3402,12 +3406,16 @@ export const UpdateSiteParams = zod.object({
 export const UpdateSiteBody = zod.object({
   name: zod.string().optional(),
   address: zod.string().optional(),
+  grouping: zod.string().nullish(),
+  status: zod.enum(["active", "pending", "closed"]).optional(),
 });
 
 export const UpdateSiteResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
   address: zod.string().nullish(),
+  grouping: zod.string().nullish(),
+  status: zod.string().default("active"),
   createdAt: zod.coerce.date(),
 });
 

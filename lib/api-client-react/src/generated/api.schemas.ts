@@ -34,17 +34,24 @@ export interface Site {
   name: string;
   /** @nullable */
   address?: string | null;
+  /** @nullable */
+  grouping?: string | null;
+  status?: string;
   createdAt: string;
 }
 
 export interface SiteInput {
   name: string;
   address?: string;
+  grouping?: string;
+  status?: string;
 }
 
 export interface SiteUpdate {
   name?: string;
   address?: string;
+  grouping?: string | null;
+  status?: string;
 }
 
 export type ChildStatus = (typeof ChildStatus)[keyof typeof ChildStatus];

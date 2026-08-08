@@ -7,13 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, MapPin, Pencil, Trash2, Building2, ChevronRight, FileText } from "lucide-react";
+import { Plus, MapPin, Pencil, Trash2, Building2, ChevronRight, FileText, Layers, ChevronDown } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 
-type SiteForm = { name: string; address: string };
-const EMPTY: SiteForm = { name: "", address: "" };
+type SiteStatus = "active" | "pending" | "closed";
+type SiteForm = { name: string; address: string; grouping: string; status: SiteStatus };
+const EMPTY: SiteForm = { name: "", address: "", grouping: "", status: "active" };
+
+const STATUS_LABELS: Record<SiteStatus, string> = {
+  active: "Active",
+  pending: "Pending",
+  closed: "Closed",
+};
 
 export default function Sites() {
   const { data: sites, isLoading } = useListSites();
@@ -29,6 +37,11 @@ export default function Sites() {
   const [editing, setEditing] = useState<number | null>(null);
   const [form, setForm] = useState<SiteForm>(EMPTY);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [closedExpanded, setClosedExpanded] = useState(false);
+
+  const existingGroupings = Array.from(
+    new Set((sites ?? []).map((s) => s.grouping).filter(Boolean) as string[])
+  ).sort();
 
   function openCreate() {
     setEditing(null);
@@ -36,10 +49,15 @@ export default function Sites() {
     setOpen(true);
   }
 
-  function openEdit(e: React.MouseEvent, site: { id: number; name: string; address?: string | null }) {
+  function openEdit(e: React.MouseEvent, site: { id: number; name: string; address?: string | null; grouping?: string | null; status?: string }) {
     e.stopPropagation();
     setEditing(site.id);
-    setForm({ name: site.name, address: site.address ?? "" });
+    setForm({
+      name: site.name,
+      address: site.address ?? "",
+      grouping: site.grouping ?? "",
+      status: (site.status ?? "active") as SiteStatus,
+    });
     setOpen(true);
   }
 
@@ -49,10 +67,15 @@ export default function Sites() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const data = { name: form.name.trim(), address: form.address.trim() || undefined };
+    const data = {
+      name: form.name.trim(),
+      address: form.address.trim() || undefined,
+      grouping: form.grouping.trim() || undefined,
+      status: form.status,
+    };
     if (editing !== null) {
       updateSite.mutate(
-        { id: editing, data },
+        { id: editing, data: { ...data, grouping: data.grouping ?? null } },
         {
           onSuccess: () => { invalidate(); setOpen(false); toast({ title: "Site updated" }); },
           onError: () => toast({ title: "Failed to update site", variant: "destructive" }),
@@ -60,7 +83,7 @@ export default function Sites() {
       );
     } else {
       createSite.mutate(
-        { data: { name: data.name, address: data.address } },
+        { data },
         {
           onSuccess: () => { invalidate(); setOpen(false); toast({ title: "Site created" }); },
           onError: () => toast({ title: "Failed to create site", variant: "destructive" }),
@@ -78,6 +101,127 @@ export default function Sites() {
       }
     );
   }
+
+  // Separate closed sites out; sort the rest by grouping then name
+  const allSorted = [...(sites ?? [])].sort((a, b) => {
+    const ga = a.grouping ?? "";
+    const gb = b.grouping ?? "";
+    if (ga !== gb) {
+      if (!ga) return 1;
+      if (!gb) return -1;
+      return ga.localeCompare(gb);
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  const activeSites = allSorted.filter((s) => (s.status ?? "active") !== "closed");
+  const closedSites = allSorted.filter((s) => (s.status ?? "active") === "closed");
+
+  // Build grouped sections from an array of sites
+  type SiteItem = (typeof allSorted)[number];
+  type Group = { label: string | null; items: SiteItem[] };
+  function buildGroups(list: SiteItem[]): Group[] {
+    const groups: Group[] = [];
+    for (const site of list) {
+      const g = site.grouping ?? null;
+      const last = groups[groups.length - 1];
+      if (last && last.label === g) {
+        last.items.push(site);
+      } else {
+        groups.push({ label: g, items: [site] });
+      }
+    }
+    return groups;
+  }
+
+  const activeGroups = buildGroups(activeSites);
+  const closedGroups = buildGroups(closedSites);
+  const hasAnyGrouping = allSorted.some((s) => s.grouping);
+
+  function tileClass(status: string) {
+    if (status === "pending") return "bg-blue-50 border-blue-200 hover:border-blue-400 hover:shadow-md";
+    return "hover:border-primary/50 hover:shadow-md";
+  }
+
+  const SiteCard = ({ site }: { site: SiteItem }) => {
+    const status = (site.status ?? "active") as SiteStatus;
+    return (
+      <Card
+        className={`group cursor-pointer transition-all ${tileClass(status)}`}
+        onClick={() => setLocation(`/sites/${site.id}`)}
+      >
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${status === "pending" ? "bg-blue-100" : "bg-primary/10"}`}>
+                <Building2 className={`h-4.5 w-4.5 ${status === "pending" ? "text-blue-600" : "text-primary"}`} />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-semibold leading-snug">{site.name}</h3>
+                {status !== "active" && (
+                  <span className={`text-xs font-medium ${status === "pending" ? "text-blue-600" : "text-muted-foreground"}`}>
+                    {STATUS_LABELS[status]}
+                  </span>
+                )}
+              </div>
+            </div>
+            {isAdminOrEL && (
+              <div className="flex gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="ghost" size="icon" className="h-7 w-7"
+                  onClick={(e) => openEdit(e, site)}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                  onClick={(e) => { e.stopPropagation(); setDeleteConfirm(site.id); }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {site.address && (
+            <div className="flex items-start gap-1.5 text-sm text-muted-foreground mb-3">
+              <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+              <span className="line-clamp-2">{site.address}</span>
+            </div>
+          )}
+
+          <div className={`flex items-center gap-1.5 text-sm font-medium mt-auto ${status === "pending" ? "text-blue-600" : "text-primary"}`}>
+            <FileText className="h-3.5 w-3.5" />
+            <span>Site Instructions</span>
+            <ChevronRight className="h-3.5 w-3.5 ml-auto group-hover:translate-x-0.5 transition-transform" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const GroupedGrid = ({ groups, hasAnyGrouping: showHeaders }: { groups: Group[]; hasAnyGrouping: boolean }) => (
+    <div className="space-y-8">
+      {groups.map((group) => (
+        <div key={group.label ?? "__ungrouped"} className="space-y-3">
+          {showHeaders && (group.label ? (
+            <div className="flex items-center gap-2">
+              <Layers className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{group.label}</h2>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Layers className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Other</h2>
+            </div>
+          ))}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {group.items.map((site) => <SiteCard key={site.id} site={site} />)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -113,54 +257,27 @@ export default function Sites() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {sites.map((site) => (
-            <Card
-              key={site.id}
-              className="group cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
-              onClick={() => setLocation(`/sites/${site.id}`)}
-            >
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Building2 className="h-4.5 w-4.5 text-primary" />
-                    </div>
-                    <h3 className="font-semibold leading-snug">{site.name}</h3>
-                  </div>
-                  {isAdminOrEL && (
-                    <div className="flex gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost" size="icon" className="h-7 w-7"
-                        onClick={(e) => openEdit(e, site)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-                        onClick={(e) => { e.stopPropagation(); setDeleteConfirm(site.id); }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
+        <div className="space-y-8">
+          {/* Active + Pending sites */}
+          {activeSites.length > 0 && (
+            <GroupedGrid groups={activeGroups} hasAnyGrouping={hasAnyGrouping} />
+          )}
 
-                {site.address && (
-                  <div className="flex items-start gap-1.5 text-sm text-muted-foreground mb-3">
-                    <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                    <span className="line-clamp-2">{site.address}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-1.5 text-sm text-primary font-medium mt-auto">
-                  <FileText className="h-3.5 w-3.5" />
-                  <span>Site Instructions</span>
-                  <ChevronRight className="h-3.5 w-3.5 ml-auto group-hover:translate-x-0.5 transition-transform" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {/* Closed sites — collapsed by default */}
+          {closedSites.length > 0 && (
+            <div className="space-y-3">
+              <button
+                onClick={() => setClosedExpanded((v) => !v)}
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ChevronDown className={`h-4 w-4 transition-transform ${closedExpanded ? "rotate-180" : ""}`} />
+                Closed sites ({closedSites.length})
+              </button>
+              {closedExpanded && (
+                <GroupedGrid groups={closedGroups} hasAnyGrouping={hasAnyGrouping} />
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -187,6 +304,41 @@ export default function Sites() {
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
                 placeholder="e.g. 12 Park Street, Melbourne VIC 3000"
               />
+            </div>
+            <div className="space-y-1">
+              <Label>
+                Grouping{" "}
+                <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Input
+                list="grouping-options"
+                value={form.grouping}
+                onChange={(e) => setForm({ ...form, grouping: e.target.value })}
+                placeholder="e.g. Northern Zone"
+              />
+              {existingGroupings.length > 0 && (
+                <datalist id="grouping-options">
+                  {existingGroupings.map((g) => (
+                    <option key={g} value={g} />
+                  ))}
+                </datalist>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Sites with the same grouping are listed together.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <Label>Status</Label>
+              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as SiteStatus })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex gap-2 justify-end pt-2">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>

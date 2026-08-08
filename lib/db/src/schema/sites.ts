@@ -7,6 +7,8 @@ export const sitesTable = pgTable("sites", {
   orgId: integer("org_id"),
   name: text("name").notNull(),
   address: text("address"),
+  grouping: text("grouping"),
+  status: text("status").notNull().default("active"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

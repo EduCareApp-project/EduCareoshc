@@ -37,6 +37,7 @@ export interface Site {
   /** @nullable */
   grouping?: string | null;
   status?: string;
+  isDoscel?: boolean;
   createdAt: string;
 }
 
@@ -45,6 +46,7 @@ export interface SiteInput {
   address?: string;
   grouping?: string;
   status?: string;
+  isDoscel?: boolean;
 }
 
 export interface SiteUpdate {
@@ -52,6 +54,7 @@ export interface SiteUpdate {
   address?: string;
   grouping?: string | null;
   status?: string;
+  isDoscel?: boolean;
 }
 
 export type ChildStatus = (typeof ChildStatus)[keyof typeof ChildStatus];

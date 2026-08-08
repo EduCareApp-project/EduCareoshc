@@ -3388,6 +3388,7 @@ export const ListSitesResponseItem = zod.object({
   address: zod.string().nullish(),
   grouping: zod.string().nullish(),
   status: zod.string().default("active"),
+  isDoscel: zod.boolean().default(false),
   createdAt: zod.coerce.date(),
 });
 export const ListSitesResponse = zod.array(ListSitesResponseItem);
@@ -3397,6 +3398,7 @@ export const CreateSiteBody = zod.object({
   address: zod.string().optional(),
   grouping: zod.string().optional(),
   status: zod.enum(["active", "pending", "closed"]).optional(),
+  isDoscel: zod.boolean().optional(),
 });
 
 export const UpdateSiteParams = zod.object({
@@ -3408,6 +3410,7 @@ export const UpdateSiteBody = zod.object({
   address: zod.string().optional(),
   grouping: zod.string().nullish(),
   status: zod.enum(["active", "pending", "closed"]).optional(),
+  isDoscel: zod.boolean().optional(),
 });
 
 export const UpdateSiteResponse = zod.object({
@@ -3416,6 +3419,7 @@ export const UpdateSiteResponse = zod.object({
   address: zod.string().nullish(),
   grouping: zod.string().nullish(),
   status: zod.string().default("active"),
+  isDoscel: zod.boolean().default(false),
   createdAt: zod.coerce.date(),
 });
 

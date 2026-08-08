@@ -14,8 +14,17 @@ import { Plus, MapPin, Pencil, Trash2, Building2, ChevronRight, FileText, Layers
 import { usePermissions } from "@/hooks/use-permissions";
 
 type SiteStatus = "active" | "pending" | "closed";
-type SiteForm = { name: string; address: string; grouping: string; status: SiteStatus };
-const EMPTY: SiteForm = { name: "", address: "", grouping: "", status: "active" };
+type SiteForm = { name: string; address: string; grouping: string; status: SiteStatus; isDoscel: boolean };
+const EMPTY: SiteForm = { name: "", address: "", grouping: "", status: "active", isDoscel: false };
+
+function LatinCross({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+      <rect x="10.5" y="2" width="3" height="20" />
+      <rect x="4" y="7" width="16" height="3" />
+    </svg>
+  );
+}
 
 const STATUS_LABELS: Record<SiteStatus, string> = {
   active: "Active",
@@ -49,7 +58,7 @@ export default function Sites() {
     setOpen(true);
   }
 
-  function openEdit(e: React.MouseEvent, site: { id: number; name: string; address?: string | null; grouping?: string | null; status?: string }) {
+  function openEdit(e: React.MouseEvent, site: { id: number; name: string; address?: string | null; grouping?: string | null; status?: string; isDoscel?: boolean }) {
     e.stopPropagation();
     setEditing(site.id);
     setForm({
@@ -57,6 +66,7 @@ export default function Sites() {
       address: site.address ?? "",
       grouping: site.grouping ?? "",
       status: (site.status ?? "active") as SiteStatus,
+      isDoscel: site.isDoscel ?? false,
     });
     setOpen(true);
   }
@@ -72,6 +82,7 @@ export default function Sites() {
       address: form.address.trim() || undefined,
       grouping: form.grouping.trim() || undefined,
       status: form.status,
+      isDoscel: form.isDoscel,
     };
     if (editing !== null) {
       updateSite.mutate(
@@ -165,22 +176,27 @@ export default function Sites() {
                 )}
               </div>
             </div>
-            {isAdminOrEL && (
-              <div className="flex gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  variant="ghost" size="icon" className="h-7 w-7"
-                  onClick={(e) => openEdit(e, site)}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-                  onClick={(e) => { e.stopPropagation(); setDeleteConfirm(site.id); }}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center gap-1 shrink-0">
+              {site.isDoscel && (
+                <LatinCross className="h-5 w-5 text-slate-500" />
+              )}
+              {isAdminOrEL && (
+                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="ghost" size="icon" className="h-7 w-7"
+                    onClick={(e) => openEdit(e, site)}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                    onClick={(e) => { e.stopPropagation(); setDeleteConfirm(site.id); }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
 
           {site.address && (
@@ -339,6 +355,20 @@ export default function Sites() {
                   <SelectItem value="closed">Closed</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex items-center gap-3 rounded-md border p-3">
+              <input
+                id="isDoscel"
+                type="checkbox"
+                checked={form.isDoscel}
+                onChange={(e) => setForm({ ...form, isDoscel: e.target.checked })}
+                className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
+              />
+              <div>
+                <Label htmlFor="isDoscel" className="cursor-pointer font-medium">DOSCEL School</Label>
+                <p className="text-xs text-muted-foreground">Identifies this site as a DOSCEL school.</p>
+              </div>
+              {form.isDoscel && <LatinCross className="h-5 w-5 text-slate-500 ml-auto shrink-0" />}
             </div>
             <div className="flex gap-2 justify-end pt-2">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>

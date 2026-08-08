@@ -36,6 +36,9 @@ export default function Posts() {
   const { canDelete, canEditPost, isEducatorRole, ownSiteId } = usePermissions();
   const deleteMutation = useDeletePost();
   const [siteFilter, setSiteFilter] = useState<string>("all");
+  const [visibleCount, setVisibleCount] = useState(10);
+
+  function setSiteFilterAndReset(v: string) { setSiteFilter(v); setVisibleCount(10); }
 
   const showSiteFilter = !isEducatorRole && (sites ?? []).length > 1;
 
@@ -100,7 +103,7 @@ export default function Posts() {
         </div>
         <div className="flex items-center gap-3">
           {showSiteFilter && (
-            <Select value={siteFilter} onValueChange={setSiteFilter}>
+            <Select value={siteFilter} onValueChange={setSiteFilterAndReset}>
               <SelectTrigger className="w-48 bg-card">
                 <SelectValue placeholder="All sites" />
               </SelectTrigger>
@@ -138,8 +141,9 @@ export default function Posts() {
           </CardContent>
         </Card>
       ) : (
+        <>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {[...displayedPosts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((post) => {
+          {[...displayedPosts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, visibleCount).map((post) => {
             const coverImage = post.images?.[0];
             return (
               <Card
@@ -212,6 +216,14 @@ export default function Posts() {
             );
           })}
         </div>
+        {visibleCount < displayedPosts.length && (
+          <div className="flex justify-center pt-2">
+            <Button variant="outline" onClick={() => setVisibleCount((n) => n + 10)}>
+              Load more
+            </Button>
+          </div>
+        )}
+        </>
       )}
 
       <PostDetailDialog

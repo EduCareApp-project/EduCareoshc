@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   useListIncidents, useCreateIncident, useUpdateIncident, useDeleteIncident,
   useListChildren, useListSites,
@@ -64,6 +64,7 @@ function TierSection({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  useEffect(() => { if (defaultOpen) setOpen(true); }, [defaultOpen]);
   return (
     <div className="border rounded-lg overflow-hidden">
       <button

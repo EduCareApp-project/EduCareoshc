@@ -79,6 +79,7 @@ import type {
   ListJottingsParams,
   ListNoticesParams,
   ListNotificationSettingsParams,
+  ListPostsParams,
   ListQipStrengthsParams,
   ListRoutineItemCompletionsParams,
   ListWeeklyReviewsParams,
@@ -10171,35 +10172,43 @@ export const useUpsertChecklistPeriodOverride = <
   return useMutation(getUpsertChecklistPeriodOverrideMutationOptions(options));
 };
 
-export const getListPostsUrl = () => {
-  return `/api/posts`;
+export const getListPostsUrl = (params?: ListPostsParams) => {
+  const search = new URLSearchParams();
+  if (params?.limit !== undefined) search.set("limit", String(params.limit));
+  if (params?.offset !== undefined) search.set("offset", String(params.offset));
+  const qs = search.toString();
+  return qs ? `/api/posts?${qs}` : `/api/posts`;
 };
 
-export const listPosts = async (options?: RequestInit): Promise<Post[]> => {
-  return customFetch<Post[]>(getListPostsUrl(), {
+export const listPosts = async (
+  params?: ListPostsParams,
+  options?: RequestInit,
+): Promise<Post[]> => {
+  return customFetch<Post[]>(getListPostsUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getListPostsQueryKey = () => {
-  return [`/api/posts`] as const;
+export const getListPostsQueryKey = (params?: ListPostsParams) => {
+  return params ? ([`/api/posts`, params] as const) : ([`/api/posts`] as const);
 };
 
 export const getListPostsQueryOptions = <
   TData = Awaited<ReturnType<typeof listPosts>>,
   TError = ErrorType<unknown>,
 >(options?: {
+  params?: ListPostsParams;
   query?: UseQueryOptions<Awaited<ReturnType<typeof listPosts>>, TError, TData>;
   request?: SecondParameter<typeof customFetch>;
 }) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const { params, query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getListPostsQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getListPostsQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof listPosts>>> = ({
     signal,
-  }) => listPosts({ signal, ...requestOptions });
+  }) => listPosts(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof listPosts>>,
@@ -10217,6 +10226,7 @@ export function useListPosts<
   TData = Awaited<ReturnType<typeof listPosts>>,
   TError = ErrorType<unknown>,
 >(options?: {
+  params?: ListPostsParams;
   query?: UseQueryOptions<Awaited<ReturnType<typeof listPosts>>, TError, TData>;
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {

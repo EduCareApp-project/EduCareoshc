@@ -2309,6 +2309,19 @@ paths:
     get:
       operationId: listPosts
       tags: [posts]
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
       responses:
         "200":
           description: OK
@@ -3413,6 +3426,13 @@ components:
           type: string
         address:
           type: ["string", "null"]
+        grouping:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [active, pending, closed]
+        isDoscel:
+          type: boolean
         createdAt:
           type: string
           format: date-time
@@ -3425,6 +3445,13 @@ components:
           type: string
         address:
           type: string
+        grouping:
+          type: string
+        status:
+          type: string
+          enum: [active, pending, closed]
+        isDoscel:
+          type: boolean
 
     SiteUpdate:
       type: object
@@ -3433,6 +3460,13 @@ components:
           type: string
         address:
           type: string
+        grouping:
+          type: string
+        status:
+          type: string
+          enum: [active, pending, closed]
+        isDoscel:
+          type: boolean
 
     Child:
       type: object

@@ -2328,3 +2328,8 @@ export interface GuardianLoginLog {
   id: number;
   loggedInAt: Date;
 }
+
+export type ListPostsParams = {
+  limit?: number;
+  offset?: number;
+};

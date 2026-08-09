@@ -1,12 +1,12 @@
 import { Router, type IRouter } from "express";
 import { createNotification } from "../lib/notify";
 import { logger } from "../lib/logger";
-import { eq, and, isNotNull, isNull, inArray, sql } from "drizzle-orm";
+import { eq, and, isNotNull, isNull, inArray, sql, desc } from "drizzle-orm";
 import { db, postsTable, postCommentsTable, postLikesTable, childrenTable, staffTable, sitesTable, parentAccountsTable } from "@workspace/db";
 import {
   CreatePostBody, GetPostParams, GetPostResponse,
   UpdatePostParams, UpdatePostBody, UpdatePostResponse,
-  DeletePostParams, ListPostsResponse,
+  DeletePostParams, ListPostsResponse, ListPostsQueryParams,
   ListPostCommentsParams, ListPostCommentsResponse,
   CreatePostCommentParams, CreatePostCommentBody,
   DeletePostCommentParams,
@@ -84,41 +84,72 @@ function sessionLikerId(req: import("express").Request): LikerId {
 
 router.get("/posts", async (req, res): Promise<void> => {
   try {
+    const parsed = ListPostsQueryParams.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid pagination parameters" });
+      return;
+    }
+    const { limit, offset } = parsed.data;
+
     const likerId = sessionLikerId(req);
-    const rows = await db.select().from(postsTable).orderBy(postsTable.createdAt);
-    const [childList, staffList, siteList, allLikes] = await Promise.all([
-      db.select().from(childrenTable),
-      db.select().from(staffTable),
-      db.select().from(sitesTable),
-      db.select().from(postLikesTable),
+    const baseQuery = db.select().from(postsTable).orderBy(desc(postsTable.createdAt));
+    const rows = await (
+      limit !== undefined && offset !== undefined ? baseQuery.limit(limit).offset(offset) :
+      limit !== undefined ? baseQuery.limit(limit) :
+      offset !== undefined ? baseQuery.offset(offset) :
+      baseQuery
+    );
+
+    if (rows.length === 0) {
+      res.json(ListPostsResponse.parse([]));
+      return;
+    }
+
+    // Collect the FK IDs that appear in this page so all sub-queries are bounded
+    const postIds = rows.map((p) => p.id);
+    const childIds = [...new Set(rows.flatMap((p) => p.childIds ?? []))];
+    const staffIds = [...new Set(rows.map((p) => p.staffId).filter((id): id is number => id != null))];
+    const siteIds  = [...new Set(rows.map((p) => p.siteId).filter((id): id is number => id != null))];
+
+    // Likes: count + current-user flag per post — scoped to this page's post IDs
+    const likesForPage = postIds.length > 0
+      ? await db.select().from(postLikesTable).where(inArray(postLikesTable.postId, postIds))
+      : [];
+
+    const [childList, staffList, siteList] = await Promise.all([
+      childIds.length > 0 ? db.select().from(childrenTable).where(inArray(childrenTable.id, childIds)) : [],
+      staffIds.length > 0 ? db.select().from(staffTable).where(inArray(staffTable.id, staffIds)) : [],
+      siteIds.length  > 0 ? db.select().from(sitesTable).where(inArray(sitesTable.id, siteIds)) : [],
     ]);
 
     const likeCountMap = new Map<number, number>();
-    for (const like of allLikes) {
+    const likedByMeSet = new Set<number>();
+    for (const like of likesForPage) {
       likeCountMap.set(like.postId, (likeCountMap.get(like.postId) ?? 0) + 1);
+      if (
+        likerId != null && (
+          ("staffId" in likerId && like.staffId === likerId.staffId) ||
+          ("guardianEmail" in likerId && like.guardianEmail === likerId.guardianEmail)
+        )
+      ) {
+        likedByMeSet.add(like.postId);
+      }
     }
 
     const enriched = rows.map((p) => {
       const staff = staffList.find((s) => s.id === p.staffId);
-      const site = siteList.find((s) => s.id === p.siteId);
+      const site  = siteList.find((s) => s.id === p.siteId);
       const childNames = (p.childIds ?? []).map((cid) => {
         const c = childList.find((ch) => ch.id === cid);
         return c ? `${c.firstName} ${c.lastName}` : null;
       }).filter(Boolean) as string[];
-      const likesForPost = allLikes.filter((l) => l.postId === p.id);
-      const likeCount = likeCountMap.get(p.id) ?? 0;
-      const likedByMe = likerId != null && likesForPost.some((l) =>
-        "staffId" in likerId
-          ? l.staffId === likerId.staffId
-          : l.guardianEmail === likerId.guardianEmail
-      );
       return {
         ...p,
         childNames,
         staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
         siteName: site ? site.name : null,
-        likeCount,
-        likedByMe,
+        likeCount: likeCountMap.get(p.id) ?? 0,
+        likedByMe: likedByMeSet.has(p.id),
       };
     });
     res.json(ListPostsResponse.parse(enriched));

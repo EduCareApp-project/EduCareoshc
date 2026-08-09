@@ -10,9 +10,12 @@ import { Newspaper, Plus, Trash2, User, ArrowLeft, Heart } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PostDetailDialog } from "@/components/post-detail-dialog";
 import { useAuth } from "@/contexts/auth";
+import type { Post } from "@workspace/api-client-react";
+
+const PAGE_SIZE = 10;
 
 function imageUrl(path: string) {
   const stripped = path.replace(/^\/objects\//, "");
@@ -30,15 +33,43 @@ export default function Posts() {
   const childIdParam = new URLSearchParams(window.location.search).get("childId");
   const filterChildId = childIdParam ? parseInt(childIdParam) : null;
 
-  const { data: posts, isLoading } = useListPosts();
   const { data: children } = useListChildren();
   const { data: sites } = useListSites();
   const { canDelete, canEditPost, isEducatorRole, ownSiteId } = usePermissions();
   const deleteMutation = useDeletePost();
   const [siteFilter, setSiteFilter] = useState<string>("all");
-  const [visibleCount, setVisibleCount] = useState(10);
 
-  function setSiteFilterAndReset(v: string) { setSiteFilter(v); setVisibleCount(10); }
+  // Server-side pagination state
+  const [offset, setOffset] = useState(0);
+  const [accumulatedPosts, setAccumulatedPosts] = useState<Post[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+
+  // Server-side pagination fetch
+  const { data: pageData, isLoading, isFetching } = useListPosts({
+    params: { limit: PAGE_SIZE, offset },
+  });
+
+  // Accumulate pages as they arrive
+  const lastPageDataRef = useRef<Post[] | undefined>(undefined);
+  useEffect(() => {
+    if (pageData === undefined || pageData === lastPageDataRef.current) return;
+    lastPageDataRef.current = pageData;
+    if (offset === 0) {
+      setAccumulatedPosts(pageData);
+    } else {
+      setAccumulatedPosts((prev) => {
+        // Deduplicate by id in case of invalidations
+        const existingIds = new Set(prev.map((p) => p.id));
+        const newPosts = pageData.filter((p) => !existingIds.has(p.id));
+        return [...prev, ...newPosts];
+      });
+    }
+    setHasMore(pageData.length === PAGE_SIZE);
+  }, [pageData, offset]);
+
+  function setSiteFilterAndReset(v: string) {
+    setSiteFilter(v);
+  }
 
   const showSiteFilter = !isEducatorRole && (sites ?? []).length > 1;
 
@@ -51,8 +82,8 @@ export default function Posts() {
     : null;
 
   const displayedPosts = (filterChildId
-    ? (posts ?? []).filter((p) => (p.childIds ?? []).includes(filterChildId))
-    : (posts ?? [])
+    ? accumulatedPosts.filter((p) => (p.childIds ?? []).includes(filterChildId))
+    : accumulatedPosts
   ).filter((p) => {
     if (isEducatorRole && ownSiteId) return p.siteId === ownSiteId;
     if (!isEducatorRole && siteFilter !== "all") return p.siteId === parseInt(siteFilter);
@@ -66,7 +97,12 @@ export default function Posts() {
     e.stopPropagation();
     const mutation = likedByMe ? unlikeMutation : likeMutation;
     mutation.mutate({ id: postId }, {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() }),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() });
+        setOffset(0);
+        setAccumulatedPosts([]);
+        setHasMore(true);
+      },
       onError: () => toast({ title: "Could not update like", variant: "destructive" }),
     });
   }
@@ -76,11 +112,18 @@ export default function Posts() {
     if (!confirm("Delete this post?")) return;
     deleteMutation.mutate({ id }, {
       onSuccess: () => {
+        setOffset(0);
+        setAccumulatedPosts([]);
+        setHasMore(true);
         queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() });
         toast({ title: "Post deleted" });
       },
       onError: () => toast({ title: "Failed to delete post", variant: "destructive" }),
     });
+  }
+
+  function handleLoadMore() {
+    setOffset((prev) => prev + PAGE_SIZE);
   }
 
   return (
@@ -121,108 +164,110 @@ export default function Posts() {
         </div>
       </div>
 
-      {isLoading ? (
+      {isLoading && accumulatedPosts.length === 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-72 rounded-xl" />)}
         </div>
-      ) : displayedPosts.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 text-center text-muted-foreground flex flex-col items-center gap-2">
-            <Newspaper className="h-10 w-10 mb-2 opacity-40" />
-            <p className="font-medium">
-              {filteredChildName ? `No posts for ${filteredChildName}` : "No posts yet"}
-            </p>
-            {!filteredChildName && (
-              <p className="text-sm">Create your first learning story to share with families.</p>
-            )}
-            <Button className="mt-3" onClick={() => setLocation("/posts/new")}>
-              <Plus className="h-4 w-4 mr-2" />New Post
-            </Button>
-          </CardContent>
-        </Card>
       ) : (
         <>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {[...displayedPosts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, visibleCount).map((post) => {
-            const coverImage = post.images?.[0];
-            return (
-              <Card
-                key={post.id}
-                className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow group"
-                onClick={() => { setSelectedPostId(post.id); setSelectedPostStaffId(post.staffId ?? null); }}
-              >
-                <div className="relative aspect-video bg-muted overflow-hidden">
-                  {coverImage ? (
-                    <img
-                      src={imageUrl(coverImage)}
-                      alt={post.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Newspaper className="h-10 w-10 text-muted-foreground opacity-30" />
+          {displayedPosts.length === 0 && !hasMore ? (
+            <Card>
+              <CardContent className="py-16 text-center text-muted-foreground flex flex-col items-center gap-2">
+                <Newspaper className="h-10 w-10 mb-2 opacity-40" />
+                <p className="font-medium">
+                  {filteredChildName ? `No posts for ${filteredChildName}` : "No posts yet"}
+                </p>
+                {!filteredChildName && (
+                  <p className="text-sm">Create your first learning story to share with families.</p>
+                )}
+                <Button className="mt-3" onClick={() => setLocation("/posts/new")}>
+                  <Plus className="h-4 w-4 mr-2" />New Post
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {displayedPosts.map((post) => {
+                const coverImage = post.images?.[0];
+                return (
+                  <Card
+                    key={post.id}
+                    className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow group"
+                    onClick={() => { setSelectedPostId(post.id); setSelectedPostStaffId(post.staffId ?? null); }}
+                  >
+                    <div className="relative aspect-video bg-muted overflow-hidden">
+                      {coverImage ? (
+                        <img
+                          src={imageUrl(coverImage)}
+                          alt={post.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Newspaper className="h-10 w-10 text-muted-foreground opacity-30" />
+                        </div>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={(e) => handleDelete(e, post.id)}
+                          className="absolute top-2 right-2 p-1.5 rounded-md bg-white/80 hover:bg-white text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
-                  )}
-                  {canDelete && (
-                    <button
-                      onClick={(e) => handleDelete(e, post.id)}
-                      className="absolute top-2 right-2 p-1.5 rounded-md bg-white/80 hover:bg-white text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-                <CardContent className="p-4 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold leading-snug line-clamp-2">{post.title}</h3>
-                  </div>
-                  {post.childNames && post.childNames.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {post.childNames.map((name) => (
-                        <Badge key={name} variant="secondary" className="text-xs gap-1">
-                          <User className="h-2.5 w-2.5" />{name}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                  {post.aiSummary ? (
-                    <p className="text-sm text-muted-foreground line-clamp-3">{post.aiSummary}</p>
-                  ) : post.description ? (
-                    <p className="text-sm text-muted-foreground line-clamp-3">{post.description.replace(/<[^>]*>/g, "")}</p>
-                  ) : null}
-                  <div className="flex items-center justify-between gap-2 pt-1">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      {post.staffName && <span>{post.staffName}</span>}
-                      {post.staffName && post.date && <span>·</span>}
-                      {post.date && <span>{format(new Date(post.date.slice(0, 10) + "T00:00:00"), "dd/MM/yyyy")}</span>}
-                    </div>
-                    <button
-                      onClick={(e) => handleLike(e, post.id, post.likedByMe)}
-                      className={`flex items-center gap-1 text-xs transition-colors select-none ${
-                        post.likedByMe
-                          ? "text-rose-500 hover:text-rose-600"
-                          : "text-muted-foreground hover:text-rose-500"
-                      }`}
-                    >
-                      <Heart
-                        className="h-3.5 w-3.5"
-                        fill={post.likedByMe ? "currentColor" : "none"}
-                      />
-                      {post.likeCount > 0 && <span>{post.likeCount}</span>}
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-        {visibleCount < displayedPosts.length && (
-          <div className="flex justify-center pt-2">
-            <Button variant="outline" onClick={() => setVisibleCount((n) => n + 10)}>
-              Load more
-            </Button>
-          </div>
-        )}
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-semibold leading-snug line-clamp-2">{post.title}</h3>
+                      </div>
+                      {post.childNames && post.childNames.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {post.childNames.map((name) => (
+                            <Badge key={name} variant="secondary" className="text-xs gap-1">
+                              <User className="h-2.5 w-2.5" />{name}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      {post.aiSummary ? (
+                        <p className="text-sm text-muted-foreground line-clamp-3">{post.aiSummary}</p>
+                      ) : post.description ? (
+                        <p className="text-sm text-muted-foreground line-clamp-3">{post.description.replace(/<[^>]*>/g, "")}</p>
+                      ) : null}
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          {post.staffName && <span>{post.staffName}</span>}
+                          {post.staffName && post.date && <span>·</span>}
+                          {post.date && <span>{format(new Date(post.date.slice(0, 10) + "T00:00:00"), "dd/MM/yyyy")}</span>}
+                        </div>
+                        <button
+                          onClick={(e) => handleLike(e, post.id, post.likedByMe)}
+                          className={`flex items-center gap-1 text-xs transition-colors select-none ${
+                            post.likedByMe
+                              ? "text-rose-500 hover:text-rose-600"
+                              : "text-muted-foreground hover:text-rose-500"
+                          }`}
+                        >
+                          <Heart
+                            className="h-3.5 w-3.5"
+                            fill={post.likedByMe ? "currentColor" : "none"}
+                          />
+                          {post.likeCount > 0 && <span>{post.likeCount}</span>}
+                        </button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+          {hasMore && (
+            <div className="flex justify-center pt-2">
+              <Button variant="outline" onClick={handleLoadMore} disabled={isFetching}>
+                {isFetching ? "Loading…" : "Load more"}
+              </Button>
+            </div>
+          )}
         </>
       )}
 

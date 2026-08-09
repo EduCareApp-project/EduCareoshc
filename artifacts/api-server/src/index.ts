@@ -50,6 +50,22 @@ async function seedNotificationSettings(): Promise<void> {
   }
 }
 
+async function migrateSitesColumns(): Promise<void> {
+  // Additive migration: adds grouping, status, and is_doscel columns introduced
+  // alongside the Sites management UI. Idempotent — safe to run on any database.
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      ALTER TABLE sites
+        ADD COLUMN IF NOT EXISTS grouping  text,
+        ADD COLUMN IF NOT EXISTS status    text NOT NULL DEFAULT 'active',
+        ADD COLUMN IF NOT EXISTS is_doscel boolean NOT NULL DEFAULT false
+    `);
+  } finally {
+    client.release();
+  }
+}
+
 async function fixRollSubmissionWeekStarts(): Promise<void> {
   // One-time repair: rows stored with Sunday dates instead of Monday due to a
   // client timezone bug (toISOString() converting local Monday to UTC Sunday).
@@ -109,6 +125,13 @@ app.listen(port, async (err) => {
 
   logger.info({ port }, "Server listening");
   logEmailConfig();
+
+  try {
+    await migrateSitesColumns();
+    logger.info("Sites columns migration applied");
+  } catch (migrateErr) {
+    logger.warn({ err: migrateErr }, "Failed to apply sites columns migration");
+  }
 
   try {
     await fixRollSubmissionWeekStarts();

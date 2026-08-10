@@ -380,3 +380,116 @@ describe("GET /api/posts – server-side filters", () => {
     expect(postsChain.where).toHaveBeenCalled();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Tests — GET /api/posts – Load more preserves filters, site-change resets
+//
+// These tests confirm the two core behaviours described in task #86:
+//
+//   1. "Load more" (offset > 0) while a siteId or childId filter is active
+//      still passes the WHERE clause to the DB — the filter is not dropped on
+//      subsequent pages.
+//
+//   2. Switching the site filter (new siteId, offset reset to 0) is treated
+//      as a fresh first-page query: .where() is called with the new siteId
+//      and .offset(0) is applied, so the client accumulator starts clean.
+// ---------------------------------------------------------------------------
+
+describe("GET /api/posts – Load more preserves filters, site-change resets", () => {
+  it("second page (offset=10) with siteId still applies .where() and .offset(10)", async () => {
+    // Simulate the server returning the second page of posts for site 7.
+    setPostsRows(makePostRows(10, 11));
+    const { app } = buildApp();
+
+    const res = await request(app).get("/api/posts?siteId=7&limit=10&offset=10");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(10);
+
+    // The WHERE filter must still be applied even though this is page 2.
+    expect(postsChain.where).toHaveBeenCalled();
+    // Pagination offsets into the already-filtered result set.
+    expect(postsChain.limit).toHaveBeenCalledWith(10);
+    expect(postsChain.offset).toHaveBeenCalledWith(10);
+  });
+
+  it("second page (offset=10) with childId still applies .where() and .offset(10)", async () => {
+    setPostsRows(makePostRows(5, 11));
+    const { app } = buildApp();
+
+    const res = await request(app).get("/api/posts?childId=42&limit=10&offset=10");
+
+    expect(res.status).toBe(200);
+    expect(postsChain.where).toHaveBeenCalled();
+    expect(postsChain.limit).toHaveBeenCalledWith(10);
+    expect(postsChain.offset).toHaveBeenCalledWith(10);
+  });
+
+  it("site-filter change: offset resets to 0 and new siteId filter is applied", async () => {
+    // First page for site 7 (simulates the current site selection).
+    setPostsRows(makePostRows(10, 1));
+    const { app } = buildApp();
+    const res1 = await request(app).get("/api/posts?siteId=7&limit=10&offset=0");
+    expect(res1.status).toBe(200);
+    expect(postsChain.where).toHaveBeenCalled();
+
+    // Re-wire mocks to simulate the site dropdown changing to site 9.
+    // The client resets offset to 0, so this is a fresh page-1 request.
+    vi.clearAllMocks();
+    (postsChain.from    as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
+    (postsChain.where   as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
+    (postsChain.orderBy as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
+    (postsChain.limit   as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
+    (postsChain.offset  as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
+    (subChain.from    as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
+    (subChain.where   as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+    // New site's posts have different IDs — none overlap with the previous page.
+    setPostsRows(makePostRows(10, 101));
+    wireSelectMock();
+
+    const res2 = await request(app).get("/api/posts?siteId=9&limit=10&offset=0");
+    expect(res2.status).toBe(200);
+    expect(res2.body).toHaveLength(10);
+
+    // The new siteId filter must be applied (WHERE clause present).
+    expect(postsChain.where).toHaveBeenCalled();
+    // Reset to page 1: offset must be 0.
+    expect(postsChain.offset).toHaveBeenCalledWith(0);
+
+    // None of the new site's posts overlap with the first site's posts.
+    const ids1 = new Set(res1.body.map((p: { id: number }) => p.id));
+    const ids2 = res2.body.map((p: { id: number }) => p.id);
+    ids2.forEach((id: number) => expect(ids1.has(id)).toBe(false));
+  });
+
+  it("site-filter change to 'all sites' (no siteId) resets to offset=0 with no WHERE", async () => {
+    // Simulate user switching from a specific site back to "All sites".
+    setPostsRows(makePostRows(10, 1));
+    const { app } = buildApp();
+
+    // "All sites" means no siteId param — offset reset to 0.
+    const res = await request(app).get("/api/posts?limit=10&offset=0");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(10);
+
+    // No WHERE filter when viewing all sites.
+    expect(postsChain.where).not.toHaveBeenCalled();
+    expect(postsChain.offset).toHaveBeenCalledWith(0);
+  });
+
+  it("Load more after site-filter change: page 2 with new siteId keeps WHERE + correct offset", async () => {
+    // After switching to site 9 and loading page 1, the user clicks "Load more".
+    // The request must carry both the new siteId AND offset=10.
+    setPostsRows(makePostRows(7, 111));
+    const { app } = buildApp();
+
+    const res = await request(app).get("/api/posts?siteId=9&limit=10&offset=10");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(7); // fewer than PAGE_SIZE → last page
+
+    expect(postsChain.where).toHaveBeenCalled();
+    expect(postsChain.limit).toHaveBeenCalledWith(10);
+    expect(postsChain.offset).toHaveBeenCalledWith(10);
+  });
+});

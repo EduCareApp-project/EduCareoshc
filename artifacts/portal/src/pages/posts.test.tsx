@@ -6,13 +6,15 @@
  *   2. Clicking "Load more" (offset=10, fewer than 10 posts): appends new cards
  *      and hides the "Load more" button because hasMore becomes false.
  *   3. Fewer-than-PAGE_SIZE first page: no "Load more" button from the start.
+ *   4. "Load more" with an active site filter: second-page request carries siteId.
+ *   5. Changing the site filter: accumulated posts reset and new siteId is sent.
  *
  * Test strategy
  * -------------
- * The `useListPosts` mock is keyed by `params.offset` so each re-render with a
- * new offset receives the correct page of data — matching production behaviour
- * where clicking "Load more" increments offset by PAGE_SIZE and triggers a fresh
- * server fetch.
+ * The `useListPosts` mock captures the full params object on every call so tests
+ * can assert that siteId is forwarded on both first and subsequent pages.
+ * Data is keyed by a composite "siteId:offset" string (falling back to
+ * offset-only for tests that do not set a site filter).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, act, waitFor } from "@testing-library/react";
@@ -22,12 +24,18 @@ import Posts from "./posts";
 import type { Post } from "@workspace/api-client-react";
 
 // ---------------------------------------------------------------------------
-// Mutable mock state — keyed by offset so the mock returns the right page.
-// Tests call `setPageData(offset, posts)` to prime each page before rendering.
+// Mutable mock state
 // ---------------------------------------------------------------------------
 
+// Primary map: keyed by offset alone (backward-compatible for existing tests).
 const pageDataByOffset = new Map<
   number,
+  { data: Post[]; isLoading: boolean; isFetching: boolean }
+>();
+
+// Secondary map: keyed by "siteId:offset" — checked first when siteId is present.
+const pageDataBySiteOffset = new Map<
+  string,
   { data: Post[]; isLoading: boolean; isFetching: boolean }
 >();
 
@@ -43,16 +51,45 @@ function setPageData(
   });
 }
 
+/** Prime data for a specific (siteId, offset) combination. */
+function setPageDataForSite(
+  siteId: number,
+  offset: number,
+  posts: Post[],
+  opts: { isLoading?: boolean; isFetching?: boolean } = {},
+) {
+  pageDataBySiteOffset.set(`${siteId}:${offset}`, {
+    data: posts,
+    isLoading: opts.isLoading ?? false,
+    isFetching: opts.isFetching ?? false,
+  });
+}
+
+// Full params log — each call to useListPosts appends an entry here.
+const listPostsParamsSeen: Array<{ offset: number; siteId?: number; childId?: number }> = [];
+
 // Track which offsets were requested so tests can assert on the call log.
 const listPostsOffsetsSeen: number[] = [];
+
+// Configurable sites list returned by useListSites.
+let mockSites: Array<{ id: number; name: string }> = [];
 
 // ---------------------------------------------------------------------------
 // Module mocks
 // ---------------------------------------------------------------------------
 
 vi.mock("@workspace/api-client-react", () => ({
-  useListPosts: ({ params }: { params: { limit: number; offset: number } }) => {
+  useListPosts: ({ params }: { params: { limit: number; offset: number; siteId?: number; childId?: number } }) => {
     listPostsOffsetsSeen.push(params.offset);
+    listPostsParamsSeen.push({ offset: params.offset, siteId: params.siteId, childId: params.childId });
+
+    // Site-keyed lookup has priority when siteId is present.
+    if (params.siteId !== undefined) {
+      const key = `${params.siteId}:${params.offset}`;
+      const siteEntry = pageDataBySiteOffset.get(key);
+      if (siteEntry) return siteEntry;
+    }
+
     return (
       pageDataByOffset.get(params.offset) ?? {
         data: undefined,
@@ -62,7 +99,7 @@ vi.mock("@workspace/api-client-react", () => ({
     );
   },
   useListChildren:     () => ({ data: [] }),
-  useListSites:        () => ({ data: [] }),
+  useListSites:        () => ({ data: mockSites }),
   useDeletePost:       () => ({ mutate: vi.fn(), isPending: false }),
   useLikePost:         () => ({ mutate: vi.fn(), isPending: false }),
   useUnlikePost:       () => ({ mutate: vi.fn(), isPending: false }),
@@ -151,7 +188,10 @@ function renderPosts(qc = makeQueryClient()) {
 
 beforeEach(() => {
   pageDataByOffset.clear();
+  pageDataBySiteOffset.clear();
   listPostsOffsetsSeen.length = 0;
+  listPostsParamsSeen.length = 0;
+  mockSites = [];
   vi.clearAllMocks();
 });
 
@@ -287,5 +327,247 @@ describe("Posts page — 'Load more' fetches the next page", () => {
         screen.getByRole("button", { name: /load more/i }),
       ).toBeInTheDocument(),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests — 'Load more' preserves the active site filter
+//
+// Confirms that when a site is selected in the dropdown, clicking "Load more"
+// still passes the same siteId to useListPosts (not just a bare offset bump),
+// and that only that site's posts accumulate in the list.
+// ---------------------------------------------------------------------------
+
+describe("Posts page — 'Load more' preserves the active site filter", () => {
+  it("passes siteId on the first-page request when a site is selected", async () => {
+    // Two sites available so the dropdown renders.
+    mockSites = [
+      { id: 7, name: "Sunrise Centre" },
+      { id: 9, name: "Harbour View" },
+    ];
+
+    // Prime page 1 for site 7.
+    setPageDataForSite(7, 0, makePosts(PAGE_SIZE, 1));
+
+    renderPosts();
+    const user = userEvent.setup();
+
+    // Select site 7.
+    await waitFor(() =>
+      expect(screen.getByRole("combobox")).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getByText("Sunrise Centre"));
+
+    // The component should request page 1 with siteId=7 and offset=0.
+    await waitFor(() =>
+      expect(listPostsParamsSeen).toContainEqual(
+        expect.objectContaining({ siteId: 7, offset: 0 }),
+      ),
+    );
+  });
+
+  it("passes the same siteId on the second page after 'Load more' is clicked", async () => {
+    mockSites = [
+      { id: 7, name: "Sunrise Centre" },
+      { id: 9, name: "Harbour View" },
+    ];
+
+    // Prime both pages for site 7.
+    setPageDataForSite(7, 0,         makePosts(PAGE_SIZE, 1));
+    setPageDataForSite(7, PAGE_SIZE,  makePosts(3, PAGE_SIZE + 1));
+
+    renderPosts();
+    const user = userEvent.setup();
+
+    // Select site 7.
+    await waitFor(() =>
+      expect(screen.getByRole("combobox")).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getByText("Sunrise Centre"));
+
+    // Wait for first page of site-7 posts to appear.
+    await waitFor(() =>
+      expect(screen.getByText("Test Post 1")).toBeInTheDocument(),
+    );
+
+    // Click "Load more".
+    const loadMoreBtn = screen.getByRole("button", { name: /load more/i });
+    await user.click(loadMoreBtn);
+
+    // The second request must carry siteId=7 AND offset=PAGE_SIZE.
+    await waitFor(() =>
+      expect(listPostsParamsSeen).toContainEqual(
+        expect.objectContaining({ siteId: 7, offset: PAGE_SIZE }),
+      ),
+    );
+
+    // Second-page posts are appended — both pages visible.
+    await waitFor(() =>
+      expect(screen.getByText(`Test Post ${PAGE_SIZE + 1}`)).toBeInTheDocument(),
+    );
+    expect(screen.getByText("Test Post 1")).toBeInTheDocument();
+  });
+
+  it("second-page posts from the filtered site are appended to first-page posts", async () => {
+    mockSites = [
+      { id: 7, name: "Sunrise Centre" },
+      { id: 9, name: "Harbour View" },
+    ];
+
+    setPageDataForSite(7, 0,         makePosts(PAGE_SIZE, 1));
+    setPageDataForSite(7, PAGE_SIZE,  makePosts(5, PAGE_SIZE + 1));
+
+    renderPosts();
+    const user = userEvent.setup();
+
+    await waitFor(() =>
+      expect(screen.getByRole("combobox")).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getByText("Sunrise Centre"));
+
+    await waitFor(() =>
+      expect(screen.getByText("Test Post 1")).toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole("button", { name: /load more/i }));
+
+    // 10 + 5 = 15 posts accumulated; "Load more" gone because page 2 was short.
+    await waitFor(() =>
+      expect(screen.getByText(`Test Post ${PAGE_SIZE + 5}`)).toBeInTheDocument(),
+    );
+    expect(screen.getByText("Test Post 1")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /load more/i }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests — changing the site filter resets the accumulated post list
+//
+// Confirms that selecting a different site in the dropdown clears the
+// accumulated posts (no bleed-over from the previous site) and requests
+// offset=0 with the new siteId.
+// ---------------------------------------------------------------------------
+
+describe("Posts page — changing the site filter resets accumulated posts", () => {
+  it("requests offset=0 with the new siteId after switching sites", async () => {
+    mockSites = [
+      { id: 7, name: "Sunrise Centre" },
+      { id: 9, name: "Harbour View" },
+    ];
+
+    setPageDataForSite(7, 0, makePosts(PAGE_SIZE, 1));
+    setPageDataForSite(9, 0, makePosts(PAGE_SIZE, 101));
+
+    renderPosts();
+    const user = userEvent.setup();
+
+    // Select site 7 first.
+    await waitFor(() =>
+      expect(screen.getByRole("combobox")).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getByText("Sunrise Centre"));
+
+    await waitFor(() =>
+      expect(screen.getByText("Test Post 1")).toBeInTheDocument(),
+    );
+
+    // Switch to site 9.
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getByText("Harbour View"));
+
+    // Must request the new site at offset=0 (reset to page 1).
+    await waitFor(() =>
+      expect(listPostsParamsSeen).toContainEqual(
+        expect.objectContaining({ siteId: 9, offset: 0 }),
+      ),
+    );
+  });
+
+  it("shows only the new site's posts after switching — no posts from the previous site", async () => {
+    mockSites = [
+      { id: 7, name: "Sunrise Centre" },
+      { id: 9, name: "Harbour View" },
+    ];
+
+    // Site 7 has posts 1–10; site 9 has posts 101–110 (completely different IDs).
+    setPageDataForSite(7, 0, makePosts(PAGE_SIZE, 1));
+    setPageDataForSite(9, 0, makePosts(PAGE_SIZE, 101));
+
+    renderPosts();
+    const user = userEvent.setup();
+
+    await waitFor(() =>
+      expect(screen.getByRole("combobox")).toBeInTheDocument(),
+    );
+
+    // Select site 7.
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getByText("Sunrise Centre"));
+
+    await waitFor(() =>
+      expect(screen.getByText("Test Post 1")).toBeInTheDocument(),
+    );
+
+    // Switch to site 9.
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getByText("Harbour View"));
+
+    // Site 9's posts appear.
+    await waitFor(() =>
+      expect(screen.getByText("Test Post 101")).toBeInTheDocument(),
+    );
+
+    // Site 7's posts must no longer be in the DOM (accumulator was reset).
+    expect(screen.queryByText("Test Post 1")).not.toBeInTheDocument();
+  });
+
+  it("load-more after a site switch carries the new siteId — not the old one", async () => {
+    mockSites = [
+      { id: 7, name: "Sunrise Centre" },
+      { id: 9, name: "Harbour View" },
+    ];
+
+    setPageDataForSite(7, 0,         makePosts(PAGE_SIZE, 1));
+    setPageDataForSite(9, 0,         makePosts(PAGE_SIZE, 101));
+    setPageDataForSite(9, PAGE_SIZE,  makePosts(3, 201));
+
+    renderPosts();
+    const user = userEvent.setup();
+
+    await waitFor(() =>
+      expect(screen.getByRole("combobox")).toBeInTheDocument(),
+    );
+
+    // Select site 7, then switch to site 9.
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getByText("Sunrise Centre"));
+    await waitFor(() => expect(screen.getByText("Test Post 1")).toBeInTheDocument());
+
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getByText("Harbour View"));
+    await waitFor(() => expect(screen.getByText("Test Post 101")).toBeInTheDocument());
+
+    // Click "Load more" while on site 9.
+    await user.click(screen.getByRole("button", { name: /load more/i }));
+
+    // The load-more request must use siteId=9 (not the old siteId=7) and offset=PAGE_SIZE.
+    await waitFor(() =>
+      expect(listPostsParamsSeen).toContainEqual(
+        expect.objectContaining({ siteId: 9, offset: PAGE_SIZE }),
+      ),
+    );
+
+    // Posts from both pages of site 9 are in the DOM.
+    await waitFor(() =>
+      expect(screen.getByText("Test Post 201")).toBeInTheDocument(),
+    );
+    // Site 7's posts are gone.
+    expect(screen.queryByText("Test Post 1")).not.toBeInTheDocument();
   });
 });

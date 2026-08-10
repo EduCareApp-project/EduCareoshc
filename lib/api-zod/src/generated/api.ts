@@ -971,7 +971,7 @@ export const GetOutcomeCountsResponse = zod.array(GetOutcomeCountsResponseItem);
 
 export const GetRecentActivityResponseItem = zod.object({
   id: zod.string(),
-  type: zod.enum(["observation", "post", "incident", "condition_report", "welfare_note"]),
+  type: zod.enum(["observation", "post", "incident", "condition_report", "welfare_note", "behavioural_notification"]),
   label: zod.string(),
   detail: zod.string().nullish(),
   actor: zod.string().nullish(),

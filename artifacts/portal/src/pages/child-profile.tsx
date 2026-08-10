@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { usePermissions } from "@/hooks/use-permissions";
-import { melbourneDateTimeStr, toMelbourneDate, melbourneLocalToUTCISO } from "@/lib/timezone";
+import { melbourneDateTimeStr, toMelbourneDate, melbourneLocalToUTCISO, fmtMelb } from "@/lib/timezone";
 import {
   useGetChild, getGetChildQueryKey, useUpdateChild, useDeleteChild,
   useGetChildObservations, getGetChildObservationsQueryKey, useListSites,
@@ -56,7 +56,11 @@ function storageUrl(objectPath: string): string {
 
 function safeDate(value: string, fmt: string) {
   try {
-    const d = new Date(value.length === 10 ? value + "T00:00:00" : value);
+    // Date-only strings (YYYY-MM-DD) are calendar dates — keep as-is with midnight anchor.
+    // Full timestamps are UTC instants — convert to Melbourne wall-clock time before formatting.
+    const d = value.length === 10
+      ? new Date(value + "T00:00:00")
+      : toMelbourneDate(value);
     if (isNaN(d.getTime())) return value;
     return format(d, fmt);
   } catch {
@@ -158,7 +162,7 @@ function BehaviourTab({ childId, guardians }: { childId: number; guardians: Guar
             <Card key={n.id}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <CardTitle className="text-sm">{n.sentAt ? format(new Date(n.sentAt), "dd/MM/yyyy 'at' h:mm a") : "—"}</CardTitle>
+                  <CardTitle className="text-sm">{n.sentAt ? fmtMelb(n.sentAt, "dd/MM/yyyy 'at' h:mm a") : "—"}</CardTitle>
                   <div className="flex items-center flex-wrap gap-1">
                     {n.recipientEmails?.map(e => <Badge key={e} variant="outline" className="text-xs">{e}</Badge>)}
                     {canDelete && (
@@ -173,7 +177,7 @@ function BehaviourTab({ childId, guardians }: { childId: number; guardians: Guar
                             <AlertDialogTitle>Delete this notification record?</AlertDialogTitle>
                             <AlertDialogDescription>
                               This will permanently remove the behavioural notification sent on{" "}
-                              {n.sentAt ? format(new Date(n.sentAt), "dd/MM/yyyy") : "this date"}.
+                              {n.sentAt ? fmtMelb(n.sentAt, "dd/MM/yyyy") : "this date"}.
                               The email already delivered to guardians will not be recalled.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
@@ -1221,7 +1225,7 @@ export default function ChildProfile() {
   function buildWelfareBody() {
     const body: Record<string, unknown> = {
       childId: id,
-      occurredAt: new Date(welfareForm.occurredAt).toISOString(),
+      occurredAt: melbourneLocalToUTCISO(welfareForm.occurredAt),
       concerns: welfareForm.concerns,
       riskFactors: welfareForm.riskFactors,
       mandatoryReportRequired: welfareForm.mandatoryReportRequired,
@@ -1931,7 +1935,7 @@ export default function ChildProfile() {
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <p className="text-xs text-muted-foreground">
                                     {inc.incidentDatetime
-                                      ? format(new Date(inc.incidentDatetime as unknown as string), "dd/MM/yyyy 'at' h:mm a")
+                                      ? fmtMelb(inc.incidentDatetime as unknown as string, "dd/MM/yyyy 'at' h:mm a")
                                       : safeDate(inc.createdAt, "dd/MM/yyyy")}
                                   </p>
                                   {inc.respondentName && (
@@ -2018,7 +2022,7 @@ export default function ChildProfile() {
                       {doc.documentName ?? doc.documentPath.split("/").pop()}
                     </a>
                     <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">
-                      {format(new Date(doc.uploadedAt), "dd/MM/yyyy")}
+                      {fmtMelb(doc.uploadedAt, "dd/MM/yyyy")}
                     </span>
                     {canDelete && (
                       <button

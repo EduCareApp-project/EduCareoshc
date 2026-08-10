@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Search, FileText, Calendar, User, Clock, MessageCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 import { useState, useMemo } from "react";
 import { usePermissions } from "@/hooks/use-permissions";
 
@@ -122,7 +123,7 @@ export default function ObservationsList() {
                   </div>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground pt-1">
                     <Clock className="h-3 w-3" />
-                    <span>Last edited {format(new Date(obs.updatedAt), "dd/MM/yyyy, h:mm a")}</span>
+                    <span>Last edited {fmtMelb(obs.updatedAt, "dd/MM/yyyy, h:mm a")}</span>
                   </div>
 
                   <div className="flex items-center gap-2">

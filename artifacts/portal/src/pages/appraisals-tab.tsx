@@ -13,6 +13,7 @@ import { Plus, ClipboardList, ChevronRight, Trash2, CalendarDays } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
 import { format, parseISO, isPast } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 import { APPRAISAL_TYPES } from "@/lib/appraisal-constants";
 
 type AppraisalRow = {
@@ -233,7 +234,7 @@ export default function AppraisalsTab({ staffId }: { staffId?: number }) {
                         {isOverdue && " (overdue)"}
                       </div>
                     )}
-                    {a.completedAt && <span className="text-emerald-700">Completed {format(new Date(a.completedAt), "dd/MM/yyyy")}</span>}
+                    {a.completedAt && <span className="text-emerald-700">Completed {fmtMelb(a.completedAt, "dd/MM/yyyy")}</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>

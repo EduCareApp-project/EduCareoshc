@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, CheckCircle2, Save, Send, Plus, Trash2, Info, Sparkles, MessageSquarePlus, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 import {
   PREVIOUS_ACTIONS_QUESTIONS, TRAINING_REVIEW_QUESTIONS,
   buildEmptyStage3, collectCoordAutoActions,
@@ -131,7 +132,7 @@ function GoalRow({
             <div key={note.id} className="flex items-start justify-between gap-2 bg-muted/40 rounded-md px-3 py-2">
               <div>
                 <p className="text-xs">{note.note}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(note.createdAt), "dd/MM/yyyy, h:mm a")}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{fmtMelb(note.createdAt, "dd/MM/yyyy, h:mm a")}</p>
               </div>
               <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => onDeleteNote(note.id)}>
                 <Trash2 className="h-3 w-3 text-destructive" />
@@ -293,7 +294,7 @@ export default function CoordAppraisalStage4() {
         {submitted && appraisal.completedAt && (
           <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1 font-medium">
             <CheckCircle2 className="h-3.5 w-3.5" />
-            Completed {format(new Date(appraisal.completedAt), "dd/MM/yyyy, h:mm a")}
+            Completed {fmtMelb(appraisal.completedAt, "dd/MM/yyyy, h:mm a")}
           </div>
         )}
       </div>
@@ -410,7 +411,7 @@ export default function CoordAppraisalStage4() {
               <input type="checkbox" checked={!!formData.signatures?.employeeSigned} onChange={(e) => setFormData((d) => d ? { ...d, signatures: { ...d.signatures, employeeSigned: e.target.checked, employeeSignedAt: e.target.checked ? new Date().toISOString() : undefined } } : d)} disabled={!!formData.signatures?.employeeSigned} className="h-4 w-4 accent-primary" />
               <span className="text-sm">I agree with this appraisal</span>
             </label>
-            {formData.signatures?.employeeSignedAt && <p className="text-xs text-muted-foreground">Signed {format(new Date(formData.signatures.employeeSignedAt), "dd/MM/yyyy, h:mm a")}</p>}
+            {formData.signatures?.employeeSignedAt && <p className="text-xs text-muted-foreground">Signed {fmtMelb(formData.signatures.employeeSignedAt, "dd/MM/yyyy, h:mm a")}</p>}
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-medium text-primary uppercase tracking-wide">Assessor Signature</Label>
@@ -419,7 +420,7 @@ export default function CoordAppraisalStage4() {
               <input type="checkbox" checked={!!formData.signatures?.reviewerSigned} onChange={(e) => setFormData((d) => d ? { ...d, signatures: { ...d.signatures, reviewerSigned: e.target.checked, reviewerSignedAt: e.target.checked ? new Date().toISOString() : undefined } } : d)} disabled={submitted} className="h-4 w-4 accent-primary" />
               <span className="text-sm">I confirm this appraisal</span>
             </label>
-            {formData.signatures?.reviewerSignedAt && <p className="text-xs text-muted-foreground">Signed {format(new Date(formData.signatures.reviewerSignedAt), "dd/MM/yyyy, h:mm a")}</p>}
+            {formData.signatures?.reviewerSignedAt && <p className="text-xs text-muted-foreground">Signed {fmtMelb(formData.signatures.reviewerSignedAt, "dd/MM/yyyy, h:mm a")}</p>}
           </div>
         </div>
       </div>

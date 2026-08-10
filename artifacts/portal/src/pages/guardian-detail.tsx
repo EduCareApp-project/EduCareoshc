@@ -42,6 +42,7 @@ import {
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 import { usePermissions } from "@/hooks/use-permissions";
 
 interface ApprovedPickup { id: string; fullName: string; phone: string; relationship: string; }
@@ -431,7 +432,7 @@ export default function GuardianDetail() {
             <div className="flex items-center gap-2 text-sm">
               <span className="font-medium">Last login:</span>
               <span className="text-muted-foreground">
-                {format(new Date(loginLogs[0].loggedInAt), "dd/MM/yyyy 'at' h:mm a")}
+                {fmtMelb(loginLogs[0].loggedInAt, "dd/MM/yyyy 'at' h:mm a")}
               </span>
             </div>
 
@@ -454,7 +455,7 @@ export default function GuardianDetail() {
                       <div key={log.id} className="flex items-center gap-2 px-3 py-2 text-sm">
                         <LogIn className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <span className="text-muted-foreground">
-                          {format(new Date(log.loggedInAt), "dd/MM/yyyy 'at' h:mm a")}
+                          {fmtMelb(log.loggedInAt, "dd/MM/yyyy 'at' h:mm a")}
                         </span>
                       </div>
                     ))}
@@ -500,7 +501,7 @@ export default function GuardianDetail() {
                 <CardHeader className="pb-2 pt-4 px-4">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div>
-                      <CardTitle className="text-sm">{format(new Date(n.sentAt), "dd/MM/yyyy 'at' h:mm a")}</CardTitle>
+                      <CardTitle className="text-sm">{fmtMelb(n.sentAt, "dd/MM/yyyy 'at' h:mm a")}</CardTitle>
                       {n.childName && (
                         <p className="text-xs text-muted-foreground mt-0.5">
                           Re: <Link href={`/children/${n.childId}`} className="hover:underline text-foreground">{n.childName}</Link>

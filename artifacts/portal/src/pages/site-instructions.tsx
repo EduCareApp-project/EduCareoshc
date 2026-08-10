@@ -18,6 +18,7 @@ import {
   AtSign, Monitor, FileText, Download,
 } from "lucide-react";
 import { format } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type QuickRef = {
@@ -797,7 +798,7 @@ export default function SiteInstructions() {
           {instructions?.updatedAt && (
             <p className="text-xs text-muted-foreground text-right pb-2">
               <Clock className="h-3 w-3 inline mr-1" />
-              Last updated {format(new Date(instructions.updatedAt), "dd/MM/yyyy 'at' h:mm a")}
+              Last updated {fmtMelb(instructions.updatedAt, "dd/MM/yyyy 'at' h:mm a")}
             </p>
           )}
         </>

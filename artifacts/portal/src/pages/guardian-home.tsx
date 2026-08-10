@@ -19,6 +19,7 @@ import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   addMonths, subMonths, format, addDays, isAfter, parseISO,
 } from "date-fns";
+import { melbourneDateStr, fmtMelb } from "@/lib/timezone";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Child = {
@@ -94,7 +95,7 @@ function getWeeksInMonth(month: Date): Date[][] {
   return weeks;
 }
 
-const TODAY = format(new Date(), "yyyy-MM-dd");
+const TODAY = melbourneDateStr();
 const SHORT_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
 type DayKey = "mon" | "tue" | "wed" | "thu" | "fri";
@@ -521,7 +522,7 @@ export default function GuardianHome() {
         <p className="text-sm text-white/70 mb-1">Welcome back</p>
         <h1 className="text-2xl font-bold mb-0.5">{user?.name ?? "Guardian"}</h1>
         <p className="text-white/70 text-sm">
-          {format(new Date(), "EEEE, dd/MM/yyyy")}
+          {fmtMelb(new Date(), "EEEE, dd/MM/yyyy")}
         </p>
       </div>
 
@@ -761,7 +762,7 @@ export default function GuardianHome() {
                 {selectedNotice?.priority}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                {selectedNotice && format(new Date(selectedNotice.createdAt), "dd/MM/yyyy 'at' h:mm a")}
+                {selectedNotice && fmtMelb(selectedNotice.createdAt, "dd/MM/yyyy 'at' h:mm a")}
               </span>
             </div>
             <DialogTitle className="text-lg leading-snug">{selectedNotice?.title}</DialogTitle>

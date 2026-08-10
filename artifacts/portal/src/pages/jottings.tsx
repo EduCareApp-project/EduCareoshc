@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, StickyNote, CheckCheck, Pencil, X, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Jottings() {
@@ -239,7 +240,7 @@ export default function Jottings() {
               ) : (
                 <div className="flex items-start gap-4">
                   <span className="shrink-0 text-xs text-muted-foreground w-36 pt-0.5">
-                    {format(new Date(j.createdAt), "dd/MM/yyyy h:mm a")}
+                    {fmtMelb(j.createdAt, "dd/MM/yyyy h:mm a")}
                   </span>
                   <span className="shrink-0 text-xs font-medium text-foreground/70 w-32 pt-0.5 truncate">
                     {j.childName ?? <span className="text-muted-foreground italic">No child</span>}
@@ -296,7 +297,7 @@ export default function Jottings() {
                   <CardContent className="py-2.5">
                     <div className="flex items-start gap-4">
                       <span className="shrink-0 text-xs text-muted-foreground w-36 pt-0.5">
-                        {format(new Date(j.createdAt), "dd/MM/yyyy h:mm a")}
+                        {fmtMelb(j.createdAt, "dd/MM/yyyy h:mm a")}
                       </span>
                       <span className="shrink-0 text-xs font-medium text-foreground/70 w-32 pt-0.5 truncate">
                         {j.childName ?? <span className="text-muted-foreground italic">No child</span>}
@@ -305,7 +306,7 @@ export default function Jottings() {
                       <div className="flex items-center gap-1 shrink-0">
                         {j.archivedAt && (
                           <span className="text-xs text-muted-foreground mr-1">
-                            Actioned {format(new Date(j.archivedAt), "dd/MM/yy")}
+                            Actioned {fmtMelb(j.archivedAt, "dd/MM/yy")}
                           </span>
                         )}
                         {canDelete && (

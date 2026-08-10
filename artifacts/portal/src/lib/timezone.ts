@@ -1,3 +1,5 @@
+import { format } from "date-fns";
+
 const TZ = "Australia/Melbourne";
 
 /**
@@ -56,6 +58,15 @@ export function toMelbourneDate(input: Date | string): Date {
   parts.forEach(({ type, value }) => { p[type] = value; });
   const hour = p.hour === "24" ? "00" : p.hour;
   return new Date(`${p.year}-${p.month}-${p.day}T${hour}:${p.minute}:${p.second}`);
+}
+
+/**
+ * Formats a UTC timestamp (Date or ISO string) using Melbourne local time.
+ * Use this everywhere instead of format(new Date(utcStr), ...) to guarantee
+ * Melbourne-correct display regardless of where the browser is running.
+ */
+export function fmtMelb(input: Date | string, formatStr: string): string {
+  return format(toMelbourneDate(input), formatStr);
 }
 
 /** Returns the current date in Melbourne as a "yyyy-MM-dd" string, suitable for <input type="date"> */

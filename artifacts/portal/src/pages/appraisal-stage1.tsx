@@ -9,6 +9,7 @@ import { ArrowLeft, CheckCircle2, Save, Send, Lock, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
 import { format } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 import {
   COMPETENCIES, POSITION_REVIEW, PERFORMANCE_DEV_QUESTIONS, RATING_SCALE,
   buildEmptyStage1,
@@ -51,7 +52,7 @@ function SubmittedBadge({ at }: { at: string }) {
   return (
     <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1 font-medium">
       <CheckCircle2 className="h-3.5 w-3.5" />
-      Submitted {format(new Date(at), "dd/MM/yyyy, h:mm a")}
+      Submitted {fmtMelb(at, "dd/MM/yyyy, h:mm a")}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Skeleton } from "@/components/ui/skeleton";
 import { Newspaper, Bell, FileText, Paperclip, Building2 } from "lucide-react";
 import { format } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 import { RichTextView } from "@/components/rich-text-editor";
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -201,7 +202,7 @@ export default function GuardianNotices() {
                   )}
                 </div>
                 <div className="mt-4 pt-2 border-t border-white/25 flex items-center justify-between gap-2">
-                  <span className="text-xs text-white/60">{format(new Date(notice.createdAt), "MMM d, h:mm a")}</span>
+                  <span className="text-xs text-white/60">{fmtMelb(notice.createdAt, "MMM d, h:mm a")}</span>
                   {notice.siteId != null && (
                     <span className="flex items-center gap-1 text-[11px] text-white/70 bg-white/15 rounded px-1.5 py-0.5 shrink-0">
                       <Building2 className="h-3 w-3" />
@@ -257,7 +258,7 @@ export default function GuardianNotices() {
                       <h3 className="font-semibold text-base mb-1">{post.title}</h3>
                       {post.publishedAt && (
                         <p className="text-xs text-muted-foreground mb-2">
-                          {format(new Date(post.publishedAt), "dd/MM/yyyy")}
+                          {fmtMelb(post.publishedAt, "dd/MM/yyyy")}
                         </p>
                       )}
                       {post.description && (
@@ -283,7 +284,7 @@ export default function GuardianNotices() {
                 {selectedNotice?.priority}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                {selectedNotice && format(new Date(selectedNotice.createdAt), "dd/MM/yyyy 'at' h:mm a")}
+                {selectedNotice && fmtMelb(selectedNotice.createdAt, "dd/MM/yyyy 'at' h:mm a")}
               </span>
             </div>
             <DialogTitle className="text-lg leading-snug">{selectedNotice?.title}</DialogTitle>

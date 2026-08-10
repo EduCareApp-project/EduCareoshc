@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ArrowLeft, CheckCircle2, Circle, Clock, Users, User, UserCheck, Shield, Pencil, Trash2, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 import { useState, useEffect } from "react";
 
 type Appraisal = {
@@ -388,7 +389,7 @@ export default function AppraisalDetail() {
                               : <Circle className="h-3.5 w-3.5 text-muted-foreground/40 flex-shrink-0" />
                             }
                             <span className={d.done ? "text-foreground" : "text-muted-foreground"}>{d.label}</span>
-                            {d.done && d.at && <span className="text-muted-foreground/60">— {format(new Date(d.at), "dd/MM/yyyy, h:mm a")}</span>}
+                            {d.done && d.at && <span className="text-muted-foreground/60">— {fmtMelb(d.at, "dd/MM/yyyy, h:mm a")}</span>}
                           </div>
                         ))}
                       </div>
@@ -403,7 +404,7 @@ export default function AppraisalDetail() {
 
       {appraisal.status === "completed" && appraisal.completedAt && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-sm text-emerald-800 font-medium text-center">
-          ✓ Appraisal completed on {format(new Date(appraisal.completedAt), "dd/MM/yyyy")}
+          ✓ Appraisal completed on {fmtMelb(appraisal.completedAt, "dd/MM/yyyy")}
         </div>
       )}
     </div>

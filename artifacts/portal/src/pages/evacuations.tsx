@@ -19,7 +19,7 @@ import {
 import { format, differenceInDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@workspace/object-storage-web";
-import { melbourneDateStr } from "@/lib/timezone";
+import { melbourneDateStr, fmtMelb, toMelbourneDate } from "@/lib/timezone";
 
 const DRILL_LABELS: Record<string, string> = {
   evacuation: "Evacuation",
@@ -415,7 +415,7 @@ export default function Evacuations() {
           </p>
           <p className="text-sm opacity-80">
             {mostRecent
-              ? `Last conducted: ${format(new Date(mostRecent.conductedAt), "dd/MM/yyyy")}${mostRecent.siteName ? ` at ${mostRecent.siteName}` : ""}`
+              ? `Last conducted: ${fmtMelb(mostRecent.conductedAt, "dd/MM/yyyy")}${mostRecent.siteName ? ` at ${mostRecent.siteName}` : ""}`
               : "Log your first drill to start tracking"}
             {nextDue ? ` • Records expire: ${format(nextDue, "dd/MM/yyyy")}` : ""}
           </p>
@@ -513,8 +513,8 @@ function ArchivedDrillRow({ evac }: { evac: EvacRecord }) {
       <span className="text-muted-foreground/40 shrink-0 ml-auto">·</span>
       <span className="text-muted-foreground shrink-0 text-xs">
         {evac.archivedAt
-          ? `Archived ${format(new Date(evac.archivedAt), "dd/MM/yyyy")}`
-          : `Expired ${evac.nextDueAt ? format(new Date(evac.nextDueAt), "dd/MM/yyyy") : "—"}`}
+          ? `Archived ${fmtMelb(evac.archivedAt, "dd/MM/yyyy")}`
+          : `Expired ${evac.nextDueAt ? fmtMelb(evac.nextDueAt, "dd/MM/yyyy") : "—"}`}
       </span>
       {canDelete && (
         <AlertDialog>
@@ -573,8 +573,8 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
   });
   const [editOpen, setEditOpen] = useState(false);
 
-  const conductedDate = evac.conductedAt ? format(new Date(evac.conductedAt), "yyyy-MM-dd") : melbourneDateStr();
-  const conductedTime = evac.conductedAt ? format(new Date(evac.conductedAt), "HH:mm") : "09:00";
+  const conductedDate = evac.conductedAt ? fmtMelb(evac.conductedAt, "yyyy-MM-dd") : melbourneDateStr();
+  const conductedTime = evac.conductedAt ? fmtMelb(evac.conductedAt, "HH:mm") : "09:00";
 
   const [form, setForm] = useState({
     drillType: evac.drillType ?? "evacuation",
@@ -663,7 +663,7 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {format(new Date(evac.conductedAt), "dd/MM/yyyy 'at' h:mm a")}
+              {fmtMelb(evac.conductedAt, "dd/MM/yyyy 'at' h:mm a")}
               {evac.conductedBy && ` • ${evac.conductedBy}`}
             </p>
           </div>

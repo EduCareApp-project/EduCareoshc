@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO, startOfWeek, addDays, differenceInCalendarDays } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -355,7 +356,7 @@ function NoticeBoard({ canManage, audience, siteId: externalSiteId }: { canManag
                   )}
                 </div>
                 <div className="mt-4 pt-2 border-t border-white/25 flex items-center justify-between gap-2">
-                  <span className="text-xs text-white/60">{format(new Date(notice.createdAt), "MMM d, h:mm a")}</span>
+                  <span className="text-xs text-white/60">{fmtMelb(notice.createdAt, "MMM d, h:mm a")}</span>
                   {notice.siteId != null && (
                     <span className="flex items-center gap-1 text-[11px] text-white/70 bg-white/15 rounded px-1.5 py-0.5 shrink-0">
                       <Building2 className="h-3 w-3" />
@@ -474,7 +475,7 @@ function NoticeBoard({ canManage, audience, siteId: externalSiteId }: { canManag
                 {selectedNotice?.priority}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                {selectedNotice && format(new Date(selectedNotice.createdAt), "dd/MM/yyyy 'at' h:mm a")}
+                {selectedNotice && fmtMelb(selectedNotice.createdAt, "dd/MM/yyyy 'at' h:mm a")}
               </span>
               {selectedNotice?.siteId != null && (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5">
@@ -1191,7 +1192,7 @@ function LeadershipDashboard() {
                   {activity.map((item) => (
                     <tr key={item.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap align-top text-xs">
-                        {format(new Date(item.timestamp), "d MMM, h:mm a")}
+                        {fmtMelb(item.timestamp, "d MMM, h:mm a")}
                       </td>
                       <td className="px-4 py-3 align-top whitespace-nowrap">
                         <ActivityTypeBadge type={item.type} />

@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, CheckCircle2, Save, Send, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 import {
   UPWARD_APPRAISAL_SECTIONS, LIKERT_OPTIONS,
   buildEmptyStage2,
@@ -125,7 +126,7 @@ export default function AppraisalStage2() {
         {submitted && appraisal.stage2SubmittedAt && (
           <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1 font-medium">
             <CheckCircle2 className="h-3.5 w-3.5" />
-            Submitted {format(new Date(appraisal.stage2SubmittedAt), "dd/MM/yyyy, h:mm a")}
+            Submitted {fmtMelb(appraisal.stage2SubmittedAt, "dd/MM/yyyy, h:mm a")}
           </div>
         )}
       </div>

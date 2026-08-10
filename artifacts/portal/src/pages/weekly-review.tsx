@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { format, startOfWeek, subWeeks } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 import {
   useListWeeklyReviews,
   useCreateWeeklyReview,
@@ -392,7 +393,7 @@ export default function WeeklyReview() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3.5 w-3.5" />
-                        {format(new Date(r.completedAt), "d MMM yyyy")}
+                        {fmtMelb(r.completedAt, "d MMM yyyy")}
                       </span>
                     </div>
                     <div className="flex gap-4 mt-2 text-xs">

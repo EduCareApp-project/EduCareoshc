@@ -92,6 +92,7 @@ export const MTOP_OUTCOMES = [
     sub: [
       { id: "3.1", desc: "Children become strong in their social, emotional and mental health" },
       { id: "3.2", desc: "Children take increasing responsibility for their own health and physical wellbeing" },
+      { id: "3.3", desc: "Children are aware of and develop strategies to support their physical and emotional wellbeing" },
     ],
   },
   {

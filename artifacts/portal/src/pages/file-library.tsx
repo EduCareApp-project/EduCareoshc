@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FolderOpen, Plus, Upload, Paperclip, Trash2, Settings, ArrowLeft, Pencil, Check, X, GripVertical } from "lucide-react";
 import { format } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@workspace/object-storage-web";
 
@@ -429,7 +430,7 @@ function FileRow({
         >
           {file.name}
         </a>
-        <p className="text-xs text-muted-foreground mt-0.5">{file.documentName} · Added {format(new Date(file.createdAt), "dd/MM/yyyy")}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{file.documentName} · Added {fmtMelb(file.createdAt, "dd/MM/yyyy")}</p>
       </div>
       <AlertDialog>
         <AlertDialogTrigger asChild>

@@ -8,6 +8,7 @@ import {
   type CellOutcomes,
 } from "@/components/read-only-plan-view";
 import { format } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 
 export default function WeeklyPlanPrint() {
   const search = useSearch();
@@ -90,7 +91,7 @@ export default function WeeklyPlanPrint() {
             <img src="/educare-hands.png" alt="EduCare" className="h-14 w-14 object-contain" />
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-widest font-medium">EduCare</p>
-              <p className="text-sm text-gray-400">Printed {format(new Date(), "dd/MM/yyyy")}</p>
+              <p className="text-sm text-gray-400">Printed {fmtMelb(new Date(), "dd/MM/yyyy")}</p>
             </div>
           </div>
           {siteName && (
@@ -161,7 +162,7 @@ export default function WeeklyPlanPrint() {
         {/* Footer */}
         <div className="mt-6 pt-4 border-t border-gray-200 hidden print:flex items-center justify-between text-[10px] text-gray-400">
           <span>EduCare — Weekly Plan</span>
-          <span>Printed {format(new Date(), "dd/MM/yyyy 'at' h:mm a")}</span>
+          <span>Printed {fmtMelb(new Date(), "dd/MM/yyyy 'at' h:mm a")}</span>
         </div>
       </div>
     </>

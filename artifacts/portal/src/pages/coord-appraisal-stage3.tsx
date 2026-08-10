@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, CheckCircle2, Save, Send, Lock, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 import { usePermissions } from "@/hooks/use-permissions";
 import {
   COORD_LEADERSHIP_CAPABILITIES, RATING_SCALE,
@@ -152,7 +153,7 @@ export default function CoordAppraisalStage3() {
         {submitted && appraisal.coordLeadershipSubmittedAt && (
           <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1 font-medium">
             <CheckCircle2 className="h-3.5 w-3.5" />
-            Submitted {format(new Date(appraisal.coordLeadershipSubmittedAt), "dd/MM/yyyy, h:mm a")}
+            Submitted {fmtMelb(appraisal.coordLeadershipSubmittedAt, "dd/MM/yyyy, h:mm a")}
           </div>
         )}
       </div>

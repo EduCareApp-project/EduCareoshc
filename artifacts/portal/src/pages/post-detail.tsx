@@ -16,6 +16,7 @@ import { ArrowLeft, Trash2, Pencil, User, CalendarDays, GraduationCap, Building2
 import { bubbleClassForSub, dotClassForSub } from "@/components/read-only-plan-view";
 import { usePermissions } from "@/hooks/use-permissions";
 import { format } from "date-fns";
+import { fmtMelb } from "@/lib/timezone";
 import { useToast } from "@/hooks/use-toast";
 
 function imageUrl(path: string) {
@@ -136,7 +137,7 @@ function CommentSection({
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">{c.authorName}</span>
                     <span className="text-xs text-muted-foreground">
-                      {format(new Date(c.createdAt), "dd/MM/yyyy 'at' h:mm a")}
+                      {fmtMelb(c.createdAt, "dd/MM/yyyy 'at' h:mm a")}
                     </span>
                   </div>
                   <Button
@@ -395,7 +396,7 @@ export default function PostDetail() {
         </div>
 
         <p className="text-xs text-muted-foreground border-t pt-4">
-          Posted {format(new Date(post.createdAt), "dd/MM/yyyy 'at' h:mm a")}
+          Posted {fmtMelb(post.createdAt, "dd/MM/yyyy 'at' h:mm a")}
         </p>
 
         <CommentSection

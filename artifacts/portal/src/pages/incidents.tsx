@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { melbourneDateTimeStr } from "@/lib/timezone";
+import { melbourneDateTimeStr, melbourneLocalToUTCISO, toMelbourneDate } from "@/lib/timezone";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -44,7 +44,7 @@ function statusBadge(inc: any) {
 
 function fmt(dt: string | null | undefined) {
   if (!dt) return "—";
-  try { return format(new Date(dt), "dd/MM/yyyy, h:mm a"); } catch { return dt; }
+  try { return format(toMelbourneDate(dt), "dd/MM/yyyy, h:mm a"); } catch { return String(dt); }
 }
 
 function fmtDate(d: string | null | undefined) {
@@ -131,7 +131,7 @@ function LogIncidentDialog({ open, onOpenChange }: { open: boolean; onOpenChange
     createMutation.mutate({
       data: {
         childId: parseInt(form.childId),
-        incidentDatetime: form.incidentDatetime || undefined,
+        incidentDatetime: form.incidentDatetime ? melbourneLocalToUTCISO(form.incidentDatetime) : undefined,
         siteId: form.siteId !== "none" ? parseInt(form.siteId) : null,
         respondentId: form.respondentId !== "none" ? parseInt(form.respondentId) : null,
         description: form.description,
@@ -268,7 +268,7 @@ function IncidentSubmitterForm({ incident, onDone }: { incident: any; onDone: ()
     updateMutation.mutate({
       id: incident.id,
       data: {
-        incidentDatetime: form.incidentDatetime || null,
+        incidentDatetime: form.incidentDatetime ? melbourneLocalToUTCISO(form.incidentDatetime) : null,
         siteId: form.siteId !== "none" ? parseInt(form.siteId) : null,
         childId: parseInt(form.childId),
         respondentId: form.respondentId !== "none" ? parseInt(form.respondentId) : null,
@@ -359,7 +359,7 @@ function HeadOfficeForm({ incident, onDone }: { incident: any; onDone: () => voi
       id: incident.id,
       data: {
         reportPersonId: reportPersonId !== "none" ? parseInt(reportPersonId) : null,
-        reportMadeAt: reportMadeAt || null,
+        reportMadeAt: reportMadeAt ? melbourneLocalToUTCISO(reportMadeAt) : null,
       } as any,
     }, {
       onSuccess: () => {
@@ -783,7 +783,7 @@ export default function Incidents() {
               <SheetHeader className="mb-4">
                 <SheetTitle>{selectedIncident.childName ?? "Incident"}</SheetTitle>
                 <p className="text-sm text-muted-foreground" suppressHydrationWarning>
-                  Logged {format(new Date(selectedIncident.createdAt), "dd/MM/yyyy 'at' h:mm a")}
+                  Logged {format(toMelbourneDate(selectedIncident.createdAt), "dd/MM/yyyy 'at' h:mm a")}
                 </p>
               </SheetHeader>
               <IncidentDetail key={selectedIncident.id} incident={selectedIncident} onDelete={() => setSelected(null)} />

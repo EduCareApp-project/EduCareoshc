@@ -192,7 +192,7 @@ export default function ReportsLearning() {
 
   const { data: sites } = useListSites();
   const { data: children, isLoading: childrenLoading } = useListChildren();
-  const { data: posts, isLoading: postsLoading } = useListPosts();
+  const { data: posts, isLoading: postsLoading } = useListPosts({ params: { limit: 500 } });
   const { data: jottings, isLoading: jottingsLoading } = useListJottings({ includeArchived: true });
   const { data: observations, isLoading: observationsLoading } = useListObservations();
   const { data: planning, isLoading: planningLoading } = useListPlanningExperiences();

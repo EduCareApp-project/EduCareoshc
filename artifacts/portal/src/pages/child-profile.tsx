@@ -1056,7 +1056,7 @@ export default function ChildProfile() {
   const { data: confidentialNotes, isLoading: confidentialLoading } = useGetChildConfidentialNotes(id, { query: { queryKey: getGetChildConfidentialNotesQueryKey(id), enabled: !!id } });
   const { data: allJottings } = useListJottings({ includeArchived: true });
   const { data: allPlanningExperiences } = useListPlanningExperiences();
-  const { data: allPosts } = useListPosts();
+  const { data: allPosts } = useListPosts({ params: { childId: id } });
   const { data: allIncidents } = useListIncidents({ query: { queryKey: getListIncidentsQueryKey() } });
   const updateMutation = useUpdateChild();
   const deleteMutation = useDeleteChild();

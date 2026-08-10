@@ -1494,7 +1494,10 @@ function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
 
 // ─── Guardian ────────────────────────────────────────────────────────────────
 function GuardianDashboard({ siteFilter = "__all__" }: { siteFilter?: string }) {
-  const { data: posts, isLoading: loadingPosts } = useListPosts();
+  const siteId = siteFilter !== "__all__" ? parseInt(siteFilter) : undefined;
+  const { data: posts, isLoading: loadingPosts } = useListPosts({
+    params: { limit: 10, ...(siteId !== undefined ? { siteId } : {}) },
+  });
   const { data: planning, isLoading: loadingPlanning } = useListPlanningExperiences();
   const { data: sites } = useListSites();
 

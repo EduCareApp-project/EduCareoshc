@@ -2307,6 +2307,8 @@ export const listPostsQueryOffsetMin = 0;
 export const ListPostsQueryParams = zod.object({
   limit: zod.coerce.number().int().positive().optional(),
   offset: zod.coerce.number().int().min(listPostsQueryOffsetMin).optional(),
+  childId: zod.coerce.number().int().positive().optional(),
+  siteId: zod.coerce.number().int().positive().optional(),
 });
 export type ListPostsQueryParams = zod.infer<typeof ListPostsQueryParams>;
 

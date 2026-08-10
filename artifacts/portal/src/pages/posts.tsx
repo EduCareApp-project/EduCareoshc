@@ -44,9 +44,21 @@ export default function Posts() {
   const [accumulatedPosts, setAccumulatedPosts] = useState<Post[]>([]);
   const [hasMore, setHasMore] = useState(true);
 
+  // Compute server-side filter params
+  const serverSiteId = isEducatorRole && ownSiteId
+    ? ownSiteId
+    : siteFilter !== "all"
+      ? parseInt(siteFilter)
+      : undefined;
+
   // Server-side pagination fetch
   const { data: pageData, isLoading, isFetching } = useListPosts({
-    params: { limit: PAGE_SIZE, offset },
+    params: {
+      limit: PAGE_SIZE,
+      offset,
+      ...(filterChildId ? { childId: filterChildId } : {}),
+      ...(serverSiteId !== undefined ? { siteId: serverSiteId } : {}),
+    },
   });
 
   // Accumulate pages as they arrive
@@ -69,6 +81,9 @@ export default function Posts() {
 
   function setSiteFilterAndReset(v: string) {
     setSiteFilter(v);
+    setOffset(0);
+    setAccumulatedPosts([]);
+    setHasMore(true);
   }
 
   const showSiteFilter = !isEducatorRole && (sites ?? []).length > 1;
@@ -81,14 +96,8 @@ export default function Posts() {
     ? `${filteredChild.firstName} ${filteredChild.lastName}`
     : null;
 
-  const displayedPosts = (filterChildId
-    ? accumulatedPosts.filter((p) => (p.childIds ?? []).includes(filterChildId))
-    : accumulatedPosts
-  ).filter((p) => {
-    if (isEducatorRole && ownSiteId) return p.siteId === ownSiteId;
-    if (!isEducatorRole && siteFilter !== "all") return p.siteId === parseInt(siteFilter);
-    return true;
-  });
+  // Posts are already filtered server-side; display them as-is
+  const displayedPosts = accumulatedPosts;
 
   const likeMutation = useLikePost();
   const unlikeMutation = useUnlikePost();

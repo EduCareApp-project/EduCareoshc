@@ -27,6 +27,7 @@ const { postsChain, subChain, mockDb, setPostsRows } = vi.hoisted(() => {
   // cannot accidentally clear them.
   const postsChain: Record<string, unknown> = {
     from:    vi.fn(),
+    where:   vi.fn(),
     orderBy: vi.fn(),
     limit:   vi.fn(),
     offset:  vi.fn(),
@@ -38,6 +39,7 @@ const { postsChain, subChain, mockDb, setPostsRows } = vi.hoisted(() => {
     },
   };
   postsChain.from    = vi.fn().mockReturnValue(postsChain);
+  postsChain.where   = vi.fn().mockReturnValue(postsChain);
   postsChain.orderBy = vi.fn().mockReturnValue(postsChain);
   postsChain.limit   = vi.fn().mockReturnValue(postsChain);
   postsChain.offset  = vi.fn().mockReturnValue(postsChain);
@@ -161,6 +163,7 @@ beforeEach(() => {
 
   // Re-wire all chain methods whose mockReturnValue state is cleared.
   (postsChain.from    as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
+  (postsChain.where   as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
   (postsChain.orderBy as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
   (postsChain.limit   as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
   (postsChain.offset  as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
@@ -309,5 +312,71 @@ describe("GET /api/posts – pagination", () => {
 
     // Restore original then for subsequent tests.
     (postsChain as any).then = originalThen;
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests — GET /api/posts – server-side filters (childId, siteId)
+// ---------------------------------------------------------------------------
+
+describe("GET /api/posts – server-side filters", () => {
+  it("with childId calls .where() on the query before limit/offset", async () => {
+    setPostsRows(makePostRows(5));
+    const { app } = buildApp();
+
+    const res = await request(app).get("/api/posts?childId=42&limit=10&offset=0");
+
+    expect(res.status).toBe(200);
+    // where() must be called on the postsChain (DB-level filter applied before pagination)
+    expect(postsChain.where).toHaveBeenCalled();
+    // limit and offset are applied after the where (still paginating over filtered rows)
+    expect(postsChain.limit).toHaveBeenCalledWith(10);
+    expect(postsChain.offset).toHaveBeenCalledWith(0);
+  });
+
+  it("with siteId calls .where() on the query before limit/offset", async () => {
+    setPostsRows(makePostRows(3));
+    const { app } = buildApp();
+
+    const res = await request(app).get("/api/posts?siteId=7&limit=10&offset=0");
+
+    expect(res.status).toBe(200);
+    expect(postsChain.where).toHaveBeenCalled();
+    expect(postsChain.limit).toHaveBeenCalledWith(10);
+  });
+
+  it("with both childId and siteId calls .where() combining both conditions", async () => {
+    setPostsRows(makePostRows(2));
+    const { app } = buildApp();
+
+    const res = await request(app).get("/api/posts?childId=3&siteId=5&limit=10&offset=0");
+
+    expect(res.status).toBe(200);
+    // Both filters combined — where() is called once with and(...) wrapping two predicates
+    expect(postsChain.where).toHaveBeenCalledTimes(1);
+  });
+
+  it("without filters does NOT call .where() on the posts query", async () => {
+    setPostsRows(makePostRows(5));
+    const { app } = buildApp();
+
+    const res = await request(app).get("/api/posts?limit=10&offset=0");
+
+    expect(res.status).toBe(200);
+    expect(postsChain.where).not.toHaveBeenCalled();
+  });
+
+  it("returns all DB rows when the DB returns a first page with no matches (empty array)", async () => {
+    // Simulates the case where the DB correctly applied the filter and found nothing
+    // on page 1 — the route must return [] and NOT apply an extra client-side filter.
+    setPostsRows([]);
+    const { app } = buildApp();
+
+    const res = await request(app).get("/api/posts?childId=99&limit=10&offset=0");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+    // where() still called — the DB query ran with the filter
+    expect(postsChain.where).toHaveBeenCalled();
   });
 });

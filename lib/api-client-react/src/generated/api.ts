@@ -10176,6 +10176,8 @@ export const getListPostsUrl = (params?: ListPostsParams) => {
   const search = new URLSearchParams();
   if (params?.limit !== undefined) search.set("limit", String(params.limit));
   if (params?.offset !== undefined) search.set("offset", String(params.offset));
+  if (params?.childId !== undefined) search.set("childId", String(params.childId));
+  if (params?.siteId !== undefined) search.set("siteId", String(params.siteId));
   const qs = search.toString();
   return qs ? `/api/posts?${qs}` : `/api/posts`;
 };

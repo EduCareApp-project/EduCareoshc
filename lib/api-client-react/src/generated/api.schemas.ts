@@ -2332,4 +2332,6 @@ export interface GuardianLoginLog {
 export type ListPostsParams = {
   limit?: number;
   offset?: number;
+  childId?: number;
+  siteId?: number;
 };

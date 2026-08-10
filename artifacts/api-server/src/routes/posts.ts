@@ -89,10 +89,19 @@ router.get("/posts", async (req, res): Promise<void> => {
       res.status(400).json({ error: "Invalid pagination parameters" });
       return;
     }
-    const { limit, offset } = parsed.data;
+    const { limit, offset, childId, siteId } = parsed.data;
 
     const likerId = sessionLikerId(req);
-    const baseQuery = db.select().from(postsTable).orderBy(desc(postsTable.createdAt));
+
+    // Build WHERE conditions applied before limit/offset so pagination is over filtered rows
+    const conditions = [];
+    if (siteId !== undefined) conditions.push(eq(postsTable.siteId, siteId));
+    if (childId !== undefined) conditions.push(sql`${postsTable.childIds} @> ARRAY[${childId}]::integer[]`);
+
+    const baseQuery = conditions.length > 0
+      ? db.select().from(postsTable).where(and(...conditions)).orderBy(desc(postsTable.createdAt))
+      : db.select().from(postsTable).orderBy(desc(postsTable.createdAt));
+
     const rows = await (
       limit !== undefined && offset !== undefined ? baseQuery.limit(limit).offset(offset) :
       limit !== undefined ? baseQuery.limit(limit) :

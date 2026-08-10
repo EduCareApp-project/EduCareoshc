@@ -1,0 +1,313 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import request from "supertest";
+import express from "express";
+import pinoHttp from "pino-http";
+import pino from "pino";
+import { Writable } from "node:stream";
+
+// ---------------------------------------------------------------------------
+// Hoist mocks — must run before any module imports.
+//
+// Design:
+//   • `postsChain` — the "main" query builder for the paginated posts SELECT.
+//     It is a proper thenable (its `then` delegates to a mutable `_postsRows`
+//     variable) so `await postsChain` resolves correctly from any code path.
+//   • `subChain`   — all follow-up SELECTs (likes, children, staff, sites).
+//     Its `.where()` call is the async leaf and resolves to `[]` by default.
+//   • `setPostsRows(rows)` — lets each test control what the main query returns
+//     without replacing the `then` mock function.
+// ---------------------------------------------------------------------------
+
+const { postsChain, subChain, mockDb, setPostsRows } = vi.hoisted(() => {
+  let _postsRows: unknown[] = [];
+
+  // Proper thenable: `then` and `catch` delegate to a live Promise so that
+  // `await postsChain` always uses the current `_postsRows` value.
+  // We intentionally NOT use vi.fn() for then/catch so vi.clearAllMocks()
+  // cannot accidentally clear them.
+  const postsChain: Record<string, unknown> = {
+    from:    vi.fn(),
+    orderBy: vi.fn(),
+    limit:   vi.fn(),
+    offset:  vi.fn(),
+    then(resolve: (v: unknown) => void, reject: (e: unknown) => void) {
+      return Promise.resolve(_postsRows).then(resolve, reject);
+    },
+    catch(onRej: (e: unknown) => void) {
+      return Promise.resolve(_postsRows).catch(onRej);
+    },
+  };
+  postsChain.from    = vi.fn().mockReturnValue(postsChain);
+  postsChain.orderBy = vi.fn().mockReturnValue(postsChain);
+  postsChain.limit   = vi.fn().mockReturnValue(postsChain);
+  postsChain.offset  = vi.fn().mockReturnValue(postsChain);
+
+  // Sub-query chain: `where()` is the async leaf — resolves to `[]` by default.
+  const subChain: Record<string, unknown> = {};
+  (subChain as any).from    = vi.fn().mockReturnValue(subChain);
+  (subChain as any).where   = vi.fn().mockResolvedValue([]);
+  (subChain as any).orderBy = vi.fn().mockReturnValue(subChain);
+
+  const mockDb = { select: vi.fn() };
+
+  function setPostsRows(rows: unknown[]) { _postsRows = rows; }
+
+  return { postsChain, subChain, mockDb, setPostsRows };
+});
+
+vi.mock("@workspace/db", () => ({
+  db: mockDb,
+  postsTable:          { id: "id", createdAt: "createdAt", staffId: "staffId", siteId: "siteId", childIds: "childIds" },
+  postCommentsTable:   { id: "id", postId: "postId", createdAt: "createdAt" },
+  postLikesTable:      { id: "id", postId: "postId", staffId: "staffId", guardianEmail: "guardianEmail" },
+  childrenTable:       { id: "id", guardianEmail: "guardianEmail", guardian2Email: "guardian2Email", siteId: "siteId", status: "status" },
+  staffTable:          { id: "id", firstName: "firstName", lastName: "lastName" },
+  sitesTable:          { id: "id", name: "name" },
+  parentAccountsTable: { id: "id" },
+  pool:                { connect: vi.fn(), on: vi.fn() },
+}));
+
+// Stub drizzle operators — the route imports these to build queries but the
+// mock DB never runs real SQL so any placeholder value works.
+vi.mock("drizzle-orm", () => ({
+  eq:        vi.fn(() => "eq"),
+  and:       vi.fn(() => "and"),
+  isNotNull: vi.fn(() => "isNotNull"),
+  isNull:    vi.fn(() => "isNull"),
+  inArray:   vi.fn(() => "inArray"),
+  sql:       vi.fn(() => "sql"),
+  desc:      vi.fn(() => "desc"),
+}));
+
+// Stub the route's non-GET dependencies so they never trigger side-effects.
+vi.mock("@workspace/integrations-openai-ai-server", () => ({
+  openai: { chat: { completions: { create: vi.fn().mockResolvedValue({ choices: [] }) } } },
+}));
+vi.mock("../lib/notify",       () => ({ createNotification:        vi.fn().mockResolvedValue(undefined) }));
+vi.mock("../lib/logger",       () => ({ logger:                    { warn: vi.fn(), error: vi.fn(), info: vi.fn() } }));
+vi.mock("../lib/email",        () => ({ sendPostNotificationEmail: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("../lib/channelMap",   () => ({ isEmailChannelEnabled:     vi.fn().mockResolvedValue(false) }));
+vi.mock("../lib/emailBranding",() => ({ getEmailBranding:          vi.fn().mockResolvedValue({}) }));
+vi.mock("../lib/appUrl",       () => ({ getAppUrl:                 vi.fn().mockReturnValue("http://localhost") }));
+
+import postsRouter from "./posts";
+
+// ---------------------------------------------------------------------------
+// Test helpers
+// ---------------------------------------------------------------------------
+
+function buildApp(captureErrors = false) {
+  const logLines: string[] = [];
+  const dest = new Writable({
+    write(chunk: Buffer, _e: string, cb: () => void) {
+      if (captureErrors) logLines.push(chunk.toString());
+      cb();
+    },
+  });
+  const logger = pino({ level: captureErrors ? "trace" : "silent" }, dest);
+  const app = express();
+  app.use(pinoHttp({ logger }));
+  app.use(express.json());
+  app.use("/api", postsRouter);
+  return { app, logLines };
+}
+
+/** Build a minimal post row that passes through enrichment and zod validation. */
+function makePostRow(id: number, createdAt: Date = new Date()): Record<string, unknown> {
+  return {
+    id,
+    siteId:        null,
+    staffId:       null,
+    childIds:      [],
+    title:         `Post ${id}`,
+    date:          null,
+    images:        [],
+    documentPaths: [],
+    documentNames: [],
+    outcomeIds:    [],
+    description:   null,
+    learning:      null,
+    opportunities: null,
+    aiSummary:     null,
+    publishedAt:   null,
+    createdAt,
+  };
+}
+
+/** Return `n` post rows with descending createdAt (newest-first). */
+function makePostRows(n: number, startId = 1): Record<string, unknown>[] {
+  return Array.from({ length: n }, (_, i) => makePostRow(startId + i, new Date(Date.now() - i * 1000)));
+}
+
+/** Wire up `mockDb.select` so the first call returns `postsChain` and every
+ *  subsequent call returns `subChain`.
+ *
+ *  Important: call mockReset() before setting Once values so any un-consumed
+ *  Once values from a previous test (e.g. a test that returned 400 before
+ *  hitting the DB) do not stack up and mis-route sub-queries. */
+function wireSelectMock() {
+  mockDb.select.mockReset();
+  mockDb.select
+    .mockReturnValue(subChain)
+    .mockReturnValueOnce(postsChain);
+}
+
+// ---------------------------------------------------------------------------
+// Setup
+// ---------------------------------------------------------------------------
+
+beforeEach(() => {
+  vi.clearAllMocks();
+
+  // Re-wire all chain methods whose mockReturnValue state is cleared.
+  (postsChain.from    as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
+  (postsChain.orderBy as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
+  (postsChain.limit   as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
+  (postsChain.offset  as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
+
+  (subChain.from    as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
+  (subChain.where   as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+  (subChain.orderBy as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
+
+  // Default: posts query returns empty (overridden per test via setPostsRows).
+  setPostsRows([]);
+  wireSelectMock();
+});
+
+// ---------------------------------------------------------------------------
+// Tests — GET /api/posts
+// ---------------------------------------------------------------------------
+
+describe("GET /api/posts – pagination", () => {
+  it("returns 400 for invalid pagination params", async () => {
+    const { app } = buildApp();
+    const res = await request(app).get("/api/posts?limit=notanumber");
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty("error");
+  });
+
+  it("with no params returns all posts and applies neither limit() nor offset()", async () => {
+    setPostsRows(makePostRows(15));
+
+    const { app, logLines } = buildApp(true);
+    const res = await request(app).get("/api/posts");
+
+    if (res.status !== 200) {
+      // eslint-disable-next-line no-console
+      console.error("ROUTE ERROR LOGS:", logLines.join("\n"));
+    }
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body).toHaveLength(15);
+
+    // Without params, neither limit() nor offset() should be called.
+    expect(postsChain.limit).not.toHaveBeenCalled();
+    expect(postsChain.offset).not.toHaveBeenCalled();
+  });
+
+  it("with limit=10&offset=0 calls .limit(10).offset(0) and returns the first page", async () => {
+    setPostsRows(makePostRows(10));
+
+    const { app } = buildApp();
+    const res = await request(app).get("/api/posts?limit=10&offset=0");
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body).toHaveLength(10);
+
+    // Verify the correct SQL clauses were forwarded to the builder.
+    expect(postsChain.limit).toHaveBeenCalledWith(10);
+    expect(postsChain.offset).toHaveBeenCalledWith(0);
+
+    // Posts arrive in the order the DB supplied them (newest-first row order).
+    const ids = res.body.map((p: { id: number }) => p.id);
+    expect(ids[0]).toBe(1);
+  });
+
+  it("with limit=10&offset=10 calls .limit(10).offset(10) and returns the second page", async () => {
+    // Second page: IDs 11–20
+    setPostsRows(makePostRows(10, 11));
+
+    const { app } = buildApp();
+    const res = await request(app).get("/api/posts?limit=10&offset=10");
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body).toHaveLength(10);
+
+    expect(postsChain.limit).toHaveBeenCalledWith(10);
+    expect(postsChain.offset).toHaveBeenCalledWith(10);
+
+    // All returned IDs belong to the second page.
+    const ids = res.body.map((p: { id: number }) => p.id);
+    ids.forEach((id: number) => expect(id).toBeGreaterThanOrEqual(11));
+  });
+
+  it("returns fewer than limit rows when on the last page", async () => {
+    // Only 3 posts remain after offset=20.
+    setPostsRows(makePostRows(3, 21));
+
+    const { app } = buildApp();
+    const res = await request(app).get("/api/posts?limit=10&offset=20");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(3);
+    expect(postsChain.limit).toHaveBeenCalledWith(10);
+    expect(postsChain.offset).toHaveBeenCalledWith(20);
+  });
+
+  it("returns an empty array when no posts exist at the requested offset", async () => {
+    setPostsRows([]); // already the default, but explicit for clarity
+
+    const { app } = buildApp();
+    const res = await request(app).get("/api/posts?limit=10&offset=100");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("first-page and second-page responses contain completely different post IDs", async () => {
+    // Page 1
+    setPostsRows(makePostRows(10, 1));
+    const { app } = buildApp();
+    const res1 = await request(app).get("/api/posts?limit=10&offset=0");
+    expect(res1.status).toBe(200);
+
+    // Reset and configure page 2.
+    vi.clearAllMocks();
+    (postsChain.from    as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
+    (postsChain.orderBy as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
+    (postsChain.limit   as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
+    (postsChain.offset  as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
+    (subChain.from    as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
+    (subChain.where   as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+    setPostsRows(makePostRows(10, 11));
+    wireSelectMock();
+
+    const res2 = await request(app).get("/api/posts?limit=10&offset=10");
+    expect(res2.status).toBe(200);
+
+    const ids1 = new Set(res1.body.map((p: { id: number }) => p.id));
+    const ids2 = new Set(res2.body.map((p: { id: number }) => p.id));
+    const overlap = [...ids1].filter((id) => ids2.has(id));
+    expect(overlap).toHaveLength(0);
+  });
+
+  it("returns HTTP 500 when the DB throws during the posts query", async () => {
+    // Override the postsChain's then to reject (simulates a DB error).
+    // We do this by temporarily replacing the `then` property on the chain object.
+    const originalThen = postsChain.then;
+    (postsChain as any).then = (_resolve: unknown, reject: (e: unknown) => void) =>
+      Promise.reject(new Error("DB connection failed")).catch(reject);
+
+    const { app } = buildApp();
+    const res = await request(app).get("/api/posts?limit=10&offset=0");
+
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty("error");
+
+    // Restore original then for subsequent tests.
+    (postsChain as any).then = originalThen;
+  });
+});

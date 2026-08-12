@@ -43,6 +43,11 @@ export default function Posts() {
   const [offset, setOffset] = useState(0);
   const [accumulatedPosts, setAccumulatedPosts] = useState<Post[]>([]);
   const [hasMore, setHasMore] = useState(true);
+  // True from the moment the site filter changes until the first offset-0
+  // response for the new filter arrives. Prevents an empty-grid flash when
+  // the query has cached data (isLoading=false) but accumulatedPosts has
+  // already been cleared.
+  const [isSwitchingFilter, setIsSwitchingFilter] = useState(false);
 
   // Compute server-side filter params
   const serverSiteId = isEducatorRole && ownSiteId
@@ -68,6 +73,8 @@ export default function Posts() {
     lastPageDataRef.current = pageData;
     if (offset === 0) {
       setAccumulatedPosts(pageData);
+      // New filter's first page has arrived — skeleton can be dismissed.
+      setIsSwitchingFilter(false);
     } else {
       setAccumulatedPosts((prev) => {
         // Deduplicate by id in case of invalidations
@@ -84,6 +91,9 @@ export default function Posts() {
     setOffset(0);
     setAccumulatedPosts([]);
     setHasMore(true);
+    // Show skeleton immediately so the cleared list never appears as an
+    // empty grid — even when the new query has cached data (isLoading=false).
+    setIsSwitchingFilter(true);
   }
 
   const showSiteFilter = !isEducatorRole && (sites ?? []).length > 1;
@@ -173,7 +183,7 @@ export default function Posts() {
         </div>
       </div>
 
-      {isLoading && accumulatedPosts.length === 0 ? (
+      {(isLoading && accumulatedPosts.length === 0) || isSwitchingFilter ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-72 rounded-xl" />)}
         </div>

@@ -30,13 +30,13 @@ import type { Post } from "@workspace/api-client-react";
 // Primary map: keyed by offset alone (backward-compatible for existing tests).
 const pageDataByOffset = new Map<
   number,
-  { data: Post[]; isLoading: boolean; isFetching: boolean }
+  { data: Post[] | undefined; isLoading: boolean; isFetching: boolean }
 >();
 
 // Secondary map: keyed by "siteId:offset" — checked first when siteId is present.
 const pageDataBySiteOffset = new Map<
   string,
-  { data: Post[]; isLoading: boolean; isFetching: boolean }
+  { data: Post[] | undefined; isLoading: boolean; isFetching: boolean }
 >();
 
 function setPageData(
@@ -62,6 +62,21 @@ function setPageDataForSite(
     data: posts,
     isLoading: opts.isLoading ?? false,
     isFetching: opts.isFetching ?? false,
+  });
+}
+
+/**
+ * Simulate the case where a query has previously-cached data but is currently
+ * refetching: isLoading=false (no spinner from TanStack Query) yet data is
+ * undefined (the component won't receive it until the fetch completes).
+ * This is exactly the gap that caused the empty-grid flash before the
+ * isSwitchingFilter fix.
+ */
+function setPendingForSite(siteId: number, offset: number) {
+  pageDataBySiteOffset.set(`${siteId}:${offset}`, {
+    data: undefined,
+    isLoading: false,
+    isFetching: true,
   });
 }
 
@@ -525,6 +540,41 @@ describe("Posts page — changing the site filter resets accumulated posts", () 
 
     // Site 7's posts must no longer be in the DOM (accumulator was reset).
     expect(screen.queryByText("Test Post 1")).not.toBeInTheDocument();
+  });
+
+  it("shows a loading skeleton (not old posts, not empty state) while the new filter result is pending", async () => {
+    mockSites = [
+      { id: 7, name: "Sunrise Centre" },
+      { id: 9, name: "Harbour View" },
+    ];
+
+    setPageDataForSite(7, 0, makePosts(PAGE_SIZE, 1));
+    // Site 9: simulate cached-but-refetching (isLoading=false, data not yet
+    // available). This is the gap that caused the empty-grid flash.
+    setPendingForSite(9, 0);
+
+    renderPosts();
+    const user = userEvent.setup();
+
+    // Select site 7 and wait for its posts to render.
+    await waitFor(() => expect(screen.getByRole("combobox")).toBeInTheDocument());
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getByText("Sunrise Centre"));
+    await waitFor(() => expect(screen.getByText("Test Post 1")).toBeInTheDocument());
+
+    // Switch to site 9 (pending fetch — isLoading=false, no data yet).
+    await user.click(screen.getByRole("combobox"));
+    await user.click(screen.getByText("Harbour View"));
+
+    // Site 7 posts must not be visible while loading site 9.
+    expect(screen.queryByText("Test Post 1")).not.toBeInTheDocument();
+
+    // The "No posts yet" empty-state must NOT appear — skeleton should show instead.
+    expect(screen.queryByText(/no posts yet/i)).not.toBeInTheDocument();
+
+    // Skeleton placeholder cards should be visible.
+    const skeletons = document.querySelectorAll(".h-72.rounded-xl");
+    expect(skeletons.length).toBeGreaterThan(0);
   });
 
   it("load-more after a site switch carries the new siteId — not the old one", async () => {

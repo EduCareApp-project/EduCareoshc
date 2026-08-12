@@ -220,7 +220,7 @@ function Section({ categoryName, categoryId, files, siteId, onEnsureCategory, on
                 <p className="text-xs text-muted-foreground truncate">{f.documentName}</p>
               </div>
               <a
-                href={`/api/storage/objects${f.documentPath}`}
+                href={`/api/storage${f.documentPath}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-primary hover:underline shrink-0"

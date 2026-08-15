@@ -25,7 +25,7 @@ router.get("/roll-submissions/report", async (req, res): Promise<void> => {
   const siteIdFilter = typeof req.query.siteId === "string" ? parseInt(req.query.siteId, 10) : null;
 
   try {
-    const allSites = await db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable).orderBy(sitesTable.name);
+    const allSites = await db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable).where(eq(sitesTable.status, "active")).orderBy(sitesTable.name);
     const filteredSites = siteIdFilter ? allSites.filter((s) => s.id === siteIdFilter) : allSites;
     const totalSitesCount = filteredSites.length;
 
@@ -91,6 +91,7 @@ router.get("/roll-submissions", async (req, res): Promise<void> => {
     const sites = await db
       .select({ id: sitesTable.id, name: sitesTable.name })
       .from(sitesTable)
+      .where(eq(sitesTable.status, "active"))
       .orderBy(sitesTable.name);
 
     const submissions = await db

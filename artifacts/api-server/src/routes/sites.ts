@@ -14,7 +14,13 @@ const router: IRouter = Router();
 
 router.get("/sites", async (req, res): Promise<void> => {
   try {
-    const sites = await db.select().from(sitesTable).orderBy(sitesTable.name);
+    // ?all=true is used by the Sites management page to show pending/closed sites too.
+    // All other callers (dropdowns, roll marking, etc.) get active sites only.
+    const showAll = req.query.all === "true";
+    const query = db.select().from(sitesTable).orderBy(sitesTable.name);
+    const sites = showAll
+      ? await query
+      : await db.select().from(sitesTable).where(eq(sitesTable.status, "active")).orderBy(sitesTable.name);
     res.json(ListSitesResponse.parse(sites));
   } catch (err) {
     req.log.error({ err }, "Failed to fetch sites");

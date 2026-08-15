@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useListSites, useCreateSite, useUpdateSite, useDeleteSite, getListSitesQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useCreateSite, useUpdateSite, useDeleteSite, getListSitesQueryKey } from "@workspace/api-client-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,16 @@ const STATUS_LABELS: Record<SiteStatus, string> = {
 };
 
 export default function Sites() {
-  const { data: sites, isLoading } = useListSites();
+  // Use ?all=true so the management page sees pending and closed sites too.
+  // All other pages use useListSites() which returns active sites only.
+  const { data: sites, isLoading } = useQuery({
+    queryKey: [...getListSitesQueryKey(), "all"],
+    queryFn: async () => {
+      const res = await fetch("/api/sites?all=true");
+      if (!res.ok) throw new Error("Failed to fetch sites");
+      return res.json() as Promise<Array<{ id: number; name: string; status: string; address: string | null; grouping: string | null; isDoscel: boolean; createdAt: string }>>;
+    },
+  });
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [, setLocation] = useLocation();

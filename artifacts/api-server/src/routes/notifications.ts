@@ -163,7 +163,7 @@ async function computeDeadlineNotifications(): Promise<void> {
 
   // ── 3. No published plan for current week ────────────────────────────────────
   if (await isEnabled("weekly_plan_missing")) {
-    const sites = await db.select({ id: sitesTable.id }).from(sitesTable);
+    const sites = await db.select({ id: sitesTable.id }).from(sitesTable).where(eq(sitesTable.status, "active"));
     for (const site of sites) {
       // A "published" plan is one with weeklyPlanData set for this week's window
       // We check if there's any planning experience for this site with weeklyPlanData

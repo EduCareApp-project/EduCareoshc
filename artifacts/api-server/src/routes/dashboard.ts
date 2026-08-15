@@ -52,7 +52,7 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
     const weekStartStr = weekStart.toISOString().split("T")[0];
     const weekEndStr = weekEnd.toISOString().split("T")[0];
 
-    const allSites = await db.select({ id: sitesTable.id }).from(sitesTable);
+    const allSites = await db.select({ id: sitesTable.id }).from(sitesTable).where(eq(sitesTable.status, "active"));
     const publishedPlans = await db
       .selectDistinct({ siteId: planningExperiencesTable.siteId })
       .from(planningExperiencesTable)

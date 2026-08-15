@@ -21,7 +21,7 @@ router.get("/qip/public", async (req, res): Promise<void> => {
     const [children, allStrengths, sitesRows] = await Promise.all([
       db.select({ firstName: childrenTable.firstName, lastName: childrenTable.lastName }).from(childrenTable),
       db.select().from(qipStrengthsTable).orderBy(qipStrengthsTable.qualityArea),
-      db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable),
+      db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable).where(eq(sitesTable.status, "active")),
     ]);
 
     // Filter strengths to the requested site (or fall back to null-site global entries)

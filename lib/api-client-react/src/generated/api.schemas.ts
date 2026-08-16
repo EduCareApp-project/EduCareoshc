@@ -1460,6 +1460,8 @@ export interface Post {
   createdAt: string;
   likeCount: number;
   likedByMe: boolean;
+  commentCount: number;
+  unviewedCommentCount: number;
 }
 
 export interface PostComment {

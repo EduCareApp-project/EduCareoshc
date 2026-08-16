@@ -50,3 +50,13 @@ export const postLikesTable = pgTable("post_likes", {
   unique("post_likes_post_staff_unique").on(t.postId, t.staffId),
   unique("post_likes_post_guardian_unique").on(t.postId, t.guardianEmail),
 ]);
+
+/** Tracks when a staff member last opened the comments panel for a post. */
+export const postCommentViewsTable = pgTable("post_comment_views", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull().references(() => postsTable.id, { onDelete: "cascade" }),
+  staffId: integer("staff_id").notNull().references(() => staffTable.id, { onDelete: "cascade" }),
+  viewedAt: timestamp("viewed_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  unique("post_comment_views_post_staff_unique").on(t.postId, t.staffId),
+]);

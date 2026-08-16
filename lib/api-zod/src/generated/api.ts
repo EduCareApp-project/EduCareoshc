@@ -2351,6 +2351,8 @@ export const ListPostsResponseItem = zod.object({
   createdAt: zod.coerce.date(),
   likeCount: zod.number().default(listPostsResponseLikeCountDefault),
   likedByMe: zod.boolean().default(listPostsResponseLikedByMeDefault),
+  commentCount: zod.number().default(0),
+  unviewedCommentCount: zod.number().default(0),
 });
 export const ListPostsResponse = zod.array(ListPostsResponseItem);
 

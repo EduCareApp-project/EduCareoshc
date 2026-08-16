@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ImageLightbox } from "@/components/image-lightbox";
 import {
   useGetPost, useDeletePost, getListPostsQueryKey,
@@ -62,6 +62,14 @@ export function PostDetailDialog({
   const [authorName, setAuthorName] = useState(defaultCommentName ?? "");
   const [body, setBody] = useState("");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  // When the dialog opens, mark comments as viewed so the unviewed badge clears.
+  useEffect(() => {
+    if (!open || !postId) return;
+    fetch(`/api/posts/${postId}/mark-viewed`, { method: "POST", credentials: "include" })
+      .then(() => queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() }))
+      .catch(() => {/* fire-and-forget */});
+  }, [open, postId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: post, isLoading } = useGetPost(postId ?? 0, {
     query: { queryKey: getGetPostQueryKey(postId ?? 0), enabled: open && (postId ?? 0) > 0 },

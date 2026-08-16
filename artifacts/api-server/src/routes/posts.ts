@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { createNotification } from "../lib/notify";
 import { logger } from "../lib/logger";
 import { eq, and, isNotNull, isNull, inArray, sql, desc } from "drizzle-orm";
-import { db, postsTable, postCommentsTable, postLikesTable, childrenTable, staffTable, sitesTable, parentAccountsTable } from "@workspace/db";
+import { db, postsTable, postCommentsTable, postLikesTable, postCommentViewsTable, childrenTable, staffTable, sitesTable, parentAccountsTable } from "@workspace/db";
 import {
   CreatePostBody, GetPostParams, GetPostResponse,
   UpdatePostParams, UpdatePostBody, UpdatePostResponse,
@@ -125,10 +125,16 @@ router.get("/posts", async (req, res): Promise<void> => {
       ? await db.select().from(postLikesTable).where(inArray(postLikesTable.postId, postIds))
       : [];
 
-    const [childList, staffList, siteList] = await Promise.all([
+    const sessionUser = req.session?.user;
+
+    const [childList, staffList, siteList, commentCountRows] = await Promise.all([
       childIds.length > 0 ? db.select().from(childrenTable).where(inArray(childrenTable.id, childIds)) : [],
       staffIds.length > 0 ? db.select().from(staffTable).where(inArray(staffTable.id, staffIds)) : [],
       siteIds.length  > 0 ? db.select().from(sitesTable).where(inArray(sitesTable.id, siteIds)) : [],
+      db.select({ postId: postCommentsTable.postId, count: sql<number>`count(*)::int` })
+        .from(postCommentsTable)
+        .where(inArray(postCommentsTable.postId, postIds))
+        .groupBy(postCommentsTable.postId),
     ]);
 
     const likeCountMap = new Map<number, number>();
@@ -142,6 +148,38 @@ router.get("/posts", async (req, res): Promise<void> => {
         )
       ) {
         likedByMeSet.add(like.postId);
+      }
+    }
+
+    const commentCountMap = new Map(commentCountRows.map((r) => [r.postId, r.count]));
+
+    // Unviewed comment counts — only computed for staff with a home site,
+    // and only for posts belonging to that home site.
+    const unviewedCountMap = new Map<number, number>();
+    if (sessionUser?.type === "staff" && sessionUser.siteId != null) {
+      const homeSiteId = sessionUser.siteId;
+      const homeSitePostIds = rows.filter((p) => p.siteId === homeSiteId).map((p) => p.id);
+      if (homeSitePostIds.length > 0) {
+        const [viewRecords, homeSiteComments] = await Promise.all([
+          db.select({ postId: postCommentViewsTable.postId, viewedAt: postCommentViewsTable.viewedAt })
+            .from(postCommentViewsTable)
+            .where(and(
+              inArray(postCommentViewsTable.postId, homeSitePostIds),
+              eq(postCommentViewsTable.staffId, sessionUser.id),
+            )),
+          db.select({ postId: postCommentsTable.postId, createdAt: postCommentsTable.createdAt })
+            .from(postCommentsTable)
+            .where(inArray(postCommentsTable.postId, homeSitePostIds)),
+        ]);
+        const viewMap = new Map(viewRecords.map((v) => [v.postId, v.viewedAt]));
+        for (const postId of homeSitePostIds) {
+          const lastViewed = viewMap.get(postId);
+          const postComments = homeSiteComments.filter((c) => c.postId === postId);
+          const unviewed = lastViewed
+            ? postComments.filter((c) => c.createdAt > lastViewed).length
+            : postComments.length;
+          unviewedCountMap.set(postId, unviewed);
+        }
       }
     }
 
@@ -159,6 +197,8 @@ router.get("/posts", async (req, res): Promise<void> => {
         siteName: site ? site.name : null,
         likeCount: likeCountMap.get(p.id) ?? 0,
         likedByMe: likedByMeSet.has(p.id),
+        commentCount: commentCountMap.get(p.id) ?? 0,
+        unviewedCommentCount: unviewedCountMap.get(p.id) ?? 0,
       };
     });
     res.json(ListPostsResponse.parse(enriched));
@@ -389,6 +429,28 @@ router.delete("/posts/:id/comments/:commentId", async (req, res): Promise<void> 
   } catch (err) {
     req.log.error({ err, postId: params.data.id, commentId: params.data.commentId }, "Failed to delete post comment");
     res.status(500).json({ error: "Failed to delete post comment" });
+  }
+});
+
+// Mark all comments on a post as viewed by the current staff member.
+// Upserts a view record — the timestamp is used to compute the unviewed badge count.
+router.post("/posts/:id/mark-viewed", async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id ?? "", 10);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid post ID" }); return; }
+  const user = req.session?.user;
+  // Only staff members have a concept of "home site" for unviewed counts
+  if (!user || user.type !== "staff") { res.sendStatus(204); return; }
+  try {
+    await db.insert(postCommentViewsTable)
+      .values({ postId: id, staffId: user.id, viewedAt: new Date() })
+      .onConflictDoUpdate({
+        target: [postCommentViewsTable.postId, postCommentViewsTable.staffId],
+        set: { viewedAt: new Date() },
+      });
+    res.sendStatus(204);
+  } catch (err) {
+    req.log.error({ err, postId: id }, "Failed to mark post comments as viewed");
+    res.status(500).json({ error: "Failed to mark as viewed" });
   }
 });
 

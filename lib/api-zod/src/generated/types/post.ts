@@ -42,4 +42,6 @@ export interface Post {
   createdAt: Date;
   likeCount: number;
   likedByMe: boolean;
+  commentCount: number;
+  unviewedCommentCount: number;
 }

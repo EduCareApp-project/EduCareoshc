@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Newspaper, Plus, Trash2, User, ArrowLeft, Heart } from "lucide-react";
+import { Newspaper, Plus, Trash2, User, ArrowLeft, Heart, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
@@ -259,20 +259,34 @@ export default function Posts() {
                           {post.staffName && post.date && <span>·</span>}
                           {post.date && <span>{format(new Date(post.date.slice(0, 10) + "T00:00:00"), "dd/MM/yyyy")}</span>}
                         </div>
-                        <button
-                          onClick={(e) => handleLike(e, post.id, post.likedByMe)}
-                          className={`flex items-center gap-1 text-xs transition-colors select-none ${
-                            post.likedByMe
-                              ? "text-rose-500 hover:text-rose-600"
-                              : "text-muted-foreground hover:text-rose-500"
-                          }`}
-                        >
-                          <Heart
-                            className="h-3.5 w-3.5"
-                            fill={post.likedByMe ? "currentColor" : "none"}
-                          />
-                          {post.likeCount > 0 && <span>{post.likeCount}</span>}
-                        </button>
+                        <div className="flex items-center gap-3">
+                          {/* Comment count badge — red dot when there are unviewed comments on home-site posts */}
+                          {(post.commentCount ?? 0) > 0 && (
+                            <div className="relative flex items-center gap-1 text-xs text-muted-foreground">
+                              <MessageCircle className="h-3.5 w-3.5" />
+                              <span>{post.commentCount}</span>
+                              {(post.unviewedCommentCount ?? 0) > 0 && (
+                                <span className="absolute -top-2 -right-3 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] flex items-center justify-center px-0.5 leading-none">
+                                  {post.unviewedCommentCount}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <button
+                            onClick={(e) => handleLike(e, post.id, post.likedByMe)}
+                            className={`flex items-center gap-1 text-xs transition-colors select-none ${
+                              post.likedByMe
+                                ? "text-rose-500 hover:text-rose-600"
+                                : "text-muted-foreground hover:text-rose-500"
+                            }`}
+                          >
+                            <Heart
+                              className="h-3.5 w-3.5"
+                              fill={post.likedByMe ? "currentColor" : "none"}
+                            />
+                            {post.likeCount > 0 && <span>{post.likeCount}</span>}
+                          </button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

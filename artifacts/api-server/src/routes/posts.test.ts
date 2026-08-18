@@ -44,10 +44,19 @@ const { postsChain, subChain, mockDb, setPostsRows } = vi.hoisted(() => {
   postsChain.limit   = vi.fn().mockReturnValue(postsChain);
   postsChain.offset  = vi.fn().mockReturnValue(postsChain);
 
-  // Sub-query chain: `where()` is the async leaf — resolves to `[]` by default.
-  const subChain: Record<string, unknown> = {};
+  // Sub-query chain: a thenable that resolves to `[]` so any await of the
+  // chain (with or without a trailing .groupBy()) resolves correctly.
+  const subChain: Record<string, unknown> = {
+    then(resolve: (v: unknown) => void, reject: (e: unknown) => void) {
+      return Promise.resolve([]).then(resolve, reject);
+    },
+    catch(onRej: (e: unknown) => void) {
+      return Promise.resolve([]).catch(onRej);
+    },
+  };
   (subChain as any).from    = vi.fn().mockReturnValue(subChain);
-  (subChain as any).where   = vi.fn().mockResolvedValue([]);
+  (subChain as any).where   = vi.fn().mockReturnValue(subChain);
+  (subChain as any).groupBy = vi.fn().mockReturnValue(subChain);
   (subChain as any).orderBy = vi.fn().mockReturnValue(subChain);
 
   const mockDb = { select: vi.fn() };
@@ -59,14 +68,15 @@ const { postsChain, subChain, mockDb, setPostsRows } = vi.hoisted(() => {
 
 vi.mock("@workspace/db", () => ({
   db: mockDb,
-  postsTable:          { id: "id", createdAt: "createdAt", staffId: "staffId", siteId: "siteId", childIds: "childIds" },
-  postCommentsTable:   { id: "id", postId: "postId", createdAt: "createdAt" },
-  postLikesTable:      { id: "id", postId: "postId", staffId: "staffId", guardianEmail: "guardianEmail" },
-  childrenTable:       { id: "id", guardianEmail: "guardianEmail", guardian2Email: "guardian2Email", siteId: "siteId", status: "status" },
-  staffTable:          { id: "id", firstName: "firstName", lastName: "lastName" },
-  sitesTable:          { id: "id", name: "name" },
-  parentAccountsTable: { id: "id" },
-  pool:                { connect: vi.fn(), on: vi.fn() },
+  postsTable:               { id: "id", createdAt: "createdAt", staffId: "staffId", siteId: "siteId", childIds: "childIds" },
+  postCommentsTable:        { id: "id", postId: "postId", createdAt: "createdAt" },
+  postLikesTable:           { id: "id", postId: "postId", staffId: "staffId", guardianEmail: "guardianEmail" },
+  postCommentViewsTable:    { id: "id", postId: "postId", staffId: "staffId", viewedAt: "viewedAt" },
+  childrenTable:            { id: "id", guardianEmail: "guardianEmail", guardian2Email: "guardian2Email", siteId: "siteId", status: "status" },
+  staffTable:               { id: "id", firstName: "firstName", lastName: "lastName" },
+  sitesTable:               { id: "id", name: "name" },
+  parentAccountsTable:      { id: "id" },
+  pool:                     { connect: vi.fn(), on: vi.fn() },
 }));
 
 // Stub drizzle operators — the route imports these to build queries but the
@@ -169,7 +179,8 @@ beforeEach(() => {
   (postsChain.offset  as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
 
   (subChain.from    as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
-  (subChain.where   as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+  (subChain.where   as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
+  (subChain.groupBy as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
   (subChain.orderBy as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
 
   // Default: posts query returns empty (overridden per test via setPostsRows).
@@ -284,7 +295,9 @@ describe("GET /api/posts – pagination", () => {
     (postsChain.limit   as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
     (postsChain.offset  as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
     (subChain.from    as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
-    (subChain.where   as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+    (subChain.where   as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
+    (subChain.groupBy as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
+    (subChain.orderBy as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
     setPostsRows(makePostRows(10, 11));
     wireSelectMock();
 
@@ -442,7 +455,9 @@ describe("GET /api/posts – Load more preserves filters, site-change resets", (
     (postsChain.limit   as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
     (postsChain.offset  as ReturnType<typeof vi.fn>).mockReturnValue(postsChain);
     (subChain.from    as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
-    (subChain.where   as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+    (subChain.where   as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
+    (subChain.groupBy as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
+    (subChain.orderBy as ReturnType<typeof vi.fn>).mockReturnValue(subChain);
     // New site's posts have different IDs — none overlap with the previous page.
     setPostsRows(makePostRows(10, 101));
     wireSelectMock();

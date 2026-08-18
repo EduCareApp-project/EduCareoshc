@@ -7,7 +7,8 @@ import {
   useListChildren,
   useUpdateChild,
 } from "@workspace/api-client-react";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
+import { GuardianFinancialTab } from "@/components/guardian-financial-tab";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -164,6 +165,8 @@ function initials(name: string) {
 
 export default function GuardianDetail() {
   const { email: encodedEmail } = useParams<{ email: string }>();
+  const [, setLocation] = useLocation();
+  const activeTab = new URLSearchParams(window.location.search).get("tab") ?? "overview";
   const email = decodeURIComponent(encodedEmail ?? "");
 
   const { data: guardian, isLoading } = useGetGuardian(encodedEmail ?? "");
@@ -302,6 +305,27 @@ export default function GuardianDetail() {
         </div>
       </div>
 
+      {/* Tab navigation */}
+      <div className="border-b flex">
+        {[
+          { id: "overview", label: "Overview" },
+          { id: "financial", label: "Financial" },
+        ].map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => setLocation(`/guardians/${encodedEmail}?tab=${id}`)}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              activeTab === id
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "overview" && <>
       {/* Parent App Access */}
       <div className="bg-card border rounded-xl p-6 space-y-5">
         <div className="border-b pb-4">
@@ -529,6 +553,14 @@ export default function GuardianDetail() {
           </div>
         )}
       </div>
+      </>}
+
+      {activeTab === "financial" && (
+        <GuardianFinancialTab
+          encodedEmail={encodedEmail ?? ""}
+          guardianName={guardian.guardianName}
+        />
+      )}
     </div>
   );
 }

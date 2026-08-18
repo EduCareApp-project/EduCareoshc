@@ -41,3 +41,4 @@ export * from "./site_instructions";
 export * from './weekly_reviews';
 export * from './email_send_log';
 export * from './guardian_login_logs';
+export * from './guardian_financial';

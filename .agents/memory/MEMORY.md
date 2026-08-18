@@ -1,1 +1,3 @@
 - [Notification channel map](notification-channel-map.md) — per-event email/inApp toggles stored in featureSettings.notificationChannelMap; read via channelMap.ts helpers in API routes before sending emails.
+- [Posts test mock pattern](posts-test-mock.md) — subChain must be a thenable + have groupBy; mid-test clearAllMocks blocks must re-wire groupBy and use mockReturnValue (not mockResolvedValue) for subChain.where.
+- [Guardian financial feature](guardian-financial.md) — 3 tables (guardian_financial_accounts, guardian_communication_logs, guardian_payment_plans); route file guardian-financial.ts registered BEFORE guardiansRouter; guardian-detail uses tab nav via URL ?tab=financial.

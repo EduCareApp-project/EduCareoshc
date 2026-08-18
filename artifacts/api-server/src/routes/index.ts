@@ -3,6 +3,7 @@ import healthRouter from "./health";
 import authRouter from "./auth";
 import childrenRouter from "./children";
 import guardiansRouter from "./guardians";
+import guardianFinancialRouter from "./guardian-financial";
 import staffRouter from "./staff";
 import outcomesRouter from "./outcomes";
 import observationsRouter from "./observations";
@@ -85,6 +86,7 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
 
 // ── Protected routes ──────────────────────────────────────────────────────────
 router.use(childrenRouter);
+router.use(guardianFinancialRouter); // must precede guardiansRouter to avoid /:email wildcard conflicts
 router.use(guardiansRouter);
 router.use(staffRouter);
 router.use(outcomesRouter);

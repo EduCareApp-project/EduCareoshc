@@ -100,13 +100,24 @@ function DocCard({ item }: { item: DocItem }) {
   const href = `/api/service-docs/public/file/${item.id}`;
   const img = isImage(item.documentName);
   const pdf = isPdf(item.documentName);
+  const [imgError, setImgError] = useState(false);
 
   const preview = (
     <div className="w-full overflow-hidden bg-white">
       {pdf ? (
         <PdfThumbnail url={href} />
-      ) : img ? (
-        <img src={href} alt={item.name} className="w-full h-auto object-contain" />
+      ) : img && !imgError ? (
+        <img
+          src={href}
+          alt={item.name}
+          className="w-full h-auto object-contain"
+          onError={() => setImgError(true)}
+        />
+      ) : img && imgError ? (
+        <div className="w-full aspect-[3/4] flex flex-col items-center justify-center bg-muted/30 text-muted-foreground gap-2">
+          <FileText className="h-12 w-12 opacity-40" />
+          <span className="text-xs">Preview unavailable</span>
+        </div>
       ) : (
         <div className="w-full aspect-[3/4] flex flex-col items-center justify-center bg-muted/30 text-muted-foreground gap-2">
           <File className="h-12 w-12 opacity-40" />

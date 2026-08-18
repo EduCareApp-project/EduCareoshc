@@ -162,7 +162,7 @@ describe("GET /api/service-docs/public/file/:id — missing file in storage", ()
 
   // ── DB-level 404 ────────────────────────────────────────────────────────
 
-  it("returns HTTP 404 with JSON when the file row does not exist in the DB", async () => {
+  it("returns HTTP 404 with a friendly HTML page when the file row does not exist in the DB", async () => {
     // Q1 resolves with nothing (file doesn't exist).
     chain.where.mockReturnValueOnce(chain);
     chain.limit.mockResolvedValueOnce([]);
@@ -171,13 +171,13 @@ describe("GET /api/service-docs/public/file/:id — missing file in storage", ()
     const res = await request(app).get("/api/service-docs/public/file/99");
 
     expect(res.status).toBe(404);
-    expect(res.headers["content-type"]).toMatch(/json/);
-    expect(res.body).toHaveProperty("error");
+    expect(res.headers["content-type"]).toMatch(/html/);
+    expect(res.text).toContain("Document not found");
   });
 
   // ── Authorization ───────────────────────────────────────────────────────
 
-  it("returns HTTP 403 when the file belongs to a non-public category", async () => {
+  it("returns HTTP 403 with a friendly HTML page when the file belongs to a non-public category", async () => {
     // File exists but category 99 is not in the public allow-list.
     setupDbMocks([PRIVATE_FILE_ROW], [PUBLIC_CAT_ROW]);
 
@@ -185,13 +185,13 @@ describe("GET /api/service-docs/public/file/:id — missing file in storage", ()
     const res = await request(app).get("/api/service-docs/public/file/1");
 
     expect(res.status).toBe(403);
-    expect(res.headers["content-type"]).toMatch(/json/);
-    expect(res.body).toHaveProperty("error");
+    expect(res.headers["content-type"]).toMatch(/html/);
+    expect(res.text).toContain("Access denied");
   });
 
   // ── Missing-file-in-storage (main scenario for this task) ───────────────
 
-  it("returns HTTP 404 with a JSON error body when the storage object is missing (ObjectNotFoundError)", async () => {
+  it("returns HTTP 404 with a friendly HTML page when the storage object is missing (ObjectNotFoundError)", async () => {
     setupDbMocks([PUBLIC_FILE_ROW], [PUBLIC_CAT_ROW]);
 
     const { ObjectNotFoundError } = await import("../lib/objectStorage");
@@ -201,9 +201,8 @@ describe("GET /api/service-docs/public/file/:id — missing file in storage", ()
     const res = await request(app).get("/api/service-docs/public/file/1");
 
     expect(res.status).toBe(404);
-    expect(res.headers["content-type"]).toMatch(/json/);
-    expect(res.body).toHaveProperty("error");
-    expect(typeof res.body.error).toBe("string");
+    expect(res.headers["content-type"]).toMatch(/html/);
+    expect(res.text).toContain("File unavailable");
   });
 
   it("does NOT return HTTP 500 when the storage object is missing (ObjectNotFoundError must map to 404)", async () => {
@@ -220,7 +219,7 @@ describe("GET /api/service-docs/public/file/:id — missing file in storage", ()
 
   // ── Generic storage errors ───────────────────────────────────────────────
 
-  it("returns HTTP 500 for unexpected storage errors that are not ObjectNotFoundError", async () => {
+  it("returns HTTP 500 with a friendly HTML page for unexpected storage errors that are not ObjectNotFoundError", async () => {
     setupDbMocks([PUBLIC_FILE_ROW], [PUBLIC_CAT_ROW]);
 
     mockGetObjectEntityFile.mockRejectedValueOnce(new Error("Unexpected GCS failure"));
@@ -229,8 +228,8 @@ describe("GET /api/service-docs/public/file/:id — missing file in storage", ()
     const res = await request(app).get("/api/service-docs/public/file/1");
 
     expect(res.status).toBe(500);
-    expect(res.headers["content-type"]).toMatch(/json/);
-    expect(res.body).toHaveProperty("error");
+    expect(res.headers["content-type"]).toMatch(/html/);
+    expect(res.text).toContain("Something went wrong");
   });
 
   it("logs a structured error with fileId context when an unexpected storage error occurs", async () => {

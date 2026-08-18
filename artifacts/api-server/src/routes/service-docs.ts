@@ -8,6 +8,87 @@ const objectStorageService = new ObjectStorageService();
 
 const router: IRouter = Router();
 
+function buildFileErrorPage(title: string, message: string, code: number): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${title} — EduCare</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9fafb;
+      color: #111827;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 1rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      max-width: 440px;
+      width: 100%;
+      padding: 2.5rem 2rem;
+      text-align: center;
+    }
+    .icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #fef2f2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.25rem;
+    }
+    .icon svg { width: 28px; height: 28px; color: #ef4444; }
+    h1 { font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem; }
+    p { font-size: 0.875rem; color: #6b7280; line-height: 1.6; margin-bottom: 1.5rem; }
+    .code { font-size: 0.75rem; color: #9ca3af; margin-bottom: 1.5rem; }
+    .btn {
+      display: inline-block;
+      padding: 0.5rem 1.25rem;
+      background: #111827;
+      color: #fff;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .btn:hover { background: #1f2937; }
+    .brand {
+      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+      </svg>
+    </div>
+    <h1>${title}</h1>
+    <p>${message}</p>
+    <p class="code">Error ${code}</p>
+    <a class="btn" onclick="window.close()" href="javascript:void(0)">Close this tab</a>
+    <p class="brand">EduCare Service Documentation</p>
+  </div>
+</body>
+</html>`;
+}
+
 const PUBLIC_CATEGORIES = ["Prescribed Information", "Parent Notices", "Policies and Procedures"];
 
 // Default site when none is specified in the URL — Aldercourt (id=1)
@@ -122,7 +203,14 @@ router.get("/service-docs/public/file/:id", async (req, res): Promise<void> => {
       .where(eq(fileLibraryTable.id, id))
       .limit(1);
 
-    if (!file) { res.status(404).json({ error: "Not found" }); return; }
+    if (!file) {
+      res.status(404).type("html").send(buildFileErrorPage(
+        "Document not found",
+        "This document link is no longer valid. It may have been removed or the link may be incorrect.",
+        404,
+      ));
+      return;
+    }
 
     const cats = await db
       .select({ id: fileCategoriesTable.id })
@@ -131,7 +219,11 @@ router.get("/service-docs/public/file/:id", async (req, res): Promise<void> => {
 
     const publicCatIds = cats.map((c) => c.id);
     if (!publicCatIds.includes(file.categoryId!)) {
-      res.status(403).json({ error: "Forbidden" });
+      res.status(403).type("html").send(buildFileErrorPage(
+        "Access denied",
+        "This document is not publicly accessible.",
+        403,
+      ));
       return;
     }
 
@@ -147,10 +239,18 @@ router.get("/service-docs/public/file/:id", async (req, res): Promise<void> => {
     }
   } catch (err: any) {
     if (err?.name === "ObjectNotFoundError" || err?.constructor?.name === "ObjectNotFoundError") {
-      res.status(404).json({ error: "File not found in storage" });
+      res.status(404).type("html").send(buildFileErrorPage(
+        "File unavailable",
+        "This document's file could not be found. It may have been deleted or moved. Please contact the service for assistance.",
+        404,
+      ));
     } else {
       req.log.error({ err, fileId: id }, "Failed to serve public service doc file");
-      res.status(500).json({ error: "Failed to serve file" });
+      res.status(500).type("html").send(buildFileErrorPage(
+        "Something went wrong",
+        "We were unable to load this document right now. Please try again later.",
+        500,
+      ));
     }
   }
 });

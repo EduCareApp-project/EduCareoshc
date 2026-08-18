@@ -2190,7 +2190,7 @@ export default function ChildProfile() {
                             <p className="leading-relaxed">{note.fvissNotes}</p>
                           </div>
                         )}
-                        {note.confidentialNotes && (
+                        {!isEducatorRole && note.confidentialNotes && (
                           <div className="space-y-1 md:col-span-2 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded p-2">
                             <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
                               <Lock className="h-3 w-3" />Confidential Notes
@@ -2411,140 +2411,196 @@ export default function ChildProfile() {
               />
             </div>
 
-            <div className="space-y-1">
-              <Label>Evidence File <span className="text-muted-foreground text-xs">(optional — photo, document, etc.)</span></Label>
-              {evidenceFileName ? (
-                <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
-                  <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="flex-1 truncate">{evidenceFileName}</span>
-                  <button
-                    type="button"
-                    onClick={() => { setEvidenceObjectPath(null); setEvidenceFileName(null); }}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+            {/* Evidence — editable for Admin/EL, read-only display for educators */}
+            {isEducatorRole ? (
+              evidenceFileName && (
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Evidence File</Label>
+                  <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                    <Paperclip className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{evidenceFileName}</span>
+                  </div>
                 </div>
-              ) : (
-                <label className={`flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-3 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary ${isUploadingEvidence ? "opacity-50 pointer-events-none" : ""}`}>
-                  <Paperclip className="h-4 w-4 shrink-0" />
-                  <span>{isUploadingEvidence ? "Uploading…" : "Click to attach a file"}</span>
-                  <input
-                    type="file"
-                    className="hidden"
-                    disabled={isUploadingEvidence}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const result = await uploadFile(file);
-                      if (result) {
-                        setEvidenceObjectPath(result.objectPath);
-                        setEvidenceFileName(file.name);
-                      }
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-              )}
-            </div>
+              )
+            ) : (
+              <div className="space-y-1">
+                <Label>Evidence File <span className="text-muted-foreground text-xs">(optional — photo, document, etc.)</span></Label>
+                {evidenceFileName ? (
+                  <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                    <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="flex-1 truncate">{evidenceFileName}</span>
+                    <button
+                      type="button"
+                      onClick={() => { setEvidenceObjectPath(null); setEvidenceFileName(null); }}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className={`flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-3 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary ${isUploadingEvidence ? "opacity-50 pointer-events-none" : ""}`}>
+                    <Paperclip className="h-4 w-4 shrink-0" />
+                    <span>{isUploadingEvidence ? "Uploading…" : "Click to attach a file"}</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      disabled={isUploadingEvidence}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const result = await uploadFile(file);
+                        if (result) {
+                          setEvidenceObjectPath(result.objectPath);
+                          setEvidenceFileName(file.name);
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+            )}
 
             <Separator />
 
-            <div className="space-y-4">
-              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Threshold Assessments</p>
-
-              <div className="space-y-3 rounded-lg border p-4">
-                <div className="flex items-center gap-3">
-                  <Checkbox
-                    id="mandatory-report"
-                    checked={welfareForm.mandatoryReportRequired}
-                    onCheckedChange={(v) => setWelfareForm({ ...welfareForm, mandatoryReportRequired: !!v })}
-                  />
-                  <Label htmlFor="mandatory-report" className="font-medium cursor-pointer">
-                    Mandatory Report Required
-                  </Label>
+            {/* Threshold Assessments — editable for Admin/EL, read-only for educators */}
+            {isEducatorRole ? (
+              (welfareForm.mandatoryReportRequired || welfareForm.cissThresholdMet || welfareForm.fvissThresholdMet) && (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Threshold Assessments</p>
+                  {welfareForm.mandatoryReportRequired && (
+                    <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+                      <p className="text-sm font-medium flex items-center gap-2">
+                        <Badge variant="destructive" className="text-xs">Mandatory Report</Badge>
+                      </p>
+                      {welfareForm.mandatoryReportNotes && (
+                        <p className="text-sm text-muted-foreground">{welfareForm.mandatoryReportNotes}</p>
+                      )}
+                    </div>
+                  )}
+                  {welfareForm.cissThresholdMet && (
+                    <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+                      <p className="text-sm font-medium flex items-center gap-2">
+                        <Badge className="text-xs bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">CISS Threshold</Badge>
+                      </p>
+                      {welfareForm.cissNotes && (
+                        <p className="text-sm text-muted-foreground">{welfareForm.cissNotes}</p>
+                      )}
+                    </div>
+                  )}
+                  {welfareForm.fvissThresholdMet && (
+                    <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+                      <p className="text-sm font-medium flex items-center gap-2">
+                        <Badge className="text-xs bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100">FVISS Threshold</Badge>
+                      </p>
+                      {welfareForm.fvissNotes && (
+                        <p className="text-sm text-muted-foreground">{welfareForm.fvissNotes}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {welfareForm.mandatoryReportRequired && (
-                  <div className="ml-7 space-y-1">
-                    <Label className="text-xs text-muted-foreground">Mandatory Report Notes</Label>
-                    <Textarea
-                      value={welfareForm.mandatoryReportNotes}
-                      onChange={(e) => setWelfareForm({ ...welfareForm, mandatoryReportNotes: e.target.value })}
-                      rows={2}
-                      placeholder="Details of mandatory reporting action taken..."
+              )
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Threshold Assessments</p>
+
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      id="mandatory-report"
+                      checked={welfareForm.mandatoryReportRequired}
+                      onCheckedChange={(v) => setWelfareForm({ ...welfareForm, mandatoryReportRequired: !!v })}
                     />
+                    <Label htmlFor="mandatory-report" className="font-medium cursor-pointer">
+                      Mandatory Report Required
+                    </Label>
                   </div>
-                )}
-              </div>
-
-              <div className="space-y-3 rounded-lg border p-4">
-                <div className="flex items-center gap-3">
-                  <Checkbox
-                    id="ciss"
-                    checked={welfareForm.cissThresholdMet}
-                    onCheckedChange={(v) => setWelfareForm({ ...welfareForm, cissThresholdMet: !!v })}
-                  />
-                  <Label htmlFor="ciss" className="font-medium cursor-pointer">
-                    CISS Threshold Met
-                    <span className="ml-2 text-xs text-muted-foreground font-normal">(Child Information Sharing Scheme)</span>
-                  </Label>
+                  {welfareForm.mandatoryReportRequired && (
+                    <div className="ml-7 space-y-1">
+                      <Label className="text-xs text-muted-foreground">Mandatory Report Notes</Label>
+                      <Textarea
+                        value={welfareForm.mandatoryReportNotes}
+                        onChange={(e) => setWelfareForm({ ...welfareForm, mandatoryReportNotes: e.target.value })}
+                        rows={2}
+                        placeholder="Details of mandatory reporting action taken..."
+                      />
+                    </div>
+                  )}
                 </div>
-                {welfareForm.cissThresholdMet && (
-                  <div className="ml-7 space-y-1">
-                    <Label className="text-xs text-muted-foreground">CISS Notes</Label>
-                    <Textarea
-                      value={welfareForm.cissNotes}
-                      onChange={(e) => setWelfareForm({ ...welfareForm, cissNotes: e.target.value })}
-                      rows={2}
-                      placeholder="Information sharing actions and rationale..."
+
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      id="ciss"
+                      checked={welfareForm.cissThresholdMet}
+                      onCheckedChange={(v) => setWelfareForm({ ...welfareForm, cissThresholdMet: !!v })}
                     />
+                    <Label htmlFor="ciss" className="font-medium cursor-pointer">
+                      CISS Threshold Met
+                      <span className="ml-2 text-xs text-muted-foreground font-normal">(Child Information Sharing Scheme)</span>
+                    </Label>
                   </div>
-                )}
-              </div>
-
-              <div className="space-y-3 rounded-lg border p-4">
-                <div className="flex items-center gap-3">
-                  <Checkbox
-                    id="fviss"
-                    checked={welfareForm.fvissThresholdMet}
-                    onCheckedChange={(v) => setWelfareForm({ ...welfareForm, fvissThresholdMet: !!v })}
-                  />
-                  <Label htmlFor="fviss" className="font-medium cursor-pointer">
-                    FVISS Threshold Met
-                    <span className="ml-2 text-xs text-muted-foreground font-normal">(Family Violence Information Sharing Scheme)</span>
-                  </Label>
+                  {welfareForm.cissThresholdMet && (
+                    <div className="ml-7 space-y-1">
+                      <Label className="text-xs text-muted-foreground">CISS Notes</Label>
+                      <Textarea
+                        value={welfareForm.cissNotes}
+                        onChange={(e) => setWelfareForm({ ...welfareForm, cissNotes: e.target.value })}
+                        rows={2}
+                        placeholder="Information sharing actions and rationale..."
+                      />
+                    </div>
+                  )}
                 </div>
-                {welfareForm.fvissThresholdMet && (
-                  <div className="ml-7 space-y-1">
-                    <Label className="text-xs text-muted-foreground">FVISS Notes</Label>
-                    <Textarea
-                      value={welfareForm.fvissNotes}
-                      onChange={(e) => setWelfareForm({ ...welfareForm, fvissNotes: e.target.value })}
-                      rows={2}
-                      placeholder="Family violence information sharing actions and rationale..."
+
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      id="fviss"
+                      checked={welfareForm.fvissThresholdMet}
+                      onCheckedChange={(v) => setWelfareForm({ ...welfareForm, fvissThresholdMet: !!v })}
                     />
+                    <Label htmlFor="fviss" className="font-medium cursor-pointer">
+                      FVISS Threshold Met
+                      <span className="ml-2 text-xs text-muted-foreground font-normal">(Family Violence Information Sharing Scheme)</span>
+                    </Label>
                   </div>
-                )}
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Lock className="h-4 w-4 text-slate-500 shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">Confidential Notes</p>
-                  <p className="text-xs text-muted-foreground">Admin &amp; Educational Leader only — restriction enforced when authentication is added</p>
+                  {welfareForm.fvissThresholdMet && (
+                    <div className="ml-7 space-y-1">
+                      <Label className="text-xs text-muted-foreground">FVISS Notes</Label>
+                      <Textarea
+                        value={welfareForm.fvissNotes}
+                        onChange={(e) => setWelfareForm({ ...welfareForm, fvissNotes: e.target.value })}
+                        rows={2}
+                        placeholder="Family violence information sharing actions and rationale..."
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
-              <Textarea
-                value={welfareForm.confidentialNotes}
-                onChange={(e) => setWelfareForm({ ...welfareForm, confidentialNotes: e.target.value })}
-                rows={3}
-                placeholder="Notes restricted to Admin and Educational Leader roles only..."
-              />
-            </div>
+            )}
+
+            {/* Confidential Notes — Admin & Educational Leader only */}
+            {!isEducatorRole && (
+              <>
+                <Separator />
+                <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-slate-500 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">Confidential Notes</p>
+                      <p className="text-xs text-muted-foreground">Admin &amp; Educational Leader only</p>
+                    </div>
+                  </div>
+                  <Textarea
+                    value={welfareForm.confidentialNotes}
+                    onChange={(e) => setWelfareForm({ ...welfareForm, confidentialNotes: e.target.value })}
+                    rows={3}
+                    placeholder="Notes restricted to Admin and Educational Leader roles only..."
+                  />
+                </div>
+              </>
+            )}
 
             <div className="flex justify-end gap-2 pt-2 border-t">
               <Button type="button" variant="outline" onClick={closeWelfareDialog}>Cancel</Button>

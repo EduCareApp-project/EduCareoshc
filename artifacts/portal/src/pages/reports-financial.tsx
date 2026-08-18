@@ -321,53 +321,61 @@ export default function ReportsFinancial() {
                   <CardContent className="space-y-0 p-0">
                     <div className="divide-y">
                       {group.guardians.map((g) => (
-                        <div key={g.guardianEmail} className="px-6 py-4 space-y-3">
-                          <div className="flex flex-wrap items-start gap-x-6 gap-y-1">
-                            <Link
-                              href={`/guardians/${encodeURIComponent(g.guardianEmail)}?tab=financial`}
-                              className="font-semibold text-primary hover:underline"
-                            >
-                              {g.guardianName}
-                            </Link>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Mail className="h-3 w-3" />
-                                <a href={`mailto:${g.guardianEmail}`} className="hover:underline">
+                        <div key={g.guardianEmail} className="px-6 py-4">
+                          <div className="grid grid-cols-[minmax(180px,1.5fr)_minmax(160px,1fr)_minmax(200px,1.5fr)_minmax(160px,1.5fr)] gap-x-6 items-start text-xs">
+                            {/* Col 1 — name + contact */}
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <Link
+                                href={`/guardians/${encodeURIComponent(g.guardianEmail)}?tab=financial`}
+                                className="font-semibold text-primary hover:underline text-sm truncate"
+                              >
+                                {g.guardianName}
+                              </Link>
+                              <span className="flex items-center gap-1 text-muted-foreground truncate">
+                                <Mail className="h-3 w-3 shrink-0" />
+                                <a href={`mailto:${g.guardianEmail}`} className="hover:underline truncate">
                                   {g.guardianEmail}
                                 </a>
                               </span>
                               {g.guardianPhone && (
-                                <span className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
+                                <span className="flex items-center gap-1 text-muted-foreground">
+                                  <Phone className="h-3 w-3 shrink-0" />
                                   <a href={`tel:${g.guardianPhone}`} className="hover:underline">
                                     {g.guardianPhone}
                                   </a>
                                 </span>
                               )}
                             </div>
-                          </div>
 
-                          {/* Reasoning + last comm */}
-                          {(g.reasoning || g.lastComm) && (
-                            <div className="flex flex-wrap gap-4 text-xs">
-                              {g.reasoning && (
-                                <div className="flex flex-col gap-0.5 min-w-[180px]">
+                            {/* Col 2 — reason */}
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              {g.reasoning ? (
+                                <>
                                   <span className="font-medium text-muted-foreground uppercase tracking-wide text-[10px]">Reason</span>
                                   <span className="text-foreground">{g.reasoning}</span>
-                                </div>
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground italic">—</span>
                               )}
-                              {g.lastComm && (
-                                <div className="flex flex-col gap-0.5 flex-1 min-w-[200px]">
+                            </div>
+
+                            {/* Col 3 — last contact */}
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              {g.lastComm ? (
+                                <>
                                   <span className="font-medium text-muted-foreground uppercase tracking-wide text-[10px]">
                                     Last Contact · {fmtMelb(g.lastComm.createdAt, "dd/MM/yyyy")}
                                     {g.lastComm.staffName && ` · ${g.lastComm.staffName}`}
                                   </span>
                                   <span className="text-foreground line-clamp-2">{g.lastComm.note}</span>
-                                </div>
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground italic">—</span>
                               )}
                             </div>
-                          )}
 
+                            {/* Col 4 — payment plans */}
+                            <div className="min-w-0">
                           {g.plans.length === 0 ? (
                             <p className="text-xs text-muted-foreground italic">
                               No payment plans recorded.
@@ -436,6 +444,8 @@ export default function ReportsFinancial() {
                               })}
                             </div>
                           )}
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>

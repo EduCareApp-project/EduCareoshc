@@ -155,7 +155,7 @@ router.get("/guardians/financial/on-radar", async (req, res): Promise<void> => {
 
     const radarEmails = radarAccounts.map((a) => a.guardianEmail);
 
-    const [childrenByPrimary, childrenBySecondary, allPlans, allSites] = await Promise.all([
+    const [childrenByPrimary, childrenBySecondary, allPlans, allSites, latestComms] = await Promise.all([
       db.select().from(childrenTable).where(inArray(childrenTable.guardianEmail, radarEmails)),
       db.select().from(childrenTable).where(inArray(childrenTable.guardian2Email, radarEmails)),
       db
@@ -164,6 +164,11 @@ router.get("/guardians/financial/on-radar", async (req, res): Promise<void> => {
         .where(inArray(guardianPaymentPlansTable.guardianEmail, radarEmails))
         .orderBy(desc(guardianPaymentPlansTable.createdAt)),
       db.select().from(sitesTable).where(eq(sitesTable.status, "active")),
+      db
+        .select()
+        .from(guardianCommunicationLogsTable)
+        .where(inArray(guardianCommunicationLogsTable.guardianEmail, radarEmails))
+        .orderBy(desc(guardianCommunicationLogsTable.createdAt)),
     ]);
 
     // Merge child lists, de-duplicating by id
@@ -179,10 +184,26 @@ router.get("/guardians/financial/on-radar", async (req, res): Promise<void> => {
       plansByEmail.set(plan.guardianEmail, list);
     }
 
+    // Index most-recent comm by guardian email (already ordered desc, first match wins)
+    const latestCommByEmail = new Map<string, (typeof latestComms)[number]>();
+    for (const comm of latestComms) {
+      if (!latestCommByEmail.has(comm.guardianEmail)) {
+        latestCommByEmail.set(comm.guardianEmail, comm);
+      }
+    }
+
+    // Index reasoning by guardian email
+    const reasoningByEmail = new Map<string, string | null>();
+    for (const acct of radarAccounts) {
+      reasoningByEmail.set(acct.guardianEmail, acct.reasoning ?? null);
+    }
+
     type GuardianEntry = {
       guardianEmail: string;
       guardianName: string;
       guardianPhone: string;
+      reasoning: string | null;
+      lastComm: { note: string; staffName: string | null; createdAt: string } | null;
       plans: (typeof allPlans);
     };
 
@@ -200,10 +221,13 @@ router.get("/guardians/financial/on-radar", async (req, res): Promise<void> => {
       // Primary guardian
       if (child.guardianEmail && radarEmails.includes(child.guardianEmail)) {
         if (!siteEntry.guardians.has(child.guardianEmail)) {
+          const lc = latestCommByEmail.get(child.guardianEmail) ?? null;
           siteEntry.guardians.set(child.guardianEmail, {
             guardianEmail: child.guardianEmail,
             guardianName: child.guardianName,
             guardianPhone: child.guardianPhone,
+            reasoning: reasoningByEmail.get(child.guardianEmail) ?? null,
+            lastComm: lc ? { note: lc.note, staffName: lc.staffName, createdAt: lc.createdAt.toISOString() } : null,
             plans: plansByEmail.get(child.guardianEmail) ?? [],
           });
         }
@@ -212,10 +236,13 @@ router.get("/guardians/financial/on-radar", async (req, res): Promise<void> => {
       // Secondary guardian
       if (child.guardian2Email && radarEmails.includes(child.guardian2Email)) {
         if (!siteEntry.guardians.has(child.guardian2Email)) {
+          const lc = latestCommByEmail.get(child.guardian2Email) ?? null;
           siteEntry.guardians.set(child.guardian2Email, {
             guardianEmail: child.guardian2Email,
             guardianName: child.guardian2Name ?? child.guardian2Email,
             guardianPhone: child.guardian2Phone ?? "",
+            reasoning: reasoningByEmail.get(child.guardian2Email) ?? null,
+            lastComm: lc ? { note: lc.note, staffName: lc.staffName, createdAt: lc.createdAt.toISOString() } : null,
             plans: plansByEmail.get(child.guardian2Email) ?? [],
           });
         }
@@ -263,6 +290,7 @@ router.get("/guardians/:email/financial", async (req, res): Promise<void> => {
 
     res.json({
       status: account?.status ?? "active",
+      reasoning: account?.reasoning ?? null,
       communications,
       plans,
     });
@@ -272,23 +300,24 @@ router.get("/guardians/:email/financial", async (req, res): Promise<void> => {
   }
 });
 
-// PATCH /guardians/:email/financial — update financial status
+// PATCH /guardians/:email/financial — update financial status + reasoning
 router.patch("/guardians/:email/financial", async (req, res): Promise<void> => {
   const email = decodeURIComponent(req.params.email ?? "");
-  const { status } = req.body ?? {};
+  const { status, reasoning } = req.body ?? {};
   if (!VALID_STATUSES.includes(status as FinancialStatus)) {
     res.status(400).json({ error: "Invalid status. Must be active, payment_plan, or suspended." });
     return;
   }
+  const reasoningValue = reasoning?.trim() || null;
   try {
     await db
       .insert(guardianFinancialAccountsTable)
-      .values({ guardianEmail: email, status, updatedAt: new Date() })
+      .values({ guardianEmail: email, status, reasoning: reasoningValue, updatedAt: new Date() })
       .onConflictDoUpdate({
         target: [guardianFinancialAccountsTable.guardianEmail],
-        set: { status, updatedAt: new Date() },
+        set: { status, reasoning: reasoningValue, updatedAt: new Date() },
       });
-    res.json({ status });
+    res.json({ status, reasoning: reasoningValue });
   } catch (err) {
     req.log.error({ err }, "Failed to update guardian financial status");
     res.status(500).json({ error: "Failed to update status" });

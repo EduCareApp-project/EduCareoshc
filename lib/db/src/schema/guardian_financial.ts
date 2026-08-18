@@ -5,6 +5,7 @@ export const guardianFinancialAccountsTable = pgTable("guardian_financial_accoun
   id: serial("id").primaryKey(),
   guardianEmail: text("guardian_email").notNull().unique(),
   status: text("status").notNull().default("active"), // active | payment_plan | suspended
+  reasoning: text("reasoning"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

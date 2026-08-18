@@ -28,6 +28,7 @@ type FinancialStatus = "active" | "payment_plan" | "suspended";
 
 type FinancialData = {
   status: FinancialStatus;
+  reasoning: string | null;
   communications: Array<{
     id: number;
     note: string;
@@ -89,6 +90,7 @@ export function GuardianFinancialTab({ encodedEmail, guardianName }: Props) {
   // ── Status editing ─────────────────────────────────────────────────────────
   const [editingStatus, setEditingStatus] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<FinancialStatus>("active");
+  const [pendingReasoning, setPendingReasoning] = useState("");
   const [savingStatus, setSavingStatus] = useState(false);
 
   // ── Communication log form ─────────────────────────────────────────────────
@@ -126,7 +128,7 @@ export function GuardianFinancialTab({ encodedEmail, guardianName }: Props) {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: pendingStatus }),
+        body: JSON.stringify({ status: pendingStatus, reasoning: pendingReasoning }),
       });
       if (!res.ok) throw new Error("Failed");
       await queryClient.invalidateQueries({ queryKey: qKey });
@@ -275,7 +277,7 @@ export function GuardianFinancialTab({ encodedEmail, guardianName }: Props) {
                 size="sm"
                 variant="ghost"
                 className="gap-1.5 text-muted-foreground"
-                onClick={() => { setPendingStatus(status); setEditingStatus(true); }}
+                onClick={() => { setPendingStatus(status); setPendingReasoning(data?.reasoning ?? ""); setEditingStatus(true); }}
               >
                 <Pencil className="h-3.5 w-3.5" /> Edit
               </Button>
@@ -284,34 +286,51 @@ export function GuardianFinancialTab({ encodedEmail, guardianName }: Props) {
         </CardHeader>
         <CardContent>
           {!editingStatus ? (
-            <span
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium ${statusCfg.badgeClass}`}
-            >
-              <StatusIcon className="h-4 w-4" />
-              {statusCfg.label}
-            </span>
-          ) : (
-            <div className="flex items-center gap-3 flex-wrap">
-              <Select
-                value={pendingStatus}
-                onValueChange={(v) => setPendingStatus(v as FinancialStatus)}
+            <div className="space-y-2">
+              <span
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium ${statusCfg.badgeClass}`}
               >
-                <SelectTrigger className="w-44">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="payment_plan">Payment Plan</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button size="sm" onClick={handleSaveStatus} disabled={savingStatus} className="gap-1.5">
-                <Save className="h-3.5 w-3.5" />
-                {savingStatus ? "Saving…" : "Save"}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setEditingStatus(false)}>
-                <X className="h-3.5 w-3.5" />
-              </Button>
+                <StatusIcon className="h-4 w-4" />
+                {statusCfg.label}
+              </span>
+              {data?.reasoning && (
+                <p className="text-sm text-muted-foreground">{data.reasoning}</p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <Select
+                  value={pendingStatus}
+                  onValueChange={(v) => setPendingStatus(v as FinancialStatus)}
+                >
+                  <SelectTrigger className="w-44">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="payment_plan">Payment Plan</SelectItem>
+                    <SelectItem value="suspended">Suspended</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button size="sm" onClick={handleSaveStatus} disabled={savingStatus} className="gap-1.5">
+                  <Save className="h-3.5 w-3.5" />
+                  {savingStatus ? "Saving…" : "Save"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditingStatus(false)}>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Reasoning</Label>
+                <Textarea
+                  value={pendingReasoning}
+                  onChange={(e) => setPendingReasoning(e.target.value)}
+                  placeholder="Optional notes explaining this status…"
+                  rows={3}
+                  className="text-sm"
+                />
+              </div>
             </div>
           )}
         </CardContent>

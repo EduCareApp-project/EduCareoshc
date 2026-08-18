@@ -78,11 +78,7 @@ export default function ReportsFinancial() {
   );
 
   const siteIdParam =
-    isEducatorRole && ownSiteId
-      ? ownSiteId
-      : filterSiteId !== "__all__"
-        ? parseInt(filterSiteId, 10)
-        : null;
+    filterSiteId !== "__all__" ? parseInt(filterSiteId, 10) : null;
 
   const siteQuery = siteIdParam ? `?siteId=${siteIdParam}` : "";
 
@@ -146,21 +142,19 @@ export default function ReportsFinancial() {
               : "Guardians with suspended or payment-plan financial status."}
           </p>
         </div>
-        {!isEducatorRole && (
-          <Select value={filterSiteId} onValueChange={setFilterSiteId}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="All sites" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">All sites</SelectItem>
-              {(sites ?? []).map((s) => (
-                <SelectItem key={s.id} value={String(s.id)}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        <Select value={filterSiteId} onValueChange={setFilterSiteId}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="All sites" />
+          </SelectTrigger>
+          <SelectContent>
+            {!isEducatorRole && <SelectItem value="__all__">All sites</SelectItem>}
+            {(sites ?? []).map((s) => (
+              <SelectItem key={s.id} value={String(s.id)}>
+                {s.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* ── On the Radar — hidden for educator/coordinator roles ──────────── */}

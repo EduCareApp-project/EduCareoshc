@@ -137,6 +137,108 @@ router.get("/guardians/financial/suspended-report", async (req, res): Promise<vo
   }
 });
 
+// ── On the Radar report (payment_plan status) ─────────────────────────────────
+// NOTE: Must stay before /:email routes.
+router.get("/guardians/financial/on-radar", async (req, res): Promise<void> => {
+  const siteIdParam = req.query.siteId ? parseInt(req.query.siteId as string, 10) : null;
+
+  try {
+    const radarAccounts = await db
+      .select()
+      .from(guardianFinancialAccountsTable)
+      .where(eq(guardianFinancialAccountsTable.status, "payment_plan"));
+
+    if (radarAccounts.length === 0) {
+      res.json([]);
+      return;
+    }
+
+    const radarEmails = radarAccounts.map((a) => a.guardianEmail);
+
+    const [childrenByPrimary, childrenBySecondary, allPlans, allSites] = await Promise.all([
+      db.select().from(childrenTable).where(inArray(childrenTable.guardianEmail, radarEmails)),
+      db.select().from(childrenTable).where(inArray(childrenTable.guardian2Email, radarEmails)),
+      db
+        .select()
+        .from(guardianPaymentPlansTable)
+        .where(inArray(guardianPaymentPlansTable.guardianEmail, radarEmails))
+        .orderBy(desc(guardianPaymentPlansTable.createdAt)),
+      db.select().from(sitesTable).where(eq(sitesTable.status, "active")),
+    ]);
+
+    // Merge child lists, de-duplicating by id
+    const childMap = new Map<number, (typeof childrenByPrimary)[number]>();
+    for (const c of [...childrenByPrimary, ...childrenBySecondary]) childMap.set(c.id, c);
+    const allChildren = Array.from(childMap.values());
+
+    // Index plans by guardian email
+    const plansByEmail = new Map<string, (typeof allPlans)>();
+    for (const plan of allPlans) {
+      const list = plansByEmail.get(plan.guardianEmail) ?? [];
+      list.push(plan);
+      plansByEmail.set(plan.guardianEmail, list);
+    }
+
+    type GuardianEntry = {
+      guardianEmail: string;
+      guardianName: string;
+      guardianPhone: string;
+      plans: (typeof allPlans);
+    };
+
+    const siteMap = new Map<number, { siteName: string; guardians: Map<string, GuardianEntry> }>();
+
+    for (const child of allChildren) {
+      if (!child.siteId) continue;
+      const site = allSites.find((s) => s.id === child.siteId);
+      if (!site) continue;
+      if (siteIdParam !== null && site.id !== siteIdParam) continue;
+
+      if (!siteMap.has(site.id)) siteMap.set(site.id, { siteName: site.name, guardians: new Map() });
+      const siteEntry = siteMap.get(site.id)!;
+
+      // Primary guardian
+      if (child.guardianEmail && radarEmails.includes(child.guardianEmail)) {
+        if (!siteEntry.guardians.has(child.guardianEmail)) {
+          siteEntry.guardians.set(child.guardianEmail, {
+            guardianEmail: child.guardianEmail,
+            guardianName: child.guardianName,
+            guardianPhone: child.guardianPhone,
+            plans: plansByEmail.get(child.guardianEmail) ?? [],
+          });
+        }
+      }
+
+      // Secondary guardian
+      if (child.guardian2Email && radarEmails.includes(child.guardian2Email)) {
+        if (!siteEntry.guardians.has(child.guardian2Email)) {
+          siteEntry.guardians.set(child.guardian2Email, {
+            guardianEmail: child.guardian2Email,
+            guardianName: child.guardian2Name ?? child.guardian2Email,
+            guardianPhone: child.guardian2Phone ?? "",
+            plans: plansByEmail.get(child.guardian2Email) ?? [],
+          });
+        }
+      }
+    }
+
+    const result = Array.from(siteMap.entries())
+      .sort(([, a], [, b]) => a.siteName.localeCompare(b.siteName))
+      .map(([siteId, { siteName, guardians }]) => ({
+        siteId,
+        siteName,
+        guardians: Array.from(guardians.values()).sort((a, b) =>
+          a.guardianName.localeCompare(b.guardianName)
+        ),
+      }));
+
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch on-radar report");
+    res.status(500).json({ error: "Failed to fetch report" });
+  }
+});
+
 // ── Per-guardian financial endpoints ─────────────────────────────────────────
 
 // GET /guardians/:email/financial — fetch status + logs + plans
@@ -243,7 +345,7 @@ router.delete(
 // POST /guardians/:email/financial/payment-plans — add a payment plan
 router.post("/guardians/:email/financial/payment-plans", async (req, res): Promise<void> => {
   const email = decodeURIComponent(req.params.email ?? "");
-  const { type, amount, frequency, description } = req.body ?? {};
+  const { type, amount, frequency, description, expectedDate, startDate, endDate } = req.body ?? {};
 
   if (!["one_off", "recurring"].includes(type)) {
     res.status(400).json({ error: "Type must be one_off or recurring" }); return;
@@ -265,6 +367,9 @@ router.post("/guardians/:email/financial/payment-plans", async (req, res): Promi
         amount: String(parsedAmount),
         frequency: type === "recurring" ? frequency : null,
         description: description?.trim() || null,
+        expectedDate: type === "one_off" && expectedDate ? String(expectedDate) : null,
+        startDate: startDate ? String(startDate) : null,
+        endDate: endDate ? String(endDate) : null,
       })
       .returning();
     res.status(201).json(plan);
@@ -273,6 +378,33 @@ router.post("/guardians/:email/financial/payment-plans", async (req, res): Promi
     res.status(500).json({ error: "Failed to create plan" });
   }
 });
+
+// PATCH /guardians/:email/financial/payment-plans/:id — toggle received state
+router.patch(
+  "/guardians/:email/financial/payment-plans/:id",
+  async (req, res): Promise<void> => {
+    const email = decodeURIComponent(req.params.email ?? "");
+    const id = parseInt(req.params.id ?? "", 10);
+    if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+    const { received } = req.body ?? {};
+    try {
+      await db
+        .update(guardianPaymentPlansTable)
+        .set({ receivedAt: received ? new Date() : null })
+        .where(
+          and(
+            eq(guardianPaymentPlansTable.id, id),
+            eq(guardianPaymentPlansTable.guardianEmail, email)
+          )
+        );
+      res.json({ ok: true });
+    } catch (err) {
+      req.log.error({ err }, "Failed to update payment plan received state");
+      res.status(500).json({ error: "Failed to update plan" });
+    }
+  }
+);
 
 // DELETE /guardians/:email/financial/payment-plans/:id
 router.delete(

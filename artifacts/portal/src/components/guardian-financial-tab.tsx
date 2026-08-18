@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth";
 import {
@@ -41,6 +40,10 @@ type FinancialData = {
     amount: string;
     frequency: string | null;
     description: string | null;
+    expectedDate: string | null;
+    startDate: string | null;
+    endDate: string | null;
+    receivedAt: string | null;
     createdAt: string;
   }>;
 };
@@ -91,7 +94,6 @@ export function GuardianFinancialTab({ encodedEmail, guardianName }: Props) {
   // ── Communication log form ─────────────────────────────────────────────────
   const [showCommForm, setShowCommForm] = useState(false);
   const [commNote, setCommNote] = useState("");
-  const [commStaff, setCommStaff] = useState(user?.name ?? "");
   const [savingComm, setSavingComm] = useState(false);
 
   // ── Payment plan form ──────────────────────────────────────────────────────
@@ -100,6 +102,9 @@ export function GuardianFinancialTab({ encodedEmail, guardianName }: Props) {
   const [planAmount, setPlanAmount] = useState("");
   const [planFrequency, setPlanFrequency] = useState("weekly");
   const [planDesc, setPlanDesc] = useState("");
+  const [planExpectedDate, setPlanExpectedDate] = useState("");
+  const [planStartDate, setPlanStartDate] = useState("");
+  const [planEndDate, setPlanEndDate] = useState("");
   const [savingPlan, setSavingPlan] = useState(false);
 
   // ── Data fetching ──────────────────────────────────────────────────────────
@@ -142,7 +147,7 @@ export function GuardianFinancialTab({ encodedEmail, guardianName }: Props) {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note: commNote, staffName: commStaff }),
+        body: JSON.stringify({ note: commNote, staffName: user?.name ?? null }),
       });
       if (!res.ok) throw new Error("Failed");
       await queryClient.invalidateQueries({ queryKey: qKey });
@@ -183,6 +188,9 @@ export function GuardianFinancialTab({ encodedEmail, guardianName }: Props) {
           amount: planAmount,
           frequency: planType === "recurring" ? planFrequency : undefined,
           description: planDesc,
+          expectedDate: planType === "one_off" && planExpectedDate ? planExpectedDate : undefined,
+          startDate: planStartDate || undefined,
+          endDate: planEndDate || undefined,
         }),
       });
       if (!res.ok) {
@@ -192,6 +200,9 @@ export function GuardianFinancialTab({ encodedEmail, guardianName }: Props) {
       await queryClient.invalidateQueries({ queryKey: qKey });
       setPlanAmount("");
       setPlanDesc("");
+      setPlanExpectedDate("");
+      setPlanStartDate("");
+      setPlanEndDate("");
       setPlanType("one_off");
       setShowPlanForm(false);
       toast({ title: "Payment plan added" });
@@ -213,6 +224,25 @@ export function GuardianFinancialTab({ encodedEmail, guardianName }: Props) {
       toast({ title: "Plan deleted" });
     } catch {
       toast({ title: "Failed to delete", variant: "destructive" });
+    }
+  }
+
+  async function handleMarkReceived(id: number, currentlyReceived: boolean) {
+    try {
+      const res = await fetch(
+        `/api/guardians/${encodedEmail}/financial/payment-plans/${id}`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ received: !currentlyReceived }),
+        }
+      );
+      if (!res.ok) throw new Error("Failed");
+      await queryClient.invalidateQueries({ queryKey: qKey });
+      toast({ title: currentlyReceived ? "Marked as unpaid" : "Payment received — recorded" });
+    } catch {
+      toast({ title: "Failed to update", variant: "destructive" });
     }
   }
 
@@ -309,15 +339,9 @@ export function GuardianFinancialTab({ encodedEmail, guardianName }: Props) {
         <CardContent className="space-y-4">
           {showCommForm && (
             <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Your name</Label>
-                <Input
-                  value={commStaff}
-                  onChange={(e) => setCommStaff(e.target.value)}
-                  placeholder="Staff name…"
-                  className="h-8 text-sm"
-                />
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Recording as <span className="font-medium text-foreground">{user?.name ?? "you"}</span>
+              </p>
               <div className="space-y-1.5">
                 <Label className="text-xs">Notes from conversation</Label>
                 <Textarea
@@ -344,9 +368,9 @@ export function GuardianFinancialTab({ encodedEmail, guardianName }: Props) {
               No communication entries yet.
             </p>
           ) : (
-            <div className="divide-y">
+            <div className="space-y-2">
               {communications.map((entry) => (
-                <div key={entry.id} className="py-3 flex gap-3">
+                <div key={entry.id} className="border rounded-lg p-3 flex gap-3">
                   <div className="flex-1 space-y-1 min-w-0">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">
@@ -423,6 +447,38 @@ export function GuardianFinancialTab({ encodedEmail, guardianName }: Props) {
                   </div>
                 )}
               </div>
+              {planType === "one_off" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Expected payment date (optional)</Label>
+                  <Input
+                    type="date"
+                    value={planExpectedDate}
+                    onChange={(e) => setPlanExpectedDate(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+              )}
+              {/* Start / End dates */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Start date (optional)</Label>
+                  <Input
+                    type="date"
+                    value={planStartDate}
+                    onChange={(e) => setPlanStartDate(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">End date (optional)</Label>
+                  <Input
+                    type="date"
+                    value={planEndDate}
+                    onChange={(e) => setPlanEndDate(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </div>
               {/* Amount */}
               <div className="space-y-1.5">
                 <Label className="text-xs">Amount ($)</Label>
@@ -470,43 +526,90 @@ export function GuardianFinancialTab({ encodedEmail, guardianName }: Props) {
               No payment plans recorded yet.
             </p>
           ) : (
-            <div className="divide-y">
-              {plans.map((plan) => (
-                <div key={plan.id} className="py-3 flex items-start gap-3">
-                  <div className="flex-1 min-w-0 space-y-0.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge
-                        variant="outline"
-                        className={
-                          plan.type === "recurring"
-                            ? "text-blue-700 border-blue-200 bg-blue-50"
-                            : "text-purple-700 border-purple-200 bg-purple-50"
-                        }
-                      >
-                        {plan.type === "recurring"
-                          ? `${FREQ_LABELS[plan.frequency ?? ""] ?? plan.frequency}`
-                          : "One-off"}
-                      </Badge>
-                      <span className="font-semibold text-sm">
-                        ${parseFloat(plan.amount).toFixed(2)}
-                      </span>
+            <div className="space-y-2">
+              {plans.map((plan) => {
+                const isReceived = !!plan.receivedAt;
+                const fmtDate = (d: string | null) => {
+                  if (!d) return null;
+                  const [y, m, day] = d.split("-");
+                  return `${day}/${m}/${y}`;
+                };
+                const expectedFormatted = fmtDate(plan.expectedDate);
+                const startFormatted = fmtDate(plan.startDate);
+                const endFormatted = fmtDate(plan.endDate);
+                return (
+                  <div key={plan.id} className="border rounded-lg p-3 flex items-start gap-3">
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge
+                          variant="outline"
+                          className={
+                            plan.type === "recurring"
+                              ? "text-blue-700 border-blue-200 bg-blue-50"
+                              : "text-purple-700 border-purple-200 bg-purple-50"
+                          }
+                        >
+                          {plan.type === "recurring"
+                            ? `${FREQ_LABELS[plan.frequency ?? ""] ?? plan.frequency}`
+                            : "One-off"}
+                        </Badge>
+                        <span className="font-semibold text-sm">
+                          ${parseFloat(plan.amount).toFixed(2)}
+                        </span>
+                        {isReceived && (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Received {fmtMelb(plan.receivedAt!, "dd/MM/yyyy")}
+                          </span>
+                        )}
+                      </div>
+                      {expectedFormatted && !isReceived && (
+                        <p className="text-xs text-muted-foreground">
+                          Expected: {expectedFormatted}
+                        </p>
+                      )}
+                      {(startFormatted || endFormatted) && (
+                        <p className="text-xs text-muted-foreground">
+                          {startFormatted && endFormatted
+                            ? `${startFormatted} – ${endFormatted}`
+                            : startFormatted
+                            ? `From ${startFormatted}`
+                            : `Until ${endFormatted}`}
+                        </p>
+                      )}
+                      {plan.description && (
+                        <p className="text-xs text-muted-foreground">{plan.description}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Added {fmtMelb(plan.createdAt, "dd/MM/yyyy")}
+                      </p>
                     </div>
-                    {plan.description && (
-                      <p className="text-xs text-muted-foreground">{plan.description}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      Added {fmtMelb(plan.createdAt, "dd/MM/yyyy")}
-                    </p>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {plan.type === "one_off" && (
+                        <button
+                          onClick={() => handleMarkReceived(plan.id, isReceived)}
+                          title={isReceived ? "Undo — mark as unpaid" : "Mark payment as received"}
+                          className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded border transition-colors ${
+                            isReceived
+                              ? "text-green-700 border-green-200 bg-green-50 hover:bg-green-100"
+                              : "text-muted-foreground border-border hover:text-green-700 hover:border-green-300 hover:bg-green-50"
+                          }`}
+                        >
+                          <CheckCircle2 className="h-3 w-3" />
+                          {isReceived ? "Received" : "Mark Received"}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDeletePlan(plan.id)}
+                        className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                        title="Delete plan"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => handleDeletePlan(plan.id)}
-                    className="text-muted-foreground hover:text-destructive transition-colors shrink-0 mt-0.5"
-                    title="Delete plan"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

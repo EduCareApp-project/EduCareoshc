@@ -7,7 +7,7 @@ import {
   useListChildren,
   useUpdateChild,
 } from "@workspace/api-client-react";
-import { useParams, Link, useLocation } from "wouter";
+import { useParams, Link, useLocation, useSearch } from "wouter";
 import { GuardianFinancialTab } from "@/components/guardian-financial-tab";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -166,7 +166,8 @@ function initials(name: string) {
 export default function GuardianDetail() {
   const { email: encodedEmail } = useParams<{ email: string }>();
   const [, setLocation] = useLocation();
-  const activeTab = new URLSearchParams(window.location.search).get("tab") ?? "overview";
+  const search = useSearch();
+  const activeTab = new URLSearchParams(search).get("tab") ?? "overview";
   const email = decodeURIComponent(encodedEmail ?? "");
 
   const { data: guardian, isLoading } = useGetGuardian(encodedEmail ?? "");

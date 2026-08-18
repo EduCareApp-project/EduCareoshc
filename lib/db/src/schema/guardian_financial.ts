@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, numeric } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, numeric, date } from "drizzle-orm/pg-core";
 
 /** Overall billing/financial status for a guardian. Created on first access (upsert). */
 export const guardianFinancialAccountsTable = pgTable("guardian_financial_accounts", {
@@ -29,6 +29,10 @@ export const guardianPaymentPlansTable = pgTable("guardian_payment_plans", {
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   frequency: text("frequency"), // weekly | fortnightly | monthly — null for one_off
   description: text("description"),
+  expectedDate: date("expected_date"), // for one_off plans: the expected payment date
+  startDate: date("start_date"),       // plan start date
+  endDate: date("end_date"),           // plan end date
+  receivedAt: timestamp("received_at", { withTimezone: true }), // set when payment confirmed
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

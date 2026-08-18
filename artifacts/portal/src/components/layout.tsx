@@ -53,6 +53,7 @@ import {
 } from "@workspace/api-client-react";
 
 type AccessSettings = Record<string, string[]>;
+type NavItem = { href: string; label: string; educatorLabel?: string; icon: React.ElementType };
 
 const NAV_GROUPS = [
   {
@@ -100,7 +101,7 @@ const NAV_GROUPS = [
       { href: "/reports/system-access", label: "System Access", icon: UserCog },
       { href: "/appraisals", label: "Appraisals", icon: Star },
       { href: "/clickup-reports", label: "Site Visits", icon: ClipboardList },
-      { href: "/reports/financial", label: "Financial Accounts", icon: CreditCard },
+      { href: "/reports/financial", label: "Financial Accounts", educatorLabel: "Suspensions Report", icon: CreditCard },
     ]
   },
   {
@@ -382,7 +383,8 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
                   {group.label}
                 </p>
               )}
-              {group.items.map(({ href, label, icon: Icon }) => {
+              {group.items.map(({ href, label, educatorLabel, icon: Icon }: NavItem) => {
+                const displayLabel = isEducatorRole && educatorLabel ? educatorLabel : label;
                 const isActive = href === "/" ? location === "/" : location.startsWith(href);
                 return (
                   <Link key={href} href={href} onClick={onNavigate}>
@@ -394,7 +396,7 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
                       }`}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
-                      {label}
+                      {displayLabel}
                     </div>
                   </Link>
                 );

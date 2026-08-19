@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { db, childrenTable, staffTable, observationsTable, outcomesTable, evacuationsTable, incidentsTable, conditionReportsTable, qipItemsTable, checklistRoutinesTable, professionalDevelopmentTable, staffQualificationsTable, postsTable, organisationTable } from "@workspace/db";
 import { GetLearningStoriesReportResponse, GetServiceComplianceReportResponse, GetStaffComplianceReportResponse } from "@workspace/api-zod";
 
@@ -163,7 +163,7 @@ function deriveComplianceStatus(
 router.get("/reports/staff-compliance", async (req, res): Promise<void> => {
   try {
     const [allStaff, allPd, allQuals, orgRow] = await Promise.all([
-      db.select().from(staffTable).where(eq(staffTable.status, "active")),
+      db.select().from(staffTable).where(and(eq(staffTable.status, "active"), ne(staffTable.isSuperAdmin, true))),
       db.select().from(professionalDevelopmentTable),
       db.select().from(staffQualificationsTable),
       db.select({ featureSettings: organisationTable.featureSettings }).from(organisationTable).limit(1),
@@ -266,7 +266,7 @@ router.get("/reports/qualification-check", async (req, res): Promise<void> => {
 
   try {
     const [activeStaff, allQuals] = await Promise.all([
-      db.select().from(staffTable).where(eq(staffTable.status, "active")),
+      db.select().from(staffTable).where(and(eq(staffTable.status, "active"), ne(staffTable.isSuperAdmin, true))),
       db.select().from(staffQualificationsTable),
     ]);
 

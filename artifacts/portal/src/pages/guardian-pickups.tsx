@@ -5,11 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
-interface ApprovedPickup { id: string; fullName: string; phone: string; relationship: string; }
+interface ApprovedPickup {
+  id: string;
+  fullName: string;
+  phone: string;
+  relationship: string;
+  isApprovedPickup?: boolean;
+  isEmergencyContact?: boolean;
+}
 interface Child {
   id: number;
   firstName: string;
@@ -19,7 +27,7 @@ interface Child {
 
 function randomId() { return Math.random().toString(36).slice(2); }
 
-const EMPTY_FORM = { fullName: "", phone: "", relationship: "" };
+const EMPTY_FORM = { fullName: "", phone: "", relationship: "", isApprovedPickup: true, isEmergencyContact: false };
 
 async function savePickupsForChild(childId: number, pickups: ApprovedPickup[]) {
   const res = await fetch(`/api/auth/my-children/${childId}/pickups`, {
@@ -46,7 +54,6 @@ export default function GuardianPickups() {
   });
 
   // Build a merged, deduplicated pickup list across all children (dedup by id).
-  // If the same person (same id) exists on multiple children they appear once.
   const mergedPickups: ApprovedPickup[] = [];
   const seen = new Set<string>();
   for (const child of children ?? []) {
@@ -61,11 +68,7 @@ export default function GuardianPickups() {
   const saveMutation = useMutation({
     mutationFn: async ({ next }: { next: ApprovedPickup[] }) => {
       if (!children) return;
-      await Promise.all(children.map((child) => {
-        // Keep child-specific pickups that aren't in the merged list (edge case),
-        // then replace with the new merged list.
-        return savePickupsForChild(child.id, next);
-      }));
+      await Promise.all(children.map((child) => savePickupsForChild(child.id, next)));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/my-children"] });
@@ -131,12 +134,22 @@ export default function GuardianPickups() {
               <p className="text-sm text-muted-foreground italic">No approved pick-ups recorded yet.</p>
             )}
 
-            {mergedPickups.map((p, i) => (
-              <div key={p.id} className="flex items-start justify-between gap-3 text-sm border rounded-lg p-3">
-                <div>
-                  <p className="font-medium">Pick Up {i + 1} — {p.fullName}</p>
-                  {p.relationship && <p className="text-muted-foreground">{p.relationship}</p>}
-                  {p.phone && <p className="text-muted-foreground">{p.phone}</p>}
+            {mergedPickups.map((p) => (
+              <div key={p.id} className="flex items-center justify-between gap-3 text-sm border rounded-lg p-3">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <p className="font-medium">{p.fullName}</p>
+                  {(p.isApprovedPickup ?? true) && (
+                    <span className="inline-flex items-center rounded-full bg-green-100 text-green-800 px-2 py-0.5 text-xs font-medium">
+                      Approved Pick Up
+                    </span>
+                  )}
+                  {p.isEmergencyContact && (
+                    <span className="inline-flex items-center rounded-full bg-red-100 text-red-800 px-2 py-0.5 text-xs font-medium">
+                      Emergency Contact
+                    </span>
+                  )}
+                  {p.phone && <span className="text-muted-foreground">{p.phone}</span>}
+                  {p.relationship && <span className="text-muted-foreground">{p.relationship}</span>}
                 </div>
                 <Button
                   size="icon"
@@ -153,7 +166,7 @@ export default function GuardianPickups() {
             {adding ? (
               <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
                 <p className="text-sm font-medium">
-                  New Pick Up {mergedPickups.length + 1}
+                  New Contact
                   {multipleChildren && (
                     <span className="ml-2 text-xs font-normal text-muted-foreground">
                       — will be added for all {childCount} children
@@ -167,6 +180,7 @@ export default function GuardianPickups() {
                       value={form.fullName}
                       onChange={(e) => setForm({ ...form, fullName: e.target.value })}
                       placeholder="Jane Smith"
+                      autoFocus
                     />
                   </div>
                   <div className="space-y-1">
@@ -184,6 +198,27 @@ export default function GuardianPickups() {
                       onChange={(e) => setForm({ ...form, relationship: e.target.value })}
                       placeholder="Aunt, Uncle, Grandparent…"
                     />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Role</Label>
+                  <div className="flex flex-wrap gap-4">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="guardian-approved"
+                        checked={form.isApprovedPickup}
+                        onCheckedChange={(v) => setForm({ ...form, isApprovedPickup: !!v })}
+                      />
+                      <label htmlFor="guardian-approved" className="text-sm cursor-pointer select-none">Approved Pick Up</label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="guardian-emergency"
+                        checked={form.isEmergencyContact}
+                        onCheckedChange={(v) => setForm({ ...form, isEmergencyContact: !!v })}
+                      />
+                      <label htmlFor="guardian-emergency" className="text-sm cursor-pointer select-none">Emergency Contact</label>
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -207,7 +242,7 @@ export default function GuardianPickups() {
             ) : (
               <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
                 <Plus className="h-4 w-4 mr-1.5" />
-                Add Pick Up
+                Add Contact
               </Button>
             )}
           </CardContent>

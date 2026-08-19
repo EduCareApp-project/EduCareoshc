@@ -2160,34 +2160,34 @@ export default function ChildProfile() {
                       <div className="grid md:grid-cols-2 gap-3 text-sm">
                         <div className="space-y-1">
                           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Concerns</p>
-                          <p className="leading-relaxed">{note.concerns}</p>
+                          <p className="leading-relaxed whitespace-pre-wrap">{note.concerns}</p>
                         </div>
                         <div className="space-y-1">
                           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Risk Factors</p>
-                          <p className="leading-relaxed">{note.riskFactors}</p>
+                          <p className="leading-relaxed whitespace-pre-wrap">{note.riskFactors}</p>
                         </div>
                         {note.evidence && (
                           <div className="space-y-1 md:col-span-2">
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Evidence / Observations</p>
-                            <p className="leading-relaxed">{note.evidence}</p>
+                            <p className="leading-relaxed whitespace-pre-wrap">{note.evidence}</p>
                           </div>
                         )}
                         {note.mandatoryReportRequired && note.mandatoryReportNotes && (
                           <div className="space-y-1 md:col-span-2 bg-destructive/5 border border-destructive/20 rounded p-2">
                             <p className="text-xs font-medium text-destructive uppercase tracking-wide">Mandatory Report Notes</p>
-                            <p className="leading-relaxed">{note.mandatoryReportNotes}</p>
+                            <p className="leading-relaxed whitespace-pre-wrap">{note.mandatoryReportNotes}</p>
                           </div>
                         )}
                         {note.cissThresholdMet && note.cissNotes && (
                           <div className="space-y-1 bg-amber-50 border border-amber-200 rounded p-2">
                             <p className="text-xs font-medium text-amber-700 uppercase tracking-wide">CISS Notes</p>
-                            <p className="leading-relaxed">{note.cissNotes}</p>
+                            <p className="leading-relaxed whitespace-pre-wrap">{note.cissNotes}</p>
                           </div>
                         )}
                         {note.fvissThresholdMet && note.fvissNotes && (
                           <div className="space-y-1 bg-orange-50 border border-orange-200 rounded p-2">
                             <p className="text-xs font-medium text-orange-700 uppercase tracking-wide">FVISS Notes</p>
-                            <p className="leading-relaxed">{note.fvissNotes}</p>
+                            <p className="leading-relaxed whitespace-pre-wrap">{note.fvissNotes}</p>
                           </div>
                         )}
                         {!isEducatorRole && note.confidentialNotes && (
@@ -2195,7 +2195,7 @@ export default function ChildProfile() {
                             <p className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
                               <Lock className="h-3 w-3" />Confidential Notes
                             </p>
-                            <p className="leading-relaxed">{note.confidentialNotes}</p>
+                            <p className="leading-relaxed whitespace-pre-wrap">{note.confidentialNotes}</p>
                           </div>
                         )}
                       </div>
@@ -2474,7 +2474,7 @@ export default function ChildProfile() {
                         <Badge variant="destructive" className="text-xs">Mandatory Report</Badge>
                       </p>
                       {welfareForm.mandatoryReportNotes && (
-                        <p className="text-sm text-muted-foreground">{welfareForm.mandatoryReportNotes}</p>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{welfareForm.mandatoryReportNotes}</p>
                       )}
                     </div>
                   )}
@@ -2484,7 +2484,7 @@ export default function ChildProfile() {
                         <Badge className="text-xs bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100">CISS Threshold</Badge>
                       </p>
                       {welfareForm.cissNotes && (
-                        <p className="text-sm text-muted-foreground">{welfareForm.cissNotes}</p>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{welfareForm.cissNotes}</p>
                       )}
                     </div>
                   )}
@@ -2494,7 +2494,7 @@ export default function ChildProfile() {
                         <Badge className="text-xs bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100">FVISS Threshold</Badge>
                       </p>
                       {welfareForm.fvissNotes && (
-                        <p className="text-sm text-muted-foreground">{welfareForm.fvissNotes}</p>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{welfareForm.fvissNotes}</p>
                       )}
                     </div>
                   )}

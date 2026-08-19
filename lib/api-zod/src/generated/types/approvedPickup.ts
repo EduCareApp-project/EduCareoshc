@@ -11,4 +11,6 @@ export interface ApprovedPickup {
   fullName: string;
   phone: string;
   relationship: string;
+  isApprovedPickup?: boolean;
+  isEmergencyContact?: boolean;
 }

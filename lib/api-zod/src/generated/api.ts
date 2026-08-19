@@ -66,6 +66,8 @@ export const ListChildrenResponseItem = zod.object({
         fullName: zod.string(),
         phone: zod.string(),
         relationship: zod.string(),
+        isApprovedPickup: zod.boolean().optional(),
+        isEmergencyContact: zod.boolean().optional(),
       }),
     )
     .nullish(),
@@ -109,6 +111,8 @@ export const CreateChildBody = zod.object({
         fullName: zod.string(),
         phone: zod.string(),
         relationship: zod.string(),
+        isApprovedPickup: zod.boolean().optional(),
+        isEmergencyContact: zod.boolean().optional(),
       }),
     )
     .optional(),
@@ -167,6 +171,8 @@ export const GetChildResponse = zod.object({
         fullName: zod.string(),
         phone: zod.string(),
         relationship: zod.string(),
+        isApprovedPickup: zod.boolean().optional(),
+        isEmergencyContact: zod.boolean().optional(),
       }),
     )
     .nullish(),
@@ -214,6 +220,8 @@ export const UpdateChildBody = zod.object({
         fullName: zod.string(),
         phone: zod.string(),
         relationship: zod.string(),
+        isApprovedPickup: zod.boolean().optional(),
+        isEmergencyContact: zod.boolean().optional(),
       }),
     )
     .optional(),
@@ -268,6 +276,8 @@ export const UpdateChildResponse = zod.object({
         fullName: zod.string(),
         phone: zod.string(),
         relationship: zod.string(),
+        isApprovedPickup: zod.boolean().optional(),
+        isEmergencyContact: zod.boolean().optional(),
       }),
     )
     .nullish(),

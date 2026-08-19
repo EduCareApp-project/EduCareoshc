@@ -1082,7 +1082,7 @@ export default function ChildProfile() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [guardianView, setGuardianView] = useState<string>("g1");
-  const approvedPickups: Array<{ id: string; fullName: string; phone: string; relationship: string }> = (child?.approvedPickups as any) ?? [];
+  const approvedPickups: Array<{ id: string; fullName: string; phone: string; relationship: string; isApprovedPickup?: boolean; isEmergencyContact?: boolean }> = (child?.approvedPickups as any) ?? [];
   const [welfareOpen, setWelfareOpen] = useState(false);
   const [welfareForm, setWelfareForm] = useState(EMPTY_WELFARE_FORM);
   const [editingWelfareNoteId, setEditingWelfareNoteId] = useState<number | null>(null);
@@ -1093,6 +1093,11 @@ export default function ChildProfile() {
   const [editingConfNote, setEditingConfNote] = useState<{ id: number; content: string } | null>(null);
   const [evidenceObjectPath, setEvidenceObjectPath] = useState<string | null>(null);
   const [evidenceFileName, setEvidenceFileName] = useState<string | null>(null);
+
+  // Contacts / approved pickup dialog
+  const [pickupDialogOpen, setPickupDialogOpen] = useState(false);
+  const [editingPickupId, setEditingPickupId] = useState<string | null>(null);
+  const [pickupForm, setPickupForm] = useState({ fullName: "", phone: "", relationship: "", isApprovedPickup: true, isEmergencyContact: false });
 
   const { data: childSettings } = useGetChildSettings({ query: { queryKey: getGetChildSettingsQueryKey() } });
   const showPhoto = childSettings?.childDisplayMode === "profile_picture";
@@ -1114,6 +1119,32 @@ export default function ChildProfile() {
     queryClient.invalidateQueries({ queryKey: [`/api/children/${id}`] });
     toast({ title: "Profile photo updated" });
     e.target.value = "";
+  }
+
+  function openAddPickup() {
+    setEditingPickupId(null);
+    setPickupForm({ fullName: "", phone: "", relationship: "", isApprovedPickup: true, isEmergencyContact: false });
+    setPickupDialogOpen(true);
+  }
+  function openEditPickup(p: typeof approvedPickups[number]) {
+    setEditingPickupId(p.id);
+    setPickupForm({ fullName: p.fullName, phone: p.phone, relationship: p.relationship, isApprovedPickup: p.isApprovedPickup ?? true, isEmergencyContact: p.isEmergencyContact ?? false });
+    setPickupDialogOpen(true);
+  }
+  function savePickup() {
+    if (!pickupForm.fullName.trim()) return;
+    const updated = editingPickupId
+      ? approvedPickups.map((p) => p.id === editingPickupId ? { ...p, ...pickupForm } : p)
+      : [...approvedPickups, { id: crypto.randomUUID(), ...pickupForm }];
+    updateMutation.mutate({ id, data: { approvedPickups: updated } as any }, {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetChildQueryKey(id) }); setPickupDialogOpen(false); },
+    });
+  }
+  function deletePickup(pid: string) {
+    const updated = approvedPickups.filter((p) => p.id !== pid);
+    updateMutation.mutate({ id, data: { approvedPickups: updated } as any }, {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetChildQueryKey(id) }),
+    });
   }
 
   const { data: childDocuments, isLoading: docsLoading } = useListChildDocuments(id, { query: { queryKey: getListChildDocumentsQueryKey(id), enabled: !!id } });
@@ -1495,16 +1526,6 @@ export default function ChildProfile() {
                 >
                   Guardian 2
                 </button>
-                {approvedPickups.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setGuardianView(`p${i}`)}
-                    className={`text-xs px-2.5 py-1 rounded transition-colors font-medium ${guardianView === `p${i}` ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    Pick Up {i + 1}
-                  </button>
-                ))}
               </div>
               {guardianView === "g1" ? (
                 <>
@@ -1521,7 +1542,7 @@ export default function ChildProfile() {
                     <p className="font-medium">{child.guardianEmail}</p>
                   </div>
                 </>
-              ) : guardianView === "g2" ? (
+              ) : (
                 <>
                   {child.guardian2Name ? (
                     <>
@@ -1546,27 +1567,6 @@ export default function ChildProfile() {
                     <p className="text-sm text-muted-foreground italic">No second guardian recorded. Edit the profile to add one.</p>
                   )}
                 </>
-              ) : (
-                (() => {
-                  const idx = parseInt(guardianView.slice(1));
-                  const pickup = approvedPickups[idx];
-                  return pickup ? (
-                    <>
-                      <div className="space-y-1">
-                        <div className="text-sm text-muted-foreground flex items-center gap-2"><User className="h-4 w-4" />Full Name</div>
-                        <p className="font-medium">{pickup.fullName}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-sm text-muted-foreground flex items-center gap-2"><Phone className="h-4 w-4" />Phone</div>
-                        <p className="font-medium">{pickup.phone}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-sm text-muted-foreground">Relationship</div>
-                        <p className="font-medium">{pickup.relationship}</p>
-                      </div>
-                    </>
-                  ) : null;
-                })()
               )}
               {(child.photoRestriction || child.medicalNotes || child.hasMedicalCondition || (child as any).hasMealConsideration) && (
                 <>
@@ -1647,6 +1647,91 @@ export default function ChildProfile() {
           </Card>
         )}
       </div>
+
+      {/* ── Approved Contacts ──────────────────────────────────────────── */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Approved Contacts
+          </CardTitle>
+          {!isEducatorRole && (
+            <Button size="sm" onClick={openAddPickup}>
+              <Plus className="h-4 w-4 mr-1" />Add
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent className="p-0">
+          {approvedPickups.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground border-t text-sm">
+              <Users className="h-7 w-7 mx-auto mb-2 opacity-20" />
+              <p>No contacts recorded</p>
+            </div>
+          ) : (
+            <div className="divide-y">
+              {[...approvedPickups]
+                .sort((a, b) => {
+                  function contactKey(p: typeof approvedPickups[number]) {
+                    const ap = p.isApprovedPickup ?? true;
+                    const ec = p.isEmergencyContact ?? false;
+                    if (ap && !ec) return 0;
+                    if (ap && ec) return 1;
+                    return 2;
+                  }
+                  return contactKey(a) - contactKey(b);
+                })
+                .map((p) => (
+                  <div key={p.id} className="flex items-center gap-4 px-6 py-3 text-sm">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-medium">{p.fullName}</span>
+                        {(p.isApprovedPickup ?? true) && (
+                          <span className="inline-flex items-center rounded-full bg-green-100 text-green-800 px-2 py-0.5 text-xs font-medium">
+                            Approved Pick Up
+                          </span>
+                        )}
+                        {p.isEmergencyContact && (
+                          <span className="inline-flex items-center rounded-full bg-red-100 text-red-800 px-2 py-0.5 text-xs font-medium">
+                            Emergency Contact
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-3 mt-0.5 text-muted-foreground text-xs">
+                        {p.phone && <span>{p.phone}</span>}
+                        {p.relationship && <span>{p.relationship}</span>}
+                      </div>
+                    </div>
+                    {!isEducatorRole && (
+                      <div className="flex gap-1 shrink-0">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openEditPickup(p)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remove contact?</AlertDialogTitle>
+                              <AlertDialogDescription>This will permanently remove {p.fullName} from this child's contact list.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deletePickup(p.id)} className="bg-destructive hover:bg-destructive/90">Remove</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Confidential Notes — Admin & Educational Leader only */}
       {!isEducatorRole && <Card className="border-slate-300 dark:border-slate-600">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -2624,6 +2709,67 @@ export default function ChildProfile() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Contact add / edit dialog */}
+      <Dialog open={pickupDialogOpen} onOpenChange={setPickupDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingPickupId ? "Edit Contact" : "Add Contact"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label>Full Name <span className="text-destructive">*</span></Label>
+              <Input
+                value={pickupForm.fullName}
+                onChange={(e) => setPickupForm({ ...pickupForm, fullName: e.target.value })}
+                placeholder="Full name"
+                autoFocus
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Phone Number</Label>
+              <Input
+                value={pickupForm.phone}
+                onChange={(e) => setPickupForm({ ...pickupForm, phone: e.target.value })}
+                placeholder="e.g. 0400 000 000"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Relationship to Child</Label>
+              <Input
+                value={pickupForm.relationship}
+                onChange={(e) => setPickupForm({ ...pickupForm, relationship: e.target.value })}
+                placeholder="e.g. Aunt, Neighbour"
+              />
+            </div>
+            <div className="space-y-2.5 pt-1">
+              <Label className="text-sm font-medium">Role</Label>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="pickup-approved"
+                  checked={pickupForm.isApprovedPickup}
+                  onCheckedChange={(v) => setPickupForm({ ...pickupForm, isApprovedPickup: !!v })}
+                />
+                <label htmlFor="pickup-approved" className="text-sm cursor-pointer select-none">Approved Pick Up</label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="pickup-emergency"
+                  checked={pickupForm.isEmergencyContact}
+                  onCheckedChange={(v) => setPickupForm({ ...pickupForm, isEmergencyContact: !!v })}
+                />
+                <label htmlFor="pickup-emergency" className="text-sm cursor-pointer select-none">Emergency Contact</label>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <Button variant="outline" onClick={() => setPickupDialogOpen(false)}>Cancel</Button>
+              <Button onClick={savePickup} disabled={!pickupForm.fullName.trim() || updateMutation.isPending}>
+                {updateMutation.isPending ? "Saving…" : editingPickupId ? "Save Changes" : "Add Contact"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

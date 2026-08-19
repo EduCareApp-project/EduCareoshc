@@ -74,9 +74,9 @@ function GuardianNotificationBell({ dark = false }: { dark?: boolean }) {
   });
 
   const { data: plans } = useQuery<{ id: number; title: string | null; stage: string; startDate: string | null; createdAt: string }[]>({
-    queryKey: ["/api/planning"],
+    queryKey: ["/api/auth/my-plans"],
     queryFn: async () => {
-      const res = await fetch("/api/planning");
+      const res = await fetch("/api/auth/my-plans");
       if (!res.ok) return [];
       return res.json();
     },

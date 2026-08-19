@@ -361,7 +361,9 @@ router.get("/auth/my-plans", async (req, res): Promise<void> => {
     const enriched = plans.map((p) => ({
       id: p.id,
       title: p.title,
+      stage: p.stage,
       startDate: p.startDate,
+      createdAt: p.createdAt,
       siteId: p.siteId,
       siteName: sites.find((s) => s.id === p.siteId)?.name ?? null,
       weeklyPlanData: p.weeklyPlanData,

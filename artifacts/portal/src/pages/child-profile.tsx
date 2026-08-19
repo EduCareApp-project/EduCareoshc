@@ -2169,7 +2169,15 @@ export default function ChildProfile() {
                         {note.evidence && (
                           <div className="space-y-1 md:col-span-2">
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Evidence / Observations</p>
-                            <p className="leading-relaxed whitespace-pre-wrap">{note.evidence}</p>
+                            <a
+                              href={storageUrl(note.evidence)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                            >
+                              <Paperclip className="h-3.5 w-3.5 shrink-0" />
+                              {note.evidence.split("/").pop()}
+                            </a>
                           </div>
                         )}
                         {note.mandatoryReportRequired && note.mandatoryReportNotes && (
@@ -2413,13 +2421,18 @@ export default function ChildProfile() {
 
             {/* Evidence — editable for Admin/EL, read-only display for educators */}
             {isEducatorRole ? (
-              evidenceFileName && (
+              evidenceFileName && evidenceObjectPath && (
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">Evidence File</Label>
-                  <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                  <a
+                    href={storageUrl(evidenceObjectPath)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm text-primary hover:underline"
+                  >
                     <Paperclip className="h-4 w-4 shrink-0" />
                     <span className="truncate">{evidenceFileName}</span>
-                  </div>
+                  </a>
                 </div>
               )
             ) : (

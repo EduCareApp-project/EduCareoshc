@@ -2,9 +2,11 @@ import { useGetStaffComplianceReport } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { UserCheck, CheckCircle2, XCircle, ShieldX, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { UserCheck, CheckCircle2, XCircle, ShieldX, Clock, Search } from "lucide-react";
 import { useLocation } from "wouter";
 import { format, parseISO } from "date-fns";
+import { useState, useEffect, useRef } from "react";
 
 const COMPLIANCE_CONFIG: Record<string, { label: string; className: string }> = {
   cannot_work:       { label: "Cannot Work",       className: "bg-red-100 text-red-800 border-red-200" },
@@ -13,9 +15,46 @@ const COMPLIANCE_CONFIG: Record<string, { label: string; className: string }> = 
   incomplete:        { label: "Incomplete",         className: "bg-amber-100 text-amber-800 border-amber-200" },
 };
 
+type QualCheckResult = {
+  qualName: string;
+  have: { staffId: number; staffName: string; role: string; expiryDate: string | null }[];
+  missing: { staffId: number; staffName: string; role: string }[];
+};
+
 export default function ReportsStaff() {
   const { data: report, isLoading } = useGetStaffComplianceReport();
   const [, navigate] = useLocation();
+
+  // Qualification check state
+  const [qualNames, setQualNames] = useState<string[]>([]);
+  const [selectedQual, setSelectedQual] = useState("");
+  const [checkResult, setCheckResult] = useState<QualCheckResult | null>(null);
+  const [checkLoading, setCheckLoading] = useState(false);
+  const resultRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("/api/reports/qualification-names")
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.names)) setQualNames(d.names);
+      })
+      .catch(() => {});
+  }, []);
+
+  async function runCheck() {
+    if (!selectedQual) return;
+    setCheckLoading(true);
+    try {
+      const res = await fetch(
+        `/api/reports/qualification-check?name=${encodeURIComponent(selectedQual)}`
+      );
+      const data = await res.json();
+      setCheckResult(data);
+      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    } finally {
+      setCheckLoading(false);
+    }
+  }
 
   const ROLE_LABELS: Record<string, string> = {
     director: "Director",
@@ -182,6 +221,140 @@ export default function ReportsStaff() {
           </CardContent>
         </Card>
       )}
+
+      {/* ── Qualification Check ─────────────────────────────────────────── */}
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold">Qualification Check</h2>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            Select a qualification type to see which active staff members have a current record and who is missing one.
+          </p>
+        </div>
+
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex flex-wrap gap-3 items-end">
+              <div className="flex flex-col gap-1.5 flex-1 min-w-[220px]">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Qualification Type
+                </label>
+                <select
+                  value={selectedQual}
+                  onChange={(e) => { setSelectedQual(e.target.value); setCheckResult(null); }}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="">Select a qualification…</option>
+                  {qualNames.map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+              <Button
+                onClick={runCheck}
+                disabled={!selectedQual || checkLoading}
+                className="h-9 gap-2"
+              >
+                <Search className="h-4 w-4" />
+                {checkLoading ? "Checking…" : "Generate"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {checkResult && (
+          <div ref={resultRef} className="space-y-3">
+            {/* Summary badges */}
+            <div className="flex flex-wrap gap-3 text-sm">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 text-green-800 px-3 py-1 font-medium">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {checkResult.have.length} have current record
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 text-red-800 px-3 py-1 font-medium">
+                <XCircle className="h-3.5 w-3.5" />
+                {checkResult.missing.length} missing or expired
+              </span>
+            </div>
+
+            {/* Has the qualification */}
+            {checkResult.have.length > 0 && (
+              <Card className="border-green-200">
+                <CardHeader className="pb-2 pt-4 px-6">
+                  <CardTitle className="text-sm font-semibold text-green-800 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    Has Current: {checkResult.qualName}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-t border-green-100 bg-green-50/60">
+                        <th className="text-left px-6 py-2.5 font-medium text-green-900">Name</th>
+                        <th className="text-left px-4 py-2.5 font-medium text-green-900">Role</th>
+                        <th className="text-right px-6 py-2.5 font-medium text-green-900">Expiry</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-green-50">
+                      {checkResult.have.map((s) => (
+                        <tr
+                          key={s.staffId}
+                          className="hover:bg-green-50/50 cursor-pointer transition-colors"
+                          onClick={() => navigate(`/staff/${s.staffId}`)}
+                        >
+                          <td className="px-6 py-2.5 font-medium text-primary hover:underline">{s.staffName}</td>
+                          <td className="px-4 py-2.5 text-muted-foreground">{ROLE_LABELS[s.role] ?? s.role}</td>
+                          <td className="px-6 py-2.5 text-right text-muted-foreground">
+                            {s.expiryDate ? format(parseISO(s.expiryDate), "dd/MM/yyyy") : <span className="italic">No expiry</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Missing the qualification */}
+            {checkResult.missing.length > 0 && (
+              <Card className="border-red-200">
+                <CardHeader className="pb-2 pt-4 px-6">
+                  <CardTitle className="text-sm font-semibold text-red-800 flex items-center gap-2">
+                    <XCircle className="h-4 w-4 text-red-500" />
+                    Missing or Expired: {checkResult.qualName}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-t border-red-100 bg-red-50/60">
+                        <th className="text-left px-6 py-2.5 font-medium text-red-900">Name</th>
+                        <th className="text-left px-4 py-2.5 font-medium text-red-900">Role</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-red-50">
+                      {checkResult.missing.map((s) => (
+                        <tr
+                          key={s.staffId}
+                          className="hover:bg-red-50/50 cursor-pointer transition-colors"
+                          onClick={() => navigate(`/staff/${s.staffId}`)}
+                        >
+                          <td className="px-6 py-2.5 font-medium text-primary hover:underline">{s.staffName}</td>
+                          <td className="px-4 py-2.5 text-muted-foreground">{ROLE_LABELS[s.role] ?? s.role}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            )}
+
+            {checkResult.have.length === 0 && checkResult.missing.length === 0 && (
+              <Card><CardContent className="py-10 text-center text-muted-foreground text-sm">
+                No active staff found.
+              </CardContent></Card>
+            )}
+          </div>
+        )}
+      </section>
 
       <div className="text-xs text-muted-foreground space-y-1">
         <p><span className="font-medium text-foreground">Cannot Work</span> — WWCC, CPR Renewal, or First Aid is expired.</p>

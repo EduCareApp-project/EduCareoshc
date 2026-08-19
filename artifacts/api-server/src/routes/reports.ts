@@ -242,4 +242,74 @@ router.get("/reports/staff-compliance", async (req, res): Promise<void> => {
   }
 });
 
+// Returns distinct qualification names across all non-archived quals (for dropdown)
+router.get("/reports/qualification-names", async (req, res): Promise<void> => {
+  try {
+    const quals = await db.select().from(staffQualificationsTable);
+    const names = [
+      ...new Set(quals.filter((q) => !q.archivedAt).map((q) => q.name)),
+    ].sort((a, b) => a.localeCompare(b));
+    res.json({ names });
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch qualification names");
+    res.status(500).json({ error: "Failed to fetch qualification names" });
+  }
+});
+
+// Checks which active staff have / don't have a current qual of the given name
+router.get("/reports/qualification-check", async (req, res): Promise<void> => {
+  const qualName = (req.query.name as string | undefined)?.trim();
+  if (!qualName) {
+    res.status(400).json({ error: "Missing required query param: name" });
+    return;
+  }
+
+  try {
+    const [activeStaff, allQuals] = await Promise.all([
+      db.select().from(staffTable).where(eq(staffTable.status, "active")),
+      db.select().from(staffQualificationsTable),
+    ]);
+
+    const lowerTarget = qualName.toLowerCase();
+
+    const have: { staffId: number; staffName: string; role: string; expiryDate: string | null }[] = [];
+    const missing: { staffId: number; staffName: string; role: string }[] = [];
+
+    for (const s of activeStaff) {
+      const match = allQuals.find(
+        (q) =>
+          q.staffId === s.id &&
+          !q.archivedAt &&
+          q.name.toLowerCase() === lowerTarget &&
+          !qualIsExpired(q)
+      );
+
+      const staffName = `${s.firstName} ${s.lastName}`;
+      if (match) {
+        have.push({
+          staffId: s.id,
+          staffName,
+          role: s.role,
+          expiryDate: match.expiryDate
+            ? (typeof match.expiryDate === "string"
+                ? match.expiryDate
+                : (match.expiryDate as Date).toISOString().split("T")[0])
+            : null,
+        });
+      } else {
+        missing.push({ staffId: s.id, staffName, role: s.role });
+      }
+    }
+
+    // Sort both lists alphabetically by name
+    have.sort((a, b) => a.staffName.localeCompare(b.staffName));
+    missing.sort((a, b) => a.staffName.localeCompare(b.staffName));
+
+    res.json({ qualName, have, missing });
+  } catch (err) {
+    req.log.error({ err }, "Failed to run qualification check");
+    res.status(500).json({ error: "Failed to run qualification check" });
+  }
+});
+
 export default router;

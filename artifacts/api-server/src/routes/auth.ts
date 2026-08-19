@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { eq, asc, and, or, gt, isNull, isNotNull, inArray, sql } from "drizzle-orm";
+import { eq, asc, and, or, gt, isNull, isNotNull, inArray, sql, ne } from "drizzle-orm";
 import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, postsTable, sitesTable, planningExperiencesTable, noticesTable, guardianLoginLogsTable } from "@workspace/db";
 import { sendPasswordResetEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
@@ -467,7 +467,7 @@ router.get("/auth/my-educators", async (req, res): Promise<void> => {
         siteId: staffTable.siteId,
       })
       .from(staffTable)
-      .where(eq(staffTable.status, "active"))
+      .where(and(eq(staffTable.status, "active"), ne(staffTable.isSuperAdmin, true)))
       .orderBy(staffTable.lastName);
 
     // Site staff (educator + coordinator at guardian's child's site)

@@ -129,6 +129,31 @@ export interface Child {
   createdAt?: string;
 }
 
+/**
+ * @nullable
+ */
+export type MedicalPlansPrintDataMedicalRiskPlan = {
+  [key: string]: unknown;
+} | null;
+
+/**
+ * @nullable
+ */
+export type MedicalPlansPrintDataCommunicationPlan = {
+  [key: string]: unknown;
+} | null;
+
+export interface MedicalPlansPrintData {
+  id: number;
+  firstName: string;
+  lastName: string;
+  hasMedicalCondition: boolean;
+  /** @nullable */
+  medicalRiskPlan: MedicalPlansPrintDataMedicalRiskPlan;
+  /** @nullable */
+  communicationPlan: MedicalPlansPrintDataCommunicationPlan;
+}
+
 export type ChildInputStatus =
   (typeof ChildInputStatus)[keyof typeof ChildInputStatus];
 

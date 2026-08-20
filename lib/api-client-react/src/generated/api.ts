@@ -85,6 +85,7 @@ import type {
   ListWeeklyReviewsParams,
   MarkAllNotificationsRead200,
   MarkNotificationRead200,
+  MedicalPlansPrintData,
   MedicationLog,
   MedicationLogPayload,
   MedicationSlotPayload,
@@ -633,6 +634,91 @@ export const useDeleteChild = <
 > => {
   return useMutation(getDeleteChildMutationOptions(options));
 };
+
+export const getGetChildMedicalPlansPrintUrl = (id: number) => {
+  return `/api/children/${id}/medical-plans/print`;
+};
+
+export const getChildMedicalPlansPrint = async (
+  id: number,
+  options?: RequestInit,
+): Promise<MedicalPlansPrintData> => {
+  return customFetch<MedicalPlansPrintData>(
+    getGetChildMedicalPlansPrintUrl(id),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetChildMedicalPlansPrintQueryKey = (id: number) => {
+  return [`/api/children/${id}/medical-plans/print`] as const;
+};
+
+export const getGetChildMedicalPlansPrintQueryOptions = <
+  TData = Awaited<ReturnType<typeof getChildMedicalPlansPrint>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChildMedicalPlansPrint>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetChildMedicalPlansPrintQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getChildMedicalPlansPrint>>
+  > = ({ signal }) =>
+    getChildMedicalPlansPrint(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getChildMedicalPlansPrint>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetChildMedicalPlansPrintQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getChildMedicalPlansPrint>>
+>;
+export type GetChildMedicalPlansPrintQueryError = ErrorType<void>;
+
+export function useGetChildMedicalPlansPrint<
+  TData = Awaited<ReturnType<typeof getChildMedicalPlansPrint>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChildMedicalPlansPrint>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetChildMedicalPlansPrintQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 export const getGetChildObservationsUrl = (id: number) => {
   return `/api/children/${id}/observations`;

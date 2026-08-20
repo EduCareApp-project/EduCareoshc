@@ -5,6 +5,8 @@ import {
   CreateChildBody,
   GetChildParams,
   GetChildResponse,
+  GetChildMedicalPlansPrintParams,
+  GetChildMedicalPlansPrintResponse,
   UpdateChildParams,
   UpdateChildBody,
   UpdateChildResponse,
@@ -105,6 +107,44 @@ router.get("/children/:id", async (req, res): Promise<void> => {
   } catch (err) {
     req.log.error({ err, childId: params.data.id }, "Failed to fetch child");
     res.status(500).json({ error: "Failed to fetch child" });
+  }
+});
+
+// Print data is deliberately a separate, staff-only endpoint. Do not reuse the
+// broad child profile response here: this route is opened in a new tab and must
+// never expose medical plans to guardian sessions by an arbitrary child ID.
+router.get("/children/:id/medical-plans/print", async (req, res): Promise<void> => {
+  if (!req.session.user || req.session.user.type !== "staff") {
+    res.status(403).json({ error: "Staff access required" });
+    return;
+  }
+
+  const params = GetChildMedicalPlansPrintParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  try {
+    const [child] = await db
+      .select({
+        id: childrenTable.id,
+        firstName: childrenTable.firstName,
+        lastName: childrenTable.lastName,
+        hasMedicalCondition: childrenTable.hasMedicalCondition,
+        medicalRiskPlan: childrenTable.medicalRiskPlan,
+        communicationPlan: childrenTable.communicationPlan,
+      })
+      .from(childrenTable)
+      .where(eq(childrenTable.id, params.data.id));
+    if (!child) {
+      res.status(404).json({ error: "Child not found" });
+      return;
+    }
+    res.json(GetChildMedicalPlansPrintResponse.parse(child));
+  } catch (err) {
+    req.log.error({ err, childId: params.data.id }, "Failed to fetch medical plan print data");
+    res.status(500).json({ error: "Failed to fetch medical plans" });
   }
 });
 

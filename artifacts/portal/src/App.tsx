@@ -41,6 +41,7 @@ import Calendar from "@/pages/calendar";
 import Planning from "@/pages/planning";
 import PlanningDetail from "@/pages/planning-detail";
 import WeeklyPlanPrint from "@/pages/weekly-plan-print";
+import MedicalPlanPrint from "@/pages/medical-plan-print";
 import WeeklyReview from "@/pages/weekly-review";
 import Posts from "@/pages/posts";
 import NewPost from "@/pages/new-post";
@@ -279,6 +280,10 @@ function Router() {
   // Print routes — no layout chrome
   if (location === "/planning/print" || location.startsWith("/planning/print?")) {
     return <WeeklyPlanPrint />;
+  }
+  if (location === "/children/medical-plan-print" || location.startsWith("/children/medical-plan-print?")) {
+    if (user.type !== "staff") return <Redirect to="/" />;
+    return <MedicalPlanPrint />;
   }
 
   // Guardian portal

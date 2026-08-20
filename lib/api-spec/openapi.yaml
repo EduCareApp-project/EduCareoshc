@@ -133,6 +133,28 @@ paths:
         "204":
           description: Deleted
 
+  /children/{id}/medical-plans/print:
+    get:
+      operationId: getChildMedicalPlansPrint
+      tags: [children]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Staff-authorized medical plan print data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MedicalPlansPrintData"
+        "403":
+          description: Staff access required
+        "404":
+          description: Not found
+
   /children/{id}/observations:
     get:
       operationId: getChildObservations
@@ -3536,6 +3558,25 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    MedicalPlansPrintData:
+      type: object
+      required: [id, firstName, lastName, hasMedicalCondition, medicalRiskPlan, communicationPlan]
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        hasMedicalCondition:
+          type: boolean
+        medicalRiskPlan:
+          type: ["object", "null"]
+          additionalProperties: true
+        communicationPlan:
+          type: ["object", "null"]
+          additionalProperties: true
 
     ChildInput:
       type: object

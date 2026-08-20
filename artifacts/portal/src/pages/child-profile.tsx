@@ -43,7 +43,7 @@ import {
   Calendar, Heart, ThumbsDown, Smile, BookOpen, Building2,
   ShieldAlert, AlertTriangle, Paperclip, X, Lock, Pencil, StickyNote, Newspaper,
   Upload, FolderOpen, Pill, ChevronDown, ChevronUp, ClipboardList, MessageSquareWarning,
-  CameraOff, Archive, Loader2, UtensilsCrossed,
+  CameraOff, Archive, Loader2, UtensilsCrossed, Printer,
 } from "lucide-react";
 import { useAuth } from "@/contexts/auth";
 import { useUpload } from "@workspace/object-storage-web";
@@ -580,6 +580,10 @@ export function MedicalTab({ childId, child, staffList, currentUserId }: { child
       onError: () => toast({ title: "Failed to save", variant: "destructive" }),
     });
   }
+  function printMedicalPlans() {
+    const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+    window.open(`${basePath}/children/medical-plan-print?childId=${childId}`, "_blank", "noopener,noreferrer");
+  }
 
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
 
@@ -801,6 +805,12 @@ export function MedicalTab({ childId, child, staffList, currentUserId }: { child
 
       {hasMedical && (
         <>
+          <div className="flex justify-end">
+            <Button size="sm" variant="outline" onClick={printMedicalPlans}>
+              <Printer className="h-3.5 w-3.5 mr-1.5" />
+              Print / Save Medical Plans as PDF
+            </Button>
+          </div>
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">

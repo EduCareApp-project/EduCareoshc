@@ -288,6 +288,19 @@ export const DeleteChildParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const GetChildMedicalPlansPrintParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetChildMedicalPlansPrintResponse = zod.object({
+  id: zod.number(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  hasMedicalCondition: zod.boolean(),
+  medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullable(),
+  communicationPlan: zod.record(zod.string(), zod.unknown()).nullable(),
+});
+
 export const GetChildObservationsParams = zod.object({
   id: zod.coerce.number(),
 });

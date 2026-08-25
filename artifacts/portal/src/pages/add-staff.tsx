@@ -53,7 +53,7 @@ export default function AddStaff() {
     const { siteId, ...rest } = data;
     const payload = {
       ...rest,
-      siteId: siteId && siteId !== "none" ? parseInt(siteId) : null,
+      ...(siteId && siteId !== "none" ? { siteId: parseInt(siteId, 10) } : {}),
     };
     createStaff.mutate(
       { data: payload as any },
@@ -63,8 +63,12 @@ export default function AddStaff() {
           toast({ title: "Success", description: "Staff member added successfully" });
           setLocation("/staff");
         },
-        onError: () => {
-          toast({ title: "Error", description: "Failed to add staff member.", variant: "destructive" });
+        onError: (error) => {
+          toast({
+            title: "Error",
+            description: error instanceof Error ? error.message : "Failed to add staff member.",
+            variant: "destructive",
+          });
         },
       }
     );

@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import { eq, and, inArray, desc } from "drizzle-orm";
 import {
   db,
@@ -13,6 +13,15 @@ const router: IRouter = Router();
 
 const VALID_STATUSES = ["active", "payment_plan", "suspended"] as const;
 type FinancialStatus = (typeof VALID_STATUSES)[number];
+
+function requireAdmin(req: Request, res: Response): boolean {
+  const user = req.session?.user;
+  if (!user || user.type !== "staff" || user.role !== "admin") {
+    res.status(403).json({ error: "Admin access required" });
+    return false;
+  }
+  return true;
+}
 
 /** Get or lazily create the financial account row for a guardian. */
 async function getOrCreateAccount(guardianEmail: string) {
@@ -263,6 +272,124 @@ router.get("/guardians/financial/on-radar", async (req, res): Promise<void> => {
   } catch (err) {
     req.log.error({ err }, "Failed to fetch on-radar report");
     res.status(500).json({ error: "Failed to fetch report" });
+  }
+});
+
+// ── Guardian communication log report (admins only) ───────────────────────────
+router.get("/guardians/financial/communication-log", async (req, res): Promise<void> => {
+  if (!requireAdmin(req, res)) return;
+
+  const siteIdParam = req.query.siteId ? parseInt(req.query.siteId as string, 10) : null;
+  if (siteIdParam !== null && (!Number.isInteger(siteIdParam) || siteIdParam <= 0)) {
+    res.status(400).json({ error: "Invalid site id" });
+    return;
+  }
+
+  try {
+    const [communications, children, sites] = await Promise.all([
+      db
+        .select()
+        .from(guardianCommunicationLogsTable)
+        .orderBy(desc(guardianCommunicationLogsTable.createdAt)),
+      db.select().from(childrenTable),
+      db.select().from(sitesTable).where(eq(sitesTable.status, "active")),
+    ]);
+
+    const sitesById = new Map(sites.map((site) => [site.id, site]));
+    const guardianContext = new Map<
+      string,
+      {
+        guardianName: string | null;
+        childNames: Set<string>;
+        childNamesBySite: Map<number, Set<string>>;
+        siteIds: Set<number>;
+        siteNames: Set<string>;
+      }
+    >();
+
+    function addGuardianContext(
+      email: string | null | undefined,
+      guardianName: string | null | undefined,
+      childName: string,
+      siteId: number | null,
+      siteName: string | null,
+    ) {
+      if (!email) return;
+      const key = email.trim().toLowerCase();
+      if (!key) return;
+
+      const context = guardianContext.get(key) ?? {
+        guardianName: null,
+        childNames: new Set<string>(),
+        childNamesBySite: new Map<number, Set<string>>(),
+        siteIds: new Set<number>(),
+        siteNames: new Set<string>(),
+      };
+      if (!context.guardianName && guardianName) context.guardianName = guardianName;
+      context.childNames.add(childName);
+      if (siteId !== null) {
+        context.siteIds.add(siteId);
+        const siteChildNames = context.childNamesBySite.get(siteId) ?? new Set<string>();
+        siteChildNames.add(childName);
+        context.childNamesBySite.set(siteId, siteChildNames);
+      }
+      if (siteName) context.siteNames.add(siteName);
+      guardianContext.set(key, context);
+    }
+
+    for (const child of children) {
+      const site = child.siteId ? sitesById.get(child.siteId) : undefined;
+      const childName = `${child.firstName} ${child.lastName}`;
+      addGuardianContext(
+        child.guardianEmail,
+        child.guardianName,
+        childName,
+        child.siteId,
+        site?.name ?? null,
+      );
+      addGuardianContext(
+        child.guardian2Email,
+        child.guardian2Name ?? child.guardian2Email,
+        childName,
+        child.siteId,
+        site?.name ?? null,
+      );
+    }
+
+    const result = communications.flatMap((communication) => {
+      const context = guardianContext.get(communication.guardianEmail.trim().toLowerCase());
+      if (siteIdParam !== null && !context?.siteIds.has(siteIdParam)) return [];
+
+      return [{
+        id: communication.id,
+        guardianEmail: communication.guardianEmail,
+        guardianName: context?.guardianName ?? communication.guardianEmail,
+        childNames: context
+          ? Array.from(
+              siteIdParam === null
+                ? context.childNames
+                : context.childNamesBySite.get(siteIdParam) ?? [],
+            ).sort()
+          : [],
+        siteNames: context
+          ? Array.from(
+              siteIdParam === null
+                ? context.siteNames
+                : sitesById.get(siteIdParam)?.name
+                  ? [sitesById.get(siteIdParam)!.name]
+                  : [],
+            ).sort()
+          : [],
+        note: communication.note,
+        staffName: communication.staffName,
+        createdAt: communication.createdAt,
+      }];
+    });
+
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch guardian communication log report");
+    res.status(500).json({ error: "Failed to fetch communication log" });
   }
 });
 

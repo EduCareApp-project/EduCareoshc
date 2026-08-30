@@ -14,6 +14,7 @@ import {
   Radar,
   CheckCircle2,
   Clock,
+  MessageSquare,
 } from "lucide-react";
 import { Link } from "wouter";
 import { fmtMelb } from "@/lib/timezone";
@@ -55,6 +56,17 @@ type RadarGuardian = {
   plans: PaymentPlan[];
 };
 
+type CommunicationLogEntry = {
+  id: number;
+  guardianEmail: string;
+  guardianName: string;
+  childNames: string[];
+  siteNames: string[];
+  note: string;
+  staffName: string | null;
+  createdAt: string;
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const FREQ_LABELS: Record<string, string> = {
@@ -72,7 +84,7 @@ function fmtDate(d: string | null) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ReportsFinancial() {
-  const { isEducatorRole, ownSiteId } = usePermissions();
+  const { isEducatorRole, ownSiteId, isAdmin } = usePermissions();
   const { data: sites } = useListSites();
 
   const [filterSiteId, setFilterSiteId] = useState<string>(() =>
@@ -106,6 +118,22 @@ export default function ReportsFinancial() {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to load on-radar data");
+      return res.json();
+    },
+  });
+
+  const {
+    data: communicationLogData,
+    isLoading: communicationLogLoading,
+    isError: communicationLogError,
+  } = useQuery<CommunicationLogEntry[]>({
+    queryKey: ["guardian-communication-log-report", siteIdParam],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const res = await fetch(`/api/guardians/financial/communication-log${siteQuery}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to load communication log");
       return res.json();
     },
   });
@@ -454,6 +482,96 @@ export default function ReportsFinancial() {
               ))}
             </div>
           )}
+        </section>
+      )}
+
+      {isAdmin && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-slate-600" />
+            <h2 className="text-xl font-semibold">Guardian Communication Log</h2>
+            {communicationLogData && communicationLogData.length > 0 && (
+              <Badge className="bg-slate-100 text-slate-700 border-slate-200 ml-1">
+                {communicationLogData.length}{" "}
+                {communicationLogData.length === 1 ? "entry" : "entries"}
+              </Badge>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground -mt-2">
+            Information and actions recorded when communicating with guardians.
+          </p>
+
+          <Card>
+            <CardContent className="p-0">
+              {communicationLogLoading ? (
+                <div className="space-y-3 p-6">
+                  <Skeleton className="h-5 w-1/3" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              ) : communicationLogError ? (
+                <div className="py-10 text-center text-destructive">
+                  <p className="font-medium">Unable to load the communication log.</p>
+                  <p className="text-sm mt-1">
+                    Please refresh the page and try again.
+                  </p>
+                </div>
+              ) : (communicationLogData ?? []).length === 0 ? (
+                <div className="py-12 text-center text-muted-foreground">
+                  <MessageSquare className="h-8 w-8 mx-auto opacity-30 mb-2" />
+                  <p className="font-medium">No communication log entries</p>
+                  <p className="text-sm mt-1">
+                    {siteIdParam
+                      ? "No guardian communications are recorded for this site."
+                      : "Guardian communication entries will appear here once added."}
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {(communicationLogData ?? []).map((entry) => (
+                    <div key={entry.id} className="px-6 py-4">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Link
+                              href={`/guardians/${encodeURIComponent(entry.guardianEmail)}?tab=financial`}
+                              className="font-semibold text-primary hover:underline"
+                            >
+                              {entry.guardianName}
+                            </Link>
+                            <span className="text-xs text-muted-foreground">
+                              {entry.guardianEmail}
+                            </span>
+                          </div>
+                          {entry.childNames.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              {entry.childNames.map((childName) => (
+                                <span
+                                  key={childName}
+                                  className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                                >
+                                  {childName}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right text-xs text-muted-foreground shrink-0">
+                          <div>{fmtMelb(entry.createdAt, "dd/MM/yyyy · HH:mm")}</div>
+                          <div className="mt-0.5">
+                            {entry.staffName ? `Added by ${entry.staffName}` : "Added by staff"}
+                          </div>
+                        </div>
+                      </div>
+                      <p className="mt-3 text-sm leading-relaxed whitespace-pre-wrap">
+                        {entry.note}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </section>
       )}
     </div>

@@ -529,43 +529,33 @@ export default function ReportsFinancial() {
               ) : (
                 <div className="divide-y">
                   {(communicationLogData ?? []).map((entry) => (
-                    <div key={entry.id} className="px-6 py-4">
-                      <div className="flex items-start justify-between gap-4 flex-wrap">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Link
-                              href={`/guardians/${encodeURIComponent(entry.guardianEmail)}?tab=financial`}
-                              className="font-semibold text-primary hover:underline"
-                            >
-                              {entry.guardianName}
-                            </Link>
-                            <span className="text-xs text-muted-foreground">
-                              {entry.guardianEmail}
-                            </span>
-                          </div>
+                    <div key={entry.id} className="px-4 py-2.5">
+                      <div className="grid gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,1fr)_auto]">
+                        <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+                          <Link
+                            href={`/guardians/${encodeURIComponent(entry.guardianEmail)}?tab=financial`}
+                            className="font-semibold text-primary hover:underline shrink-0"
+                          >
+                            {entry.guardianName}
+                          </Link>
+                          <span className="break-all text-xs text-muted-foreground">
+                            {entry.guardianEmail}
+                          </span>
                           {entry.childNames.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-1.5">
-                              {entry.childNames.map((childName) => (
-                                <span
-                                  key={childName}
-                                  className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground"
-                                >
-                                  {childName}
-                                </span>
-                              ))}
-                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              · {entry.childNames.join(", ")}
+                            </span>
                           )}
+                          <p className="basis-full whitespace-pre-wrap break-words leading-snug sm:basis-0 sm:min-w-0 sm:flex-1">
+                            {entry.note}
+                          </p>
                         </div>
-                        <div className="text-right text-xs text-muted-foreground shrink-0">
-                          <div>{fmtMelb(entry.createdAt, "dd/MM/yyyy · HH:mm")}</div>
-                          <div className="mt-0.5">
-                            {entry.staffName ? `Added by ${entry.staffName}` : "Added by staff"}
-                          </div>
+                        <div className="whitespace-nowrap text-left text-xs text-muted-foreground sm:text-right">
+                          {fmtMelb(entry.createdAt, "dd/MM/yyyy · HH:mm")}
+                          <span className="mx-1">·</span>
+                          {entry.staffName ? `Added by ${entry.staffName}` : "Added by staff"}
                         </div>
                       </div>
-                      <p className="mt-3 text-sm leading-relaxed whitespace-pre-wrap">
-                        {entry.note}
-                      </p>
                     </div>
                   ))}
                 </div>

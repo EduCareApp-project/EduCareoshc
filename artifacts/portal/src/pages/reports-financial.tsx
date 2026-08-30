@@ -527,33 +527,51 @@ export default function ReportsFinancial() {
                   </p>
                 </div>
               ) : (
-                <div className="divide-y">
+                <div>
+                  <div className="hidden border-b bg-muted/30 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid lg:grid-cols-[minmax(130px,0.85fr)_minmax(120px,1fr)_minmax(220px,2fr)_minmax(150px,auto)] lg:gap-4">
+                    <span>Guardian</span>
+                    <span>Children</span>
+                    <span>Notes from conversation</span>
+                    <span>Recorded</span>
+                  </div>
                   {(communicationLogData ?? []).map((entry) => (
-                    <div key={entry.id} className="px-4 py-2.5">
-                      <div className="grid gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,1fr)_auto]">
-                        <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
-                          <Link
-                            href={`/guardians/${encodeURIComponent(entry.guardianEmail)}?tab=financial`}
-                            className="font-semibold text-primary hover:underline shrink-0"
-                          >
-                            {entry.guardianName}
-                          </Link>
-                          <span className="break-all text-xs text-muted-foreground">
-                            {entry.guardianEmail}
-                          </span>
-                          {entry.childNames.length > 0 && (
-                            <span className="text-xs text-muted-foreground">
-                              · {entry.childNames.join(", ")}
-                            </span>
+                    <div key={entry.id} className="border-b px-4 py-3 last:border-b-0">
+                      <div className="grid gap-3 lg:grid-cols-[minmax(130px,0.85fr)_minmax(120px,1fr)_minmax(220px,2fr)_minmax(150px,auto)] lg:items-start lg:gap-4">
+                        <Link
+                          href={`/guardians/${encodeURIComponent(entry.guardianEmail)}?tab=financial`}
+                          className="min-w-0 break-words pt-1 text-sm font-semibold text-primary hover:underline"
+                        >
+                          {entry.guardianName}
+                        </Link>
+                        <div className="flex min-w-0 flex-wrap items-center gap-1">
+                          {entry.childNames.length > 0 ? (
+                            entry.childNames.map((childName) => (
+                              <span
+                                key={childName}
+                                className="inline-flex max-w-full rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs leading-5 text-slate-700"
+                              >
+                                {childName}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="pt-1 text-xs text-muted-foreground">—</span>
                           )}
-                          <p className="basis-full whitespace-pre-wrap break-words leading-snug sm:basis-0 sm:min-w-0 sm:flex-1">
+                        </div>
+                        <div className="min-w-0 rounded-md border border-emerald-100 bg-emerald-50/80 px-3 py-2 text-sm text-emerald-950">
+                          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 lg:hidden">
+                            Notes from conversation
+                          </p>
+                          <p className="whitespace-pre-wrap break-words leading-snug">
                             {entry.note}
                           </p>
                         </div>
-                        <div className="whitespace-nowrap text-left text-xs text-muted-foreground sm:text-right">
-                          {fmtMelb(entry.createdAt, "dd/MM/yyyy · HH:mm")}
-                          <span className="mx-1">·</span>
-                          {entry.staffName ? `Added by ${entry.staffName}` : "Added by staff"}
+                        <div className="text-xs text-muted-foreground lg:pt-1">
+                          <div className="whitespace-nowrap">
+                            {fmtMelb(entry.createdAt, "dd/MM/yyyy · HH:mm")}
+                          </div>
+                          <div className="mt-1 break-words">
+                            {entry.staffName ? `Added by ${entry.staffName}` : "Added by staff"}
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -1,4 +1,5 @@
-import { pgTable, serial, text, timestamp, numeric, date } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { pgTable, serial, text, timestamp, numeric, date, index } from "drizzle-orm/pg-core";
 
 /** Overall billing/financial status for a guardian. Created on first access (upsert). */
 export const guardianFinancialAccountsTable = pgTable("guardian_financial_accounts", {
@@ -18,7 +19,12 @@ export const guardianCommunicationLogsTable = pgTable("guardian_communication_lo
   note: text("note").notNull(),
   staffName: text("staff_name"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  index("guardian_communication_logs_created_at_id_idx")
+    .on(table.createdAt.desc(), table.id.desc()),
+  index("guardian_communication_logs_email_created_at_id_idx")
+    .on(sql`lower(trim(${table.guardianEmail}))`, table.createdAt.desc(), table.id.desc()),
+]);
 
 export type GuardianCommunicationLog = typeof guardianCommunicationLogsTable.$inferSelect;
 

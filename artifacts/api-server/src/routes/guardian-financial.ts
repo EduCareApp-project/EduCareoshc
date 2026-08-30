@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, and, inArray, desc } from "drizzle-orm";
+import { eq, and, inArray, desc, or, sql, lt } from "drizzle-orm";
 import {
   db,
   guardianFinancialAccountsTable,
@@ -276,6 +276,54 @@ router.get("/guardians/financial/on-radar", async (req, res): Promise<void> => {
 });
 
 // ── Guardian communication log report (admins only) ───────────────────────────
+const COMMUNICATION_LOG_DEFAULT_PAGE_SIZE = 25;
+const COMMUNICATION_LOG_MAX_PAGE_SIZE = 100;
+
+function parsePaginationQueryParam(value: unknown, fallback: number): number {
+  if (value === undefined) return fallback;
+  if (typeof value !== "string" || !/^\d+$/.test(value)) return Number.NaN;
+  return Number(value);
+}
+
+type CommunicationLogCursor = {
+  createdAt: Date;
+  id: number;
+};
+
+function parseCommunicationLogCursor(value: unknown): CommunicationLogCursor | null | undefined {
+  if (value === undefined) return null;
+  if (typeof value !== "string" || !value) return undefined;
+
+  try {
+    const decoded = JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as {
+      createdAt?: unknown;
+      id?: unknown;
+    };
+    const createdAt = typeof decoded.createdAt === "string"
+      ? new Date(decoded.createdAt)
+      : new Date(Number.NaN);
+    if (
+      Number.isNaN(createdAt.getTime()) ||
+      !Number.isInteger(decoded.id) ||
+      Number(decoded.id) <= 0
+    ) {
+      return undefined;
+    }
+    return { createdAt, id: Number(decoded.id) };
+  } catch {
+    return undefined;
+  }
+}
+
+function encodeCommunicationLogCursor(
+  communication: { createdAt: Date; id: number },
+): string {
+  return Buffer.from(JSON.stringify({
+    createdAt: communication.createdAt.toISOString(),
+    id: communication.id,
+  })).toString("base64url");
+}
+
 router.get("/guardians/financial/communication-log", async (req, res): Promise<void> => {
   if (!requireAdmin(req, res)) return;
 
@@ -285,15 +333,141 @@ router.get("/guardians/financial/communication-log", async (req, res): Promise<v
     return;
   }
 
+  const pageSizeParam = parsePaginationQueryParam(
+    req.query.pageSize,
+    COMMUNICATION_LOG_DEFAULT_PAGE_SIZE,
+  );
+  const cursor = parseCommunicationLogCursor(req.query.cursor);
+  if (
+    !Number.isInteger(pageSizeParam) ||
+    pageSizeParam < 1 ||
+    pageSizeParam > COMMUNICATION_LOG_MAX_PAGE_SIZE ||
+    cursor === undefined
+  ) {
+    res.status(400).json({ error: "Invalid pagination parameters" });
+    return;
+  }
+
   try {
-    const [communications, children, sites] = await Promise.all([
-      db
-        .select()
-        .from(guardianCommunicationLogsTable)
-        .orderBy(desc(guardianCommunicationLogsTable.createdAt)),
-      db.select().from(childrenTable),
+    // Resolve the site filter to guardian emails before querying the logs so
+    // every cursor page remains scoped at the database level.
+    let siteGuardianEmails: string[] | null = null;
+    if (siteIdParam !== null) {
+      const siteChildren = await db
+        .select({
+          guardianEmail: childrenTable.guardianEmail,
+          guardian2Email: childrenTable.guardian2Email,
+        })
+        .from(childrenTable)
+        .where(eq(childrenTable.siteId, siteIdParam));
+
+      siteGuardianEmails = [
+        ...new Set(
+          siteChildren
+            .flatMap((child) => [child.guardianEmail, child.guardian2Email])
+            .filter((email): email is string => Boolean(email))
+            .map((email) => email.trim().toLowerCase())
+            .filter(Boolean),
+        ),
+      ];
+
+      if (siteGuardianEmails.length === 0) {
+        res.json({
+          entries: [],
+          pagination: {
+            pageSize: pageSizeParam,
+            hasNextPage: false,
+            nextCursor: null,
+          },
+        });
+        return;
+      }
+    }
+
+    const communicationFilter =
+      siteGuardianEmails === null
+        ? null
+        : sql`lower(trim(${guardianCommunicationLogsTable.guardianEmail})) in (${sql.join(
+            siteGuardianEmails.map((email) => sql`${email}`),
+            sql`, `,
+          )})`;
+
+    const cursorFilter = cursor
+      ? or(
+          lt(guardianCommunicationLogsTable.createdAt, cursor.createdAt),
+          and(
+            eq(guardianCommunicationLogsTable.createdAt, cursor.createdAt),
+            lt(guardianCommunicationLogsTable.id, cursor.id),
+          ),
+        )
+      : null;
+    const combinedFilter = communicationFilter && cursorFilter
+      ? and(communicationFilter, cursorFilter)
+      : communicationFilter ?? cursorFilter;
+
+    const communicationsQuery = combinedFilter
+      ? db
+          .select()
+          .from(guardianCommunicationLogsTable)
+          .where(combinedFilter)
+          .orderBy(
+            desc(guardianCommunicationLogsTable.createdAt),
+            desc(guardianCommunicationLogsTable.id),
+          )
+          .limit(pageSizeParam + 1)
+      : db
+          .select()
+          .from(guardianCommunicationLogsTable)
+          .orderBy(
+            desc(guardianCommunicationLogsTable.createdAt),
+            desc(guardianCommunicationLogsTable.id),
+          )
+          .limit(pageSizeParam + 1);
+
+    const [communicationsWithLookahead, sites] = await Promise.all([
+      communicationsQuery,
       db.select().from(sitesTable).where(eq(sitesTable.status, "active")),
     ]);
+    const hasNextPage = communicationsWithLookahead.length > pageSizeParam;
+    const communications = communicationsWithLookahead.slice(0, pageSizeParam);
+    const nextCursor = hasNextPage && communications.length > 0
+      ? encodeCommunicationLogCursor(communications[communications.length - 1])
+      : null;
+
+    if (communications.length === 0) {
+      res.json({
+        entries: [],
+        pagination: {
+          pageSize: pageSizeParam,
+          hasNextPage: false,
+          nextCursor: null,
+        },
+      });
+      return;
+    }
+
+    const communicationEmails = [
+      ...new Set(
+        communications
+          .map((communication) => communication.guardianEmail.trim().toLowerCase())
+          .filter(Boolean),
+      ),
+    ];
+    const children = await db
+      .select()
+      .from(childrenTable)
+      .where(
+        or(
+          sql`lower(trim(${childrenTable.guardianEmail})) in (${sql.join(
+            communicationEmails.map((email) => sql`${email}`),
+            sql`, `,
+          )})`,
+          sql`lower(trim(${childrenTable.guardian2Email})) in (${sql.join(
+            communicationEmails.map((email) => sql`${email}`),
+            sql`, `,
+          )})`,
+        ),
+      );
 
     const sitesById = new Map(sites.map((site) => [site.id, site]));
     const guardianContext = new Map<
@@ -386,7 +560,14 @@ router.get("/guardians/financial/communication-log", async (req, res): Promise<v
       }];
     });
 
-    res.json(result);
+    res.json({
+      entries: result,
+      pagination: {
+        pageSize: pageSizeParam,
+        hasNextPage,
+        nextCursor,
+      },
+    });
   } catch (err) {
     req.log.error({ err }, "Failed to fetch guardian communication log report");
     res.status(500).json({ error: "Failed to fetch communication log" });

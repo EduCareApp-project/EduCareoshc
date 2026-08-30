@@ -5,6 +5,7 @@ import { useListSites } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertCircle,
@@ -15,6 +16,8 @@ import {
   CheckCircle2,
   Clock,
   MessageSquare,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Link } from "wouter";
 import { fmtMelb } from "@/lib/timezone";
@@ -67,6 +70,15 @@ type CommunicationLogEntry = {
   createdAt: string;
 };
 
+type CommunicationLogResponse = {
+  entries: CommunicationLogEntry[];
+  pagination: {
+    pageSize: number;
+    hasNextPage: boolean;
+    nextCursor: string | null;
+  };
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const FREQ_LABELS: Record<string, string> = {
@@ -95,6 +107,16 @@ export default function ReportsFinancial() {
     filterSiteId !== "__all__" ? parseInt(filterSiteId, 10) : null;
 
   const siteQuery = siteIdParam ? `?siteId=${siteIdParam}` : "";
+  const [communicationLogCursors, setCommunicationLogCursors] = useState<(string | null)[]>([
+    null,
+  ]);
+  const communicationLogCursor =
+    communicationLogCursors[communicationLogCursors.length - 1];
+  const communicationLogQuery = new URLSearchParams({ pageSize: "25" });
+  if (siteIdParam) communicationLogQuery.set("siteId", String(siteIdParam));
+  if (communicationLogCursor) {
+    communicationLogQuery.set("cursor", communicationLogCursor);
+  }
 
   const { data: suspendedData, isLoading: suspendedLoading } = useQuery<
     SiteGroup<SuspendedGuardian>[]
@@ -125,14 +147,16 @@ export default function ReportsFinancial() {
   const {
     data: communicationLogData,
     isLoading: communicationLogLoading,
+    isFetching: communicationLogFetching,
     isError: communicationLogError,
-  } = useQuery<CommunicationLogEntry[]>({
-    queryKey: ["guardian-communication-log-report", siteIdParam],
+  } = useQuery<CommunicationLogResponse>({
+    queryKey: ["guardian-communication-log-report", siteIdParam, communicationLogCursor],
     enabled: isAdmin,
     queryFn: async () => {
-      const res = await fetch(`/api/guardians/financial/communication-log${siteQuery}`, {
-        credentials: "include",
-      });
+      const res = await fetch(
+        `/api/guardians/financial/communication-log?${communicationLogQuery.toString()}`,
+        { credentials: "include" },
+      );
       if (!res.ok) throw new Error("Failed to load communication log");
       return res.json();
     },
@@ -142,6 +166,8 @@ export default function ReportsFinancial() {
 
   const suspendedTotal = (suspendedData ?? []).reduce((n, g) => n + g.guardians.length, 0);
   const radarTotal = (radarData ?? []).reduce((n, g) => n + g.guardians.length, 0);
+  const communicationLogEntries = communicationLogData?.entries ?? [];
+  const communicationLogPagination = communicationLogData?.pagination;
 
   if (isLoading) {
     return (
@@ -172,7 +198,13 @@ export default function ReportsFinancial() {
               : "Guardians with suspended or payment-plan financial status."}
           </p>
         </div>
-        <Select value={filterSiteId} onValueChange={setFilterSiteId}>
+        <Select
+          value={filterSiteId}
+          onValueChange={(value) => {
+            setFilterSiteId(value);
+            setCommunicationLogCursors([null]);
+          }}
+        >
           <SelectTrigger className="w-48">
             <SelectValue placeholder="All sites" />
           </SelectTrigger>
@@ -490,10 +522,9 @@ export default function ReportsFinancial() {
           <div className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-slate-600" />
             <h2 className="text-xl font-semibold">Guardian Communication Log</h2>
-            {communicationLogData && communicationLogData.length > 0 && (
+            {communicationLogEntries.length > 0 && (
               <Badge className="bg-slate-100 text-slate-700 border-slate-200 ml-1">
-                {communicationLogData.length}{" "}
-                {communicationLogData.length === 1 ? "entry" : "entries"}
+                {communicationLogEntries.length} shown
               </Badge>
             )}
           </div>
@@ -516,7 +547,7 @@ export default function ReportsFinancial() {
                     Please refresh the page and try again.
                   </p>
                 </div>
-              ) : (communicationLogData ?? []).length === 0 ? (
+              ) : communicationLogEntries.length === 0 ? (
                 <div className="py-12 text-center text-muted-foreground">
                   <MessageSquare className="h-8 w-8 mx-auto opacity-30 mb-2" />
                   <p className="font-medium">No communication log entries</p>
@@ -534,7 +565,7 @@ export default function ReportsFinancial() {
                     <span>Notes from conversation</span>
                     <span>Recorded</span>
                   </div>
-                  {(communicationLogData ?? []).map((entry) => (
+                  {communicationLogEntries.map((entry) => (
                     <div key={entry.id} className="border-b px-4 py-3 last:border-b-0">
                       <div className="grid gap-3 lg:grid-cols-[minmax(130px,0.85fr)_minmax(120px,1fr)_minmax(220px,2fr)_minmax(150px,auto)] lg:items-start lg:gap-4">
                         <Link
@@ -576,6 +607,54 @@ export default function ReportsFinancial() {
                       </div>
                     </div>
                   ))}
+                  {communicationLogPagination &&
+                    (communicationLogCursors.length > 1 ||
+                      communicationLogPagination.hasNextPage) && (
+                      <div className="flex items-center justify-between gap-4 border-t px-4 py-3">
+                        <p className="text-sm text-muted-foreground">
+                          Page {communicationLogCursors.length}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={
+                              communicationLogCursors.length <= 1 ||
+                              communicationLogFetching
+                            }
+                            onClick={() =>
+                              setCommunicationLogCursors((cursors) =>
+                                cursors.length > 1 ? cursors.slice(0, -1) : cursors,
+                              )
+                            }
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            Newer
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={
+                              !communicationLogPagination.hasNextPage ||
+                              !communicationLogPagination.nextCursor ||
+                              communicationLogFetching
+                            }
+                            onClick={() => {
+                              if (!communicationLogPagination.nextCursor) return;
+                              setCommunicationLogCursors((cursors) => [
+                                ...cursors,
+                                communicationLogPagination.nextCursor,
+                              ]);
+                            }}
+                          >
+                            Older
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                 </div>
               )}
             </CardContent>

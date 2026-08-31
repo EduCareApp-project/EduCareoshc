@@ -261,10 +261,15 @@ export default function ReportsFinancial() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="min-w-[720px] w-full table-fixed text-sm">
+                      <colgroup>
+                        <col className="w-[28%]" />
+                        <col className="w-[38%]" />
+                        <col className="w-[34%]" />
+                      </colgroup>
                       <thead>
                         <tr className="border-t bg-muted/40">
-                          <th className="text-left px-6 py-2.5 font-medium text-muted-foreground">
+                          <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">
                             Guardian
                           </th>
                           <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">
@@ -295,7 +300,7 @@ export default function ReportsFinancial() {
                                   <Mail className="h-3 w-3" />
                                   <a
                                     href={`mailto:${g.guardianEmail}`}
-                                    className="hover:underline"
+                                    className="break-all hover:underline"
                                   >
                                     {g.guardianEmail}
                                   </a>
@@ -305,7 +310,7 @@ export default function ReportsFinancial() {
                                     <Phone className="h-3 w-3" />
                                     <a
                                       href={`tel:${g.guardianPhone}`}
-                                      className="hover:underline"
+                                      className="break-words hover:underline"
                                     >
                                       {g.guardianPhone}
                                     </a>
@@ -318,7 +323,7 @@ export default function ReportsFinancial() {
                                 {g.childNames.map((name) => (
                                   <span
                                     key={name}
-                                    className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                                    className="inline-flex max-w-full break-words rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
                                   >
                                     {name}
                                   </span>

@@ -117,4 +117,20 @@ describe("buildEmergencyStatuses", () => {
       { siteId: 2, status: "current" },
     ]);
   });
+
+  it("marks a valid record due within 14 days as expiring", () => {
+    const statuses = buildEmergencyStatuses(
+      [{ id: 1, name: "Aldercourt" }],
+      [{
+        siteId: 1,
+        drillType: "evacuation",
+        conductedAt: "2026-08-01T00:00:00.000Z",
+        nextDueAt: "2026-09-16T00:00:00.000Z",
+        archivedAt: null,
+      }],
+      NOW,
+    );
+
+    expect(statuses[0].status).toBe("expiring");
+  });
 });

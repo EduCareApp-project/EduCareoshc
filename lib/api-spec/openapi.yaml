@@ -6105,7 +6105,7 @@ components:
                 enum: [evacuation, lockdown, shelter_in_place, other]
               status:
                 type: string
-                enum: [current, expired, missing]
+                enum: [current, expiring, expired, missing]
               lastConducted:
                 type: ["string", "null"]
                 format: date-time

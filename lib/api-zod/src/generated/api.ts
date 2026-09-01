@@ -3387,7 +3387,7 @@ export const GetServiceComplianceReportResponse = zod.object({
           "shelter_in_place",
           "other",
         ]),
-        status: zod.enum(["current", "expired", "missing"]),
+        status: zod.enum(["current", "expiring", "expired", "missing"]),
         lastConducted: zod.coerce.date().nullable(),
         nextDue: zod.coerce.date().nullable(),
       }),

@@ -1,5 +1,5 @@
 export type EmergencyDrillType = "evacuation" | "lockdown" | "shelter_in_place" | "other";
-export type EmergencyComplianceStatus = "current" | "expired" | "missing";
+export type EmergencyComplianceStatus = "current" | "expiring" | "expired" | "missing";
 
 type ComplianceSite = {
   id: number;
@@ -43,6 +43,8 @@ export function buildEmergencyStatuses(
 ): EmergencyStatus[] {
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
+  const warningWindowEnd = new Date(today);
+  warningWindowEnd.setDate(warningWindowEnd.getDate() + 14);
   const scopedSiteIds = new Set(sites.map((site) => site.id));
   const latestBySiteAndType = new Map<string, EmergencyRecord>();
 
@@ -81,12 +83,14 @@ export function buildEmergencyStatuses(
           }
 
           const nextDue = record.nextDueAt ? new Date(record.nextDueAt) : null;
-          const isCurrent = nextDue != null && !Number.isNaN(nextDue.getTime()) && nextDue >= today;
+          const hasValidDueDate = nextDue != null && !Number.isNaN(nextDue.getTime());
+          const isExpired = !hasValidDueDate || nextDue < today;
+          const isExpiring = hasValidDueDate && nextDue <= warningWindowEnd;
           return {
             siteId: site.id,
             siteName: site.name,
             drillType,
-            status: isCurrent ? "current" : "expired",
+            status: isExpired ? "expired" : isExpiring ? "expiring" : "current",
             lastConducted: new Date(record.conductedAt).toISOString(),
             nextDue: nextDue && !Number.isNaN(nextDue.getTime()) ? nextDue.toISOString() : null,
           };

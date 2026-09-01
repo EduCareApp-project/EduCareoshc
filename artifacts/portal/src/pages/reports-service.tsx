@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShieldCheck, AlertTriangle, CheckCircle2, Clock, ClipboardX, TrendingUp, CheckSquare, Layers, ArrowRight, ClipboardList, ClipboardCheck } from "lucide-react";
+import { ShieldCheck, AlertTriangle, CheckCircle2, ClipboardX, TrendingUp, CheckSquare, Layers, ArrowRight, ClipboardList, ClipboardCheck } from "lucide-react";
 import { format, isBefore, parseISO, startOfToday } from "date-fns";
 import { Link } from "wouter";
 
@@ -56,7 +56,7 @@ export default function ReportsService() {
   }
 
   const emergencyStatuses = report?.emergencyStatuses ?? [];
-  const emergencyIssues = emergencyStatuses.filter((status) => status.status !== "current").length;
+  const emergencyAlerts = emergencyStatuses.filter((status) => status.status === "expired" || status.status === "expiring");
   const drillTypeLabels = {
     evacuation: "Safety Evacuation Drill",
     lockdown: "Lockdown Drill",
@@ -102,71 +102,6 @@ export default function ReportsService() {
         </Select>
       </div>
 
-      <Card className={emergencyIssues > 0 ? "border-red-200" : "border-green-200"}>
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <CardTitle className="text-base">Emergency Record Compliance</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                Latest record for each emergency type at each service. An expired record remains outstanding until a newer record of the same type replaces it.
-              </p>
-            </div>
-            <Link href="/evacuations">
-              <Badge variant="outline" className="cursor-pointer hover:bg-muted">View records</Badge>
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {emergencyStatuses.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-2">No active services are available for compliance reporting.</p>
-          ) : emergencyStatuses.map((status) => {
-            const isExpired = status.status === "expired";
-            const isMissing = status.status === "missing";
-            const StatusIcon = status.status === "current" ? CheckCircle2 : isExpired ? AlertTriangle : Clock;
-            return (
-              <div
-                key={`${status.siteId}-${status.drillType}`}
-                className={`rounded-lg border p-4 flex flex-col sm:flex-row sm:items-start gap-3 ${
-                  status.status === "current"
-                    ? "border-green-200 bg-green-50"
-                    : "border-red-200 bg-red-50"
-                }`}
-              >
-                <StatusIcon className={`h-6 w-6 shrink-0 ${status.status === "current" ? "text-green-600" : "text-red-600"}`} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-semibold">{drillTypeLabels[status.drillType]}</p>
-                    <Badge className={
-                      status.status === "current"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }>
-                      {status.status === "current" ? "Current" : isExpired ? "Expired" : "Missing"}
-                    </Badge>
-                  </div>
-                  <p className="text-sm font-medium mt-1">{status.siteName}</p>
-                  {isMissing ? (
-                    <p className="text-sm text-red-700 mt-1">No current evacuation drill has been recorded for this service.</p>
-                  ) : (
-                    <div className="text-sm mt-1 space-y-0.5">
-                      <p className="text-muted-foreground">
-                        Last conducted: <span className="font-medium text-foreground">{format(new Date(status.lastConducted!), "dd/MM/yyyy")}</span>
-                      </p>
-                      <p className="text-muted-foreground">
-                        Next due: <span className={`font-medium ${isExpired ? "text-red-700" : "text-foreground"}`}>
-                          {status.nextDue ? format(new Date(status.nextDue), "dd/MM/yyyy") : "Not recorded"}
-                          {isExpired ? " (EXPIRED)" : ""}
-                        </span>
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
-
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard title="Open Incidents" value={report?.openIncidents ?? 0} icon={AlertTriangle} href="/incidents" color={report?.openIncidents ? "border-amber-200" : ""} />
         <MetricCard title="Open Condition Reports" value={report?.openConditionReports ?? 0} icon={ClipboardX} href="/condition-reports" color={report?.openConditionReports ? "border-amber-200" : ""} />
@@ -190,6 +125,63 @@ export default function ReportsService() {
           </Card>
         </Link>
       </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle className="text-base">Emergency Record Compliance</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Expired records remain outstanding until a newer record of the same type replaces them. Records due within 14 days are shown here as a warning.
+              </p>
+            </div>
+            <Link href="/evacuations">
+              <Badge variant="outline" className="cursor-pointer hover:bg-muted">View records</Badge>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {emergencyAlerts.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">No emergency records are expired or due within 14 days.</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {emergencyAlerts.map((status) => {
+                const isExpired = status.status === "expired";
+                return (
+                  <div
+                    key={`${status.siteId}-${status.drillType}`}
+                    className="rounded-lg border border-red-300 bg-red-50 p-4 text-red-950"
+                  >
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-6 w-6 shrink-0 text-red-600" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-semibold">{drillTypeLabels[status.drillType]}</p>
+                          <Badge className="bg-red-100 text-red-800">
+                            {isExpired ? "Expired" : "Expiring Soon"}
+                          </Badge>
+                        </div>
+                        <p className="text-sm font-medium mt-1">{status.siteName}</p>
+                        <div className="text-sm mt-2 space-y-0.5">
+                          <p className="text-red-800">
+                            Last conducted: <span className="font-medium text-red-950">{status.lastConducted ? format(new Date(status.lastConducted), "dd/MM/yyyy") : "Not recorded"}</span>
+                          </p>
+                          <p className="text-red-800">
+                            Next due: <span className="font-medium text-red-950">
+                              {status.nextDue ? format(new Date(status.nextDue), "dd/MM/yyyy") : "Not recorded"}
+                              {isExpired ? " (EXPIRED)" : ""}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Roll Compliance Report */}
       <Card>

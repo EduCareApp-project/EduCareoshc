@@ -11,6 +11,7 @@ export type ServiceComplianceReportEmergencyStatusesItemStatus =
 
 export const ServiceComplianceReportEmergencyStatusesItemStatus = {
   current: "current",
+  expiring: "expiring",
   expired: "expired",
   missing: "missing",
 } as const;

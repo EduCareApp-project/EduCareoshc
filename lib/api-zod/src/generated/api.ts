@@ -3376,6 +3376,25 @@ export const GetServiceComplianceReportResponse = zod.object({
     nextDue: zod.coerce.date().nullable(),
     isOverdue: zod.boolean(),
   }),
+  emergencyStatuses: zod
+    .array(
+      zod.object({
+        siteId: zod.number(),
+        siteName: zod.string(),
+        drillType: zod.enum([
+          "evacuation",
+          "lockdown",
+          "shelter_in_place",
+          "other",
+        ]),
+        status: zod.enum(["current", "expired", "missing"]),
+        lastConducted: zod.coerce.date().nullable(),
+        nextDue: zod.coerce.date().nullable(),
+      }),
+    )
+    .describe(
+      "Latest non-archived emergency record for each service and type. Evacuation is included as missing when a service has no record.",
+    ),
   openIncidents: zod.number(),
   openConditionReports: zod.number(),
   openQipItems: zod.number(),

@@ -5,10 +5,13 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+import type { ServiceComplianceReportEmergencyStatusesItem } from "./serviceComplianceReportEmergencyStatusesItem";
 import type { ServiceComplianceReportEvacuationStatus } from "./serviceComplianceReportEvacuationStatus";
 
 export interface ServiceComplianceReport {
   evacuationStatus: ServiceComplianceReportEvacuationStatus;
+  /** Latest non-archived emergency record for each service and type. Evacuation is included as missing when a service has no record. */
+  emergencyStatuses: ServiceComplianceReportEmergencyStatusesItem[];
   openIncidents: number;
   openConditionReports: number;
   openQipItems: number;

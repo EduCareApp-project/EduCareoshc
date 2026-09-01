@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
 import { and, eq, ne } from "drizzle-orm";
-import { db, childrenTable, staffTable, observationsTable, outcomesTable, evacuationsTable, incidentsTable, conditionReportsTable, qipItemsTable, checklistRoutinesTable, professionalDevelopmentTable, staffQualificationsTable, postsTable, organisationTable } from "@workspace/db";
+import { db, childrenTable, staffTable, observationsTable, outcomesTable, evacuationsTable, incidentsTable, conditionReportsTable, qipItemsTable, checklistRoutinesTable, professionalDevelopmentTable, staffQualificationsTable, postsTable, organisationTable, sitesTable } from "@workspace/db";
 import { GetLearningStoriesReportResponse, GetServiceComplianceReportResponse, GetStaffComplianceReportResponse } from "@workspace/api-zod";
+import { buildEmergencyStatuses } from "../lib/serviceCompliance";
 
 const DEFAULT_CANNOT_WORK_QUALS = ["WWCC", "CPR Renewal", "First Aid"];
 const DEFAULT_RP_QUALS = [
@@ -63,9 +64,16 @@ router.get("/reports/service-compliance", async (req, res): Promise<void> => {
   const siteId = req.query.siteId ? Number(req.query.siteId) : null;
 
   try {
-    const allEvacuations = await db.select().from(evacuationsTable).orderBy(evacuationsTable.conductedAt);
+    const allEvacuations = await db.select().from(evacuationsTable);
     const filteredEvacuations = siteId ? allEvacuations.filter((e) => e.siteId === siteId) : allEvacuations;
-    const lastEvac = filteredEvacuations.filter((e) => e.drillType === "evacuation").pop();
+    const activeSites = await db.select({ id: sitesTable.id, name: sitesTable.name })
+      .from(sitesTable)
+      .where(eq(sitesTable.status, "active"));
+    const scopedSites = siteId ? activeSites.filter((site) => site.id === siteId) : activeSites;
+    const emergencyStatuses = buildEmergencyStatuses(scopedSites, filteredEvacuations);
+    const evacuationStatuses = emergencyStatuses.filter((status) => status.drillType === "evacuation");
+    const legacyEvacuation = evacuationStatuses.find((status) => status.status !== "current")
+      ?? evacuationStatuses[0];
 
     const allIncidents = await db.select().from(incidentsTable);
     const filteredIncidents = siteId ? allIncidents.filter((i) => i.siteId === siteId) : allIncidents;
@@ -91,16 +99,13 @@ router.get("/reports/service-compliance", async (req, res): Promise<void> => {
       return !isNaN(target.getTime()) && target < sevenDaysAgo;
     }).length;
 
-    const now = new Date();
-    const nextDue = lastEvac?.nextDueAt ? new Date(lastEvac.nextDueAt) : null;
-    const isOverdue = nextDue ? now > nextDue : lastEvac === undefined ? false : true;
-
     res.json(GetServiceComplianceReportResponse.parse({
       evacuationStatus: {
-        lastConducted: lastEvac?.conductedAt?.toISOString() ?? null,
-        nextDue: nextDue?.toISOString() ?? null,
-        isOverdue,
+        lastConducted: legacyEvacuation?.lastConducted ?? null,
+        nextDue: legacyEvacuation?.nextDue ?? null,
+        isOverdue: legacyEvacuation?.status === "expired",
       },
+      emergencyStatuses,
       openIncidents,
       openConditionReports,
       openQipItems,

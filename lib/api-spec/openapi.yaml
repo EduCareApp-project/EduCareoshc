@@ -6075,7 +6075,7 @@ components:
 
     ServiceComplianceReport:
       type: object
-      required: [evacuationStatus, openIncidents, openConditionReports, openQipItems, activeChecklists, overdueChecklists]
+      required: [evacuationStatus, emergencyStatuses, openIncidents, openConditionReports, openQipItems, activeChecklists, overdueChecklists]
       properties:
         evacuationStatus:
           type: object
@@ -6089,6 +6089,29 @@ components:
               format: date-time
             isOverdue:
               type: boolean
+        emergencyStatuses:
+          type: array
+          description: Latest non-archived emergency record for each service and type. Evacuation is included as missing when a service has no record.
+          items:
+            type: object
+            required: [siteId, siteName, drillType, status, lastConducted, nextDue]
+            properties:
+              siteId:
+                type: integer
+              siteName:
+                type: string
+              drillType:
+                type: string
+                enum: [evacuation, lockdown, shelter_in_place, other]
+              status:
+                type: string
+                enum: [current, expired, missing]
+              lastConducted:
+                type: ["string", "null"]
+                format: date-time
+              nextDue:
+                type: ["string", "null"]
+                format: date-time
         openIncidents:
           type: integer
         openConditionReports:

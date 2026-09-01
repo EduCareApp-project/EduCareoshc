@@ -45,6 +45,12 @@ const SETTING_META: Record<string, { label: string; description: string; hasAdva
     hasAdvanceDays: true,
     group: "Deadline Reminders",
   },
+  evacuation_expiry: {
+    label: "Evacuation record expiring",
+    description: "Alert site staff when an evacuation record has expired or is due within the reminder window.",
+    hasAdvanceDays: true,
+    group: "Deadline Reminders",
+  },
   weekly_plan_missing: {
     label: "Weekly plan not published",
     description: "Alert when the current week has no published planning experience.",
@@ -528,7 +534,7 @@ export default function SettingsNotifications() {
                       <CardTitle className="text-base">{group}</CardTitle>
                       {group === "Deadline Reminders" && (
                         <CardDescription>
-                          Deadline alerts are computed nightly and shown to Admins and Educational Leaders. "Advance days" controls how early the alert appears before the due date.
+                          Deadline alerts are computed automatically and shown to the relevant staff. "Advance days" controls how early the alert appears before the due date.
                         </CardDescription>
                       )}
                     </CardHeader>

@@ -55,12 +55,14 @@ export default function ReportsService() {
     );
   }
 
-  const evac = report?.evacuationStatus;
-  const evacColor = !evac?.lastConducted ? "border-slate-200 bg-slate-50"
-    : evac.isOverdue ? "border-red-200 bg-red-50"
-    : "border-green-200 bg-green-50";
-  const EvacIcon = !evac?.lastConducted ? Clock : evac.isOverdue ? AlertTriangle : CheckCircle2;
-  const evacIconColor = !evac?.lastConducted ? "text-slate-500" : evac.isOverdue ? "text-red-600" : "text-green-600";
+  const emergencyStatuses = report?.emergencyStatuses ?? [];
+  const emergencyIssues = emergencyStatuses.filter((status) => status.status !== "current").length;
+  const drillTypeLabels = {
+    evacuation: "Safety Evacuation Drill",
+    lockdown: "Lockdown Drill",
+    shelter_in_place: "Shelter in Place Drill",
+    other: "Other Emergency Record",
+  } as const;
 
   const MetricCard = ({ title, value, icon: Icon, href, color = "border-border" }: { title: string; value: number; icon: any; href: string; color?: string }) => (
     <Link href={href}>
@@ -100,25 +102,68 @@ export default function ReportsService() {
         </Select>
       </div>
 
-      <Card className={`${evacColor} border`}>
-        <CardContent className="p-5">
-          <div className="flex items-start gap-4">
-            <EvacIcon className={`h-8 w-8 shrink-0 mt-0.5 ${evacIconColor}`} />
-            <div className="flex-1">
-              <p className="font-semibold text-base">Safety Evacuation Drill</p>
-              {!evac?.lastConducted ? (
-                <p className="text-sm text-muted-foreground mt-1">No drills recorded. Evacuation drills are required every 90 days.</p>
-              ) : (
-                <div className="text-sm mt-1 space-y-0.5">
-                  <p className="text-muted-foreground">Last conducted: <span className="font-medium text-foreground">{format(new Date(evac.lastConducted), "dd/MM/yyyy")}</span></p>
-                  {evac.nextDue && <p className="text-muted-foreground">Next due: <span className={`font-medium ${evac.isOverdue ? "text-red-700" : "text-foreground"}`}>{format(new Date(evac.nextDue), "dd/MM/yyyy")}{evac.isOverdue ? " (OVERDUE)" : ""}</span></p>}
-                </div>
-              )}
+      <Card className={emergencyIssues > 0 ? "border-red-200" : "border-green-200"}>
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle className="text-base">Emergency Record Compliance</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Latest record for each emergency type at each service. An expired record remains outstanding until a newer record of the same type replaces it.
+              </p>
             </div>
             <Link href="/evacuations">
-              <Badge variant="outline" className="cursor-pointer hover:bg-muted">View</Badge>
+              <Badge variant="outline" className="cursor-pointer hover:bg-muted">View records</Badge>
             </Link>
           </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {emergencyStatuses.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">No active services are available for compliance reporting.</p>
+          ) : emergencyStatuses.map((status) => {
+            const isExpired = status.status === "expired";
+            const isMissing = status.status === "missing";
+            const StatusIcon = status.status === "current" ? CheckCircle2 : isExpired ? AlertTriangle : Clock;
+            return (
+              <div
+                key={`${status.siteId}-${status.drillType}`}
+                className={`rounded-lg border p-4 flex flex-col sm:flex-row sm:items-start gap-3 ${
+                  status.status === "current"
+                    ? "border-green-200 bg-green-50"
+                    : "border-red-200 bg-red-50"
+                }`}
+              >
+                <StatusIcon className={`h-6 w-6 shrink-0 ${status.status === "current" ? "text-green-600" : "text-red-600"}`} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold">{drillTypeLabels[status.drillType]}</p>
+                    <Badge className={
+                      status.status === "current"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }>
+                      {status.status === "current" ? "Current" : isExpired ? "Expired" : "Missing"}
+                    </Badge>
+                  </div>
+                  <p className="text-sm font-medium mt-1">{status.siteName}</p>
+                  {isMissing ? (
+                    <p className="text-sm text-red-700 mt-1">No current evacuation drill has been recorded for this service.</p>
+                  ) : (
+                    <div className="text-sm mt-1 space-y-0.5">
+                      <p className="text-muted-foreground">
+                        Last conducted: <span className="font-medium text-foreground">{format(new Date(status.lastConducted!), "dd/MM/yyyy")}</span>
+                      </p>
+                      <p className="text-muted-foreground">
+                        Next due: <span className={`font-medium ${isExpired ? "text-red-700" : "text-foreground"}`}>
+                          {status.nextDue ? format(new Date(status.nextDue), "dd/MM/yyyy") : "Not recorded"}
+                          {isExpired ? " (EXPIRED)" : ""}
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
 

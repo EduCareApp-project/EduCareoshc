@@ -11,6 +11,7 @@ import {
   checklistRoutinesTable,
   planningExperiencesTable,
   sitesTable,
+  evacuationsTable,
   childMedicationsTable,
   childrenTable,
   parentAccountsTable,
@@ -24,6 +25,11 @@ import { getAppUrl } from "../lib/appUrl";
 
 const router: IRouter = Router();
 
+function localDateString(value: Date | string): string {
+  const date = new Date(value);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 async function getAdvanceDays(type: string): Promise<number> {
   const [s] = await db.select({ advanceDays: notificationSettingsTable.advanceDays })
     .from(notificationSettingsTable)
@@ -36,6 +42,55 @@ async function isEnabled(type: string): Promise<boolean> {
     .from(notificationSettingsTable)
     .where(eq(notificationSettingsTable.type, type));
   return s?.enabled !== false;
+}
+
+async function computeEvacuationExpiryNotificationForStaff(params: {
+  staffId: number;
+  siteId: number;
+}): Promise<void> {
+  if (!(await isEnabled("evacuation_expiry"))) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const advanceDays = await getAdvanceDays("evacuation_expiry");
+  const windowEnd = new Date(today);
+  windowEnd.setDate(today.getDate() + advanceDays);
+  const monthKey = getYearMonth(today);
+
+  const evacuationRecords = await db.select({
+    id: evacuationsTable.id,
+    siteId: evacuationsTable.siteId,
+    conductedAt: evacuationsTable.conductedAt,
+    nextDueAt: evacuationsTable.nextDueAt,
+  })
+    .from(evacuationsTable)
+    .where(and(
+      eq(evacuationsTable.drillType, "evacuation"),
+      eq(evacuationsTable.siteId, params.siteId),
+      isNull(evacuationsTable.archivedAt),
+      isNotNull(evacuationsTable.nextDueAt),
+    ));
+
+  for (const record of evacuationRecords) {
+    if (!record.nextDueAt || record.siteId !== params.siteId) continue;
+
+    const expiryDate = new Date(record.nextDueAt);
+    expiryDate.setHours(0, 0, 0, 0);
+    if (expiryDate > windowEnd) continue;
+
+    const expiryDateLabel = localDateString(expiryDate);
+    const statusLabel = expiryDate < today ? "expired" : "expires";
+    await createNotification({
+      staffId: params.staffId,
+      type: "evacuation_expiry",
+      title: `Evacuation record ${statusLabel} ${expiryDateLabel}`,
+      body: `The evacuation drill recorded on ${localDateString(record.conductedAt)} needs to be renewed.`,
+      href: "/evacuations",
+      referenceId: record.id,
+      referenceType: "evacuation",
+      dedupeKey: `evacuation_expiry:${record.id}:${monthKey}:${params.staffId}`,
+    });
+  }
 }
 
 async function computeDeadlineNotifications(): Promise<void> {
@@ -388,8 +443,19 @@ async function computeDeadlineNotifications(): Promise<void> {
 
 // ── GET /notifications ────────────────────────────────────────────────────────
 router.get("/notifications", async (req, res): Promise<void> => {
-  const userId = req.session.user!.id;
+  const user = req.session.user!;
+  const userId = user.id;
 
+  if (user.type === "staff" && user.siteId != null) {
+    try {
+      await computeEvacuationExpiryNotificationForStaff({
+        staffId: userId,
+        siteId: user.siteId,
+      });
+    } catch (err) {
+      logger.warn({ err, userId }, "Evacuation expiry notification computation failed");
+    }
+  }
   computeDeadlineNotifications().catch((err) => logger.warn({ err }, "Deadline notification computation failed"));
 
   try {
@@ -408,8 +474,19 @@ router.get("/notifications", async (req, res): Promise<void> => {
 
 // ── GET /notifications/count ─────────────────────────────────────────────────
 router.get("/notifications/count", async (req, res): Promise<void> => {
-  const userId = req.session.user!.id;
+  const user = req.session.user!;
+  const userId = user.id;
 
+  if (user.type === "staff" && user.siteId != null) {
+    try {
+      await computeEvacuationExpiryNotificationForStaff({
+        staffId: userId,
+        siteId: user.siteId,
+      });
+    } catch (err) {
+      logger.warn({ err, userId }, "Evacuation expiry notification computation failed");
+    }
+  }
   try {
     const items = await db.select({ id: notificationsTable.id })
       .from(notificationsTable)

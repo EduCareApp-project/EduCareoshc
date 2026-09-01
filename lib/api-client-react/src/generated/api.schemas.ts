@@ -1839,8 +1839,40 @@ export type ServiceComplianceReportEvacuationStatus = {
   isOverdue: boolean;
 };
 
+export type ServiceComplianceReportEmergencyStatusesItemDrillType =
+  (typeof ServiceComplianceReportEmergencyStatusesItemDrillType)[keyof typeof ServiceComplianceReportEmergencyStatusesItemDrillType];
+
+export const ServiceComplianceReportEmergencyStatusesItemDrillType = {
+  evacuation: "evacuation",
+  lockdown: "lockdown",
+  shelter_in_place: "shelter_in_place",
+  other: "other",
+} as const;
+
+export type ServiceComplianceReportEmergencyStatusesItemStatus =
+  (typeof ServiceComplianceReportEmergencyStatusesItemStatus)[keyof typeof ServiceComplianceReportEmergencyStatusesItemStatus];
+
+export const ServiceComplianceReportEmergencyStatusesItemStatus = {
+  current: "current",
+  expired: "expired",
+  missing: "missing",
+} as const;
+
+export type ServiceComplianceReportEmergencyStatusesItem = {
+  siteId: number;
+  siteName: string;
+  drillType: ServiceComplianceReportEmergencyStatusesItemDrillType;
+  status: ServiceComplianceReportEmergencyStatusesItemStatus;
+  /** @nullable */
+  lastConducted: string | null;
+  /** @nullable */
+  nextDue: string | null;
+};
+
 export interface ServiceComplianceReport {
   evacuationStatus: ServiceComplianceReportEvacuationStatus;
+  /** Latest non-archived emergency record for each service and type. Evacuation is included as missing when a service has no record. */
+  emergencyStatuses: ServiceComplianceReportEmergencyStatusesItem[];
   openIncidents: number;
   openConditionReports: number;
   openQipItems: number;

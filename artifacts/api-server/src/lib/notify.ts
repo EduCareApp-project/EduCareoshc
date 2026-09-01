@@ -16,6 +16,7 @@ export type NotificationType =
   | "qip_deadline_expired"
   | "weekly_plan_missing"
   | "staff_qualification_expiry"
+  | "evacuation_expiry"
   | "checklist_overdue"
   | "welfare_mandatory_report"
   | "welfare_note_submitted"

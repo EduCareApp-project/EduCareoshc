@@ -198,12 +198,18 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
   const unread = countData?.count ?? 0;
   const hasNotifications = notifications && notifications.length > 0;
 
-  function handleNotificationClick(n: { id: number; href?: string | null; read: boolean }) {
-    // Mark as read (optimistic — happens instantly)
+  function acknowledgeNotification(n: { id: number; read: boolean }) {
     if (!n.read) markOne({ id: n.id });
-    // Navigate first, then close — avoids the enabled:open race
-    if (n.href) setLocation(n.href);
-    setOpen(false);
+  }
+
+  function handleNotificationTextClick(n: { id: number; href?: string | null; read: boolean }) {
+    // Opening a notification also acknowledges it (optimistic — happens instantly)
+    if (!n.read) markOne({ id: n.id });
+    if (n.href) {
+      // Navigate first, then close — avoids the enabled:open race
+      setLocation(n.href);
+      setOpen(false);
+    }
   }
 
   return (
@@ -255,22 +261,33 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
               {notifications.map((n) => (
                 <div
                   key={n.id}
-                  role="button"
-                  tabIndex={0}
-                  className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-accent/50 ${
+                  className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-accent/50 ${
                     !n.read ? "bg-blue-50/50 dark:bg-blue-950/20" : ""
                   }`}
-                  onClick={() => handleNotificationClick(n)}
-                  onKeyDown={(e) => e.key === "Enter" && handleNotificationClick(n)}
                 >
                   {/* Unread dot */}
                   <div className="mt-1.5 shrink-0">
                     {!n.read
-                      ? <span className="block h-2 w-2 rounded-full bg-blue-500" />
+                      ? (
+                        <button
+                          type="button"
+                          className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                          aria-label={`Acknowledge notification: ${n.title}`}
+                          title="Acknowledge notification"
+                          onClick={() => acknowledgeNotification(n)}
+                        >
+                          <span className="block h-2 w-2 rounded-full bg-blue-500" />
+                        </button>
+                      )
                       : <span className="block h-2 w-2" />
                     }
                   </div>
-                  <div className="flex-1 min-w-0 space-y-0.5">
+                  <button
+                    type="button"
+                    className="flex-1 min-w-0 space-y-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-sm"
+                    aria-label={n.href ? `Open notification: ${n.title}` : n.title}
+                    onClick={() => handleNotificationTextClick(n)}
+                  >
                     <p className={`text-sm leading-snug break-words ${!n.read ? "font-semibold" : "font-medium text-muted-foreground"}`}>
                       {n.title}
                     </p>
@@ -278,7 +295,7 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
                       <p className="text-xs text-muted-foreground break-words line-clamp-2">{n.body}</p>
                     )}
                     <p className="text-[11px] text-muted-foreground/70">{timeAgo(n.createdAt)}</p>
-                  </div>
+                  </button>
                   {n.href && (
                     <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 mt-1" />
                   )}

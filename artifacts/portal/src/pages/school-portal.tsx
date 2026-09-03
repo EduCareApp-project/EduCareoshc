@@ -20,7 +20,7 @@ import { format } from "date-fns";
 import { 
   Building2, Users, FileText, ClipboardCheck, ArrowLeft, 
   Plus, Trash2, CalendarIcon, FileClock,
-  MapPin, Clock, Paperclip, ChevronDown, BookOpen, TrendingUp, Mail, Phone, User, GraduationCap
+  MapPin, Clock, Paperclip, ChevronDown, BookOpen, TrendingUp, Mail, Phone, User, GraduationCap, Eye
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -209,6 +209,18 @@ function SchoolStaffProfileView({
                         <span className={expiry.expired ? "font-medium text-destructive" : "text-muted-foreground"}>
                           Expires {expiry.label}
                         </span>
+                      )}
+                      {qualification.documentPath && (
+                        <a
+                          href={profileImageUrl(qualification.documentPath)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-primary hover:text-primary/80"
+                          aria-label={`Preview uploaded document for ${qualification.name}`}
+                          title="Preview uploaded document"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </a>
                       )}
                       <Badge variant={qualification.status === "current" ? "default" : "secondary"} className="capitalize">
                         {qualification.status.replace(/_/g, " ")}

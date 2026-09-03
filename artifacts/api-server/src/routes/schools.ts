@@ -146,6 +146,7 @@ router.get("/schools/:siteId/staff/:staffId", async (req, res): Promise<void> =>
       status: staffQualificationsTable.status,
       referenceNumber: staffQualificationsTable.referenceNumber,
       expiryDate: staffQualificationsTable.expiryDate,
+      documentPath: staffQualificationsTable.documentPath,
     }).from(staffQualificationsTable).where(and(
       eq(staffQualificationsTable.staffId, requestedStaffId),
       isNull(staffQualificationsTable.archivedAt),

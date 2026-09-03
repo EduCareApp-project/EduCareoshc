@@ -43,6 +43,7 @@ export type StaffQualification = {
   status: string;
   referenceNumber: string | null;
   expiryDate: string | null;
+  documentPath: string | null;
 };
 
 export type SchoolStaffProfileResponse = {

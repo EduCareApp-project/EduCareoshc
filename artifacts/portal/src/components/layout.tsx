@@ -65,6 +65,7 @@ const NAV_GROUPS = [
       { href: "/children", label: "Children", icon: Baby },
       { href: "/guardians", label: "Guardians", icon: UserCog },
       { href: "/staff", label: "Staff", icon: Users },
+      { href: "/schools", label: "Schools", icon: GraduationCap },
     ]
   },
   {
@@ -91,7 +92,6 @@ const NAV_GROUPS = [
       { href: "/qip", label: "QIP", icon: TrendingUp },
       { href: "/policies", label: "Policies & Files", icon: FolderOpen },
       { href: "/checklists", label: "Checklists", icon: CheckSquare },
-      { href: "/schools", label: "Schools", icon: GraduationCap },
       { href: "/sites", label: "Sites", icon: Building2 },
     ]
   },

@@ -39,6 +39,8 @@ export type VitalRecord = {
   referenceNumber?: string | null;
   expiryDate?: string | null;
   notes?: string | null;
+  documentPath?: string | null;
+  documentName?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -96,7 +98,10 @@ export function useCreateVitalRecord(siteId: number) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Failed to create vital record");
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.error ?? "Failed to create vital record");
+      }
       return res.json();
     },
     onSuccess: () => {

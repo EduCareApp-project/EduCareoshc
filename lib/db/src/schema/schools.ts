@@ -21,6 +21,8 @@ export const schoolVitalRecordsTable = pgTable("school_vital_records", {
   referenceNumber: text("reference_number"),
   expiryDate: date("expiry_date"),
   notes: text("notes"),
+  documentPath: text("document_path"),
+  documentName: text("document_name"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

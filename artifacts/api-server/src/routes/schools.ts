@@ -1,11 +1,14 @@
+import { Readable } from "stream";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { and, asc, eq, inArray, or } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db, schoolAccountsTable, schoolVitalRecordsTable, sitesTable, staffSitesTable, staffTable, vecraVisitsTable } from "@workspace/db";
 import { ensureSchoolAccount } from "../lib/schoolAccounts";
+import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage";
 
 const router: IRouter = Router();
 const ADMIN_ROLES = new Set(["director", "admin", "coordinator", "educational_leader"]);
+const objectStorageService = new ObjectStorageService();
 
 function staffId(req: Request, res: Response): number | null {
   if (req.session.user?.type !== "staff") {
@@ -104,19 +107,81 @@ router.get("/schools/:siteId/portal", async (req, res): Promise<void> => {
   }
 });
 
+router.get("/schools/:siteId/vital-records/:id/document", async (req, res): Promise<void> => {
+  const siteId = Number(req.params.siteId);
+  const recordId = Number(req.params.id);
+  const user = req.session.user;
+  if (!Number.isInteger(siteId) || !Number.isInteger(recordId)) {
+    res.status(400).json({ error: "Invalid document id" });
+    return;
+  }
+  if (user?.type === "school") {
+    if (user.siteId !== siteId) {
+      res.status(403).json({ error: "This school is outside your access" });
+      return;
+    }
+  } else if (adminStaff(req, res) == null) {
+    return;
+  }
+
+  try {
+    const [record] = await db
+      .select({ documentPath: schoolVitalRecordsTable.documentPath, documentName: schoolVitalRecordsTable.documentName })
+      .from(schoolVitalRecordsTable)
+      .where(and(eq(schoolVitalRecordsTable.id, recordId), eq(schoolVitalRecordsTable.siteId, siteId)))
+      .limit(1);
+    if (!record) {
+      res.status(404).json({ error: "Vital record not found" });
+      return;
+    }
+    if (!record.documentPath) {
+      res.status(404).json({ error: "This record has no document" });
+      return;
+    }
+
+    const objectFile = await objectStorageService.getObjectEntityFile(record.documentPath);
+    const response = await objectStorageService.downloadObject(objectFile);
+    res.status(response.status);
+    response.headers.forEach((value, key) => res.setHeader(key, value));
+    if (record.documentName) {
+      res.setHeader("Content-Disposition", `inline; filename="${record.documentName.replace(/["\r\n]/g, "")}"`);
+    }
+    if (response.body) {
+      Readable.fromWeb(response.body as ReadableStream<Uint8Array>).pipe(res);
+    } else {
+      res.end();
+    }
+  } catch (err) {
+    if (err instanceof ObjectNotFoundError) {
+      res.status(404).json({ error: "Document not found" });
+      return;
+    }
+    req.log.error({ err, siteId, recordId }, "Failed to serve vital record document");
+    res.status(500).json({ error: "Failed to serve document" });
+  }
+});
+
 router.post("/schools/:siteId/vital-records", async (req, res): Promise<void> => {
   const creator = adminStaff(req, res);
   if (creator == null) return;
   const siteId = Number(req.params.siteId);
-  const { recordType, recordName, provider, referenceNumber, expiryDate, notes } = req.body ?? {};
+  const { recordType, recordName, provider, referenceNumber, expiryDate, notes, documentPath, documentName } = req.body ?? {};
   if (!Number.isInteger(siteId) || !recordType || !recordName) {
     res.status(400).json({ error: "Record type and name are required" }); return;
+  }
+  if (!documentPath || !documentName) {
+    res.status(400).json({ error: "A supporting document is required" }); return;
+  }
+  const normalizedDocumentPath = objectStorageService.normalizeObjectEntityPath(String(documentPath));
+  if (!normalizedDocumentPath.startsWith("/objects/")) {
+    res.status(400).json({ error: "The supporting document is invalid" }); return;
   }
   try {
     const [record] = await db.insert(schoolVitalRecordsTable).values({
       siteId, recordType: String(recordType), recordName: String(recordName),
       provider: provider ? String(provider) : null, referenceNumber: referenceNumber ? String(referenceNumber) : null,
       expiryDate: expiryDate ? String(expiryDate) : null, notes: notes ? String(notes) : null,
+      documentPath: normalizedDocumentPath, documentName: String(documentName),
     }).returning();
     res.status(201).json(record);
   } catch (err) {
@@ -129,7 +194,21 @@ router.delete("/schools/:siteId/vital-records/:id", async (req, res): Promise<vo
   if (adminStaff(req, res) == null) return;
   const siteId = Number(req.params.siteId); const id = Number(req.params.id);
   if (!Number.isInteger(siteId) || !Number.isInteger(id)) { res.status(400).json({ error: "Invalid record id" }); return; }
+  const [record] = await db
+    .select({ documentPath: schoolVitalRecordsTable.documentPath })
+    .from(schoolVitalRecordsTable)
+    .where(and(eq(schoolVitalRecordsTable.id, id), eq(schoolVitalRecordsTable.siteId, siteId)))
+    .limit(1);
   await db.delete(schoolVitalRecordsTable).where(and(eq(schoolVitalRecordsTable.id, id), eq(schoolVitalRecordsTable.siteId, siteId)));
+  if (record?.documentPath) {
+    try {
+      await objectStorageService.deleteObjectEntity(record.documentPath);
+    } catch (err) {
+      if (!(err instanceof ObjectNotFoundError)) {
+        req.log.warn({ err, siteId, recordId: id }, "Failed to delete vital record document");
+      }
+    }
+  }
   res.status(204).send();
 });
 

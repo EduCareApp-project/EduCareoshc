@@ -94,7 +94,11 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
     next();
     return;
   }
-  if (req.method === "GET" && req.path === `/schools/${user.siteId}/portal`) {
+  const ownSchoolDocumentPath = new RegExp(`^/schools/${user.siteId}/vital-records/\\d+/document$`);
+  if (
+    req.method === "GET" &&
+    (req.path === `/schools/${user.siteId}/portal` || ownSchoolDocumentPath.test(req.path))
+  ) {
     next();
     return;
   }

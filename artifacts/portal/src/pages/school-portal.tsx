@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useParams, Link } from "wouter";
 import { useAuth } from "@/contexts/auth";
 import { 
@@ -19,7 +19,7 @@ import { format } from "date-fns";
 import { 
   Building2, Users, FileText, ClipboardCheck, ArrowLeft, 
   Plus, Trash2, CalendarIcon, FileClock,
-  MapPin, Clock
+  MapPin, Clock, Paperclip
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -29,6 +29,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
+import { useUpload } from "@workspace/object-storage-web";
 
 const vitalRecordSchema = z.object({
   recordType: z.string().min(1, "Record type is required"),
@@ -58,6 +59,11 @@ export default function SchoolPortal() {
 
   const [vitalOpen, setVitalOpen] = useState(false);
   const [vecraOpen, setVecraOpen] = useState(false);
+  const [vitalFile, setVitalFile] = useState<File | null>(null);
+  const vitalFileInputRef = useRef<HTMLInputElement>(null);
+  const { uploadFile: uploadVitalFile, isUploading: isUploadingVitalFile } = useUpload({
+    onError: () => toast({ title: "Document upload failed", variant: "destructive" }),
+  });
 
   const createVital = useCreateVitalRecord(siteId!);
   const deleteVital = useDeleteVitalRecord(siteId!);
@@ -114,14 +120,27 @@ export default function SchoolPortal() {
   const { site, staff, vitalRecords, vecraVisits } = data;
   const isStaff = user?.type === "staff";
 
-  const onVitalSubmit = (values: z.infer<typeof vitalRecordSchema>) => {
-    createVital.mutate(values, {
+  const resetVitalForm = () => {
+    vitalForm.reset();
+    setVitalFile(null);
+    if (vitalFileInputRef.current) vitalFileInputRef.current.value = "";
+  };
+
+  const onVitalSubmit = async (values: z.infer<typeof vitalRecordSchema>) => {
+    if (!vitalFile) {
+      toast({ title: "Supporting document required", description: "Upload the document for this vital record before saving.", variant: "destructive" });
+      return;
+    }
+    const upload = await uploadVitalFile(vitalFile);
+    if (!upload) return;
+
+    createVital.mutate({ ...values, documentPath: upload.objectPath, documentName: vitalFile.name }, {
       onSuccess: () => {
         toast({ title: "Vital record added successfully" });
         setVitalOpen(false);
-        vitalForm.reset();
+        resetVitalForm();
       },
-      onError: (err: any) => {
+      onError: (err: Error) => {
         toast({ title: "Failed to add record", description: err.message, variant: "destructive" });
       }
     });
@@ -229,7 +248,10 @@ export default function SchoolPortal() {
                 <h3 className="text-lg font-semibold">Vital Records</h3>
                 <p className="text-sm text-muted-foreground">Important licenses, certificates, and compliance records.</p>
               </div>
-              {isStaff && <Dialog open={vitalOpen} onOpenChange={setVitalOpen}>
+              {isStaff && <Dialog open={vitalOpen} onOpenChange={(open) => {
+                setVitalOpen(open);
+                if (!open) resetVitalForm();
+              }}>
                 <DialogTrigger asChild>
                   <Button size="sm">
                     <Plus className="w-4 h-4 mr-2" /> Add Record
@@ -324,9 +346,28 @@ export default function SchoolPortal() {
                           </FormItem>
                         )}
                       />
+                      <div className="space-y-2">
+                        <FormLabel>Supporting Document</FormLabel>
+                        <Input
+                          ref={vitalFileInputRef}
+                          type="file"
+                          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
+                          onChange={(event) => setVitalFile(event.target.files?.[0] ?? null)}
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Upload the certificate, licence, or other document for this record.
+                        </p>
+                        {vitalFile && (
+                          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Paperclip className="h-3.5 w-3.5" />
+                            {vitalFile.name}
+                          </p>
+                        )}
+                      </div>
                       <DialogFooter>
-                        <Button type="submit" disabled={createVital.isPending}>
-                          {createVital.isPending ? "Saving..." : "Save Record"}
+                        <Button type="submit" disabled={createVital.isPending || isUploadingVitalFile}>
+                          {isUploadingVitalFile ? "Uploading..." : createVital.isPending ? "Saving..." : "Save Record"}
                         </Button>
                       </DialogFooter>
                     </form>
@@ -391,6 +432,17 @@ export default function SchoolPortal() {
                         <div className="pt-2 text-muted-foreground text-xs bg-muted/50 p-2 rounded mt-2">
                           {record.notes}
                         </div>
+                      )}
+                      {record.documentPath && (
+                        <a
+                          href={`/api/schools/${site.id}/vital-records/${record.id}/document`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 pt-2 text-xs font-medium text-primary hover:underline"
+                        >
+                          <Paperclip className="h-3.5 w-3.5" />
+                          {record.documentName ?? "View supporting document"}
+                        </a>
                       )}
                     </CardContent>
                   </Card>

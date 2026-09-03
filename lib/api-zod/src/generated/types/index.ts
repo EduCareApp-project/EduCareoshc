@@ -204,6 +204,7 @@ export * from "./siteStatus";
 export * from "./siteUpdate";
 export * from "./siteUpdateStatus";
 export * from "./staff";
+export * from "./staffAssociatedSite";
 export * from "./staffComplianceReport";
 export * from "./staffComplianceReportExpiringQualificationsItem";
 export * from "./staffComplianceReportStaffItem";

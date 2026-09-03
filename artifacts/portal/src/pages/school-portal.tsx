@@ -583,7 +583,7 @@ export default function SchoolPortal() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-lg font-semibold">School Staff</h3>
-                <p className="text-sm text-muted-foreground">List of educators and staff members at this site.</p>
+                <p className="text-sm text-muted-foreground">List of educators and staff members assigned or associated with this site.</p>
               </div>
             </div>
             
@@ -597,15 +597,21 @@ export default function SchoolPortal() {
                   staff.map((member) => (
                     <div key={member.id} className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center font-semibold text-sm">
+                        <div className="h-10 w-10 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center font-semibold text-sm shrink-0">
                           {member.firstName[0]}{member.lastName[0]}
                         </div>
                         <div>
                           <p className="font-medium">{member.firstName} {member.lastName}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
+                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
                             <span className="text-xs text-muted-foreground capitalize bg-muted px-1.5 py-0.5 rounded">{member.role.replace("_", " ")}</span>
                             {member.qualifications && (
                               <span className="text-xs text-muted-foreground">{member.qualifications}</span>
+                            )}
+                            {member.associatedSites && member.associatedSites.length > 0 && (
+                              <span className="text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded border border-muted flex items-center gap-1">
+                                <Building2 className="h-3 w-3" />
+                                {member.associatedSites.map(s => s.name).join(", ")}
+                              </span>
                             )}
                           </div>
                         </div>

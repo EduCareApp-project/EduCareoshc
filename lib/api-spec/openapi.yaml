@@ -3938,9 +3938,26 @@ components:
           type: ["string", "null"]
         siteId:
           type: ["integer", "null"]
+        associatedSiteIds:
+          type: array
+          items:
+            type: integer
+        associatedSites:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffAssociatedSite"
         createdAt:
           type: string
           format: date-time
+
+    StaffAssociatedSite:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
 
     StaffInput:
       type: object
@@ -3967,6 +3984,10 @@ components:
           type: string
         siteId:
           type: integer
+        associatedSiteIds:
+          type: array
+          items:
+            type: integer
 
     StaffUpdate:
       type: object
@@ -3997,6 +4018,10 @@ components:
           type: string
         siteId:
           type: ["integer", "null"]
+        associatedSiteIds:
+          type: array
+          items:
+            type: integer
 
     Observation:
       type: object

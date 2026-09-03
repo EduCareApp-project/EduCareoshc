@@ -431,6 +431,15 @@ export const ListStaffResponseItem = zod.object({
   profilePicturePath: zod.string().nullish(),
   employmentNotes: zod.string().nullish(),
   siteId: zod.number().nullish(),
+  associatedSiteIds: zod.array(zod.number()).optional(),
+  associatedSites: zod
+    .array(
+      zod.object({
+        id: zod.number(),
+        name: zod.string(),
+      }),
+    )
+    .optional(),
   createdAt: zod.coerce.date().optional(),
 });
 export const ListStaffResponse = zod.array(ListStaffResponseItem);
@@ -449,6 +458,7 @@ export const CreateStaffBody = zod.object({
   phone: zod.string().optional(),
   wwccNumber: zod.string().optional(),
   siteId: zod.number().optional(),
+  associatedSiteIds: zod.array(zod.number()).optional(),
 });
 
 export const GetStaffParams = zod.object({
@@ -469,6 +479,15 @@ export const GetStaffResponse = zod.object({
   profilePicturePath: zod.string().nullish(),
   employmentNotes: zod.string().nullish(),
   siteId: zod.number().nullish(),
+  associatedSiteIds: zod.array(zod.number()).optional(),
+  associatedSites: zod
+    .array(
+      zod.object({
+        id: zod.number(),
+        name: zod.string(),
+      }),
+    )
+    .optional(),
   createdAt: zod.coerce.date().optional(),
 });
 
@@ -491,6 +510,7 @@ export const UpdateStaffBody = zod.object({
   profilePicturePath: zod.string().optional(),
   employmentNotes: zod.string().optional(),
   siteId: zod.number().nullish(),
+  associatedSiteIds: zod.array(zod.number()).optional(),
 });
 
 export const UpdateStaffResponse = zod.object({
@@ -507,6 +527,15 @@ export const UpdateStaffResponse = zod.object({
   profilePicturePath: zod.string().nullish(),
   employmentNotes: zod.string().nullish(),
   siteId: zod.number().nullish(),
+  associatedSiteIds: zod.array(zod.number()).optional(),
+  associatedSites: zod
+    .array(
+      zod.object({
+        id: zod.number(),
+        name: zod.string(),
+      }),
+    )
+    .optional(),
   createdAt: zod.coerce.date().optional(),
 });
 
@@ -532,6 +561,15 @@ export const ArchiveStaffResponse = zod.object({
   profilePicturePath: zod.string().nullish(),
   employmentNotes: zod.string().nullish(),
   siteId: zod.number().nullish(),
+  associatedSiteIds: zod.array(zod.number()).optional(),
+  associatedSites: zod
+    .array(
+      zod.object({
+        id: zod.number(),
+        name: zod.string(),
+      }),
+    )
+    .optional(),
   createdAt: zod.coerce.date().optional(),
 });
 

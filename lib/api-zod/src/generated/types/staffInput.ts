@@ -18,4 +18,5 @@ export interface StaffInput {
   phone?: string;
   wwccNumber?: string;
   siteId?: number;
+  associatedSiteIds?: number[];
 }

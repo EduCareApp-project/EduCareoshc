@@ -9,6 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
@@ -24,6 +26,7 @@ const formSchema = z.object({
   phone: z.string().optional(),
   wwccNumber: z.string().optional(),
   siteId: z.string().optional(),
+  associatedSiteIds: z.array(z.number()).default([]),
 });
 
 export default function AddStaff() {
@@ -46,6 +49,7 @@ export default function AddStaff() {
       phone: "",
       wwccNumber: "",
       siteId: "none",
+      associatedSiteIds: [],
     },
   });
 
@@ -124,7 +128,7 @@ export default function AddStaff() {
                 <FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="siteId" render={({ field }) => (
-                <FormItem><FormLabel>Site (Optional)</FormLabel>
+                <FormItem><FormLabel>Home Site (Optional)</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value ?? "none"}>
                     <FormControl><SelectTrigger><SelectValue placeholder="No site assigned" /></SelectTrigger></FormControl>
                     <SelectContent>
@@ -135,6 +139,42 @@ export default function AddStaff() {
                     </SelectContent>
                   </Select>
                 <FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="associatedSiteIds" render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Associated Sites (Optional)</FormLabel>
+                  <div className="border rounded-md bg-background">
+                    <ScrollArea className="h-32 p-2">
+                      <div className="space-y-2.5">
+                        {(sites ?? []).map((site) => {
+                          const checked = field.value.includes(site.id);
+                          return (
+                            <div key={site.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`new-assoc-site-${site.id}`}
+                                checked={checked}
+                                onCheckedChange={(c) => {
+                                  field.onChange(
+                                    c
+                                      ? [...field.value, site.id]
+                                      : field.value.filter((id: number) => id !== site.id)
+                                  );
+                                }}
+                              />
+                              <label htmlFor={`new-assoc-site-${site.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
+                                {site.name}
+                              </label>
+                            </div>
+                          );
+                        })}
+                        {(!sites || sites.length === 0) && (
+                          <p className="text-sm text-muted-foreground italic">No sites available</p>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                  <FormMessage />
+                </FormItem>
               )} />
               <FormField control={form.control} name="qualifications" render={({ field }) => (
                 <FormItem className="sm:col-span-2"><FormLabel>Qualifications</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>

@@ -289,6 +289,11 @@ export const StaffStatus = {
   inactive: "inactive",
 } as const;
 
+export interface StaffAssociatedSite {
+  id: number;
+  name: string;
+}
+
 export interface Staff {
   id: number;
   firstName: string;
@@ -309,6 +314,8 @@ export interface Staff {
   employmentNotes?: string | null;
   /** @nullable */
   siteId?: number | null;
+  associatedSiteIds?: number[];
+  associatedSites?: StaffAssociatedSite[];
   createdAt?: string;
 }
 
@@ -340,6 +347,7 @@ export interface StaffInput {
   phone?: string;
   wwccNumber?: string;
   siteId?: number;
+  associatedSiteIds?: number[];
 }
 
 export type StaffUpdateRole =
@@ -374,6 +382,7 @@ export interface StaffUpdate {
   employmentNotes?: string;
   /** @nullable */
   siteId?: number | null;
+  associatedSiteIds?: number[];
 }
 
 export interface Observation {

@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray, or } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { db, schoolAccountsTable, schoolVitalRecordsTable, sitesTable, staffTable, vecraVisitsTable } from "@workspace/db";
+import { db, schoolAccountsTable, schoolVitalRecordsTable, sitesTable, staffSitesTable, staffTable, vecraVisitsTable } from "@workspace/db";
 import { ensureSchoolAccount } from "../lib/schoolAccounts";
 
 const router: IRouter = Router();
@@ -27,11 +27,17 @@ function adminStaff(req: Request, res: Response): number | null {
 async function portalForSite(siteId: number) {
   const [site] = await db.select().from(sitesTable).where(eq(sitesTable.id, siteId)).limit(1);
   if (!site) return null;
+  const associatedStaffRows = await db.select({ staffId: staffSitesTable.staffId }).from(staffSitesTable)
+    .where(eq(staffSitesTable.siteId, siteId));
+  const associatedStaffIds = associatedStaffRows.map((row) => row.staffId);
+  const schoolStaffFilter = associatedStaffIds.length > 0
+    ? or(eq(staffTable.siteId, siteId), inArray(staffTable.id, associatedStaffIds))
+    : eq(staffTable.siteId, siteId);
   const [staff, vitalRecords, vecraVisits, account] = await Promise.all([
     db.select({
       id: staffTable.id, firstName: staffTable.firstName, lastName: staffTable.lastName,
-      role: staffTable.role, qualifications: staffTable.qualifications, status: staffTable.status,
-    }).from(staffTable).where(and(eq(staffTable.siteId, siteId), eq(staffTable.status, "active")))
+      role: staffTable.role, qualifications: staffTable.qualifications, status: staffTable.status, siteId: staffTable.siteId,
+    }).from(staffTable).where(and(schoolStaffFilter, eq(staffTable.status, "active"), eq(staffTable.isSuperAdmin, false)))
       .orderBy(asc(staffTable.lastName), asc(staffTable.firstName)),
     db.select().from(schoolVitalRecordsTable).where(eq(schoolVitalRecordsTable.siteId, siteId))
       .orderBy(asc(schoolVitalRecordsTable.expiryDate), asc(schoolVitalRecordsTable.recordName)),
@@ -40,7 +46,25 @@ async function portalForSite(siteId: number) {
     db.select({ username: schoolAccountsTable.username, blockedAt: schoolAccountsTable.blockedAt, lastLoginAt: schoolAccountsTable.lastLoginAt })
       .from(schoolAccountsTable).where(eq(schoolAccountsTable.siteId, siteId)).limit(1),
   ]);
-  return { site, account: account[0] ?? null, staff, vitalRecords, vecraVisits };
+  const staffIds = staff.map((member) => member.id);
+  const associationRows = staffIds.length > 0
+    ? await db.select({ staffId: staffSitesTable.staffId, id: sitesTable.id, name: sitesTable.name })
+      .from(staffSitesTable)
+      .innerJoin(sitesTable, eq(staffSitesTable.siteId, sitesTable.id))
+      .where(inArray(staffSitesTable.staffId, staffIds))
+      .orderBy(asc(sitesTable.name))
+    : [];
+  const associatedSitesByStaff = new Map<number, { id: number; name: string }[]>();
+  for (const association of associationRows) {
+    const current = associatedSitesByStaff.get(association.staffId) ?? [];
+    current.push({ id: association.id, name: association.name });
+    associatedSitesByStaff.set(association.staffId, current);
+  }
+  const staffWithAssociations = staff.map((member) => ({
+    ...member,
+    associatedSites: associatedSitesByStaff.get(member.id) ?? [],
+  }));
+  return { site, account: account[0] ?? null, staff: staffWithAssociations, vitalRecords, vecraVisits };
 }
 
 router.get("/schools", async (req, res): Promise<void> => {

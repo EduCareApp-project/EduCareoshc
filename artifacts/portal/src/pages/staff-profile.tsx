@@ -31,6 +31,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -153,7 +155,7 @@ export default function StaffProfile() {
   const [deletingNoteIndex, setDeletingNoteIndex] = useState<number | null>(null);
 
   const [profileEditOpen, setProfileEditOpen] = useState(false);
-  const [profileEditForm, setProfileEditForm] = useState({ firstName: "", lastName: "", email: "", phone: "", role: "", status: "", qualifications: "", wwccNumber: "", siteId: "" });
+  const [profileEditForm, setProfileEditForm] = useState({ firstName: "", lastName: "", email: "", phone: "", role: "", status: "", qualifications: "", wwccNumber: "", siteId: "", associatedSiteIds: [] as number[] });
   const [profileEditSaving, setProfileEditSaving] = useState(false);
 
   function openProfileEdit() {
@@ -168,6 +170,7 @@ export default function StaffProfile() {
       qualifications: staff.qualifications,
       wwccNumber: staff.wwccNumber ?? "",
       siteId: staff.siteId != null ? String(staff.siteId) : "",
+      associatedSiteIds: staff.associatedSiteIds ?? [],
     });
     setProfileEditOpen(true);
   }
@@ -187,6 +190,7 @@ export default function StaffProfile() {
           qualifications: profileEditForm.qualifications,
           wwccNumber: profileEditForm.wwccNumber || undefined,
           siteId: profileEditForm.siteId ? parseInt(profileEditForm.siteId) : null,
+          associatedSiteIds: profileEditForm.associatedSiteIds,
         },
       });
       await queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}`] });
@@ -613,22 +617,34 @@ export default function StaffProfile() {
                   </div>
 
                   {/* Row 2: Site + Qualification level */}
-                  <div className="flex items-center justify-between pt-1 border-t">
-                    <div className="flex items-center gap-3">
-                      <p className="text-xs text-muted-foreground">Qualification Level</p>
-                      {loadingQuals ? (
-                        <span className="text-xs text-muted-foreground italic">Loading…</span>
-                      ) : qualLevel ? (
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${QUAL_LEVEL_STYLES[qualLevel]}`}>
-                          {QUAL_LEVEL_LABELS[qualLevel]}
+                  <div className="flex flex-col gap-3 pt-4 border-t">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <p className="text-xs text-muted-foreground">Qualification Level</p>
+                        {loadingQuals ? (
+                          <span className="text-xs text-muted-foreground italic">Loading…</span>
+                        ) : qualLevel ? (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${QUAL_LEVEL_STYLES[qualLevel]}`}>
+                            {QUAL_LEVEL_LABELS[qualLevel]}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>Home Site:</span>
+                        <span className="font-medium text-foreground">
+                          {assignedSite ? assignedSite.name : <span className="italic text-muted-foreground">Not assigned</span>}
                         </span>
-                      ) : null}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>Home Site:</span>
-                      <span className="font-medium text-foreground">
-                        {assignedSite ? assignedSite.name : <span className="italic text-muted-foreground">Not assigned</span>}
-                      </span>
+                    <div className="flex flex-col gap-1.5 pt-1">
+                      <p className="text-xs text-muted-foreground">Associated Sites</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(staff.associatedSites?.length ?? 0) > 0 ? staff.associatedSites?.map((site) => (
+                          <Badge key={site.id} variant="secondary" className="font-normal text-xs">{site.name}</Badge>
+                        )) : (
+                          <span className="text-xs italic text-muted-foreground">No additional sites assigned</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -1212,23 +1228,59 @@ export default function StaffProfile() {
               <Input value={profileEditForm.wwccNumber} onChange={(e) => setProfileEditForm((f) => ({ ...f, wwccNumber: e.target.value }))} placeholder="e.g. WWC1234567A" />
             </div>
             {!isEducatorRole && (
-              <div className="space-y-1.5">
-                <Label>Site / Location</Label>
-                <Select
-                  value={profileEditForm.siteId || "none"}
-                  onValueChange={(v) => setProfileEditForm((f) => ({ ...f, siteId: v === "none" ? "" : v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="No site assigned" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No site assigned</SelectItem>
-                    {(sites ?? []).map((site) => (
-                      <SelectItem key={site.id} value={String(site.id)}>{site.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <>
+                <div className="space-y-1.5">
+                  <Label>Home Site / Location</Label>
+                  <Select
+                    value={profileEditForm.siteId || "none"}
+                    onValueChange={(v) => setProfileEditForm((f) => ({ ...f, siteId: v === "none" ? "" : v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="No site assigned" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No site assigned</SelectItem>
+                      {(sites ?? []).map((site) => (
+                        <SelectItem key={site.id} value={String(site.id)}>{site.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Associated Sites (Optional)</Label>
+                  <div className="border rounded-md bg-background">
+                    <ScrollArea className="h-32 p-2">
+                      <div className="space-y-2.5">
+                        {(sites ?? []).map((site) => {
+                          const checked = profileEditForm.associatedSiteIds.includes(site.id);
+                          return (
+                            <div key={site.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`assoc-site-${site.id}`}
+                                checked={checked}
+                                onCheckedChange={(c) => {
+                                  setProfileEditForm(f => ({
+                                    ...f,
+                                    associatedSiteIds: c
+                                      ? [...f.associatedSiteIds, site.id]
+                                      : f.associatedSiteIds.filter(id => id !== site.id)
+                                  }));
+                                }}
+                              />
+                              <label htmlFor={`assoc-site-${site.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
+                                {site.name}
+                              </label>
+                            </div>
+                          );
+                        })}
+                        {(!sites || sites.length === 0) && (
+                          <p className="text-sm text-muted-foreground italic">No sites available</p>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </div>
+              </>
             )}
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setProfileEditOpen(false)} disabled={profileEditSaving}>Cancel</Button>

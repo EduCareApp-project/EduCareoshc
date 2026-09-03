@@ -27,6 +27,7 @@ export type Staff = {
   role: string;
   qualifications: string | null;
   status: string;
+  associatedSites?: { id: number; name: string }[];
 };
 
 export type VitalRecord = {

@@ -44,3 +44,4 @@ export * from './guardian_login_logs';
 export * from './guardian_financial';
 export * from './document_merge';
 export * from './schools';
+export * from './staff_sites';

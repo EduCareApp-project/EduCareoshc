@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, ne } from "drizzle-orm";
-import { db, staffTable } from "@workspace/db";
+import { eq, ne, asc, inArray } from "drizzle-orm";
+import { db, sitesTable, staffSitesTable, staffTable } from "@workspace/db";
 import {
   CreateStaffBody,
   GetStaffParams,
@@ -20,6 +20,41 @@ function isEducatorRole(role: string | undefined | null): role is EducatorRole {
 
 const router: IRouter = Router();
 
+async function addAssociatedSites<T extends { id: number }>(members: T[]) {
+  if (members.length === 0) return members.map((member) => ({ ...member, associatedSiteIds: [], associatedSites: [] }));
+  const links = await db
+    .select({ staffId: staffSitesTable.staffId, id: sitesTable.id, name: sitesTable.name })
+    .from(staffSitesTable)
+    .innerJoin(sitesTable, eq(staffSitesTable.siteId, sitesTable.id))
+    .where(inArray(staffSitesTable.staffId, members.map((member) => member.id)))
+    .orderBy(asc(sitesTable.name));
+  const byStaff = new Map<number, { id: number; name: string }[]>();
+  for (const link of links) {
+    const current = byStaff.get(link.staffId) ?? [];
+    current.push({ id: link.id, name: link.name });
+    byStaff.set(link.staffId, current);
+  }
+  return members.map((member) => {
+    const associatedSites = byStaff.get(member.id) ?? [];
+    return { ...member, associatedSiteIds: associatedSites.map((site) => site.id), associatedSites };
+  });
+}
+
+async function replaceAssociatedSites(staffId: number, siteIds: number[]) {
+  const uniqueSiteIds = [...new Set(siteIds.filter((siteId) => Number.isInteger(siteId) && siteId > 0))];
+  if (uniqueSiteIds.length > 0) {
+    const existingSites = await db.select({ id: sitesTable.id }).from(sitesTable);
+    const validIds = new Set(existingSites.map((site) => site.id));
+    if (uniqueSiteIds.some((siteId) => !validIds.has(siteId))) {
+      throw new Error("One or more associated sites do not exist");
+    }
+  }
+  await db.delete(staffSitesTable).where(eq(staffSitesTable.staffId, staffId));
+  if (uniqueSiteIds.length > 0) {
+    await db.insert(staffSitesTable).values(uniqueSiteIds.map((siteId) => ({ staffId, siteId }))).onConflictDoNothing();
+  }
+}
+
 router.get("/staff", async (req, res): Promise<void> => {
   try {
     const staff = await db
@@ -27,7 +62,7 @@ router.get("/staff", async (req, res): Promise<void> => {
       .from(staffTable)
       .where(ne(staffTable.isSuperAdmin, true))
       .orderBy(staffTable.lastName);
-    res.json(ListStaffResponse.parse(staff));
+    res.json(ListStaffResponse.parse(await addAssociatedSites(staff)));
   } catch (err) {
     req.log.error({ err }, "Failed to fetch staff");
     res.status(500).json({ error: "Failed to fetch staff" });
@@ -41,8 +76,13 @@ router.post("/staff", async (req, res): Promise<void> => {
     return;
   }
   try {
-    const [member] = await db.insert(staffTable).values(parsed.data).returning();
-    res.status(201).json(GetStaffResponse.parse(member));
+    const { associatedSiteIds, ...staffData } = parsed.data;
+    const [member] = await db.insert(staffTable).values(staffData).returning();
+    if (associatedSiteIds !== undefined) {
+      await replaceAssociatedSites(member.id, associatedSiteIds.filter((siteId) => siteId !== member.siteId));
+    }
+    const [withSites] = await addAssociatedSites([member]);
+    res.status(201).json(GetStaffResponse.parse(withSites));
   } catch (err) {
     req.log.error({ err }, "Failed to create staff member");
     res.status(500).json({ error: "Failed to create staff member" });
@@ -61,7 +101,8 @@ router.get("/staff/:id", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Staff member not found" });
       return;
     }
-    res.json(GetStaffResponse.parse(member));
+    const [withSites] = await addAssociatedSites([member]);
+    res.json(GetStaffResponse.parse(withSites));
   } catch (err) {
     req.log.error({ err, staffId: params.data.id }, "Failed to fetch staff member");
     res.status(500).json({ error: "Failed to fetch staff member" });
@@ -86,7 +127,8 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
       return;
     }
     const user = req.session?.user;
-    const updateData = { ...parsed.data };
+    const { associatedSiteIds, ...staffFields } = parsed.data;
+    const updateData = { ...staffFields };
     if (isEducatorRole(user?.role)) {
       delete (updateData as any).siteId;
     }
@@ -99,7 +141,11 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Staff member not found" });
       return;
     }
-    res.json(UpdateStaffResponse.parse(member));
+    if (associatedSiteIds !== undefined && !isEducatorRole(user?.role)) {
+      await replaceAssociatedSites(member.id, associatedSiteIds.filter((siteId) => siteId !== member.siteId));
+    }
+    const [withSites] = await addAssociatedSites([member]);
+    res.json(UpdateStaffResponse.parse(withSites));
   } catch (err) {
     req.log.error({ err, staffId: params.data.id }, "Failed to update staff member");
     res.status(500).json({ error: "Failed to update staff member" });

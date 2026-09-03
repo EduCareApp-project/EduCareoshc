@@ -22,4 +22,5 @@ export interface StaffUpdate {
   employmentNotes?: string;
   /** @nullable */
   siteId?: number | null;
+  associatedSiteIds?: number[];
 }

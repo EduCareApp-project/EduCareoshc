@@ -5,6 +5,7 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+import type { StaffAssociatedSite } from "./staffAssociatedSite";
 import type { StaffRole } from "./staffRole";
 import type { StaffStatus } from "./staffStatus";
 
@@ -28,5 +29,7 @@ export interface Staff {
   employmentNotes?: string | null;
   /** @nullable */
   siteId?: number | null;
+  associatedSiteIds?: number[];
+  associatedSites?: StaffAssociatedSite[];
   createdAt?: Date;
 }

@@ -158,9 +158,17 @@ export default function StaffList() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {member.siteId && siteMap[member.siteId] && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground" title="Home Site">
                       <Building2 className="h-4 w-4 shrink-0" />
                       <span className="truncate">{siteMap[member.siteId]}</span>
+                    </div>
+                  )}
+                  {(member.associatedSites?.length ?? 0) > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground" title="Associated Sites">
+                      <Building2 className="h-4 w-4 shrink-0 opacity-50" />
+                      <span className="truncate">
+                        Assoc: {member.associatedSites?.map((site) => site.name).join(", ")}
+                      </span>
                     </div>
                   )}
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">

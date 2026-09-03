@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { pgTable, serial, integer, text, date, timestamp, boolean, unique } from "drizzle-orm/pg-core";
 import { sitesTable } from "./sites";
 import { staffTable } from "./staff";
@@ -5,6 +6,7 @@ import { staffTable } from "./staff";
 export const schoolReportTermsTable = pgTable("school_report_terms", {
   id: serial("id").primaryKey(),
   siteId: integer("site_id").notNull().references(() => sitesTable.id, { onDelete: "cascade" }),
+  reportYear: integer("report_year").notNull().default(sql`extract(year from current_date)::integer`),
   termNumber: integer("term_number").notNull(),
   termStartDate: date("term_start_date").notNull(),
   termEndDate: date("term_end_date").notNull(),
@@ -16,7 +18,7 @@ export const schoolReportTermsTable = pgTable("school_report_terms", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
-  unique("uq_school_report_term_site_number").on(table.siteId, table.termNumber),
+  unique("uq_school_report_term_site_year_number").on(table.siteId, table.reportYear, table.termNumber),
 ]);
 
 export const schoolReportRowsTable = pgTable("school_report_rows", {

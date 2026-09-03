@@ -33,9 +33,17 @@ function parseTermNumber(value: unknown): number | null {
   return Number.isInteger(termNumber) && termNumber >= 1 && termNumber <= 4 ? termNumber : null;
 }
 
-async function loadSchoolReports(siteId: number) {
+function parseReportYear(value: unknown): number | null {
+  const reportYear = Number(value);
+  return Number.isInteger(reportYear) && reportYear >= 2000 && reportYear <= 2200 ? reportYear : null;
+}
+
+async function loadSchoolReports(siteId: number, reportYear: number) {
   const terms = await db.select().from(schoolReportTermsTable)
-    .where(eq(schoolReportTermsTable.siteId, siteId))
+    .where(and(
+      eq(schoolReportTermsTable.siteId, siteId),
+      eq(schoolReportTermsTable.reportYear, reportYear),
+    ))
     .orderBy(asc(schoolReportTermsTable.termNumber));
   const termIds = terms.map((term) => term.id);
   const rows = termIds.length > 0
@@ -55,12 +63,14 @@ async function loadSchoolReports(siteId: number) {
 
   return {
     siteId,
+    reportYear,
     terms: [1, 2, 3, 4].map((termNumber) => {
       const term = terms.find((candidate) => candidate.termNumber === termNumber);
       if (!term) {
         return {
           id: null,
           siteId,
+          reportYear,
           termNumber,
           status: "pending" as const,
           termStartDate: null,
@@ -83,10 +93,13 @@ async function loadSchoolReports(siteId: number) {
 
 router.get("/school-reports", async (req, res): Promise<void> => {
   const siteId = parseSiteId(req.query.siteId);
+  const reportYear = typeof req.query.reportYear === "undefined"
+    ? new Date().getFullYear()
+    : parseReportYear(req.query.reportYear);
   const user = req.session.user;
   const isOwnSchool = user?.type === "school" && user.siteId === siteId;
-  if (!siteId) {
-    res.status(400).json({ error: "A valid siteId is required" });
+  if (!siteId || !reportYear) {
+    res.status(400).json({ error: "A valid siteId and reportYear are required" });
     return;
   }
   if (!isOwnSchool && !isReportManager(req)) {
@@ -101,7 +114,7 @@ router.get("/school-reports", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Site not found" });
       return;
     }
-    res.json(await loadSchoolReports(siteId));
+    res.json(await loadSchoolReports(siteId, reportYear));
   } catch (error) {
     req.log.error({ error, siteId }, "Failed to load school reports");
     res.status(500).json({ error: "Failed to load school reports" });
@@ -112,8 +125,9 @@ router.put("/school-reports/:siteId/terms/:termNumber", async (req, res): Promis
   if (!requireReportManager(req, res)) return;
   const siteId = parseSiteId(req.params.siteId);
   const termNumber = parseTermNumber(req.params.termNumber);
-  if (!siteId || !termNumber) {
-    res.status(400).json({ error: "Invalid site or term number" });
+  const reportYear = parseReportYear(req.query.reportYear);
+  if (!siteId || !termNumber || !reportYear) {
+    res.status(400).json({ error: "Invalid site, year, or term number" });
     return;
   }
 
@@ -144,6 +158,7 @@ router.put("/school-reports/:siteId/terms/:termNumber", async (req, res): Promis
     const term = await db.transaction(async (tx) => {
       const [saved] = await tx.insert(schoolReportTermsTable).values({
         siteId,
+        reportYear,
         termNumber,
         termStartDate,
         termEndDate,
@@ -154,7 +169,11 @@ router.put("/school-reports/:siteId/terms/:termNumber", async (req, res): Promis
         generatedById: null,
         updatedAt: new Date(),
       }).onConflictDoUpdate({
-        target: [schoolReportTermsTable.siteId, schoolReportTermsTable.termNumber],
+        target: [
+          schoolReportTermsTable.siteId,
+          schoolReportTermsTable.reportYear,
+          schoolReportTermsTable.termNumber,
+        ],
         set: {
           termStartDate,
           termEndDate,
@@ -180,14 +199,16 @@ router.post("/school-reports/:siteId/terms/:termNumber/generate", async (req, re
   if (!requireReportManager(req, res)) return;
   const siteId = parseSiteId(req.params.siteId);
   const termNumber = parseTermNumber(req.params.termNumber);
-  if (!siteId || !termNumber) {
-    res.status(400).json({ error: "Invalid site or term number" });
+  const reportYear = parseReportYear(req.query.reportYear);
+  if (!siteId || !termNumber || !reportYear) {
+    res.status(400).json({ error: "Invalid site, year, or term number" });
     return;
   }
 
   try {
     const [term] = await db.select().from(schoolReportTermsTable).where(and(
       eq(schoolReportTermsTable.siteId, siteId),
+      eq(schoolReportTermsTable.reportYear, reportYear),
       eq(schoolReportTermsTable.termNumber, termNumber),
     )).limit(1);
     if (!term) {
@@ -256,8 +277,9 @@ router.put("/school-reports/:siteId/terms/:termNumber/attendance", async (req, r
   if (!requireReportManager(req, res)) return;
   const siteId = parseSiteId(req.params.siteId);
   const termNumber = parseTermNumber(req.params.termNumber);
-  if (!siteId || !termNumber) {
-    res.status(400).json({ error: "Invalid site or term number" });
+  const reportYear = parseReportYear(req.query.reportYear);
+  if (!siteId || !termNumber || !reportYear) {
+    res.status(400).json({ error: "Invalid site, year, or term number" });
     return;
   }
 
@@ -315,6 +337,7 @@ router.put("/school-reports/:siteId/terms/:termNumber/attendance", async (req, r
   try {
     const [term] = await db.select().from(schoolReportTermsTable).where(and(
       eq(schoolReportTermsTable.siteId, siteId),
+      eq(schoolReportTermsTable.reportYear, reportYear),
       eq(schoolReportTermsTable.termNumber, termNumber),
     )).limit(1);
     if (!term || !term.generatedAt) {

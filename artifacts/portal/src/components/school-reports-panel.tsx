@@ -3,6 +3,8 @@ import { format, parseISO } from "date-fns";
 import {
   CalendarDays,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   FileSpreadsheet,
   FileText,
@@ -47,6 +49,7 @@ type GeneratedReport = {
   id: number;
   label: string;
   frequency: ReportFrequency;
+  reportYear: number;
 };
 
 const EMPTY_FORM: TermForm = {
@@ -74,7 +77,8 @@ function dateRangeLabel(start: string | null, end: string | null): string {
 
 export function SchoolReportsPanel({ siteId }: { siteId: number }) {
   const { toast } = useToast();
-  const { data, isLoading, isError } = useGetSchoolReports(siteId);
+  const [reportYear, setReportYear] = useState(() => new Date().getFullYear());
+  const { data, isLoading, isError } = useGetSchoolReports(siteId, reportYear);
   const saveTerm = useSaveSchoolReportTerm(siteId);
   const generateReport = useGenerateSchoolReport(siteId);
   const saveAttendance = useSaveSchoolReportAttendance(siteId);
@@ -90,7 +94,7 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
   const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
   const selectedTerm = data?.terms.find((term) => term.termNumber === selectedTermNumber) ?? null;
   const calculatedWeeks = calculateWeeks(form.termStartDate, form.termEndDate);
-  const currentYear = new Date().getFullYear();
+  const visibleGeneratedReports = generatedReports.filter((report) => report.reportYear === reportYear);
 
   const openDateDialog = (term: SchoolReportTerm) => {
     setEditingTerm(term);
@@ -124,6 +128,7 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
     if (!editingTerm) return;
     saveTerm.mutate({
       termNumber: editingTerm.termNumber,
+      reportYear,
       termStartDate: form.termStartDate,
       termEndDate: form.termEndDate,
       holidayStartDate: form.holidayStartDate || null,
@@ -146,7 +151,7 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
   }
 
   function generate(term: SchoolReportTerm) {
-    generateReport.mutate(term.termNumber, {
+    generateReport.mutate({ termNumber: term.termNumber, reportYear }, {
       onSuccess: () => {
         setSelectedTermNumber(term.termNumber);
         toast({
@@ -190,6 +195,7 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
     if (!selectedTerm) return;
     saveAttendance.mutate({
       termNumber: selectedTerm.termNumber,
+      reportYear,
       rows: selectedTerm.rows.map((row) => ({
         id: row.id,
         monday: attendanceValues[row.id]?.monday || null,
@@ -234,16 +240,27 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
       ? `Term ${reportPeriod}`
       : reportFrequency === "half-year"
         ? reportPeriod === "first-half" ? "First half" : "Second half"
-        : `Current year (${currentYear})`;
+        : `Current year (${reportYear})`;
     setGeneratedReports((current) => [
       ...current,
-      { id: Date.now(), label, frequency: reportFrequency },
+      { id: Date.now(), label, frequency: reportFrequency, reportYear },
     ]);
     setReportDialogOpen(false);
     toast({
       title: "Report generated",
       description: `${label} attendance report is ready.`,
     });
+  }
+
+  function changeReportYear(direction: -1 | 1) {
+    const nextYear = Math.min(2200, Math.max(2000, reportYear + direction));
+    if (nextYear === reportYear) return;
+    setReportYear(nextYear);
+    setSelectedTermNumber(1);
+    setContributingTermNumber(null);
+    setEditingTerm(null);
+    setAttendanceValues({});
+    setPupilFreeDays({});
   }
 
   if (isLoading) {
@@ -263,9 +280,39 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold">School Reports</h3>
-        <p className="text-sm text-muted-foreground">Set term dates and prepare the weekly report for this school.</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold">School Reports</h3>
+          <p className="text-sm text-muted-foreground">Set term dates and prepare the weekly report for this school.</p>
+        </div>
+        <div className="flex items-center rounded-lg border bg-background p-1 shadow-sm" aria-label="School report year">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label={`Show ${reportYear - 1} school reports`}
+            disabled={reportYear <= 2000}
+            onClick={() => changeReportYear(-1)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="min-w-20 px-3 text-center">
+            <span className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Year</span>
+            <span className="block text-sm font-semibold">{reportYear}</span>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label={`Show ${reportYear + 1} school reports`}
+            disabled={reportYear >= 2200}
+            onClick={() => changeReportYear(1)}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -390,11 +437,11 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
           </div>
         </CardHeader>
         <CardContent>
-          {generatedReports.length > 0 ? (
+          {visibleGeneratedReports.length > 0 ? (
             <div className="space-y-2">
               <p className="text-sm font-medium">Generated reports</p>
               <div className="grid gap-2 sm:grid-cols-2">
-                {generatedReports.map((report) => (
+                {visibleGeneratedReports.map((report) => (
                   <div key={report.id} className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
                     <FileText className="h-4 w-4 shrink-0 text-primary" />
                     <div className="min-w-0">
@@ -509,7 +556,7 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
 
             {reportFrequency === "annual" && (
               <div className="rounded-lg bg-muted/60 px-4 py-3 text-sm">
-                Report period: <span className="font-semibold">Current year ({currentYear})</span>
+                Report period: <span className="font-semibold">Current year ({reportYear})</span>
               </div>
             )}
           </div>

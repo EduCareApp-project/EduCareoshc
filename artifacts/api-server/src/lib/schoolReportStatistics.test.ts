@@ -6,7 +6,13 @@ import {
   selectedTermNumbers,
 } from "./schoolReportStatistics";
 
-function row(id: number, serviceType: string, weekNumber: number, values: number[]): SchoolReportRow {
+function row(
+  id: number,
+  serviceType: string,
+  weekNumber: number,
+  values: number[],
+  pupilFreeDays: Partial<Record<"monday" | "tuesday" | "wednesday" | "thursday" | "friday", boolean>> = {},
+): SchoolReportRow {
   return {
     id,
     termId: 1,
@@ -18,11 +24,11 @@ function row(id: number, serviceType: string, weekNumber: number, values: number
     wednesday: String(values[2]),
     thursday: String(values[3]),
     friday: String(values[4]),
-    mondayPupilFree: false,
-    tuesdayPupilFree: false,
-    wednesdayPupilFree: false,
-    thursdayPupilFree: false,
-    fridayPupilFree: false,
+    mondayPupilFree: pupilFreeDays.monday ?? false,
+    tuesdayPupilFree: pupilFreeDays.tuesday ?? false,
+    wednesdayPupilFree: pupilFreeDays.wednesday ?? false,
+    thursdayPupilFree: pupilFreeDays.thursday ?? false,
+    fridayPupilFree: pupilFreeDays.friday ?? false,
     createdAt: new Date(),
   };
 }
@@ -64,9 +70,21 @@ describe("school report statistics", () => {
       ]),
     ], "Term 1 2026");
 
-    expect(statistics.weekdayAverages[0]).toEqual({ day: "Monday", bsc: 0, asc: 10 });
-    expect(statistics.weeklyAverages[0]).toEqual({ label: "Week 1", bsc: 10, asc: 10 });
+    expect(statistics.weekdayAverages[0]).toEqual({ day: "Monday", bsc: 0, asc: 10, pupilFree: 0 });
+    expect(statistics.weeklyAverages[0]).toEqual({ label: "Week 1", bsc: 10, asc: 10, pupilFree: 0 });
     expect(statistics.holidayWeekdayAverages[0]).toEqual({ day: "Monday", value: 0 });
     expect(statistics.holidayWeeklyAverages[0]).toEqual({ label: "Week 1", value: 10 });
+  });
+
+  it("moves ASC attendance into Pupil Free when only BSC is marked pupil-free", () => {
+    const statistics = calculateSchoolReportStatistics([
+      term([
+        row(1, "BSC", 1, [0, 5, 10, 15, 20], { monday: true }),
+        row(2, "ASC", 1, [11, 10, 10, 10, 10]),
+      ]),
+    ], "Term 1 2026");
+
+    expect(statistics.weekdayAverages[0]).toEqual({ day: "Monday", bsc: 0, asc: 0, pupilFree: 11 });
+    expect(statistics.weeklyAverages[0]).toEqual({ label: "Week 1", bsc: 10, asc: 8, pupilFree: 2.2 });
   });
 });

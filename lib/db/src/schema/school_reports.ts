@@ -46,8 +46,8 @@ export type SchoolReportStatistics = {
   periodLabel: string;
   termNumbers: number[];
   dateRange: { start: string; end: string };
-  weekdayAverages: Array<{ day: string; bsc: number; asc: number }>;
-  weeklyAverages: Array<{ label: string; bsc: number; asc: number }>;
+  weekdayAverages: Array<{ day: string; bsc: number; asc: number; pupilFree: number }>;
+  weeklyAverages: Array<{ label: string; bsc: number; asc: number; pupilFree: number }>;
   holidayWeekdayAverages: Array<{ day: string; value: number }>;
   holidayWeeklyAverages: Array<{ label: string; value: number }>;
 };

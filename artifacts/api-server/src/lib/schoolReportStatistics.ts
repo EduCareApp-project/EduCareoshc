@@ -8,6 +8,12 @@ const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday"] as const;
 const DAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;
 
 type ReportTermWithRows = SchoolReportTerm & { rows: SchoolReportRow[] };
+type AttendanceDay = (typeof DAYS)[number];
+type PupilFreeField = `${AttendanceDay}PupilFree`;
+
+function pupilFreeField(day: AttendanceDay): PupilFreeField {
+  return `${day}PupilFree` as PupilFreeField;
+}
 
 function attendanceValue(value: string | null): number {
   const parsed = Number(value);
@@ -39,42 +45,60 @@ export function calculateSchoolReportStatistics(
   periodLabel: string,
 ): SchoolReportStatistics {
   const sortedTerms = [...terms].sort((a, b) => a.termNumber - b.termNumber);
-  const standardRows = sortedTerms.flatMap((term) =>
-    term.rows
-      .filter((row) => row.serviceType === "BSC" || row.serviceType === "ASC")
-      .map((row) => ({ ...row, termNumber: term.termNumber })),
-  );
   const holidayRows = sortedTerms.flatMap((term) =>
     term.rows
       .filter((row) => row.serviceType === "VAC")
       .map((row) => ({ ...row, termNumber: term.termNumber })),
   );
 
-  const weekdayAverages = DAYS.map((day, index) => {
-    const bscRows = standardRows.filter((row) => row.serviceType === "BSC");
-    const ascRows = standardRows.filter((row) => row.serviceType === "ASC");
-    return {
-      day: DAY_LABELS[index],
-      bsc: round(bscRows.reduce((sum, row) => sum + attendanceValue(row[day]), 0) / Math.max(bscRows.length, 1)),
-      asc: round(ascRows.reduce((sum, row) => sum + attendanceValue(row[day]), 0) / Math.max(ascRows.length, 1)),
-    };
-  });
-
-  const weeklyAverages = sortedTerms.flatMap((term) => {
+  const weekPairs = sortedTerms.flatMap((term) => {
     const weekNumbers = Array.from(new Set(
       term.rows
         .filter((row) => row.serviceType === "BSC" || row.serviceType === "ASC")
         .map((row) => row.weekNumber),
     )).sort((a, b) => a - b);
-    return weekNumbers.map((weekNumber) => {
-      const bsc = term.rows.find((row) => row.serviceType === "BSC" && row.weekNumber === weekNumber);
-      const asc = term.rows.find((row) => row.serviceType === "ASC" && row.weekNumber === weekNumber);
+    return weekNumbers.map((weekNumber) => ({
+      termNumber: term.termNumber,
+      weekNumber,
+      bsc: term.rows.find((row) => row.serviceType === "BSC" && row.weekNumber === weekNumber),
+      asc: term.rows.find((row) => row.serviceType === "ASC" && row.weekNumber === weekNumber),
+    }));
+  });
+
+  function metricsForDay(
+    bsc: SchoolReportRow | undefined,
+    asc: SchoolReportRow | undefined,
+    day: AttendanceDay,
+  ) {
+    const bscIsPupilFree = bsc?.[pupilFreeField(day)] === true;
+    const ascIsPupilFree = asc?.[pupilFreeField(day)] === true;
+    const ascAttendance = attendanceValue(asc?.[day] ?? null);
+    return {
+      bsc: bscIsPupilFree ? 0 : attendanceValue(bsc?.[day] ?? null),
+      asc: ascIsPupilFree || bscIsPupilFree ? 0 : ascAttendance,
+      pupilFree: bscIsPupilFree && !ascIsPupilFree ? ascAttendance : 0,
+    };
+  }
+
+  const weekdayAverages = DAYS.map((day, index) => {
+    const dayMetrics = weekPairs.map((pair) => metricsForDay(pair.bsc, pair.asc, day));
+    const divisor = Math.max(weekPairs.length, 1);
+    return {
+      day: DAY_LABELS[index],
+      bsc: round(dayMetrics.reduce((sum, metrics) => sum + metrics.bsc, 0) / divisor),
+      asc: round(dayMetrics.reduce((sum, metrics) => sum + metrics.asc, 0) / divisor),
+      pupilFree: round(dayMetrics.reduce((sum, metrics) => sum + metrics.pupilFree, 0) / divisor),
+    };
+  });
+
+  const weeklyAverages = weekPairs.map((pair) => {
+      const dayMetrics = DAYS.map((day) => metricsForDay(pair.bsc, pair.asc, day));
       return {
-        label: sortedTerms.length === 1 ? `Week ${weekNumber}` : `T${term.termNumber} W${weekNumber}`,
-        bsc: round(DAYS.reduce((sum, day) => sum + attendanceValue(bsc?.[day] ?? null), 0) / 5),
-        asc: round(DAYS.reduce((sum, day) => sum + attendanceValue(asc?.[day] ?? null), 0) / 5),
+        label: sortedTerms.length === 1 ? `Week ${pair.weekNumber}` : `T${pair.termNumber} W${pair.weekNumber}`,
+        bsc: round(dayMetrics.reduce((sum, metrics) => sum + metrics.bsc, 0) / 5),
+        asc: round(dayMetrics.reduce((sum, metrics) => sum + metrics.asc, 0) / 5),
+        pupilFree: round(dayMetrics.reduce((sum, metrics) => sum + metrics.pupilFree, 0) / 5),
       };
-    });
   });
 
   const holidayWeekdayAverages = DAYS.map((day, index) => {

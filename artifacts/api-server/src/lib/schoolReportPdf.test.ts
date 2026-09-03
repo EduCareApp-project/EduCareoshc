@@ -17,15 +17,15 @@ describe("school report PDF", () => {
         termNumbers: [1],
         dateRange: { start: "2026-01-26", end: "2026-04-03" },
         weekdayAverages: [
-          { day: "Monday", bsc: 5, asc: 8 },
-          { day: "Tuesday", bsc: 6, asc: 9 },
-          { day: "Wednesday", bsc: 7, asc: 10 },
-          { day: "Thursday", bsc: 8, asc: 11 },
-          { day: "Friday", bsc: 4, asc: 7 },
+          { day: "Monday", bsc: 5, asc: 8, pupilFree: 0 },
+          { day: "Tuesday", bsc: 6, asc: 9, pupilFree: 0 },
+          { day: "Wednesday", bsc: 7, asc: 10, pupilFree: 11 },
+          { day: "Thursday", bsc: 8, asc: 11, pupilFree: 0 },
+          { day: "Friday", bsc: 4, asc: 7, pupilFree: 0 },
         ],
         weeklyAverages: [
-          { label: "Week 1", bsc: 6, asc: 9 },
-          { label: "Week 2", bsc: 7, asc: 10 },
+          { label: "Week 1", bsc: 6, asc: 9, pupilFree: 0 },
+          { label: "Week 2", bsc: 7, asc: 8, pupilFree: 2.2 },
         ],
         holidayWeekdayAverages: [
           { day: "Monday", value: 8 },

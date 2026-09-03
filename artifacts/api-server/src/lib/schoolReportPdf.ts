@@ -7,6 +7,7 @@ const MARGIN = 48;
 const BLUE = rgb(0.12, 0.36, 0.68);
 const ORANGE = rgb(0.93, 0.48, 0.16);
 const GREEN = rgb(0.2, 0.62, 0.42);
+const PURPLE = rgb(0.49, 0.28, 0.78);
 const TEXT = rgb(0.15, 0.18, 0.23);
 const MUTED = rgb(0.42, 0.46, 0.52);
 
@@ -55,7 +56,7 @@ function drawWeekdayBars(
 ) {
   drawChartFrame(page, "Average Usage by Day", x, y, width, height, font);
   const data = report.statistics.weekdayAverages;
-  const max = Math.max(1, ...data.flatMap((item) => [item.bsc, item.asc]));
+  const max = Math.max(1, ...data.flatMap((item) => [item.bsc, item.asc, item.pupilFree ?? 0]));
   const chartBottom = y + 34;
   const chartHeight = height - 72;
   const groupWidth = (width - 34) / data.length;
@@ -63,14 +64,18 @@ function drawWeekdayBars(
     const baseX = x + 20 + index * groupWidth;
     const bscHeight = (item.bsc / max) * chartHeight;
     const ascHeight = (item.asc / max) * chartHeight;
-    page.drawRectangle({ x: baseX + 5, y: chartBottom, width: 12, height: bscHeight, color: BLUE });
-    page.drawRectangle({ x: baseX + 20, y: chartBottom, width: 12, height: ascHeight, color: ORANGE });
-    page.drawText(item.day.slice(0, 3), { x: baseX + 3, y: y + 14, size: 7, font, color: MUTED });
+    const pupilFreeHeight = ((item.pupilFree ?? 0) / max) * chartHeight;
+    page.drawRectangle({ x: baseX + 2, y: chartBottom, width: 10, height: bscHeight, color: BLUE });
+    page.drawRectangle({ x: baseX + 14, y: chartBottom, width: 10, height: ascHeight, color: ORANGE });
+    page.drawRectangle({ x: baseX + 26, y: chartBottom, width: 10, height: pupilFreeHeight, color: PURPLE });
+    page.drawText(item.day.slice(0, 3), { x: baseX + 5, y: y + 14, size: 7, font, color: MUTED });
   });
-  page.drawRectangle({ x: x + width - 112, y: y + height - 23, width: 7, height: 7, color: BLUE });
-  page.drawText("BSC", { x: x + width - 101, y: y + height - 23, size: 7, font, color: MUTED });
-  page.drawRectangle({ x: x + width - 66, y: y + height - 23, width: 7, height: 7, color: ORANGE });
-  page.drawText("ASC", { x: x + width - 55, y: y + height - 23, size: 7, font, color: MUTED });
+  page.drawRectangle({ x: x + width - 175, y: y + height - 23, width: 7, height: 7, color: BLUE });
+  page.drawText("BSC", { x: x + width - 164, y: y + height - 23, size: 7, font, color: MUTED });
+  page.drawRectangle({ x: x + width - 129, y: y + height - 23, width: 7, height: 7, color: ORANGE });
+  page.drawText("ASC", { x: x + width - 118, y: y + height - 23, size: 7, font, color: MUTED });
+  page.drawRectangle({ x: x + width - 83, y: y + height - 23, width: 7, height: 7, color: PURPLE });
+  page.drawText("Pupil Free", { x: x + width - 72, y: y + height - 23, size: 7, font, color: MUTED });
 }
 
 function drawWeeklyLines(
@@ -84,7 +89,7 @@ function drawWeeklyLines(
 ) {
   drawChartFrame(page, "Average Daily Usage by Week", x, y, width, height, font);
   const data = report.statistics.weeklyAverages;
-  const max = Math.max(1, ...data.flatMap((item) => [item.bsc, item.asc]));
+  const max = Math.max(1, ...data.flatMap((item) => [item.bsc, item.asc, item.pupilFree ?? 0]));
   const left = x + 25;
   const bottom = y + 34;
   const usableWidth = width - 50;
@@ -105,11 +110,18 @@ function drawWeeklyLines(
       thickness: 2,
       color: ORANGE,
     });
+    page.drawLine({
+      start: { x: left + (index - 1) * gap, y: bottom + ((previous.pupilFree ?? 0) / max) * usableHeight },
+      end: { x: left + index * gap, y: bottom + ((current.pupilFree ?? 0) / max) * usableHeight },
+      thickness: 2,
+      color: PURPLE,
+    });
   }
   data.forEach((item, index) => {
     const pointX = left + index * gap;
     page.drawCircle({ x: pointX, y: bottom + (item.bsc / max) * usableHeight, size: 2.5, color: BLUE });
     page.drawCircle({ x: pointX, y: bottom + (item.asc / max) * usableHeight, size: 2.5, color: ORANGE });
+    page.drawCircle({ x: pointX, y: bottom + ((item.pupilFree ?? 0) / max) * usableHeight, size: 2.5, color: PURPLE });
     if (data.length <= 14 || index % Math.ceil(data.length / 12) === 0) {
       page.drawText(item.label, { x: pointX - 7, y: y + 13, size: 5.5, font, color: MUTED, rotate: undefined });
     }

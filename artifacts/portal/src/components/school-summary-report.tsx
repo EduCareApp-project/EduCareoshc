@@ -140,6 +140,7 @@ export function SchoolSummaryReport({
                   <Legend />
                   <Bar dataKey="bsc" name="Before School" fill="#2563eb" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="asc" name="After School" fill="#f97316" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="pupilFree" name="Pupil Free Day" fill="#7c3aed" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -157,6 +158,7 @@ export function SchoolSummaryReport({
                   <Legend />
                   <Line type="monotone" dataKey="bsc" name="Before School" stroke="#2563eb" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="asc" name="After School" stroke="#f97316" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="pupilFree" name="Pupil Free Day" stroke="#7c3aed" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>

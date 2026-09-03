@@ -62,7 +62,7 @@ async function portalForSite(siteId: number) {
   }
   const staffWithAssociations = staff.map((member) => ({
     ...member,
-    associatedSites: associatedSitesByStaff.get(member.id) ?? [],
+    associatedSites: (associatedSitesByStaff.get(member.id) ?? []).filter((associatedSite) => associatedSite.id !== member.siteId),
   }));
   return { site, account: account[0] ?? null, staff: staffWithAssociations, vitalRecords, vecraVisits };
 }

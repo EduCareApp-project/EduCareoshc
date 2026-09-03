@@ -20,7 +20,7 @@ function isEducatorRole(role: string | undefined | null): role is EducatorRole {
 
 const router: IRouter = Router();
 
-async function addAssociatedSites<T extends { id: number }>(members: T[]) {
+async function addAssociatedSites<T extends { id: number; siteId?: number | null }>(members: T[]) {
   if (members.length === 0) return members.map((member) => ({ ...member, associatedSiteIds: [], associatedSites: [] }));
   const links = await db
     .select({ staffId: staffSitesTable.staffId, id: sitesTable.id, name: sitesTable.name })
@@ -35,7 +35,7 @@ async function addAssociatedSites<T extends { id: number }>(members: T[]) {
     byStaff.set(link.staffId, current);
   }
   return members.map((member) => {
-    const associatedSites = byStaff.get(member.id) ?? [];
+    const associatedSites = (byStaff.get(member.id) ?? []).filter((site) => site.id !== member.siteId);
     return { ...member, associatedSiteIds: associatedSites.map((site) => site.id), associatedSites };
   });
 }

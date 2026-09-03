@@ -1,0 +1,215 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import request from "supertest";
+import express from "express";
+import pinoHttp from "pino-http";
+import pino from "pino";
+import { Writable } from "node:stream";
+
+const { mockDb, queuePortalQueries, whereCalls } = vi.hoisted(() => {
+  let portalQueries: unknown[][] = [];
+  const whereCalls: unknown[] = [];
+
+  function makeQuery(result: unknown[]) {
+    const query = {
+      from: vi.fn(),
+      innerJoin: vi.fn(),
+      where: vi.fn(),
+      limit: vi.fn(),
+      orderBy: vi.fn(),
+      then(resolve: (value: unknown) => unknown, reject: (error: unknown) => unknown) {
+        return Promise.resolve(result).then(resolve, reject);
+      },
+      catch(onRejected: (error: unknown) => unknown) {
+        return Promise.resolve(result).catch(onRejected);
+      },
+    };
+    query.from.mockReturnValue(query);
+    query.innerJoin.mockReturnValue(query);
+    query.where.mockImplementation((predicate: unknown) => {
+      whereCalls.push(predicate);
+      return query;
+    });
+    query.limit.mockReturnValue(query);
+    query.orderBy.mockReturnValue(query);
+    return query;
+  }
+
+  const mockDb = {
+    select: vi.fn(() => makeQuery(portalQueries.shift() ?? [])),
+    delete: vi.fn(),
+    insert: vi.fn(),
+    update: vi.fn(),
+  };
+
+  function queuePortalQueries(results: unknown[][]) {
+    portalQueries = [...results];
+  }
+
+  return { mockDb, queuePortalQueries, whereCalls };
+});
+
+vi.mock("@workspace/db", () => ({
+  db: mockDb,
+  schoolAccountsTable: {
+    siteId: "school_accounts.site_id",
+    username: "school_accounts.username",
+    blockedAt: "school_accounts.blocked_at",
+    lastLoginAt: "school_accounts.last_login_at",
+  },
+  schoolVitalRecordsTable: { siteId: "school_vital_records.site_id" },
+  sitesTable: { id: "sites.id", name: "sites.name" },
+  staffSitesTable: { staffId: "staff_sites.staff_id", siteId: "staff_sites.site_id" },
+  staffTable: {
+    id: "staff.id",
+    firstName: "staff.first_name",
+    lastName: "staff.last_name",
+    role: "staff.role",
+    qualifications: "staff.qualifications",
+    status: "staff.status",
+    siteId: "staff.site_id",
+    isSuperAdmin: "staff.is_super_admin",
+  },
+  vecraVisitsTable: { siteId: "vecra_visits.site_id" },
+}));
+
+vi.mock("drizzle-orm", () => ({
+  and: (...predicates: unknown[]) => `and(${predicates.join(",")})`,
+  asc: (column: unknown) => `asc(${String(column)})`,
+  eq: (column: unknown, value: unknown) => `eq(${String(column)},${String(value)})`,
+  inArray: (column: unknown, values: unknown[]) => `inArray(${String(column)},${values.join(",")})`,
+  or: (...predicates: unknown[]) => `or(${predicates.join(",")})`,
+}));
+
+vi.mock("../lib/schoolAccounts", () => ({
+  ensureSchoolAccount: vi.fn(),
+}));
+
+import schoolsRouter from "./schools";
+
+const TARGET_SITE = { id: 1, name: "Target School" };
+const OTHER_SITE = { id: 2, name: "Other School" };
+const THIRD_SITE = { id: 3, name: "Third School" };
+
+function staffMember(
+  id: number,
+  firstName: string,
+  siteId: number,
+  status: "active" | "inactive" = "active",
+) {
+  return {
+    id,
+    firstName,
+    lastName: "Educator",
+    role: "educator",
+    qualifications: "Certificate III",
+    status,
+    siteId,
+    isSuperAdmin: false,
+  };
+}
+
+function queueTargetPortalData() {
+  const homeStaff = staffMember(101, "Home", TARGET_SITE.id);
+  const associatedStaff = staffMember(102, "Associated", OTHER_SITE.id);
+  const unrelatedStaff = staffMember(103, "Unrelated", THIRD_SITE.id);
+  const inactiveStaff = staffMember(104, "Inactive", OTHER_SITE.id, "inactive");
+
+  queuePortalQueries([
+    [TARGET_SITE],
+    [
+      { staffId: homeStaff.id },
+      { staffId: associatedStaff.id },
+      { staffId: inactiveStaff.id },
+    ],
+    [homeStaff, associatedStaff],
+    [],
+    [],
+    [{ username: "target-school", blockedAt: null, lastLoginAt: null }],
+    [
+      // A stale Home Site association must not be returned as an Associated Site.
+      { staffId: homeStaff.id, id: TARGET_SITE.id, name: TARGET_SITE.name },
+      { staffId: homeStaff.id, id: OTHER_SITE.id, name: OTHER_SITE.name },
+      { staffId: associatedStaff.id, id: TARGET_SITE.id, name: TARGET_SITE.name },
+    ],
+  ]);
+
+  return { homeStaff, associatedStaff, unrelatedStaff, inactiveStaff };
+}
+
+function buildTestApp(user: {
+  id: number;
+  type: "school";
+  role: "school";
+  siteId: number;
+  email: string;
+  name: string;
+}) {
+  const app = express();
+  app.use(express.json());
+  app.use(
+    pinoHttp({
+      logger: pino({ level: "silent" }, new Writable({ write(_chunk, _encoding, callback) { callback(); } })),
+    }),
+  );
+  app.use((req, _res, next) => {
+    (req as any).session = { user };
+    next();
+  });
+  app.use("/api", schoolsRouter);
+  return app;
+}
+
+describe("GET /api/schools/:siteId/portal staff scope", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    whereCalls.length = 0;
+  });
+
+  it("includes active Home Site and Associated Site staff, while excluding unrelated and inactive staff", async () => {
+    const { homeStaff, associatedStaff, unrelatedStaff, inactiveStaff } = queueTargetPortalData();
+
+    const response = await request(
+      buildTestApp({
+        id: 900,
+        type: "school",
+        role: "school",
+        siteId: TARGET_SITE.id,
+        email: "target-school",
+        name: TARGET_SITE.name,
+      }),
+    ).get(`/api/schools/${TARGET_SITE.id}/portal`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.staff.map((member: { id: number }) => member.id)).toEqual([
+      homeStaff.id,
+      associatedStaff.id,
+    ]);
+    expect(response.body.staff.map((member: { id: number }) => member.id)).not.toContain(unrelatedStaff.id);
+    expect(response.body.staff.map((member: { id: number }) => member.id)).not.toContain(inactiveStaff.id);
+
+    const homeResult = response.body.staff.find((member: { id: number }) => member.id === homeStaff.id);
+    const associatedResult = response.body.staff.find((member: { id: number }) => member.id === associatedStaff.id);
+    expect(homeResult.associatedSites).toEqual([{ id: OTHER_SITE.id, name: OTHER_SITE.name }]);
+    expect(associatedResult.associatedSites).toEqual([{ id: TARGET_SITE.id, name: TARGET_SITE.name }]);
+    expect(whereCalls.map(String)).toContain(
+      "and(or(eq(staff.site_id,1),inArray(staff.id,101,102,104)),eq(staff.status,active),eq(staff.is_super_admin,false))",
+    );
+  });
+
+  it("forbids a school session from loading another site's portal", async () => {
+    const response = await request(
+      buildTestApp({
+        id: 900,
+        type: "school",
+        role: "school",
+        siteId: TARGET_SITE.id,
+        email: "target-school",
+        name: TARGET_SITE.name,
+      }),
+    ).get(`/api/schools/${OTHER_SITE.id}/portal`);
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({ error: "This school is outside your access" });
+    expect(mockDb.select).not.toHaveBeenCalled();
+  });
+});

@@ -5,6 +5,7 @@ import {
   Check,
   Clock3,
   FileSpreadsheet,
+  FileText,
   Loader2,
   Settings2,
 } from "lucide-react";
@@ -29,6 +30,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
@@ -37,6 +39,14 @@ type TermForm = {
   termEndDate: string;
   holidayStartDate: string;
   holidayEndDate: string;
+};
+
+type ReportFrequency = "term" | "half-year" | "annual";
+
+type GeneratedReport = {
+  id: number;
+  label: string;
+  frequency: ReportFrequency;
 };
 
 const EMPTY_FORM: TermForm = {
@@ -74,8 +84,13 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
   const [form, setForm] = useState<TermForm>(EMPTY_FORM);
   const [attendanceValues, setAttendanceValues] = useState<AttendanceValues>({});
   const [pupilFreeDays, setPupilFreeDays] = useState<PupilFreeDays>({});
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportFrequency, setReportFrequency] = useState<ReportFrequency>("term");
+  const [reportPeriod, setReportPeriod] = useState("1");
+  const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
   const selectedTerm = data?.terms.find((term) => term.termNumber === selectedTermNumber) ?? null;
   const calculatedWeeks = calculateWeeks(form.termStartDate, form.termEndDate);
+  const currentYear = new Date().getFullYear();
 
   const openDateDialog = (term: SchoolReportTerm) => {
     setEditingTerm(term);
@@ -199,6 +214,35 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
         description: error.message,
         variant: "destructive",
       }),
+    });
+  }
+
+  function openReportDialog() {
+    setReportFrequency("term");
+    setReportPeriod("1");
+    setReportDialogOpen(true);
+  }
+
+  function updateReportFrequency(frequency: string) {
+    const nextFrequency = frequency as ReportFrequency;
+    setReportFrequency(nextFrequency);
+    setReportPeriod(nextFrequency === "annual" ? "current-year" : nextFrequency === "half-year" ? "first-half" : "1");
+  }
+
+  function generateSummaryReport() {
+    const label = reportFrequency === "term"
+      ? `Term ${reportPeriod}`
+      : reportFrequency === "half-year"
+        ? reportPeriod === "first-half" ? "First half" : "Second half"
+        : `Current year (${currentYear})`;
+    setGeneratedReports((current) => [
+      ...current,
+      { id: Date.now(), label, frequency: reportFrequency },
+    ]);
+    setReportDialogOpen(false);
+    toast({
+      title: "Report generated",
+      description: `${label} attendance report is ready.`,
     });
   }
 
@@ -330,6 +374,45 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
         </Card>
       )}
 
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <CardTitle>Reports</CardTitle>
+              <CardDescription className="mt-1">
+                Generate attendance reports for a term, half year, or the current year.
+              </CardDescription>
+            </div>
+            <Button onClick={openReportDialog}>
+              <FileText className="mr-1.5 h-4 w-4" />
+              New report
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {generatedReports.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Generated reports</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {generatedReports.map((report) => (
+                  <div key={report.id} className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
+                    <FileText className="h-4 w-4 shrink-0 text-primary" />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{report.label} attendance report</p>
+                      <p className="text-xs capitalize text-muted-foreground">{report.frequency.replace("-", " ")}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed px-5 py-6 text-sm text-muted-foreground">
+              No reports generated yet. Select a reporting period to create one.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Dialog open={!!editingTerm} onOpenChange={(open) => !open && setEditingTerm(null)}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
@@ -363,6 +446,78 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
             <Button onClick={saveDates} disabled={saveTerm.isPending || !calculatedWeeks}>
               {saveTerm.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save dates
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>New report</DialogTitle>
+            <DialogDescription>
+              Choose how much attendance data this report should cover.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="report-frequency">Frequency</Label>
+              <Select value={reportFrequency} onValueChange={updateReportFrequency}>
+                <SelectTrigger id="report-frequency">
+                  <SelectValue placeholder="Select a frequency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="term">Term</SelectItem>
+                  <SelectItem value="half-year">Half Year</SelectItem>
+                  <SelectItem value="annual">Annual</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {reportFrequency === "term" && (
+              <div className="space-y-2">
+                <Label htmlFor="report-term">Term</Label>
+                <Select value={reportPeriod} onValueChange={setReportPeriod}>
+                  <SelectTrigger id="report-term">
+                    <SelectValue placeholder="Select a term" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4].map((termNumber) => (
+                      <SelectItem key={termNumber} value={String(termNumber)}>
+                        Term {termNumber}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {reportFrequency === "half-year" && (
+              <div className="space-y-2">
+                <Label htmlFor="report-half-year">Half year</Label>
+                <Select value={reportPeriod} onValueChange={setReportPeriod}>
+                  <SelectTrigger id="report-half-year">
+                    <SelectValue placeholder="Select a half year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="first-half">First half</SelectItem>
+                    <SelectItem value="second-half">Second half</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {reportFrequency === "annual" && (
+              <div className="rounded-lg bg-muted/60 px-4 py-3 text-sm">
+                Report period: <span className="font-semibold">Current year ({currentYear})</span>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReportDialogOpen(false)}>Cancel</Button>
+            <Button onClick={generateSummaryReport}>
+              <FileText className="mr-1.5 h-4 w-4" />
+              Generate report
             </Button>
           </DialogFooter>
         </DialogContent>

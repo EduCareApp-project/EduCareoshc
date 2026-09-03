@@ -166,7 +166,9 @@ export async function createSchoolReportPdf(report: SchoolReportSummary, siteNam
   overview.drawText("SERVICE STATISTICS", { x: MARGIN, y: 690, size: 10, font: bold, color: MUTED });
   drawWeekdayBars(overview, report, bold, MARGIN, 444, 499, 220);
   drawWeeklyLines(overview, report, bold, MARGIN, 205, 499, 215);
-  drawHolidayBars(overview, report, bold, MARGIN, 38, 499, 145);
+  if (report.statistics.holidayProgramApplies !== false) {
+    drawHolidayBars(overview, report, bold, MARGIN, 38, 499, 145);
+  }
 
   let page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
   let y = 788;

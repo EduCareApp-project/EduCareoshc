@@ -45,7 +45,8 @@ export function calculateSchoolReportStatistics(
   periodLabel: string,
 ): SchoolReportStatistics {
   const sortedTerms = [...terms].sort((a, b) => a.termNumber - b.termNumber);
-  const holidayRows = sortedTerms.flatMap((term) =>
+  const holidayProgramApplies = sortedTerms.some((term) => term.holidayProgramApplies);
+  const holidayRows = sortedTerms.filter((term) => term.holidayProgramApplies).flatMap((term) =>
     term.rows
       .filter((row) => row.serviceType === "VAC")
       .map((row) => ({ ...row, termNumber: term.termNumber })),
@@ -124,6 +125,7 @@ export function calculateSchoolReportStatistics(
   return {
     periodLabel,
     termNumbers: sortedTerms.map((term) => term.termNumber),
+    holidayProgramApplies,
     dateRange: {
       start: sortedTerms[0]?.termStartDate ?? "",
       end: sortedTerms.at(-1)?.termEndDate ?? "",

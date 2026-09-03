@@ -75,6 +75,7 @@ async function loadSchoolReports(siteId: number, reportYear: number) {
           status: "pending" as const,
           termStartDate: null,
           termEndDate: null,
+          holidayProgramApplies: true,
           holidayStartDate: null,
           holidayEndDate: null,
           weekCount: 0,
@@ -133,8 +134,9 @@ router.put("/school-reports/:siteId/terms/:termNumber", async (req, res): Promis
 
   const termStartDate = String(req.body?.termStartDate ?? "");
   const termEndDate = String(req.body?.termEndDate ?? "");
-  const holidayStartDate = req.body?.holidayStartDate ? String(req.body.holidayStartDate) : null;
-  const holidayEndDate = req.body?.holidayEndDate ? String(req.body.holidayEndDate) : null;
+  const holidayProgramApplies = req.body?.holidayProgramApplies !== false;
+  const holidayStartDate = holidayProgramApplies && req.body?.holidayStartDate ? String(req.body.holidayStartDate) : null;
+  const holidayEndDate = holidayProgramApplies && req.body?.holidayEndDate ? String(req.body.holidayEndDate) : null;
   if (!isValidDateRange(termStartDate, termEndDate)) {
     res.status(400).json({ error: "Term end date must be on or after the start date" });
     return;
@@ -162,6 +164,7 @@ router.put("/school-reports/:siteId/terms/:termNumber", async (req, res): Promis
         termNumber,
         termStartDate,
         termEndDate,
+        holidayProgramApplies,
         holidayStartDate,
         holidayEndDate,
         weekCount: weekBeginnings.length,
@@ -177,6 +180,7 @@ router.put("/school-reports/:siteId/terms/:termNumber", async (req, res): Promis
         set: {
           termStartDate,
           termEndDate,
+          holidayProgramApplies,
           holidayStartDate,
           holidayEndDate,
           weekCount: weekBeginnings.length,
@@ -220,7 +224,7 @@ router.post("/school-reports/:siteId/terms/:termNumber/generate", async (req, re
       res.status(409).json({ error: "The saved term dates do not produce any report weeks" });
       return;
     }
-    const holidayWeekBeginnings = term.holidayStartDate && term.holidayEndDate
+    const holidayWeekBeginnings = term.holidayProgramApplies && term.holidayStartDate && term.holidayEndDate
       ? calculateReportWeekBeginnings(term.holidayStartDate, term.holidayEndDate)
       : [];
     if (holidayWeekBeginnings.length > 20) {

@@ -15,6 +15,7 @@ describe("school report PDF", () => {
       statistics: {
         periodLabel: "Term 1 2026",
         termNumbers: [1],
+        holidayProgramApplies: true,
         dateRange: { start: "2026-01-26", end: "2026-04-03" },
         weekdayAverages: [
           { day: "Monday", bsc: 5, asc: 8, pupilFree: 0 },

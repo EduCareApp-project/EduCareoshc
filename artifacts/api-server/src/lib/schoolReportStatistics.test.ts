@@ -41,6 +41,7 @@ function term(rows: SchoolReportRow[]): SchoolReportTerm & { rows: SchoolReportR
     termNumber: 1,
     termStartDate: "2026-01-26",
     termEndDate: "2026-04-03",
+    holidayProgramApplies: true,
     holidayStartDate: null,
     holidayEndDate: null,
     weekCount: 1,
@@ -74,6 +75,7 @@ describe("school report statistics", () => {
     expect(statistics.weeklyAverages[0]).toEqual({ label: "Week 1", bsc: 10, asc: 10, pupilFree: 0 });
     expect(statistics.holidayWeekdayAverages[0]).toEqual({ day: "Monday", value: 0 });
     expect(statistics.holidayWeeklyAverages[0]).toEqual({ label: "Week 1", value: 10 });
+    expect(statistics.holidayProgramApplies).toBe(true);
   });
 
   it("moves ASC attendance into Pupil Free when only BSC is marked pupil-free", () => {
@@ -86,5 +88,22 @@ describe("school report statistics", () => {
 
     expect(statistics.weekdayAverages[0]).toEqual({ day: "Monday", bsc: 0, asc: 0, pupilFree: 11 });
     expect(statistics.weeklyAverages[0]).toEqual({ label: "Week 1", bsc: 10, asc: 8, pupilFree: 2.2 });
+  });
+
+  it("omits holiday attendance when the holiday program does not apply", () => {
+    const statistics = calculateSchoolReportStatistics([
+      {
+        ...term([
+          row(1, "BSC", 1, [1, 1, 1, 1, 1]),
+          row(2, "ASC", 1, [2, 2, 2, 2, 2]),
+          row(3, "VAC", 1, [9, 9, 9, 9, 9]),
+        ]),
+        holidayProgramApplies: false,
+      },
+    ], "Term 1 2026");
+
+    expect(statistics.holidayProgramApplies).toBe(false);
+    expect(statistics.holidayWeekdayAverages.every((item) => item.value === 0)).toBe(true);
+    expect(statistics.holidayWeeklyAverages).toEqual([]);
   });
 });

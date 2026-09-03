@@ -179,6 +179,7 @@ export function SchoolReportTable({ term }: { term: SchoolReportTerm }) {
         <h4 className="text-sm font-semibold">Term attendance</h4>
         <AttendanceTable rows={termRows} />
       </div>
+      {term.holidayProgramApplies && (
       <div className="space-y-2">
         <h4 className="text-sm font-semibold">Holiday attendance</h4>
         {holidayRows.length > 0 ? (
@@ -189,6 +190,7 @@ export function SchoolReportTable({ term }: { term: SchoolReportTerm }) {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -226,6 +228,7 @@ export function SchoolReportAttendanceForm({
           onPupilFreeDayChange={onPupilFreeDayChange}
         />
       </div>
+      {term.holidayProgramApplies && (
       <div className="space-y-2">
         <h4 className="text-sm font-semibold">Holiday attendance</h4>
         {holidayRows.length > 0 ? (
@@ -236,6 +239,7 @@ export function SchoolReportAttendanceForm({
           </div>
         )}
       </div>
+      )}
       <div className="flex justify-end border-t pt-4">
         <Button onClick={onSave} disabled={isSaving}>
           {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}

@@ -10,6 +10,7 @@ export const schoolReportTermsTable = pgTable("school_report_terms", {
   termNumber: integer("term_number").notNull(),
   termStartDate: date("term_start_date").notNull(),
   termEndDate: date("term_end_date").notNull(),
+  holidayProgramApplies: boolean("holiday_program_applies").notNull().default(true),
   holidayStartDate: date("holiday_start_date"),
   holidayEndDate: date("holiday_end_date"),
   weekCount: integer("week_count").notNull(),
@@ -45,6 +46,7 @@ export const schoolReportRowsTable = pgTable("school_report_rows", {
 export type SchoolReportStatistics = {
   periodLabel: string;
   termNumbers: number[];
+  holidayProgramApplies: boolean;
   dateRange: { start: string; end: string };
   weekdayAverages: Array<{ day: string; bsc: number; asc: number; pupilFree: number }>;
   weeklyAverages: Array<{ label: string; bsc: number; asc: number; pupilFree: number }>;

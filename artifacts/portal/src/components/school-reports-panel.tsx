@@ -32,6 +32,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +45,7 @@ type TermForm = {
   termEndDate: string;
   holidayStartDate: string;
   holidayEndDate: string;
+  holidayProgramApplies: boolean;
 };
 
 type ReportFrequency = "term" | "half-year" | "annual";
@@ -53,6 +55,7 @@ const EMPTY_FORM: TermForm = {
   termEndDate: "",
   holidayStartDate: "",
   holidayEndDate: "",
+  holidayProgramApplies: true,
 };
 
 function calculateWeeks(startDate: string, endDate: string): number {
@@ -101,6 +104,7 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
       termEndDate: term.termEndDate ?? "",
       holidayStartDate: term.holidayStartDate ?? "",
       holidayEndDate: term.holidayEndDate ?? "",
+      holidayProgramApplies: term.holidayProgramApplies,
     });
   };
 
@@ -129,8 +133,9 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
       reportYear,
       termStartDate: form.termStartDate,
       termEndDate: form.termEndDate,
-      holidayStartDate: form.holidayStartDate || null,
-      holidayEndDate: form.holidayEndDate || null,
+      holidayProgramApplies: form.holidayProgramApplies,
+      holidayStartDate: form.holidayProgramApplies ? form.holidayStartDate || null : null,
+      holidayEndDate: form.holidayProgramApplies ? form.holidayEndDate || null : null,
     }, {
       onSuccess: () => {
         setSelectedTermNumber(editingTerm.termNumber);
@@ -342,9 +347,11 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
                 <span>{term.weekCount ? `${term.weekCount} weeks` : "Weeks calculate after dates are set"}</span>
               </div>
               <div className="min-h-10 text-xs text-muted-foreground">
-                {term.holidayStartDate && term.holidayEndDate
-                  ? `Holiday program: ${dateRangeLabel(term.holidayStartDate, term.holidayEndDate)}`
-                  : "Holiday program dates not set"}
+                {!term.holidayProgramApplies
+                  ? "Holiday program does not apply"
+                  : term.holidayStartDate && term.holidayEndDate
+                    ? `Holiday program: ${dateRangeLabel(term.holidayStartDate, term.holidayEndDate)}`
+                    : "Holiday program dates not set"}
               </div>
               <div className="flex gap-2 pt-1">
                 {term.status === "pending" ? (
@@ -503,10 +510,24 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
               </div>
             </div>
             <div>
-              <h3 className="mb-2 text-sm font-semibold">Holiday program period</h3>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold">Holiday program period</h3>
+                <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Checkbox
+                    checked={!form.holidayProgramApplies}
+                    onCheckedChange={(checked) => setForm((current) => ({
+                      ...current,
+                      holidayProgramApplies: checked !== true,
+                      holidayStartDate: checked === true ? "" : current.holidayStartDate,
+                      holidayEndDate: checked === true ? "" : current.holidayEndDate,
+                    }))}
+                  />
+                  Does not apply
+                </label>
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5"><Label>Start date</Label><Input type="date" value={form.holidayStartDate} onChange={(event) => setForm((current) => ({ ...current, holidayStartDate: event.target.value }))} /></div>
-                <div className="space-y-1.5"><Label>End date</Label><Input type="date" value={form.holidayEndDate} onChange={(event) => setForm((current) => ({ ...current, holidayEndDate: event.target.value }))} /></div>
+                <div className="space-y-1.5"><Label>Start date</Label><Input type="date" disabled={!form.holidayProgramApplies} value={form.holidayStartDate} onChange={(event) => setForm((current) => ({ ...current, holidayStartDate: event.target.value }))} /></div>
+                <div className="space-y-1.5"><Label>End date</Label><Input type="date" disabled={!form.holidayProgramApplies} value={form.holidayEndDate} onChange={(event) => setForm((current) => ({ ...current, holidayEndDate: event.target.value }))} /></div>
               </div>
             </div>
           </div>

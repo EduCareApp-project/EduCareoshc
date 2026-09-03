@@ -77,6 +77,7 @@ export type SchoolReportTerm = {
   status: "pending" | "open";
   termStartDate: string | null;
   termEndDate: string | null;
+  holidayProgramApplies: boolean;
   holidayStartDate: string | null;
   holidayEndDate: string | null;
   weekCount: number;
@@ -93,6 +94,7 @@ export type SchoolReportsResponse = {
 export type SchoolReportStatistics = {
   periodLabel: string;
   termNumbers: number[];
+  holidayProgramApplies: boolean;
   dateRange: { start: string; end: string };
   weekdayAverages: Array<{ day: string; bsc: number; asc: number; pupilFree: number }>;
   weeklyAverages: Array<{ label: string; bsc: number; asc: number; pupilFree: number }>;
@@ -215,6 +217,7 @@ export function useSaveSchoolReportTerm(siteId: number) {
       reportYear,
       termStartDate,
       termEndDate,
+      holidayProgramApplies,
       holidayStartDate,
       holidayEndDate,
     }: {
@@ -222,13 +225,14 @@ export function useSaveSchoolReportTerm(siteId: number) {
       reportYear: number;
       termStartDate: string;
       termEndDate: string;
+      holidayProgramApplies: boolean;
       holidayStartDate: string | null;
       holidayEndDate: string | null;
     }) => {
       const res = await fetch(`/api/school-reports/${siteId}/terms/${termNumber}?reportYear=${reportYear}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ termStartDate, termEndDate, holidayStartDate, holidayEndDate }),
+        body: JSON.stringify({ termStartDate, termEndDate, holidayProgramApplies, holidayStartDate, holidayEndDate }),
       });
       const result = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(result.error ?? "Failed to save report dates");

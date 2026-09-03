@@ -57,6 +57,7 @@ export function SchoolSummaryReport({
   const [confirmFinalizeOpen, setConfirmFinalizeOpen] = useState(false);
   const locked = report.status === "finalized";
   const hasUnsavedChanges = JSON.stringify(obligations) !== JSON.stringify(report.reportingObligations);
+  const holidayProgramApplies = report.statistics.holidayProgramApplies !== false;
   const hasHolidayData = report.statistics.holidayWeekdayAverages.some((item) => item.value > 0);
 
   useEffect(() => {
@@ -164,6 +165,7 @@ export function SchoolSummaryReport({
             </div>
           </div>
 
+          {holidayProgramApplies && (
           <div className="rounded-lg border p-4 xl:col-span-2">
             <h4 className="mb-1 text-sm font-semibold">Average Holiday Program Usage by Day</h4>
             <p className="mb-4 text-xs text-muted-foreground">Zero days are excluded as non-operated days, matching the workbook.</p>
@@ -195,6 +197,7 @@ export function SchoolSummaryReport({
               </div>
             )}
           </div>
+          )}
         </CardContent>
       </Card>
 

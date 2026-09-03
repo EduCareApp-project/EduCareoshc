@@ -406,36 +406,31 @@ export default function AiTools() {
                   </div>
                 ) : (
                   historyFiles.map((doc: any) => (
-                    <div key={doc.id} className="p-4 hover:bg-muted/30 transition-colors group">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium text-sm truncate text-foreground" title={doc.name}>
-                            {doc.name}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
-                            <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
-                              {doc.pageCount} pages
-                            </span>
-                            <span>•</span>
-                            <span>{timeAgo(doc.createdAt)}</span>
-                          </div>
-                          <p className="text-[11px] text-muted-foreground mt-2 truncate" title={doc.sourceNames?.join(', ')}>
-                            {doc.sourceNames?.length || 0} source files
-                          </p>
+                    <div key={doc.id} className="px-4 py-2.5 hover:bg-muted/30 transition-colors group">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <p className="font-medium text-sm truncate text-foreground flex-1 min-w-0" title={doc.name}>
+                          {doc.name}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+                          <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium whitespace-nowrap">
+                            {doc.pageCount} pages
+                          </span>
+                          <span className="whitespace-nowrap">{timeAgo(doc.createdAt)}</span>
+                          <span className="hidden sm:inline whitespace-nowrap">{doc.sourceNames?.length || 0} sources</span>
                         </div>
-                        <div className="flex flex-col sm:flex-row items-center gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1 shrink-0">
                            <a href={getViewMergedDocumentUrl(doc.id)} target="_blank" rel="noopener noreferrer">
-                             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-background hover:text-primary">
-                               <Eye className="h-4 w-4" />
+                             <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:bg-background hover:text-primary">
+                               <Eye className="h-3.5 w-3.5" />
                              </Button>
                            </a>
                            <a href={getDownloadMergedDocumentUrl(doc.id)} download>
-                             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-background hover:text-primary">
-                               <Download className="h-4 w-4" />
+                             <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:bg-background hover:text-primary">
+                               <Download className="h-3.5 w-3.5" />
                              </Button>
                            </a>
-                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-background hover:text-destructive" onClick={() => deleteDoc({ id: doc.id })}>
-                             <Trash2 className="h-4 w-4" />
+                           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:bg-background hover:text-destructive" onClick={() => deleteDoc({ id: doc.id })}>
+                             <Trash2 className="h-3.5 w-3.5" />
                            </Button>
                         </div>
                       </div>

@@ -298,7 +298,7 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
           <CardHeader>
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <CardTitle>Term {selectedTerm.termNumber} report</CardTitle>
+                <CardTitle>Term {selectedTerm.termNumber} Attendance</CardTitle>
                 <CardDescription className="mt-1">
                   {selectedTerm.generatedAt
                     ? `Generated ${format(new Date(selectedTerm.generatedAt), "d MMM yyyy 'at' h:mm a")}`

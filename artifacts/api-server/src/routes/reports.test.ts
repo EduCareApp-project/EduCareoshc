@@ -34,6 +34,7 @@ const { mockDb, queueResults, whereCalls } = vi.hoisted(() => {
   };
 });
 
+
 vi.mock("@workspace/db", () => ({
   db: mockDb,
   childrenTable: {},
@@ -104,6 +105,76 @@ describe("GET /api/reports/staff-compliance Admin Support boundary", () => {
     expect(response.body.staff.map((member: { staffId: number }) => member.staffId)).toEqual([educator.id]);
     expect(response.body.expiringQualifications.map((qualification: { staffId: number }) => qualification.staffId))
       .toEqual([educator.id]);
+    expect(whereCalls.map(String)).toContain(
+      "and(eq(staff.status,active),ne(staff.is_super_admin,true),ne(staff.role,admin_support))",
+    );
+  });
+});
+
+describe("GET /api/reports/qualification-check Admin Support boundary", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    whereCalls.length = 0;
+  });
+
+  it("excludes Admin Support from both qualification result lists", async () => {
+    const qualifiedEducator = {
+      id: 20,
+      firstName: "Qualified",
+      lastName: "Educator",
+      role: "educator",
+    };
+    const missingEducator = {
+      id: 21,
+      firstName: "Missing",
+      lastName: "Educator",
+      role: "educator",
+    };
+    const adminSupport = {
+      id: 22,
+      firstName: "Admin",
+      lastName: "Support",
+      role: "admin_support",
+    };
+    const expiryDate = "2099-12-31";
+
+    queueResults([
+      [qualifiedEducator, missingEducator],
+      [
+        {
+          id: 200,
+          staffId: qualifiedEducator.id,
+          name: "First Aid",
+          status: "current",
+          expiryDate,
+          archivedAt: null,
+        },
+        {
+          id: 201,
+          staffId: adminSupport.id,
+          name: "First Aid",
+          status: "current",
+          expiryDate,
+          archivedAt: null,
+        },
+      ],
+    ]);
+
+    const response = await request(buildApp())
+      .get("/api/reports/qualification-check")
+      .query({ name: "First Aid" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.have.map((member: { staffId: number }) => member.staffId))
+      .toEqual([qualifiedEducator.id]);
+    expect(response.body.missing.map((member: { staffId: number }) => member.staffId))
+      .toEqual([missingEducator.id]);
+    expect(response.body.have).not.toContainEqual(
+      expect.objectContaining({ staffId: adminSupport.id }),
+    );
+    expect(response.body.missing).not.toContainEqual(
+      expect.objectContaining({ staffId: adminSupport.id }),
+    );
     expect(whereCalls.map(String)).toContain(
       "and(eq(staff.status,active),ne(staff.is_super_admin,true),ne(staff.role,admin_support))",
     );

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
@@ -368,8 +369,9 @@ export default function SchoolPortal() {
                         )}
                       />
                       <div className="space-y-2">
-                        <FormLabel>Supporting Document</FormLabel>
+                        <Label htmlFor="vital-supporting-document">Supporting Document</Label>
                         <Input
+                          id="vital-supporting-document"
                           ref={vitalFileInputRef}
                           type="file"
                           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"

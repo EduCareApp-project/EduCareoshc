@@ -10,7 +10,8 @@ import type { SiteUpdateStatus } from "./siteUpdateStatus";
 export interface SiteUpdate {
   name?: string;
   address?: string;
-  grouping?: string;
+  /** @nullable */
+  grouping?: string | null;
   status?: SiteUpdateStatus;
   isDoscel?: boolean;
 }

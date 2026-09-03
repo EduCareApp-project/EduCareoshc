@@ -13,5 +13,7 @@ export interface ExpiringMedicationChild {
   childLastName: string;
   /** @nullable */
   siteId?: number | null;
+  /** @nullable */
+  siteName?: string | null;
   medications: ExpiringMedicationEntry[];
 }

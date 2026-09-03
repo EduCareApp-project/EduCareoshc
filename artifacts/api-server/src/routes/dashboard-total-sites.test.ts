@@ -209,6 +209,7 @@ describe("GET /api/dashboard/summary — totalSites active-only filter", () => {
           from: vi.fn().mockReturnThis(),
           where: vi.fn().mockReturnThis(),
           orderBy: vi.fn().mockReturnThis(),
+          selectDistinct: vi.fn().mockReturnThis(),
           then(resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) {
             return Promise.resolve([]).then(resolve, reject);
           },
@@ -223,6 +224,7 @@ describe("GET /api/dashboard/summary — totalSites active-only filter", () => {
           from: vi.fn().mockReturnThis(),
           where: vi.fn().mockReturnThis(),
           orderBy: vi.fn().mockReturnThis(),
+          selectDistinct: vi.fn().mockReturnThis(),
           then(resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) {
             return Promise.resolve([]).then(resolve, reject);
           },
@@ -236,6 +238,7 @@ describe("GET /api/dashboard/summary — totalSites active-only filter", () => {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
         orderBy: vi.fn().mockReturnThis(),
+        selectDistinct: vi.fn().mockReturnThis(),
         then(resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) {
           return Promise.resolve([{ count: 0 }]).then(resolve, reject);
         },
@@ -250,6 +253,7 @@ describe("GET /api/dashboard/summary — totalSites active-only filter", () => {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
         orderBy: vi.fn().mockReturnThis(),
+        selectDistinct: vi.fn().mockReturnThis(),
         then(resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) {
           return Promise.resolve([]).then(resolve, reject);
         },

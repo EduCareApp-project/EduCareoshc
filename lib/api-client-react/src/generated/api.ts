@@ -10896,18 +10896,16 @@ export const getListPostsQueryKey = (params?: ListPostsParams) => {
 export const getListPostsQueryOptions = <
   TData = Awaited<ReturnType<typeof listPosts>>,
   TError = ErrorType<unknown>,
->(
-  params?: ListPostsParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof listPosts>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
+>(options?: {
+  params?: ListPostsParams;
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPosts>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { params, query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey = queryOptions?.queryKey ?? getListPostsQueryKey(params);
 
@@ -10930,18 +10928,16 @@ export type ListPostsQueryError = ErrorType<unknown>;
 export function useListPosts<
   TData = Awaited<ReturnType<typeof listPosts>>,
   TError = ErrorType<unknown>,
->(
-  params?: ListPostsParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof listPosts>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListPostsQueryOptions(params, options);
+>(options?: {
+  params?: ListPostsParams;
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPosts>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPostsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

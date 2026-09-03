@@ -83,7 +83,8 @@ export const SiteUpdateStatus = {
 export interface SiteUpdate {
   name?: string;
   address?: string;
-  grouping?: string;
+  /** @nullable */
+  grouping?: string | null;
   status?: SiteUpdateStatus;
   isDoscel?: boolean;
 }
@@ -2073,8 +2074,6 @@ export interface UpdateNotificationSettingItem {
   advanceDays?: number | null;
   /** @nullable */
   siteId?: number | null;
-  /** @nullable */
-  siteName?: string | null;
 }
 
 export interface Notification {
@@ -2130,6 +2129,8 @@ export interface ExpiringMedicationChild {
   childLastName: string;
   /** @nullable */
   siteId?: number | null;
+  /** @nullable */
+  siteName?: string | null;
   medications: ExpiringMedicationEntry[];
 }
 

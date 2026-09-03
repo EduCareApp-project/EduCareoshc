@@ -3674,7 +3674,7 @@ components:
         address:
           type: string
         grouping:
-          type: string
+          type: ["string", "null"]
         status:
           type: string
           enum: [active, pending, closed]
@@ -6543,8 +6543,6 @@ components:
           type: ["integer", "null"]
         siteId:
           type: ["integer", "null"]
-        siteName:
-          type: ["string", "null"]
 
     Notification:
       type: object
@@ -6620,6 +6618,8 @@ components:
           type: string
         siteId:
           type: ["integer", "null"]
+        siteName:
+          type: ["string", "null"]
         medications:
           type: array
           items:

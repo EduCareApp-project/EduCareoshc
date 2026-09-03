@@ -3574,7 +3574,7 @@ export const UpdateSiteParams = zod.object({
 export const UpdateSiteBody = zod.object({
   name: zod.string().optional(),
   address: zod.string().optional(),
-  grouping: zod.string().optional(),
+  grouping: zod.string().nullish(),
   status: zod.enum(["active", "pending", "closed"]).optional(),
   isDoscel: zod.boolean().optional(),
 });
@@ -3870,7 +3870,6 @@ export const UpdateNotificationSettingsBodyItem = zod.object({
   enabled: zod.boolean(),
   advanceDays: zod.number().nullish(),
   siteId: zod.number().nullish(),
-  siteName: zod.string().nullish(),
 });
 export const UpdateNotificationSettingsBody = zod.array(
   UpdateNotificationSettingsBodyItem,
@@ -3892,6 +3891,7 @@ export const GetExpiringMedicationsResponseItem = zod.object({
   childFirstName: zod.string(),
   childLastName: zod.string(),
   siteId: zod.number().nullish(),
+  siteName: zod.string().nullish(),
   medications: zod.array(
     zod.object({
       slot: zod.number(),

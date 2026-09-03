@@ -14,4 +14,7 @@ psql "$DATABASE_URL" -c "
   END \$\$;
 "
 
-pnpm --filter db push-force
+# Drizzle asks whether populated tables may be truncated when it detects
+# constraint changes. Post-merge runs with stdin closed, so explicitly answer
+# "no" rather than allowing the command to wait forever.
+printf 'n\n' | pnpm --filter db push-force

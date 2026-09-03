@@ -2,16 +2,19 @@ import { Router, type IRouter } from "express";
 import { eq, asc, or } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, sitesTable } from "@workspace/db";
+import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, sitesTable, schoolAccountsTable } from "@workspace/db";
 import { sendLoginInstructionsEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 import { getAppUrl } from "../lib/appUrl";
+import { ensureSchoolAccount } from "../lib/schoolAccounts";
 
 const router: IRouter = Router();
 
 router.get("/reports/system-access", async (req, res): Promise<void> => {
   try {
-    const [staffRows, guardianRows, childRows, siteRows] = await Promise.all([
+    const provisionedSites = await db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable).orderBy(asc(sitesTable.name));
+    await Promise.all(provisionedSites.map((site) => ensureSchoolAccount(site.id, site.name)));
+    const [staffRows, guardianRows, childRows, siteRows, schoolRows] = await Promise.all([
       db.select().from(staffTable).where(eq(staffTable.status, "active")).orderBy(asc(staffTable.lastName), asc(staffTable.firstName)),
       db.select().from(parentAccountsTable).orderBy(asc(parentAccountsTable.guardianEmail)),
       db.select({
@@ -23,7 +26,17 @@ router.get("/reports/system-access", async (req, res): Promise<void> => {
         lastName: childrenTable.lastName,
         siteId: childrenTable.siteId,
       }).from(childrenTable),
-      db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable).orderBy(asc(sitesTable.name)),
+      Promise.resolve(provisionedSites),
+      db.select({
+        id: schoolAccountsTable.id,
+        siteId: schoolAccountsTable.siteId,
+        siteName: sitesTable.name,
+        username: schoolAccountsTable.username,
+        passwordHash: schoolAccountsTable.passwordHash,
+        blockedAt: schoolAccountsTable.blockedAt,
+        lastLoginAt: schoolAccountsTable.lastLoginAt,
+        createdAt: schoolAccountsTable.createdAt,
+      }).from(schoolAccountsTable).innerJoin(sitesTable, eq(schoolAccountsTable.siteId, sitesTable.id)).orderBy(asc(sitesTable.name)),
     ]);
 
     const guardianMeta = new Map<string, { email: string; name: string; children: string[]; siteIds: number[] }>();
@@ -85,7 +98,8 @@ router.get("/reports/system-access", async (req, res): Promise<void> => {
       createdAt: s.createdAt,
     }));
 
-    res.json({ staff, guardians, sites: siteRows });
+    const schools = schoolRows.map(({ passwordHash, ...school }) => ({ ...school, isConnected: !!passwordHash }));
+    res.json({ staff, guardians, schools, sites: siteRows });
   } catch (err) {
     req.log.error({ err }, "Failed to fetch system access report");
     res.status(500).json({ error: "Failed to fetch system access report" });
@@ -119,6 +133,19 @@ router.patch("/reports/system-access/guardian/:id/block", async (req, res): Prom
   } catch (err) {
     req.log.error({ err, guardianId: id }, "Failed to block/unblock guardian");
     res.status(500).json({ error: "Failed to block/unblock guardian" });
+  }
+});
+
+router.patch("/reports/system-access/school/:id/block", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  try {
+    const [current] = await db.select({ blockedAt: schoolAccountsTable.blockedAt }).from(schoolAccountsTable).where(eq(schoolAccountsTable.id, id));
+    if (!current) { res.status(404).json({ error: "School account not found" }); return; }
+    const [updated] = await db.update(schoolAccountsTable).set({ blockedAt: current.blockedAt ? null : new Date() }).where(eq(schoolAccountsTable.id, id)).returning();
+    res.json(updated);
+  } catch (err) {
+    req.log.error({ err, schoolAccountId: id }, "Failed to block/unblock school");
+    res.status(500).json({ error: "Failed to update school access" });
   }
 });
 
@@ -157,6 +184,37 @@ router.patch("/reports/system-access/guardian/:id/set-password", async (req, res
   } catch (err) {
     req.log.error({ err, guardianId: id }, "Failed to set guardian password");
     res.status(500).json({ error: "Failed to set guardian password" });
+  }
+});
+
+router.patch("/reports/system-access/school/:id/set-password", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const { password } = req.body ?? {};
+  if (!password || String(password).length < 8) { res.status(400).json({ error: "Password must be at least 8 characters." }); return; }
+  try {
+    const hash = await bcrypt.hash(String(password), 12);
+    const [updated] = await db.update(schoolAccountsTable).set({ passwordHash: hash }).where(eq(schoolAccountsTable.id, id)).returning();
+    if (!updated) { res.status(404).json({ error: "School account not found" }); return; }
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err, schoolAccountId: id }, "Failed to set school password");
+    res.status(500).json({ error: "Failed to set school password" });
+  }
+});
+
+router.patch("/reports/system-access/school/:id/username", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const username = String(req.body?.username ?? "").trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9._-]{2,63}$/.test(username)) {
+    res.status(400).json({ error: "Use 3–64 lowercase letters, numbers, dots, dashes, or underscores." }); return;
+  }
+  try {
+    const [updated] = await db.update(schoolAccountsTable).set({ username }).where(eq(schoolAccountsTable.id, id)).returning();
+    if (!updated) { res.status(404).json({ error: "School account not found" }); return; }
+    res.json({ ok: true, username });
+  } catch (err) {
+    req.log.error({ err, schoolAccountId: id }, "Failed to update school username");
+    res.status(409).json({ error: "That username is already in use." });
   }
 });
 

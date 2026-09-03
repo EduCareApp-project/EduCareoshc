@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 
 export type AuthUser = {
   id: number;
-  type: "staff" | "guardian";
+  type: "staff" | "guardian" | "school";
   role: string;
   email: string;
   name: string;

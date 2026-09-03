@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import {
   KeyRound, ShieldOff, ShieldCheck, Wifi, WifiOff,
-  Users, UserCheck, Search, Send,
+  Users, UserCheck, Search, Send, Building2, Pencil,
 } from "lucide-react";
 
 type StaffRow = {
@@ -41,10 +41,21 @@ type GuardianRow = {
 };
 
 type SiteOption = { id: number; name: string };
+type SchoolRowData = {
+  id: number;
+  siteId: number;
+  siteName: string;
+  username: string;
+  isConnected: boolean;
+  blockedAt: string | null;
+  lastLoginAt: string | null;
+  createdAt: string;
+};
 
 type SystemAccessData = {
   staff: StaffRow[];
   guardians: GuardianRow[];
+  schools: SchoolRowData[];
   sites: SiteOption[];
 };
 
@@ -65,7 +76,7 @@ async function fetchSystemAccess(): Promise<SystemAccessData> {
   return res.json();
 }
 
-async function toggleBlock(type: "staff" | "guardian", id: number) {
+async function toggleBlock(type: "staff" | "guardian" | "school", id: number) {
   const res = await fetch(`/api/reports/system-access/${type}/${id}/block`, { method: "PATCH" });
   if (!res.ok) throw new Error("Failed to update access");
   return res.json();
@@ -89,7 +100,7 @@ async function provisionAndSend(email: string) {
   return data;
 }
 
-async function setPassword(type: "staff" | "guardian", id: number, password: string) {
+async function setPassword(type: "staff" | "guardian" | "school", id: number, password: string) {
   const res = await fetch(`/api/reports/system-access/${type}/${id}/set-password`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -97,6 +108,17 @@ async function setPassword(type: "staff" | "guardian", id: number, password: str
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "Failed to set password");
+  return data;
+}
+
+async function setSchoolUsername(id: number, username: string) {
+  const res = await fetch(`/api/reports/system-access/school/${id}/username`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Failed to update username");
   return data;
 }
 
@@ -187,6 +209,59 @@ function SetPasswordDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function SchoolAccessRow({ row, onBlock }: { row: SchoolRowData; onBlock: () => void }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [pwDialog, setPwDialog] = useState(false);
+  const [usernameDialog, setUsernameDialog] = useState(false);
+  const [username, setUsername] = useState(row.username);
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["/api/reports/system-access"] });
+  const pwMutation = useMutation({
+    mutationFn: (pw: string) => setPassword("school", row.id, pw),
+    onSuccess: () => { refresh(); setPwDialog(false); toast({ title: "School password set", description: `${row.siteName} can now log in.` }); },
+    onError: (e: Error) => toast({ title: "Failed to set password", description: e.message, variant: "destructive" }),
+  });
+  const usernameMutation = useMutation({
+    mutationFn: () => setSchoolUsername(row.id, username),
+    onSuccess: () => { refresh(); setUsernameDialog(false); toast({ title: "School username updated" }); },
+    onError: (e: Error) => toast({ title: "Failed to update username", description: e.message, variant: "destructive" }),
+  });
+  return (
+    <>
+      <tr className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+        <td className="py-3 px-4">
+          <div className="font-medium text-sm">{row.siteName}</div>
+          <div className="text-xs text-muted-foreground font-mono">{row.username}</div>
+        </td>
+        <td className="py-3 px-4"><ConnectedBadge connected={row.isConnected} /></td>
+        <td className="py-3 px-4"><BlockedBadge blockedAt={row.blockedAt} /></td>
+        <td className="py-3 px-4 text-sm text-muted-foreground whitespace-nowrap">
+          {row.lastLoginAt ? new Date(row.lastLoginAt).toLocaleDateString("en-AU") : "Never"}
+        </td>
+        <td className="py-3 px-2">
+          <div className="flex justify-end gap-1">
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => setUsernameDialog(true)}><Pencil className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Edit username</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => setPwDialog(true)}><KeyRound className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Set password</TooltipContent></Tooltip>
+            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={onBlock}>{row.blockedAt ? <ShieldCheck className="h-4 w-4 text-emerald-600" /> : <ShieldOff className="h-4 w-4 text-red-600" />}</Button></TooltipTrigger><TooltipContent>{row.blockedAt ? "Unblock" : "Block"} school</TooltipContent></Tooltip>
+          </div>
+        </td>
+      </tr>
+      <SetPasswordDialog open={pwDialog} onClose={() => setPwDialog(false)} label={row.siteName} onSave={(pw) => pwMutation.mutate(pw)} isPending={pwMutation.isPending} />
+      <Dialog open={usernameDialog} onOpenChange={setUsernameDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Edit school username</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Label htmlFor={`school-username-${row.id}`}>Username</Label>
+            <Input id={`school-username-${row.id}`} value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} />
+            <p className="text-xs text-muted-foreground">Use 3–64 lowercase letters, numbers, dots, dashes, or underscores.</p>
+            <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setUsernameDialog(false)}>Cancel</Button><Button onClick={() => usernameMutation.mutate()} disabled={usernameMutation.isPending}>Save username</Button></div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -438,7 +513,7 @@ export default function ReportsSystemAccess() {
   });
 
   const blockMutation = useMutation({
-    mutationFn: ({ type, id }: { type: "staff" | "guardian"; id: number }) => toggleBlock(type, id),
+    mutationFn: ({ type, id }: { type: "staff" | "guardian" | "school"; id: number }) => toggleBlock(type, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/reports/system-access"] });
       toast({ title: "Access updated" });
@@ -456,13 +531,15 @@ export default function ReportsSystemAccess() {
     return true;
   });
 
-  const totalAccounts = (data?.staff.length ?? 0) + (data?.guardians.length ?? 0);
+  const totalAccounts = (data?.staff.length ?? 0) + (data?.guardians.length ?? 0) + (data?.schools.length ?? 0);
   const connectedCount =
     (data?.staff ?? []).filter((s) => s.isConnected).length +
-    (data?.guardians ?? []).filter((g) => g.isConnected).length;
+    (data?.guardians ?? []).filter((g) => g.isConnected).length +
+    (data?.schools ?? []).filter((s) => s.isConnected).length;
   const blockedCount =
     (data?.staff ?? []).filter((s) => s.blockedAt).length +
-    (data?.guardians ?? []).filter((g) => g.blockedAt).length;
+    (data?.guardians ?? []).filter((g) => g.blockedAt).length +
+    (data?.schools ?? []).filter((s) => s.blockedAt).length;
 
   if (isLoading) {
     return (
@@ -479,7 +556,7 @@ export default function ReportsSystemAccess() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">System Access</h1>
-        <p className="text-muted-foreground mt-1">Manage staff and guardian accounts, connection status and access control.</p>
+        <p className="text-muted-foreground mt-1">Manage staff, guardian and school accounts, connection status and access control.</p>
       </div>
 
       {/* Summary cards */}
@@ -619,6 +696,28 @@ export default function ReportsSystemAccess() {
                   />
                 ))
               )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-base font-semibold">Schools</h2>
+          <Badge variant="secondary" className="text-xs">{data?.schools.length ?? 0}</Badge>
+        </div>
+        <div className="rounded-md border overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-muted/50"><tr>
+              <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">School / Username</th>
+              <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Password</th>
+              <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Access</th>
+              <th className="py-2.5 px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last Access</th>
+              <th className="py-2.5 px-2"></th>
+            </tr></thead>
+            <tbody>
+              {(data?.schools ?? []).map((school) => <SchoolAccessRow key={school.id} row={school} onBlock={() => blockMutation.mutate({ type: "school", id: school.id })} />)}
             </tbody>
           </table>
         </div>

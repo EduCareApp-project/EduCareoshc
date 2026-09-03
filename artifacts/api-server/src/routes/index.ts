@@ -50,6 +50,7 @@ import behaviouralNotificationsRouter from "./behavioural-notifications";
 import clickupRouter from "./clickup";
 import superAdminRouter from "./super-admin";
 import aiToolsRouter from "./ai-tools";
+import schoolsRouter from "./schools";
 
 const router: IRouter = Router();
 
@@ -83,6 +84,21 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
     return;
   }
   next();
+});
+
+// School accounts are tenant-scoped and read-only. Keep this boundary central so
+// adding a new staff API cannot accidentally expose it to school sessions.
+router.use((req: Request, res: Response, next: NextFunction): void => {
+  const user = req.session.user;
+  if (user?.type !== "school") {
+    next();
+    return;
+  }
+  if (req.method === "GET" && req.path === `/schools/${user.siteId}/portal`) {
+    next();
+    return;
+  }
+  res.status(403).json({ error: "School accounts can only access their own school portal" });
 });
 
 // ── Protected routes ──────────────────────────────────────────────────────────
@@ -133,5 +149,6 @@ router.use(medicationsRouter);
 router.use(behaviouralNotificationsRouter);
 router.use(clickupRouter);
 router.use(aiToolsRouter);
+router.use(schoolsRouter);
 
 export default router;

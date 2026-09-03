@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { eq, asc, and, or, gt, isNull, isNotNull, inArray, sql, ne } from "drizzle-orm";
-import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, postsTable, sitesTable, planningExperiencesTable, noticesTable, guardianLoginLogsTable } from "@workspace/db";
+import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, postsTable, sitesTable, planningExperiencesTable, noticesTable, guardianLoginLogsTable, schoolAccountsTable } from "@workspace/db";
 import { sendPasswordResetEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 import { getAppUrl } from "../lib/appUrl";
@@ -119,6 +119,23 @@ router.post("/auth/login", async (req, res): Promise<void> => {
         .where(eq(parentAccountsTable.id, guardian.id));
       await db.insert(guardianLoginLogsTable).values({ guardianEmail: guardian.guardianEmail });
 
+      res.json({ user: req.session.user });
+      return;
+    }
+
+    const [school] = await db
+      .select({ id: schoolAccountsTable.id, siteId: schoolAccountsTable.siteId, username: schoolAccountsTable.username, passwordHash: schoolAccountsTable.passwordHash, blockedAt: schoolAccountsTable.blockedAt })
+      .from(schoolAccountsTable)
+      .where(eq(schoolAccountsTable.username, normalised));
+    if (school) {
+      if (!school.passwordHash) { res.status(401).json({ error: "No password has been set for this school account." }); return; }
+      if (school.blockedAt) { res.status(401).json({ error: "This school account has been blocked." }); return; }
+      const valid = await bcrypt.compare(String(password), school.passwordHash);
+      if (!valid) { res.status(401).json({ error: "Invalid username or password." }); return; }
+      const [site] = await db.select({ name: sitesTable.name }).from(sitesTable).where(eq(sitesTable.id, school.siteId));
+      req.session.user = { id: school.id, type: "school", role: "school", email: school.username, name: site?.name ?? "School", siteId: school.siteId };
+      await new Promise<void>((resolve, reject) => req.session.save((err) => (err ? reject(err) : resolve())));
+      await db.update(schoolAccountsTable).set({ lastLoginAt: new Date() as any }).where(eq(schoolAccountsTable.id, school.id));
       res.json({ user: req.session.user });
       return;
     }

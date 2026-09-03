@@ -21,6 +21,7 @@ import {
   CheckSquare,
   UserCheck,
   Building2,
+  GraduationCap,
   UserCog,
   Settings2,
   LogOut,
@@ -90,6 +91,7 @@ const NAV_GROUPS = [
       { href: "/qip", label: "QIP", icon: TrendingUp },
       { href: "/policies", label: "Policies & Files", icon: FolderOpen },
       { href: "/checklists", label: "Checklists", icon: CheckSquare },
+      { href: "/schools", label: "Schools", icon: GraduationCap },
       { href: "/sites", label: "Sites", icon: Building2 },
     ]
   },

@@ -1,0 +1,153 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+export type SchoolItem = {
+  id: number;
+  siteId: number;
+  siteName: string;
+  username: string;
+  blockedAt: string | null;
+  lastLoginAt: string | null;
+  passwordSet: boolean;
+};
+
+export type Site = {
+  id: number;
+  name: string;
+  address: string;
+  grouping: string;
+  status: string;
+  isDoscel: boolean;
+  createdAt: string;
+};
+
+export type Staff = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  role: string;
+  qualifications: string | null;
+  status: string;
+};
+
+export type VitalRecord = {
+  id: number;
+  siteId: number;
+  recordType: string;
+  recordName: string;
+  provider?: string | null;
+  referenceNumber?: string | null;
+  expiryDate?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type VecraVisit = {
+  id: number;
+  siteId: number;
+  visitDate: string;
+  visitorName: string;
+  visitorOrganisation?: string | null;
+  findings?: string | null;
+  actions?: string | null;
+  followUpDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SchoolPortalData = {
+  site: Site;
+  account: { username: string; blockedAt: string | null; lastLoginAt: string | null } | null;
+  staff: Staff[];
+  vitalRecords: VitalRecord[];
+  vecraVisits: VecraVisit[];
+};
+
+export function useGetSchools() {
+  return useQuery<SchoolItem[]>({
+    queryKey: ["schools"],
+    queryFn: async () => {
+      const res = await fetch("/api/schools");
+      if (!res.ok) throw new Error("Failed to fetch schools");
+      return res.json();
+    },
+  });
+}
+
+export function useGetSchoolPortal(siteId?: number | null) {
+  return useQuery<SchoolPortalData>({
+    queryKey: ["schools", siteId, "portal"],
+    queryFn: async () => {
+      const res = await fetch(`/api/schools/${siteId}/portal`);
+      if (!res.ok) throw new Error("Failed to fetch school portal");
+      return res.json();
+    },
+    enabled: !!siteId,
+  });
+}
+
+export function useCreateVitalRecord(siteId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Omit<VitalRecord, "id" | "siteId" | "createdAt" | "updatedAt">) => {
+      const res = await fetch(`/api/schools/${siteId}/vital-records`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create vital record");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schools", siteId, "portal"] });
+    },
+  });
+}
+
+export function useDeleteVitalRecord(siteId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/schools/${siteId}/vital-records/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete vital record");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schools", siteId, "portal"] });
+    },
+  });
+}
+
+export function useCreateVecraVisit(siteId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Omit<VecraVisit, "id" | "siteId" | "createdAt" | "updatedAt">) => {
+      const res = await fetch(`/api/schools/${siteId}/vecra-visits`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to create VECRA visit");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schools", siteId, "portal"] });
+    },
+  });
+}
+
+export function useDeleteVecraVisit(siteId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/schools/${siteId}/vecra-visits/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete VECRA visit");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schools", siteId, "portal"] });
+    },
+  });
+}

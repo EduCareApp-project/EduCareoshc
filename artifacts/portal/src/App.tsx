@@ -104,6 +104,9 @@ import CoordAppraisalStage1 from "@/pages/coord-appraisal-stage1";
 import CoordAppraisalStage2 from "@/pages/coord-appraisal-stage2";
 import CoordAppraisalStage3 from "@/pages/coord-appraisal-stage3";
 import CoordAppraisalStage4 from "@/pages/coord-appraisal-stage4";
+import Schools from "@/pages/schools";
+import SchoolPortal from "@/pages/school-portal";
+import { SchoolLayout } from "@/components/school-layout";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -140,6 +143,17 @@ function GuardianRoutes() {
         <Route component={NotFound} />
       </Switch>
     </GuardianLayout>
+  );
+}
+
+function SchoolRoutes() {
+  return (
+    <SchoolLayout>
+      <Switch>
+        <Route path="/" component={SchoolPortal} />
+        <Route component={NotFound} />
+      </Switch>
+    </SchoolLayout>
   );
 }
 
@@ -204,6 +218,9 @@ function StaffRoutes() {
         <Route path="/reports/financial" component={ReportsFinancial} />
         <Route path="/clickup-reports" component={ClickUpReports} />
         <Route path="/ai-tools" component={AiTools} />
+
+        <Route path="/schools" component={Schools} />
+        <Route path="/schools/:siteId" component={SchoolPortal} />
 
         <Route path="/appraisals" component={Appraisals} />
         <Route path="/appraisals/:id/stage1" component={AppraisalStage1} />
@@ -290,6 +307,9 @@ function Router() {
 
   // Guardian portal
   if (user.type === "guardian") return <GuardianRoutes />;
+
+  // School portal
+  if (user.type === "school") return <SchoolRoutes />;
 
   // Staff portal (all roles)
   return <StaffRoutes />;

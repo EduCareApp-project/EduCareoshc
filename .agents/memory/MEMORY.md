@@ -4,3 +4,4 @@
 - [Generated contract reconciliation](generated-contract-reconciliation.md) — codegen can surface unrelated spec drift; isolate new endpoint output while preserving existing generated contracts until their callers are migrated.
 - [Document merge storage](document-merge-storage.md) — source uploads are staff-owned DB records; merged PDFs stay private and temporary sources are removed after successful merging.
 - [Post-merge schema sync](post-merge-schema-sync.md) — Drizzle push-force can still prompt on populated constraint changes; post-merge must answer no explicitly and allow setup time.
+- [School account boundary](school-account-boundary.md) — each Site owns one generated school account; school sessions are read-only and API-scoped to that account's site.

@@ -43,3 +43,4 @@ export * from './email_send_log';
 export * from './guardian_login_logs';
 export * from './guardian_financial';
 export * from './document_merge';
+export * from './schools';

@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, sitesTable } from "@workspace/db";
+import { ensureSchoolAccount } from "../lib/schoolAccounts";
 import {
   ListSitesResponse,
   CreateSiteBody,
@@ -36,6 +37,7 @@ router.post("/sites", async (req, res): Promise<void> => {
   }
   try {
     const [site] = await db.insert(sitesTable).values(parsed.data).returning();
+    await ensureSchoolAccount(site.id, site.name);
     res.status(201).json(UpdateSiteResponse.parse(site));
   } catch (err) {
     req.log.error({ err }, "Failed to create site");

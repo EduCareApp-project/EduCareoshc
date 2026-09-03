@@ -277,6 +277,7 @@ export type StaffRole = (typeof StaffRole)[keyof typeof StaffRole];
 
 export const StaffRole = {
   admin: "admin",
+  admin_support: "admin_support",
   educational_leader: "educational_leader",
   coordinator: "coordinator",
   educator: "educator",
@@ -324,6 +325,7 @@ export type StaffInputRole =
 
 export const StaffInputRole = {
   admin: "admin",
+  admin_support: "admin_support",
   educational_leader: "educational_leader",
   coordinator: "coordinator",
   educator: "educator",
@@ -355,6 +357,7 @@ export type StaffUpdateRole =
 
 export const StaffUpdateRole = {
   admin: "admin",
+  admin_support: "admin_support",
   educational_leader: "educational_leader",
   coordinator: "coordinator",
   educator: "educator",
@@ -1984,6 +1987,17 @@ export interface ChildSettings {
   childDisplayMode: ChildSettingsChildDisplayMode;
 }
 
+export type FeatureSettingsSchoolPortalVisibleTabsItem =
+  (typeof FeatureSettingsSchoolPortalVisibleTabsItem)[keyof typeof FeatureSettingsSchoolPortalVisibleTabsItem];
+
+export const FeatureSettingsSchoolPortalVisibleTabsItem = {
+  vital: "vital",
+  vecra: "vecra",
+  staff: "staff",
+  reports: "reports",
+  qip: "qip",
+} as const;
+
 export type FeatureSettingsNotificationChannelMap = {
   [key: string]: {
     email?: boolean;
@@ -2039,6 +2053,8 @@ export interface FeatureSettings {
   staffCannotWorkQuals?: string[];
   staffResponsiblePersonQuals?: string[];
   staffEducatorQuals?: string[];
+  schoolPortalVisibleTabs?: FeatureSettingsSchoolPortalVisibleTabsItem[];
+  schoolPortalVisibleQualificationNames?: string[];
   childrenRequireMedicalNotes?: boolean;
   childrenShowDobOnProfile?: boolean;
   childDocumentTypes?: string[];

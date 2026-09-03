@@ -60,6 +60,9 @@ export interface FeatureSettings {
   staffCannotWorkQuals?: string[];
   staffResponsiblePersonQuals?: string[];
   staffEducatorQuals?: string[];
+  // School Portal
+  schoolPortalVisibleTabs?: Array<"vital" | "vecra" | "staff" | "reports" | "qip">;
+  schoolPortalVisibleQualificationNames?: string[];
   // Jottings
   jottingsVisibleToGuardians?: boolean;
   jottingsRequireChild?: boolean;

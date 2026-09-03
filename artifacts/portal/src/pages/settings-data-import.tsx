@@ -64,7 +64,7 @@ const TEMPLATES = {
 
   staff: [
     "# EduCare Staff Import Template",
-    "# role values: educator | coordinator | educational_leader | admin",
+    "# role values: educator | coordinator | educational_leader | admin | admin_support",
     "firstName,lastName,email,role,qualifications,phone,wwccNumber",
     "Sarah,Williams,sarah.williams@centre.com.au,educator,Certificate III,0411 222 333,WWC1234567E",
     "Michael,Brown,m.brown@centre.com.au,coordinator,Diploma of Early Childhood,0422 333 444,WWC7654321E",

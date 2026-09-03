@@ -11,6 +11,7 @@ export type StaffInputRole =
 
 export const StaffInputRole = {
   admin: "admin",
+  admin_support: "admin_support",
   educational_leader: "educational_leader",
   coordinator: "coordinator",
   educator: "educator",

@@ -98,21 +98,27 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
   }
   const ownSchoolDocumentPath = new RegExp(`^/schools/${user.siteId}/vital-records/\\d+/document$`);
   const ownSchoolStaffProfilePath = new RegExp(`^/schools/${user.siteId}/staff/\\d+$`);
+  const ownSchoolStaffRecordFilePath = new RegExp(
+    `^/schools/${user.siteId}/staff/\\d+/(?:photo|qualifications/\\d+/document)$`,
+  );
   const requestedServiceDocsSiteId = typeof req.query.siteId === "string" ? Number(req.query.siteId) : NaN;
   const ownServiceDocsListPath =
     req.path === "/service-docs/public" && requestedServiceDocsSiteId === user.siteId;
   const publicServiceDocsFilePath = req.path.startsWith("/service-docs/public/file/");
   const requestedQipSiteId = typeof req.query.siteId === "string" ? Number(req.query.siteId) : NaN;
   const ownQipPublicPath = req.path === "/qip/public" && requestedQipSiteId === user.siteId;
+  const ownSchoolReportPath = new RegExp(`^/school-reports/${user.siteId}/summaries(?:/\\d+/pdf)?$`);
   if (
     req.method === "GET" &&
     (
       req.path === `/schools/${user.siteId}/portal`
       || ownSchoolStaffProfilePath.test(req.path)
+      || ownSchoolStaffRecordFilePath.test(req.path)
       || ownSchoolDocumentPath.test(req.path)
       || ownServiceDocsListPath
       || publicServiceDocsFilePath
       || ownQipPublicPath
+      || ownSchoolReportPath.test(req.path)
     )
   ) {
     next();

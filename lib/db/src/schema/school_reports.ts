@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, serial, integer, text, date, timestamp, boolean, unique, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, date, timestamp, boolean, unique, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
 import { sitesTable } from "./sites";
 import { staffTable } from "./staff";
 
@@ -76,15 +76,17 @@ export const schoolReportSummariesTable = pgTable("school_report_summaries", {
   createdById: integer("created_by_id").references(() => staffTable.id, { onDelete: "set null" }),
   finalizedById: integer("finalized_by_id").references(() => staffTable.id, { onDelete: "set null" }),
   finalizedAt: timestamp("finalized_at", { withTimezone: true }),
+  archivedById: integer("archived_by_id").references(() => staffTable.id, { onDelete: "set null" }),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
-  unique("uq_school_report_summary_site_year_period").on(
+  uniqueIndex("uq_school_report_summary_current_site_year_period").on(
     table.siteId,
     table.reportYear,
     table.frequency,
     table.period,
-  ),
+  ).where(sql`${table.archivedAt} is null`),
 ]);
 
 export type SchoolReportTerm = typeof schoolReportTermsTable.$inferSelect;

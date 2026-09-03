@@ -7,8 +7,8 @@ export function usePermissions() {
   const role = user?.role ?? "";
   const isEducatorRole = EDUCATOR_ROLES.includes(role);
 
-  const isAdmin = role === "admin";
-  const isAdminOrEL = role === "admin" || role === "educational_leader";
+  const isAdmin = role === "admin" || role === "admin_support";
+  const isAdminOrEL = isAdmin || role === "educational_leader";
 
   return {
     isEducatorRole,

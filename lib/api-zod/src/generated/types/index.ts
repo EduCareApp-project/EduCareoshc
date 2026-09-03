@@ -77,6 +77,7 @@ export * from "./featureSettingsCalendarDefaultView";
 export * from "./featureSettingsNotificationChannelMap";
 export * from "./featureSettingsObservationsDefaultType";
 export * from "./featureSettingsPostsDefaultScope";
+export * from "./featureSettingsSchoolPortalVisibleTabsItem";
 export * from "./featureSettingsStoriesDefaultSharing";
 export * from "./fileCategory";
 export * from "./fileCategoryInput";

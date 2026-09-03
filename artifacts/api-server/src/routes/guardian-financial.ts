@@ -16,7 +16,7 @@ type FinancialStatus = (typeof VALID_STATUSES)[number];
 
 function requireAdmin(req: Request, res: Response): boolean {
   const user = req.session?.user;
-  if (!user || user.type !== "staff" || user.role !== "admin") {
+  if (!user || user.type !== "staff" || !["admin", "admin_support"].includes(user.role)) {
     res.status(403).json({ error: "Admin access required" });
     return false;
   }

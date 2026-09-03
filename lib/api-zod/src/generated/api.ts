@@ -422,7 +422,13 @@ export const ListStaffResponseItem = zod.object({
   firstName: zod.string(),
   lastName: zod.string(),
   email: zod.string(),
-  role: zod.enum(["admin", "educational_leader", "coordinator", "educator"]),
+  role: zod.enum([
+    "admin",
+    "admin_support",
+    "educational_leader",
+    "coordinator",
+    "educator",
+  ]),
   qualifications: zod.string(),
   status: zod.enum(["active", "inactive"]),
   phone: zod.string().nullish(),
@@ -450,7 +456,13 @@ export const CreateStaffBody = zod.object({
   firstName: zod.string(),
   lastName: zod.string(),
   email: zod.string(),
-  role: zod.enum(["admin", "educational_leader", "coordinator", "educator"]),
+  role: zod.enum([
+    "admin",
+    "admin_support",
+    "educational_leader",
+    "coordinator",
+    "educator",
+  ]),
   qualifications: zod.string(),
   status: zod
     .enum(["active", "inactive"])
@@ -470,7 +482,13 @@ export const GetStaffResponse = zod.object({
   firstName: zod.string(),
   lastName: zod.string(),
   email: zod.string(),
-  role: zod.enum(["admin", "educational_leader", "coordinator", "educator"]),
+  role: zod.enum([
+    "admin",
+    "admin_support",
+    "educational_leader",
+    "coordinator",
+    "educator",
+  ]),
   qualifications: zod.string(),
   status: zod.enum(["active", "inactive"]),
   phone: zod.string().nullish(),
@@ -500,7 +518,13 @@ export const UpdateStaffBody = zod.object({
   lastName: zod.string().optional(),
   email: zod.string().optional(),
   role: zod
-    .enum(["admin", "educational_leader", "coordinator", "educator"])
+    .enum([
+      "admin",
+      "admin_support",
+      "educational_leader",
+      "coordinator",
+      "educator",
+    ])
     .optional(),
   qualifications: zod.string().optional(),
   status: zod.enum(["active", "inactive"]).optional(),
@@ -518,7 +542,13 @@ export const UpdateStaffResponse = zod.object({
   firstName: zod.string(),
   lastName: zod.string(),
   email: zod.string(),
-  role: zod.enum(["admin", "educational_leader", "coordinator", "educator"]),
+  role: zod.enum([
+    "admin",
+    "admin_support",
+    "educational_leader",
+    "coordinator",
+    "educator",
+  ]),
   qualifications: zod.string(),
   status: zod.enum(["active", "inactive"]),
   phone: zod.string().nullish(),
@@ -552,7 +582,13 @@ export const ArchiveStaffResponse = zod.object({
   firstName: zod.string(),
   lastName: zod.string(),
   email: zod.string(),
-  role: zod.enum(["admin", "educational_leader", "coordinator", "educator"]),
+  role: zod.enum([
+    "admin",
+    "admin_support",
+    "educational_leader",
+    "coordinator",
+    "educator",
+  ]),
   qualifications: zod.string(),
   status: zod.enum(["active", "inactive"]),
   phone: zod.string().nullish(),
@@ -3693,6 +3729,10 @@ export const GetFeatureSettingsResponse = zod.object({
   staffCannotWorkQuals: zod.array(zod.string()).optional(),
   staffResponsiblePersonQuals: zod.array(zod.string()).optional(),
   staffEducatorQuals: zod.array(zod.string()).optional(),
+  schoolPortalVisibleTabs: zod
+    .array(zod.enum(["vital", "vecra", "staff", "reports", "qip"]))
+    .optional(),
+  schoolPortalVisibleQualificationNames: zod.array(zod.string()).optional(),
   childrenRequireMedicalNotes: zod.boolean().optional(),
   childrenShowDobOnProfile: zod.boolean().optional(),
   childDocumentTypes: zod.array(zod.string()).optional(),
@@ -3756,6 +3796,10 @@ export const UpdateFeatureSettingsBody = zod.object({
   staffCannotWorkQuals: zod.array(zod.string()).optional(),
   staffResponsiblePersonQuals: zod.array(zod.string()).optional(),
   staffEducatorQuals: zod.array(zod.string()).optional(),
+  schoolPortalVisibleTabs: zod
+    .array(zod.enum(["vital", "vecra", "staff", "reports", "qip"]))
+    .optional(),
+  schoolPortalVisibleQualificationNames: zod.array(zod.string()).optional(),
   childrenRequireMedicalNotes: zod.boolean().optional(),
   childrenShowDobOnProfile: zod.boolean().optional(),
   childDocumentTypes: zod.array(zod.string()).optional(),
@@ -3816,6 +3860,10 @@ export const UpdateFeatureSettingsResponse = zod.object({
   staffCannotWorkQuals: zod.array(zod.string()).optional(),
   staffResponsiblePersonQuals: zod.array(zod.string()).optional(),
   staffEducatorQuals: zod.array(zod.string()).optional(),
+  schoolPortalVisibleTabs: zod
+    .array(zod.enum(["vital", "vecra", "staff", "reports", "qip"]))
+    .optional(),
+  schoolPortalVisibleQualificationNames: zod.array(zod.string()).optional(),
   childrenRequireMedicalNotes: zod.boolean().optional(),
   childrenShowDobOnProfile: zod.boolean().optional(),
   childDocumentTypes: zod.array(zod.string()).optional(),

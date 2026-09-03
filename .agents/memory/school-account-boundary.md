@@ -11,4 +11,4 @@ Every newly created school vital record requires a supporting document. Store th
 
 **Why:** School users must never inherit the broad API access available to staff sessions or select another site's data, including documents attached to compliance records.
 
-**How to apply:** New school-facing features must derive site scope from the authenticated school session, enforce the restriction in the API rather than only the UI, and use both Home Site and Associated Sites when resolving school staff.
+**How to apply:** New school-facing features must derive site scope from the authenticated school session, enforce restrictions in the API rather than only the UI, and use both Home Site and Associated Sites when resolving school staff. Portal tabs and qualification types are organisation-configurable; disabled staff records must be filtered before response, and private staff files require Site-, association-, record-, and visibility-scoped download routes.

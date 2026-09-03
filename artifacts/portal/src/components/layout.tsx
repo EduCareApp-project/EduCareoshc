@@ -127,6 +127,7 @@ const ROLE_LABELS: Record<string, string> = {
   assistant: "Assistant",
   trainee: "Trainee",
   admin: "Admin",
+  admin_support: "Admin Support",
   coordinator: "Coordinator",
   educational_leader: "Educational Leader",
   room_leader: "Room Leader",
@@ -350,7 +351,7 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
     staleTime: 5 * 60 * 1000,
   });
 
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || user?.role === "admin_support";
   const disabledHrefs: string[] = isAdmin
     ? []
     : (accessSettings?.[user?.role ?? ""] ?? []);

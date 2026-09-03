@@ -14,11 +14,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Download, FileCheck2, Loader2, Save } from "lucide-react";
+import { Archive, Download, FileCheck2, Loader2, Save, Trash2 } from "lucide-react";
 import {
   type SchoolReportObligations,
   type SchoolReportSummary,
   useFinalizeSchoolReportSummary,
+  useArchiveSchoolReportSummary,
+  useDeleteSchoolReportSummary,
   useSaveSchoolReportObligations,
 } from "@/hooks/use-schools";
 import { Badge } from "@/components/ui/badge";
@@ -46,16 +48,21 @@ const CHART_COLORS = ["#2563eb", "#16a34a", "#f59e0b", "#8b5cf6", "#ef4444"];
 export function SchoolSummaryReport({
   siteId,
   report,
+  canManageLifecycle = false,
 }: {
   siteId: number;
   report: SchoolReportSummary;
+  canManageLifecycle?: boolean;
 }) {
   const { toast } = useToast();
   const saveObligations = useSaveSchoolReportObligations(siteId);
   const finalizeReport = useFinalizeSchoolReportSummary(siteId);
+  const archiveReport = useArchiveSchoolReportSummary(siteId);
+  const deleteReport = useDeleteSchoolReportSummary(siteId);
   const [obligations, setObligations] = useState(report.reportingObligations);
   const [confirmFinalizeOpen, setConfirmFinalizeOpen] = useState(false);
-  const locked = report.status === "finalized";
+  const [confirmAction, setConfirmAction] = useState<"archive" | "delete" | null>(null);
+  const locked = report.status === "finalized" || !!report.archivedAt;
   const hasUnsavedChanges = JSON.stringify(obligations) !== JSON.stringify(report.reportingObligations);
   const holidayProgramApplies = report.statistics.holidayProgramApplies !== false;
   const hasHolidayData = report.statistics.holidayWeekdayAverages.some((item) => item.value > 0);
@@ -99,26 +106,61 @@ export function SchoolSummaryReport({
     });
   }
 
+  function performLifecycleAction() {
+    const mutation = confirmAction === "archive" ? archiveReport : deleteReport;
+    mutation.mutate({ reportId: report.id, reportYear: report.reportYear }, {
+      onSuccess: () => {
+        const action = confirmAction;
+        setConfirmAction(null);
+        toast({
+          title: action === "archive" ? "Report archived" : "Report deleted",
+          description: action === "archive"
+            ? "A new report can now be generated for this period."
+            : "The report has been permanently deleted.",
+        });
+      },
+      onError: (error: Error) => toast({
+        title: confirmAction === "archive" ? "Unable to archive report" : "Unable to delete report",
+        description: error.message,
+        variant: "destructive",
+      }),
+    });
+  }
+
   return (
     <div className="mt-6 space-y-6 border-t pt-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-semibold">{report.periodLabel}</h3>
-            <Badge variant={locked ? "default" : "secondary"}>{locked ? "Finalised" : "Draft"}</Badge>
+            <Badge variant={report.archivedAt ? "outline" : locked ? "default" : "secondary"}>
+              {report.archivedAt ? "Archived" : locked ? "Finalised" : "Draft"}
+            </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
             {report.statistics.dateRange.start} to {report.statistics.dateRange.end}
           </p>
         </div>
-        {locked && (
-          <Button asChild>
-            <a href={`/api/school-reports/${siteId}/summaries/${report.id}/pdf`}>
-              <Download className="mr-2 h-4 w-4" />
-              Download PDF
-            </a>
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {report.status === "finalized" && (
+            <Button asChild>
+              <a href={`/api/school-reports/${siteId}/summaries/${report.id}/pdf`}>
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
+              </a>
+            </Button>
+          )}
+          {canManageLifecycle && !report.archivedAt && (
+            <Button variant="outline" onClick={() => setConfirmAction("archive")}>
+              <Archive className="mr-2 h-4 w-4" />Archive
+            </Button>
+          )}
+          {canManageLifecycle && (
+            <Button variant="destructive" onClick={() => setConfirmAction("delete")}>
+              <Trash2 className="mr-2 h-4 w-4" />Delete
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card>
@@ -205,7 +247,7 @@ export function SchoolSummaryReport({
         <CardHeader>
           <CardTitle>Reporting Obligations</CardTitle>
           <CardDescription>
-            {locked ? "This report has been finalised and is read-only." : "Complete each section, save your work, then finalise the report."}
+            {report.archivedAt ? "This report is archived and read-only." : locked ? "This report has been finalised and is read-only." : "Complete each section, save your work, then finalise the report."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -267,6 +309,29 @@ export function SchoolSummaryReport({
             <Button onClick={finalize} disabled={finalizeReport.isPending}>
               {finalizeReport.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Finalise report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={confirmAction !== null} onOpenChange={(open) => !open && setConfirmAction(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{confirmAction === "archive" ? "Archive this report?" : "Permanently delete this report?"}</DialogTitle>
+            <DialogDescription>
+              {confirmAction === "archive"
+                ? "School users will no longer see this report. Admins can keep it as history and generate a new report for the same period."
+                : "This cannot be undone. The report and its saved narrative will be permanently removed."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmAction(null)}>Cancel</Button>
+            <Button
+              variant={confirmAction === "delete" ? "destructive" : "default"}
+              onClick={performLifecycleAction}
+              disabled={archiveReport.isPending || deleteReport.isPending}
+            >
+              {(archiveReport.isPending || deleteReport.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {confirmAction === "archive" ? "Archive report" : "Delete report"}
             </Button>
           </DialogFooter>
         </DialogContent>

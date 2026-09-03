@@ -168,7 +168,11 @@ function deriveComplianceStatus(
 router.get("/reports/staff-compliance", async (req, res): Promise<void> => {
   try {
     const [allStaff, allPd, allQuals, orgRow] = await Promise.all([
-      db.select().from(staffTable).where(and(eq(staffTable.status, "active"), ne(staffTable.isSuperAdmin, true))),
+      db.select().from(staffTable).where(and(
+        eq(staffTable.status, "active"),
+        ne(staffTable.isSuperAdmin, true),
+        ne(staffTable.role, "admin_support"),
+      )),
       db.select().from(professionalDevelopmentTable),
       db.select().from(staffQualificationsTable),
       db.select({ featureSettings: organisationTable.featureSettings }).from(organisationTable).limit(1),
@@ -220,6 +224,7 @@ router.get("/reports/staff-compliance", async (req, res): Promise<void> => {
     const expiringQualifications = allQuals
       .filter((q) => {
         if (q.archivedAt) return false;
+        if (!staffById.has(q.staffId)) return false;
         if (!q.expiryDate) return false;
         const d = toDateStr(q.expiryDate);
         return d >= todayStr && d <= windowEndStr;
@@ -271,7 +276,11 @@ router.get("/reports/qualification-check", async (req, res): Promise<void> => {
 
   try {
     const [activeStaff, allQuals] = await Promise.all([
-      db.select().from(staffTable).where(and(eq(staffTable.status, "active"), ne(staffTable.isSuperAdmin, true))),
+      db.select().from(staffTable).where(and(
+        eq(staffTable.status, "active"),
+        ne(staffTable.isSuperAdmin, true),
+        ne(staffTable.role, "admin_support"),
+      )),
       db.select().from(staffQualificationsTable),
     ]);
 

@@ -52,12 +52,19 @@ export default function AddStaff() {
       associatedSiteIds: [],
     },
   });
+  const selectedRole = form.watch("role");
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     const { siteId, ...rest } = data;
+    const isAdminSupport = data.role === "admin_support";
     const payload = {
       ...rest,
-      ...(siteId && siteId !== "none" ? { siteId: parseInt(siteId, 10) } : {}),
+      associatedSiteIds: isAdminSupport ? [] : rest.associatedSiteIds,
+      siteId: isAdminSupport
+        ? null
+        : siteId && siteId !== "none"
+          ? parseInt(siteId, 10)
+          : null,
     };
     createStaff.mutate(
       { data: payload as any },
@@ -127,7 +134,7 @@ export default function AddStaff() {
                   </Select>
                 <FormMessage /></FormItem>
               )} />
-              <FormField control={form.control} name="siteId" render={({ field }) => (
+              {selectedRole !== "admin_support" && <FormField control={form.control} name="siteId" render={({ field }) => (
                 <FormItem><FormLabel>Home Site (Optional)</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value ?? "none"}>
                     <FormControl><SelectTrigger><SelectValue placeholder="No site assigned" /></SelectTrigger></FormControl>
@@ -139,8 +146,8 @@ export default function AddStaff() {
                     </SelectContent>
                   </Select>
                 <FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="associatedSiteIds" render={({ field }) => (
+              )} />}
+              {selectedRole !== "admin_support" && <FormField control={form.control} name="associatedSiteIds" render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Associated Sites (Optional)</FormLabel>
                   <div className="border rounded-md bg-background">
@@ -175,7 +182,7 @@ export default function AddStaff() {
                   </div>
                   <FormMessage />
                 </FormItem>
-              )} />
+              )} />}
               <FormField control={form.control} name="qualifications" render={({ field }) => (
                 <FormItem className="sm:col-span-2"><FormLabel>Qualifications</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />

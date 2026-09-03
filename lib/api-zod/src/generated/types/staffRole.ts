@@ -10,6 +10,7 @@ export type StaffRole = (typeof StaffRole)[keyof typeof StaffRole];
 
 export const StaffRole = {
   admin: "admin",
+  admin_support: "admin_support",
   educational_leader: "educational_leader",
   coordinator: "coordinator",
   educator: "educator",

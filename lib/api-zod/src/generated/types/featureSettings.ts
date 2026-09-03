@@ -9,6 +9,7 @@ import type { FeatureSettingsCalendarDefaultView } from "./featureSettingsCalend
 import type { FeatureSettingsNotificationChannelMap } from "./featureSettingsNotificationChannelMap";
 import type { FeatureSettingsObservationsDefaultType } from "./featureSettingsObservationsDefaultType";
 import type { FeatureSettingsPostsDefaultScope } from "./featureSettingsPostsDefaultScope";
+import type { FeatureSettingsSchoolPortalVisibleTabsItem } from "./featureSettingsSchoolPortalVisibleTabsItem";
 import type { FeatureSettingsStoriesDefaultSharing } from "./featureSettingsStoriesDefaultSharing";
 
 export interface FeatureSettings {
@@ -26,6 +27,8 @@ export interface FeatureSettings {
   staffCannotWorkQuals?: string[];
   staffResponsiblePersonQuals?: string[];
   staffEducatorQuals?: string[];
+  schoolPortalVisibleTabs?: FeatureSettingsSchoolPortalVisibleTabsItem[];
+  schoolPortalVisibleQualificationNames?: string[];
   childrenRequireMedicalNotes?: boolean;
   childrenShowDobOnProfile?: boolean;
   childDocumentTypes?: string[];

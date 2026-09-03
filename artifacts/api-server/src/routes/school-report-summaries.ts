@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import {
   db,
   schoolReportRowsTable,
@@ -17,7 +17,7 @@ import { createSchoolReportPdf } from "../lib/schoolReportPdf";
 import { refreshDraftSchoolReportSummaries } from "../lib/refreshDraftSchoolReportSummaries";
 
 const router: IRouter = Router();
-const REPORT_MANAGER_ROLES = new Set(["admin", "educational_leader"]);
+const REPORT_MANAGER_ROLES = new Set(["admin", "admin_support", "educational_leader"]);
 const OBLIGATION_KEYS: Array<keyof SchoolReportObligations> = [
   "learningPlayProgramHighlights",
   "teamServiceLeadership",
@@ -42,6 +42,17 @@ function isReportManager(req: Request): boolean {
 function requireReportManager(req: Request, res: Response): boolean {
   if (!isReportManager(req)) {
     res.status(403).json({ error: "Admin or Educational Leader access required" });
+    return false;
+  }
+  return true;
+}
+
+function requireAdmin(req: Request, res: Response): boolean {
+  if (
+    req.session.user?.type !== "staff"
+    || !["admin", "admin_support"].includes(req.session.user.role)
+  ) {
+    res.status(403).json({ error: "Admin access required" });
     return false;
   }
   return true;
@@ -75,9 +86,13 @@ router.get("/school-reports/:siteId/summaries", async (req, res): Promise<void> 
   }
   try {
     await refreshDraftSchoolReportSummaries(siteId, reportYear);
+    const visibility = req.session.user?.type === "school"
+      ? isNull(schoolReportSummariesTable.archivedAt)
+      : undefined;
     const reports = await db.select().from(schoolReportSummariesTable).where(and(
       eq(schoolReportSummariesTable.siteId, siteId),
       eq(schoolReportSummariesTable.reportYear, reportYear),
+      visibility,
     )).orderBy(asc(schoolReportSummariesTable.createdAt));
     res.json(reports);
   } catch (error) {
@@ -129,6 +144,7 @@ router.post("/school-reports/:siteId/summaries", async (req, res): Promise<void>
       eq(schoolReportSummariesTable.reportYear, reportYear),
       eq(schoolReportSummariesTable.frequency, frequency),
       eq(schoolReportSummariesTable.period, period),
+      isNull(schoolReportSummariesTable.archivedAt),
     )).limit(1);
     if (existing?.status === "finalized") {
       res.status(409).json({ error: "This report has already been finalised" });
@@ -185,6 +201,10 @@ router.put("/school-reports/:siteId/summaries/:reportId", async (req, res): Prom
       res.status(404).json({ error: "Report not found" });
       return;
     }
+    if (report.archivedAt) {
+      res.status(409).json({ error: "Archived reports cannot be edited" });
+      return;
+    }
     if (report.status === "finalized") {
       res.status(409).json({ error: "Finalised reports cannot be edited" });
       return;
@@ -215,6 +235,10 @@ router.post("/school-reports/:siteId/summaries/:reportId/finalize", async (req, 
     )).limit(1);
     if (!report) {
       res.status(404).json({ error: "Report not found" });
+      return;
+    }
+    if (report.archivedAt) {
+      res.status(409).json({ error: "Archived reports cannot be finalised" });
       return;
     }
     if (report.status === "finalized") {
@@ -255,6 +279,10 @@ router.get("/school-reports/:siteId/summaries/:reportId/pdf", async (req, res): 
       res.status(404).json({ error: "Report not found" });
       return;
     }
+    if (req.session.user?.type === "school" && report.archivedAt) {
+      res.status(404).json({ error: "Report not found" });
+      return;
+    }
     if (report.status !== "finalized") {
       res.status(409).json({ error: "Finalize the report before downloading its PDF" });
       return;
@@ -270,6 +298,59 @@ router.get("/school-reports/:siteId/summaries/:reportId/pdf", async (req, res): 
   } catch (error) {
     req.log.error({ error, siteId, reportId }, "Failed to create school report PDF");
     res.status(500).json({ error: "Failed to create report PDF" });
+  }
+});
+
+router.post("/school-reports/:siteId/summaries/:reportId/archive", async (req, res): Promise<void> => {
+  if (!requireAdmin(req, res)) return;
+  const siteId = parsePositiveInteger(req.params.siteId);
+  const reportId = parsePositiveInteger(req.params.reportId);
+  if (!siteId || !reportId) {
+    res.status(400).json({ error: "Invalid site or report" });
+    return;
+  }
+  try {
+    const [archived] = await db.update(schoolReportSummariesTable).set({
+      archivedAt: new Date(),
+      archivedById: req.session.user!.id,
+      updatedAt: new Date(),
+    }).where(and(
+      eq(schoolReportSummariesTable.id, reportId),
+      eq(schoolReportSummariesTable.siteId, siteId),
+      isNull(schoolReportSummariesTable.archivedAt),
+    )).returning();
+    if (!archived) {
+      res.status(404).json({ error: "Current report not found" });
+      return;
+    }
+    res.json(archived);
+  } catch (error) {
+    req.log.error({ error, siteId, reportId }, "Failed to archive school report");
+    res.status(500).json({ error: "Failed to archive report" });
+  }
+});
+
+router.delete("/school-reports/:siteId/summaries/:reportId", async (req, res): Promise<void> => {
+  if (!requireAdmin(req, res)) return;
+  const siteId = parsePositiveInteger(req.params.siteId);
+  const reportId = parsePositiveInteger(req.params.reportId);
+  if (!siteId || !reportId) {
+    res.status(400).json({ error: "Invalid site or report" });
+    return;
+  }
+  try {
+    const [deleted] = await db.delete(schoolReportSummariesTable).where(and(
+      eq(schoolReportSummariesTable.id, reportId),
+      eq(schoolReportSummariesTable.siteId, siteId),
+    )).returning({ id: schoolReportSummariesTable.id });
+    if (!deleted) {
+      res.status(404).json({ error: "Report not found" });
+      return;
+    }
+    res.status(204).send();
+  } catch (error) {
+    req.log.error({ error, siteId, reportId }, "Failed to delete school report");
+    res.status(500).json({ error: "Failed to delete report" });
   }
 });
 

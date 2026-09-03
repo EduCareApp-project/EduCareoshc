@@ -74,7 +74,7 @@ function dateRangeLabel(start: string | null, end: string | null): string {
   return `${format(parseISO(start), "d MMM")} – ${format(parseISO(end), "d MMM yyyy")}`;
 }
 
-export function SchoolReportsPanel({ siteId }: { siteId: number }) {
+export function SchoolReportsPanel({ siteId, isAdmin = false }: { siteId: number; isAdmin?: boolean }) {
   const { toast } = useToast();
   const [reportYear, setReportYear] = useState(() => new Date().getFullYear());
   const { data, isLoading, isError } = useGetSchoolReports(siteId, reportYear);
@@ -484,7 +484,7 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
             </div>
           )}
           {selectedSummaryReport && (
-            <SchoolSummaryReport siteId={siteId} report={selectedSummaryReport} />
+            <SchoolSummaryReport siteId={siteId} report={selectedSummaryReport} canManageLifecycle={isAdmin} />
           )}
         </CardContent>
       </Card>
@@ -614,6 +614,58 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+export function SchoolCurrentReportsPanel({ siteId }: { siteId: number }) {
+  const [reportYear, setReportYear] = useState(() => new Date().getFullYear());
+  const { data: reports = [], isLoading } = useGetSchoolReportSummaries(siteId, reportYear);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const selected = reports.find((report) => report.id === selectedId) ?? reports[0] ?? null;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold">School Reports</h3>
+          <p className="text-sm text-muted-foreground">View the current reports shared with your school.</p>
+        </div>
+        <div className="flex items-center rounded-lg border bg-background p-1 shadow-sm">
+          <Button variant="ghost" size="icon" onClick={() => { setReportYear((year) => year - 1); setSelectedId(null); }}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="min-w-20 px-3 text-center text-sm font-semibold">{reportYear}</span>
+          <Button variant="ghost" size="icon" onClick={() => { setReportYear((year) => year + 1); setSelectedId(null); }}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Current reports</CardTitle>
+          <CardDescription>Archived versions are available to Admin users only.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? <Skeleton className="h-20 w-full" /> : reports.length === 0 ? (
+            <div className="rounded-lg border border-dashed px-5 py-8 text-center text-sm text-muted-foreground">
+              No report is currently available for {reportYear}.
+            </div>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {reports.map((report) => (
+                <button key={report.id} type="button" onClick={() => setSelectedId(report.id)}
+                  className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-left ${selected?.id === report.id ? "border-primary bg-primary/5" : "bg-muted/30"}`}>
+                  <FileText className="h-4 w-4 text-primary" />
+                  <span className="flex-1 text-sm font-medium">{report.periodLabel}</span>
+                  <Badge variant={report.status === "finalized" ? "default" : "secondary"}>{report.status === "finalized" ? "Finalised" : "Draft"}</Badge>
+                </button>
+              ))}
+            </div>
+          )}
+          {selected && <SchoolSummaryReport siteId={siteId} report={selected} />}
+        </CardContent>
+      </Card>
     </div>
   );
 }

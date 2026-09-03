@@ -218,7 +218,7 @@ router.patch("/reports/system-access/school/:id/username", async (req, res): Pro
   }
 });
 
-const ADMIN_ROLES = new Set(["director", "admin", "coordinator", "educational_leader"]);
+const ADMIN_ROLES = new Set(["director", "admin", "admin_support", "coordinator", "educational_leader"]);
 
 function requireAdminStaff(req: any, res: any): boolean {
   const user = req.session?.user;

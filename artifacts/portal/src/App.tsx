@@ -93,6 +93,7 @@ import SettingsEvacuationConfig from "@/pages/settings-evacuation-config";
 import SettingsPoliciesConfig from "@/pages/settings-policies-config";
 import SettingsBrandKit from "@/pages/settings-brand-kit";
 import SettingsProductOverview from "@/pages/settings-product-overview";
+import SettingsSchoolPortal from "@/pages/settings-school-portal";
 import MyProfile from "@/pages/my-profile";
 import Appraisals from "@/pages/appraisals";
 import AppraisalDetail from "@/pages/appraisal-detail";
@@ -245,6 +246,7 @@ function StaffRoutes() {
         <Route path="/settings/data-import" component={SettingsDataImport} />
         <Route path="/settings/guardians" component={SettingsGuardians} />
         <Route path="/settings/staff" component={SettingsStaffConfig} />
+        <Route path="/settings/school-portal" component={SettingsSchoolPortal} />
         <Route path="/settings/posts" component={SettingsPostsConfig} />
         <Route path="/settings/observations" component={SettingsObservationsConfig} />
         <Route path="/settings/learning-stories" component={SettingsLearningStoriesConfig} />

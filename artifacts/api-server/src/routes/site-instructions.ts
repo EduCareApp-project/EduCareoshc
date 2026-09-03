@@ -4,7 +4,7 @@ import { db, siteInstructionsTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
-const ADMIN_ROLES = new Set(["admin", "educational_leader"]);
+const ADMIN_ROLES = new Set(["admin", "admin_support", "educational_leader"]);
 
 function canEdit(req: any): boolean {
   const user = req.session?.user;

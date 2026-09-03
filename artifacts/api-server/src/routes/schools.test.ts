@@ -50,6 +50,7 @@ const { mockDb, queuePortalQueries, whereCalls } = vi.hoisted(() => {
 
 vi.mock("@workspace/db", () => ({
   db: mockDb,
+  organisationTable: { featureSettings: "organisation.feature_settings" },
   schoolAccountsTable: {
     siteId: "school_accounts.site_id",
     username: "school_accounts.username",
@@ -80,6 +81,7 @@ vi.mock("@workspace/db", () => ({
     status: "staff_qualifications.status",
     referenceNumber: "staff_qualifications.reference_number",
     expiryDate: "staff_qualifications.expiry_date",
+    documentPath: "staff_qualifications.document_path",
     archivedAt: "staff_qualifications.archived_at",
     createdAt: "staff_qualifications.created_at",
   },
@@ -92,6 +94,7 @@ vi.mock("drizzle-orm", () => ({
   eq: (column: unknown, value: unknown) => `eq(${String(column)},${String(value)})`,
   inArray: (column: unknown, values: unknown[]) => `inArray(${String(column)},${values.join(",")})`,
   isNull: (column: unknown) => `isNull(${String(column)})`,
+  ne: (column: unknown, value: unknown) => `ne(${String(column)},${String(value)})`,
   or: (...predicates: unknown[]) => `or(${predicates.join(",")})`,
 }));
 
@@ -110,12 +113,13 @@ function staffMember(
   firstName: string,
   siteId: number,
   status: "active" | "inactive" = "active",
+  role = "educator",
 ) {
   return {
     id,
     firstName,
     lastName: "Educator",
-    role: "educator",
+    role,
     qualifications: "Certificate III",
     status,
     siteId,
@@ -128,6 +132,10 @@ function queueTargetPortalData() {
   const associatedStaff = staffMember(102, "Associated", OTHER_SITE.id);
   const unrelatedStaff = staffMember(103, "Unrelated", THIRD_SITE.id);
   const inactiveStaff = staffMember(104, "Inactive", OTHER_SITE.id, "inactive");
+  const homeCoordinator = staffMember(105, "Coordinator", TARGET_SITE.id, "active", "coordinator");
+  const educationalLeader = staffMember(106, "Leader", OTHER_SITE.id, "active", "educational_leader");
+  const admin = staffMember(107, "Admin", TARGET_SITE.id, "active", "admin");
+  const adminSupport = staffMember(108, "Support", TARGET_SITE.id, "active", "admin_support");
 
   queuePortalQueries([
     [TARGET_SITE],
@@ -135,20 +143,37 @@ function queueTargetPortalData() {
       { staffId: homeStaff.id },
       { staffId: associatedStaff.id },
       { staffId: inactiveStaff.id },
+      { staffId: educationalLeader.id },
     ],
-    [homeStaff, associatedStaff],
+    [adminSupport, admin, associatedStaff, educationalLeader, homeStaff, homeCoordinator],
     [],
     [],
     [{ username: "target-school", blockedAt: null, lastLoginAt: null }],
+    [{
+      featureSettings: {
+        schoolPortalVisibleTabs: ["staff", "reports"],
+        schoolPortalVisibleQualificationNames: ["First Aid"],
+      },
+    }],
     [
       // A stale Home Site association must not be returned as an Associated Site.
       { staffId: homeStaff.id, id: TARGET_SITE.id, name: TARGET_SITE.name },
       { staffId: homeStaff.id, id: OTHER_SITE.id, name: OTHER_SITE.name },
       { staffId: associatedStaff.id, id: TARGET_SITE.id, name: TARGET_SITE.name },
+      { staffId: educationalLeader.id, id: TARGET_SITE.id, name: TARGET_SITE.name },
     ],
   ]);
 
-  return { homeStaff, associatedStaff, unrelatedStaff, inactiveStaff };
+  return {
+    homeStaff,
+    associatedStaff,
+    unrelatedStaff,
+    inactiveStaff,
+    homeCoordinator,
+    educationalLeader,
+    admin,
+    adminSupport,
+  };
 }
 
 function buildTestApp(user: {
@@ -181,7 +206,16 @@ describe("GET /api/schools/:siteId/portal staff scope", () => {
   });
 
   it("includes active Home Site and Associated Site staff, while excluding unrelated and inactive staff", async () => {
-    const { homeStaff, associatedStaff, unrelatedStaff, inactiveStaff } = queueTargetPortalData();
+    const {
+      homeStaff,
+      associatedStaff,
+      unrelatedStaff,
+      inactiveStaff,
+      homeCoordinator,
+      educationalLeader,
+      admin,
+      adminSupport,
+    } = queueTargetPortalData();
 
     const response = await request(
       buildTestApp({
@@ -196,18 +230,26 @@ describe("GET /api/schools/:siteId/portal staff scope", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.staff.map((member: { id: number }) => member.id)).toEqual([
+      homeCoordinator.id,
       homeStaff.id,
       associatedStaff.id,
+      educationalLeader.id,
+      admin.id,
     ]);
     expect(response.body.staff.map((member: { id: number }) => member.id)).not.toContain(unrelatedStaff.id);
     expect(response.body.staff.map((member: { id: number }) => member.id)).not.toContain(inactiveStaff.id);
+    expect(response.body.staff.map((member: { id: number }) => member.id)).not.toContain(adminSupport.id);
 
     const homeResult = response.body.staff.find((member: { id: number }) => member.id === homeStaff.id);
     const associatedResult = response.body.staff.find((member: { id: number }) => member.id === associatedStaff.id);
     expect(homeResult.associatedSites).toEqual([{ id: OTHER_SITE.id, name: OTHER_SITE.name }]);
     expect(associatedResult.associatedSites).toEqual([{ id: TARGET_SITE.id, name: TARGET_SITE.name }]);
+    expect(response.body.portalSettings).toEqual({
+      visibleTabs: ["staff", "reports"],
+      visibleQualificationNames: ["First Aid"],
+    });
     expect(whereCalls.map(String)).toContain(
-      "and(or(eq(staff.site_id,1),inArray(staff.id,101,102,104)),eq(staff.status,active),eq(staff.is_super_admin,false))",
+      "and(or(eq(staff.site_id,1),inArray(staff.id,101,102,104,106)),eq(staff.status,active),eq(staff.is_super_admin,false),ne(staff.role,admin_support))",
     );
   });
 
@@ -250,7 +292,14 @@ describe("GET /api/schools/:siteId/staff/:staffId profile", () => {
       referenceNumber: "DIP-501",
       expiryDate: null,
     };
-    queuePortalQueries([[member], [qualification]]);
+    queuePortalQueries([
+      [member],
+      [{ featureSettings: {
+        schoolPortalVisibleTabs: ["staff"],
+        schoolPortalVisibleQualificationNames: [qualification.name],
+      } }],
+      [qualification],
+    ]);
 
     const response = await request(
       buildTestApp({
@@ -269,12 +318,48 @@ describe("GET /api/schools/:siteId/staff/:staffId profile", () => {
       email: member.email,
       phone: member.phone,
       bio: member.bio,
-      profilePicturePath: member.profilePicturePath,
+      profilePicturePath: null,
+      hasProfilePicture: true,
     });
-    expect(response.body.qualifications).toEqual([qualification]);
+    expect(response.body.qualifications).toEqual([{
+      ...qualification,
+      hasDocument: false,
+    }]);
     expect(whereCalls.map(String)).toContain(
-      "and(eq(staff_qualifications.staff_id,101),isNull(staff_qualifications.archived_at))",
+      `and(eq(staff_qualifications.staff_id,101),isNull(staff_qualifications.archived_at),inArray(staff_qualifications.name,${qualification.name}))`,
     );
+  });
+
+  it("returns no qualification records when the school qualification list is empty", async () => {
+    const member = {
+      ...staffMember(101, "Home", TARGET_SITE.id),
+      email: "home@example.com",
+      phone: null,
+      bio: null,
+      profilePicturePath: null,
+    };
+    queuePortalQueries([
+      [member],
+      [{ featureSettings: {
+        schoolPortalVisibleTabs: ["staff"],
+        schoolPortalVisibleQualificationNames: [],
+      } }],
+    ]);
+
+    const response = await request(
+      buildTestApp({
+        id: 900,
+        type: "school",
+        role: "school",
+        siteId: TARGET_SITE.id,
+        email: "target-school",
+        name: TARGET_SITE.name,
+      }),
+    ).get(`/api/schools/${TARGET_SITE.id}/staff/${member.id}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.qualifications).toEqual([]);
+    expect(mockDb.select).toHaveBeenCalledTimes(2);
   });
 
   it("does not expose a staff member who is not assigned or associated with the site", async () => {

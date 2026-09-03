@@ -132,7 +132,7 @@ function ReportCard({ report }: { report: ClickUpReport }) {
 
 export default function ClickUpReports() {
   const { user } = useAuth();
-  if (!user || user.type !== "staff" || user.role !== "admin") {
+  if (!user || user.type !== "staff" || !["admin", "admin_support"].includes(user.role)) {
     return <Redirect to="/" />;
   }
 

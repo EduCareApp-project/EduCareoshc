@@ -52,7 +52,7 @@ import {
   CANNOT_WORK_QUALS,
 } from "@/lib/qual-level";
 
-const ROLE_LABELS: Record<string, string> = { admin: "Admin", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
+const ROLE_LABELS: Record<string, string> = { admin: "Admin", admin_support: "Admin Support", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
 
 function safePdDate(completedAt: string | null | undefined): string {
   if (!completedAt) return "—";
@@ -185,12 +185,16 @@ export default function StaffProfile() {
           lastName: profileEditForm.lastName,
           email: profileEditForm.email,
           phone: profileEditForm.phone || undefined,
-          role: profileEditForm.role as "admin" | "educational_leader" | "coordinator" | "educator",
+          role: profileEditForm.role as "admin" | "admin_support" | "educational_leader" | "coordinator" | "educator",
           status: profileEditForm.status as "active" | "inactive",
           qualifications: profileEditForm.qualifications,
           wwccNumber: profileEditForm.wwccNumber || undefined,
-          siteId: profileEditForm.siteId ? parseInt(profileEditForm.siteId) : null,
-          associatedSiteIds: profileEditForm.associatedSiteIds,
+          siteId: profileEditForm.role === "admin_support"
+            ? null
+            : profileEditForm.siteId
+              ? parseInt(profileEditForm.siteId)
+              : null,
+          associatedSiteIds: profileEditForm.role === "admin_support" ? [] : profileEditForm.associatedSiteIds,
         },
       });
       await queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}`] });
@@ -1171,7 +1175,7 @@ export default function StaffProfile() {
 
       {/* Edit Profile Dialog */}
       <Dialog open={profileEditOpen} onOpenChange={setProfileEditOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />Edit Profile
@@ -1227,7 +1231,7 @@ export default function StaffProfile() {
               <Label>WWCC Number</Label>
               <Input value={profileEditForm.wwccNumber} onChange={(e) => setProfileEditForm((f) => ({ ...f, wwccNumber: e.target.value }))} placeholder="e.g. WWC1234567A" />
             </div>
-            {!isEducatorRole && (
+            {!isEducatorRole && profileEditForm.role !== "admin_support" && (
               <>
                 <div className="space-y-1.5">
                   <Label>Home Site / Location</Label>

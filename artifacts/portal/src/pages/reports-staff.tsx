@@ -62,6 +62,7 @@ export default function ReportsStaff() {
     assistant: "Assistant",
     trainee: "Trainee",
     admin: "Admin",
+    admin_support: "Admin Support",
     coordinator: "Coordinator",
     educational_leader: "Educational Leader",
     room_leader: "Room Leader",

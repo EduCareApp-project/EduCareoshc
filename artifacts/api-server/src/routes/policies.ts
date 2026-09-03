@@ -30,7 +30,7 @@ router.post("/policies", async (req, res): Promise<void> => {
 
     const targetRoles = policy.notifyRoles
       ? policy.notifyRoles.split(",").map((r) => r.trim()).filter(Boolean)
-      : ["admin", "educational_leader", "coordinator", "educator"];
+      : ["admin", "admin_support", "educational_leader", "coordinator", "educator"];
     const allStaff = await db.select({ id: staffTable.id, role: staffTable.role })
       .from(staffTable).where(eq(staffTable.status, "active"));
     for (const s of allStaff.filter((s) => targetRoles.includes(s.role))) {

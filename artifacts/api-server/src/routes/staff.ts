@@ -62,7 +62,10 @@ router.get("/staff", async (req, res): Promise<void> => {
       .from(staffTable)
       .where(ne(staffTable.isSuperAdmin, true))
       .orderBy(staffTable.lastName);
-    res.json(ListStaffResponse.parse(await addAssociatedSites(staff)));
+    const visibleStaff = isEducatorRole(req.session.user?.role)
+      ? staff.filter((member) => member.role !== "admin_support")
+      : staff;
+    res.json(ListStaffResponse.parse(await addAssociatedSites(visibleStaff)));
   } catch (err) {
     req.log.error({ err }, "Failed to fetch staff");
     res.status(500).json({ error: "Failed to fetch staff" });
@@ -76,9 +79,14 @@ router.post("/staff", async (req, res): Promise<void> => {
     return;
   }
   try {
-    const { associatedSiteIds, ...staffData } = parsed.data;
+    const { associatedSiteIds, ...parsedStaffData } = parsed.data;
+    const staffData = parsedStaffData.role === "admin_support"
+      ? { ...parsedStaffData, siteId: null }
+      : parsedStaffData;
     const [member] = await db.insert(staffTable).values(staffData).returning();
-    if (associatedSiteIds !== undefined) {
+    if (staffData.role === "admin_support") {
+      await replaceAssociatedSites(member.id, []);
+    } else if (associatedSiteIds !== undefined) {
       await replaceAssociatedSites(member.id, associatedSiteIds.filter((siteId) => siteId !== member.siteId));
     }
     const [withSites] = await addAssociatedSites([member]);
@@ -98,6 +106,10 @@ router.get("/staff/:id", async (req, res): Promise<void> => {
   try {
     const [member] = await db.select().from(staffTable).where(eq(staffTable.id, params.data.id));
     if (!member) {
+      res.status(404).json({ error: "Staff member not found" });
+      return;
+    }
+    if (isEducatorRole(req.session.user?.role) && member.role === "admin_support") {
       res.status(404).json({ error: "Staff member not found" });
       return;
     }
@@ -129,8 +141,11 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
     const user = req.session?.user;
     const { associatedSiteIds, ...staffFields } = parsed.data;
     const updateData = { ...staffFields };
+    const targetRole = staffFields.role ?? existing?.role;
     if (isEducatorRole(user?.role)) {
       delete (updateData as any).siteId;
+    } else if (targetRole === "admin_support") {
+      updateData.siteId = null;
     }
     const [member] = await db
       .update(staffTable)
@@ -141,7 +156,9 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Staff member not found" });
       return;
     }
-    if (associatedSiteIds !== undefined && !isEducatorRole(user?.role)) {
+    if (targetRole === "admin_support") {
+      await replaceAssociatedSites(member.id, []);
+    } else if (associatedSiteIds !== undefined && !isEducatorRole(user?.role)) {
       await replaceAssociatedSites(member.id, associatedSiteIds.filter((siteId) => siteId !== member.siteId));
     }
     const [withSites] = await addAssociatedSites([member]);

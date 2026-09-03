@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import {
   db,
   schoolReportRowsTable,
@@ -11,7 +11,7 @@ import { calculateReportWeekBeginnings, isValidDateRange } from "../lib/schoolRe
 import { calculateSchoolReportStatistics } from "../lib/schoolReportStatistics";
 
 const router: IRouter = Router();
-const REPORT_MANAGER_ROLES = new Set(["admin", "educational_leader"]);
+const REPORT_MANAGER_ROLES = new Set(["admin", "admin_support", "educational_leader"]);
 
 function isReportManager(req: Request): boolean {
   return req.session.user?.type === "staff" && REPORT_MANAGER_ROLES.has(req.session.user.role);
@@ -389,6 +389,7 @@ router.put("/school-reports/:siteId/terms/:termNumber/attendance", async (req, r
         eq(schoolReportSummariesTable.siteId, siteId),
         eq(schoolReportSummariesTable.reportYear, reportYear),
         eq(schoolReportSummariesTable.status, "draft"),
+        isNull(schoolReportSummariesTable.archivedAt),
       ));
       const affectedReports = draftReports.filter((report) =>
         report.statistics.termNumbers.includes(termNumber),

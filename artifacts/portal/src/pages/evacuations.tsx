@@ -222,6 +222,7 @@ export default function Evacuations() {
         setOpen(false);
         resetForm();
         queryClient.invalidateQueries({ queryKey: ["/api/evacuations"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/reports/service-compliance"] });
         toast({ title: "Drill record saved" });
       },
       onError: () => toast({ title: "Failed to save drill record", variant: "destructive" }),
@@ -495,6 +496,7 @@ function ArchivedDrillRow({ evac }: { evac: EvacRecord }) {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/evacuations"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/reports/service-compliance"] });
         toast({ title: "Record deleted" });
       },
       onError: () => toast({ title: "Failed to delete record", variant: "destructive" }),
@@ -557,6 +559,7 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/evacuations"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/reports/service-compliance"] });
         toast({ title: "Record deleted" });
       },
       onError: () => toast({ title: "Failed to delete record", variant: "destructive" }),
@@ -566,6 +569,7 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/evacuations"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/reports/service-compliance"] });
         toast({ title: "Record archived" });
       },
       onError: () => toast({ title: "Failed to archive record", variant: "destructive" }),
@@ -641,6 +645,7 @@ function DrillCard({ evac, sites, staff }: { evac: EvacRecord; sites: SiteItem[]
       onSuccess: () => {
         setEditOpen(false);
         queryClient.invalidateQueries({ queryKey: ["/api/evacuations"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/reports/service-compliance"] });
         toast({ title: "Record updated" });
       },
       onError: () => toast({ title: "Failed to update record", variant: "destructive" }),

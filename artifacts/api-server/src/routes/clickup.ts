@@ -36,7 +36,7 @@ function extractDate(taskName: string, dateCreatedMs: string): string {
 
 router.get("/clickup/service-reports", async (req, res): Promise<void> => {
   const user = req.session?.user;
-  if (!user || user.type !== "staff" || user.role !== "admin") {
+  if (!user || user.type !== "staff" || !["admin", "admin_support"].includes(user.role)) {
     res.status(403).json({ error: "Admin access only." });
     return;
   }

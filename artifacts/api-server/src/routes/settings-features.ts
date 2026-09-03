@@ -3,6 +3,23 @@ import { eq } from "drizzle-orm";
 import { db, organisationTable, type FeatureSettings } from "@workspace/db";
 
 const router: IRouter = Router();
+const DEFAULT_SCHOOL_QUALIFICATIONS = [
+  "Child Safety - Foundation Child Safety Training (GECCKO)",
+  "Child Safety - Mandatory Reporting and Other Obligations",
+  "Child Wellbeing",
+  "CPR Renewal",
+  "Education Qualifications",
+  "First Aid",
+  "Food Safety",
+  "History & Compliance",
+  "Managing Challenging Behaviour (DET)",
+  "National Police Check",
+  "Responsible Person Declaration",
+  "Resume",
+  "Risk Management (DET)",
+  "Staff Details (DET)",
+  "WWCC",
+];
 
 const DEFAULTS: Required<FeatureSettings> = {
   guardianAllowComments: true,
@@ -17,6 +34,8 @@ const DEFAULTS: Required<FeatureSettings> = {
   staffCannotWorkQuals: [],
   staffResponsiblePersonQuals: [],
   staffEducatorQuals: [],
+  schoolPortalVisibleTabs: ["vital", "vecra", "staff", "reports", "qip"],
+  schoolPortalVisibleQualificationNames: DEFAULT_SCHOOL_QUALIFICATIONS,
   childrenRequireMedicalNotes: false,
   childrenShowDobOnProfile: false,
   childDocumentTypes: ["Medical", "Behaviour", "MTOP Evidence"],
@@ -72,6 +91,13 @@ router.get("/settings/features", async (req, res): Promise<void> => {
 });
 
 router.put("/settings/features", async (req, res): Promise<void> => {
+  if (
+    req.session.user?.type !== "staff"
+    || !["admin", "admin_support", "educational_leader"].includes(req.session.user.role)
+  ) {
+    res.status(403).json({ error: "Admin or Educational Leader access required" });
+    return;
+  }
   const patch = req.body ?? {};
 
   try {

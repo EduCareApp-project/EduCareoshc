@@ -27,7 +27,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Label } from "@/components/ui/label";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ServiceDocumentationPanel } from "@/components/service-documentation-panel";
-import { SchoolReportsPanel } from "@/components/school-reports-panel";
+import { SchoolCurrentReportsPanel, SchoolReportsPanel } from "@/components/school-reports-panel";
 import QipPublic from "@/pages/qip-public";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -64,10 +64,6 @@ const vecraVisitSchema = z.object({
   actions: z.string().optional(),
   followUpDate: z.string().optional(),
 });
-
-function profileImageUrl(path: string) {
-  return `/api/storage/objects/${path.replace(/^\/objects\//, "")}`;
-}
 
 function SchoolStaffProfileView({
   siteId,
@@ -120,9 +116,9 @@ function SchoolStaffProfileView({
         <CardContent className="p-6 md:p-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-start">
             <div className="shrink-0">
-              {member.profilePicturePath ? (
+              {member.hasProfilePicture ? (
                 <img
-                  src={profileImageUrl(member.profilePicturePath)}
+                  src={`/api/schools/${siteId}/staff/${staffId}/photo`}
                   alt={`${member.firstName} ${member.lastName}`}
                   className="h-28 w-28 rounded-2xl border-2 border-border object-cover"
                   onError={(event) => {
@@ -132,7 +128,7 @@ function SchoolStaffProfileView({
                 />
               ) : null}
               <div
-                className={`flex h-28 w-28 items-center justify-center rounded-2xl border-2 border-border bg-primary/10 text-primary/60 ${member.profilePicturePath ? "hidden" : ""}`}
+                className={`flex h-28 w-28 items-center justify-center rounded-2xl border-2 border-border bg-primary/10 text-primary/60 ${member.hasProfilePicture ? "hidden" : ""}`}
               >
                 <User className="h-12 w-12" />
               </div>
@@ -212,9 +208,9 @@ function SchoolStaffProfileView({
                           Expires {expiry.label}
                         </span>
                       )}
-                      {qualification.documentPath && (
+                      {qualification.hasDocument && (
                         <a
-                          href={profileImageUrl(qualification.documentPath)}
+                          href={`/api/schools/${siteId}/staff/${staffId}/qualifications/${qualification.id}/document`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center text-primary hover:text-primary/80"
@@ -320,6 +316,10 @@ export default function SchoolPortal() {
   }
 
   const { site, staff, vitalRecords, vecraVisits } = data;
+  const visiblePortalTabs = isStaff
+    ? ["vital", "vecra", "staff", "reports", "qip"]
+    : data.portalSettings.visibleTabs;
+  const defaultPortalTab = visiblePortalTabs[0] ?? "staff";
 
   const resetVitalForm = () => {
     vitalForm.reset();
@@ -413,48 +413,54 @@ export default function SchoolPortal() {
       </div>
 
       {/* Main Tabs */}
-      <Tabs defaultValue="vital" className="w-full">
+      {visiblePortalTabs.length === 0 ? (
+        <Card className="border-dashed bg-muted/30 shadow-none">
+          <CardContent className="py-16 text-center text-muted-foreground">
+            No School Portal areas are currently available.
+          </CardContent>
+        </Card>
+      ) : <Tabs defaultValue={defaultPortalTab} className="w-full">
         <TabsList className="w-full justify-start border-b rounded-none h-12 bg-transparent p-0">
-          <TabsTrigger 
+          {visiblePortalTabs.includes("vital") && <TabsTrigger
             value="vital" 
             className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-6 h-12"
           >
             <FileClock className="w-4 h-4 mr-2" />
             Vital Records
-          </TabsTrigger>
-          <TabsTrigger 
+          </TabsTrigger>}
+          {visiblePortalTabs.includes("vecra") && <TabsTrigger
             value="vecra"
             className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-6 h-12"
           >
             <ClipboardCheck className="w-4 h-4 mr-2" />
             VECRA Visits
-          </TabsTrigger>
-          <TabsTrigger 
+          </TabsTrigger>}
+          {visiblePortalTabs.includes("staff") && <TabsTrigger
             value="staff"
             className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-6 h-12"
           >
             <Users className="w-4 h-4 mr-2" />
             Service Staff
-          </TabsTrigger>
-          <TabsTrigger 
+          </TabsTrigger>}
+          {visiblePortalTabs.includes("reports") && <TabsTrigger
             value="reports"
             className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-6 h-12"
           >
             <FileText className="w-4 h-4 mr-2" />
             Reports
-          </TabsTrigger>
-          <TabsTrigger
+          </TabsTrigger>}
+          {visiblePortalTabs.includes("qip") && <TabsTrigger
             value="qip"
             className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-6 h-12"
           >
             <TrendingUp className="w-4 h-4 mr-2" />
             QIP
-          </TabsTrigger>
+          </TabsTrigger>}
         </TabsList>
 
         <div className="pt-6">
           {/* Vital Records Tab */}
-          <TabsContent value="vital" className="mt-0">
+          {visiblePortalTabs.includes("vital") && <TabsContent value="vital" className="mt-0">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-lg font-semibold">Vital Records</h3>
@@ -702,15 +708,15 @@ export default function SchoolPortal() {
                 </CollapsibleContent>
               </Card>
             </Collapsible>
-          </TabsContent>
+          </TabsContent>}
 
           {/* Public QIP Tab */}
-          <TabsContent value="qip" className="mt-0">
+          {visiblePortalTabs.includes("qip") && <TabsContent value="qip" className="mt-0">
             <QipPublic siteId={site.id} embedded />
-          </TabsContent>
+          </TabsContent>}
 
           {/* VECRA Visits Tab */}
-          <TabsContent value="vecra" className="mt-0">
+          {visiblePortalTabs.includes("vecra") && <TabsContent value="vecra" className="mt-0">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-lg font-semibold">VECRA Visits</h3>
@@ -886,10 +892,10 @@ export default function SchoolPortal() {
                 ))}
               </div>
             )}
-          </TabsContent>
+          </TabsContent>}
 
           {/* Staff Tab */}
-          <TabsContent value="staff" className="mt-0">
+          {visiblePortalTabs.includes("staff") && <TabsContent value="staff" className="mt-0">
             {selectedStaffId ? (
               <SchoolStaffProfileView
                 siteId={site.id}
@@ -927,7 +933,7 @@ export default function SchoolPortal() {
                             <div className="min-w-0">
                               <p className="font-semibold">{member.firstName} {member.lastName}</p>
                               <p className="mt-1 text-xs capitalize text-primary">{member.role.replace(/_/g, " ")}</p>
-                              {member.qualifications && (
+                              {isStaff && member.qualifications && (
                                 <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{member.qualifications}</p>
                               )}
                               {member.associatedSites && member.associatedSites.length > 0 && (
@@ -946,12 +952,17 @@ export default function SchoolPortal() {
                 )}
               </>
             )}
-          </TabsContent>
+          </TabsContent>}
 
           {/* Reports Placeholder */}
-          <TabsContent value="reports" className="mt-0">
+          {visiblePortalTabs.includes("reports") && <TabsContent value="reports" className="mt-0">
             {isStaff && isAdminOrEL ? (
-              <SchoolReportsPanel siteId={site.id} />
+              <SchoolReportsPanel
+                siteId={site.id}
+                isAdmin={user?.type === "staff" && ["admin", "admin_support"].includes(user.role)}
+              />
+            ) : user?.type === "school" ? (
+              <SchoolCurrentReportsPanel siteId={site.id} />
             ) : (
               <Card className="border-dashed bg-muted/30 shadow-none">
                 <CardContent className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
@@ -961,10 +972,10 @@ export default function SchoolPortal() {
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
+          </TabsContent>}
 
         </div>
-      </Tabs>
+      </Tabs>}
     </div>
   );
 }

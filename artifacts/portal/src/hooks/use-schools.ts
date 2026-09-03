@@ -35,6 +35,7 @@ export type SchoolStaffProfile = Staff & {
   phone: string | null;
   bio: string | null;
   profilePicturePath: string | null;
+  hasProfilePicture: boolean;
 };
 
 export type StaffQualification = {
@@ -44,6 +45,7 @@ export type StaffQualification = {
   referenceNumber: string | null;
   expiryDate: string | null;
   documentPath: string | null;
+  hasDocument: boolean;
 };
 
 export type SchoolStaffProfileResponse = {
@@ -122,6 +124,7 @@ export type SchoolReportSummary = {
   reportingObligations: SchoolReportObligations;
   status: "draft" | "finalized";
   finalizedAt: string | null;
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -160,6 +163,10 @@ export type SchoolPortalData = {
   staff: Staff[];
   vitalRecords: VitalRecord[];
   vecraVisits: VecraVisit[];
+  portalSettings: {
+    visibleTabs: Array<"vital" | "vecra" | "staff" | "reports" | "qip">;
+    visibleQualificationNames: string[];
+  };
 };
 
 export function useGetSchools() {
@@ -379,6 +386,42 @@ export function useFinalizeSchoolReportSummary(siteId: number) {
     },
     onSuccess: (_result, variables) => queryClient.invalidateQueries({
       queryKey: ["school-report-summaries", siteId, variables.reportYear],
+    }),
+  });
+}
+
+export function useArchiveSchoolReportSummary(siteId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ reportId, reportYear }: { reportId: number; reportYear: number }) => {
+      const res = await fetch(`/api/school-reports/${siteId}/summaries/${reportId}/archive`, {
+        method: "POST",
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error ?? "Failed to archive report");
+      return result as SchoolReportSummary;
+    },
+    onSuccess: (_result, variables) => queryClient.invalidateQueries({
+      queryKey: ["school-report-summaries", siteId, variables.reportYear],
+    }),
+  });
+}
+
+export function useDeleteSchoolReportSummary(siteId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ reportId, reportYear }: { reportId: number; reportYear: number }) => {
+      const res = await fetch(`/api/school-reports/${siteId}/summaries/${reportId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}));
+        throw new Error(result.error ?? "Failed to delete report");
+      }
+      return { reportId, reportYear };
+    },
+    onSuccess: (result) => queryClient.invalidateQueries({
+      queryKey: ["school-report-summaries", siteId, result.reportYear],
     }),
   });
 }

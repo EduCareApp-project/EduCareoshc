@@ -4,7 +4,7 @@ import { eq, and, ilike } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-const ADMIN_ROLES = new Set(["admin", "educational_leader"]);
+const ADMIN_ROLES = new Set(["admin", "admin_support", "educational_leader"]);
 
 function requireAdmin(req: any, res: any): boolean {
   const user = req.session?.user;
@@ -148,7 +148,7 @@ router.post("/import/staff", async (req, res): Promise<void> => {
     return;
   }
 
-  const VALID_ROLES = new Set(["educator", "coordinator", "educational_leader", "admin"]);
+  const VALID_ROLES = new Set(["educator", "coordinator", "educational_leader", "admin", "admin_support"]);
 
   const result: ImportResult = { inserted: 0, skipped: 0, errors: [] };
 
@@ -194,7 +194,7 @@ router.post("/import/staff", async (req, res): Promise<void> => {
         qualifications,
         phone: phone ?? null,
         wwccNumber: wwccNumber ?? null,
-        siteId,
+        siteId: role === "admin_support" ? null : siteId,
       });
       result.inserted++;
     } catch (err: any) {

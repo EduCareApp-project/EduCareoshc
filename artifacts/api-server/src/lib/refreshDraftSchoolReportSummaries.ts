@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import {
   db,
   schoolReportRowsTable,
@@ -15,6 +15,7 @@ export async function refreshDraftSchoolReportSummaries(
     eq(schoolReportSummariesTable.siteId, siteId),
     eq(schoolReportSummariesTable.reportYear, reportYear),
     eq(schoolReportSummariesTable.status, "draft"),
+    isNull(schoolReportSummariesTable.archivedAt),
   ));
   if (draftReports.length === 0) return;
 

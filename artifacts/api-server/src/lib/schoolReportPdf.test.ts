@@ -49,6 +49,8 @@ describe("school report PDF", () => {
       createdById: 1,
       finalizedById: 1,
       finalizedAt: new Date(),
+      archivedById: null,
+      archivedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     } satisfies SchoolReportSummary;

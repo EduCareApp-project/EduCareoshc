@@ -10,7 +10,7 @@ import { Plus, UserCog, Mail, Phone, Award, Building2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { computeQualLevel, QUAL_LEVEL_LABELS, QUAL_LEVEL_STYLES, type QualItem, type QualLevelConfig } from "@/lib/qual-level";
 
-const ROLE_LABELS: Record<string, string> = { admin: "Admin", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
+const ROLE_LABELS: Record<string, string> = { admin: "Admin", admin_support: "Admin Support", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
 
 export function QualLevelBadge({ staffId, config }: { staffId: number; config?: QualLevelConfig }) {
   const { data: qualifications, isLoading } = useGetStaffQualifications(staffId, {
@@ -63,7 +63,7 @@ export default function StaffList() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || user?.role === "admin_support";
   const disabledHrefs: string[] = isAdmin ? [] : (accessSettings?.[user?.role ?? ""] ?? []);
   const ownProfileOnly = !isAdmin && accessSettings !== undefined && !disabledHrefs.includes("staff_own_profile");
 

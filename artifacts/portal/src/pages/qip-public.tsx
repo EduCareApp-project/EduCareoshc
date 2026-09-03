@@ -46,15 +46,22 @@ type PublicData = {
   }[];
 };
 
-export default function QipPublic() {
+type QipPublicProps = {
+  siteId?: number;
+  embedded?: boolean;
+};
+
+export default function QipPublic({ siteId: siteIdProp, embedded = false }: QipPublicProps = {}) {
   const [data, setData] = useState<PublicData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
 
   const params = new URLSearchParams(window.location.search);
-  const siteId = params.get("siteId");
-  const pageUrl = window.location.href;
+  const siteId = siteIdProp != null ? String(siteIdProp) : params.get("siteId");
+  const pageUrl = embedded && siteId
+    ? `${window.location.origin}/qip-public?siteId=${siteId}`
+    : window.location.href;
 
   useEffect(() => {
     const url = siteId ? `/api/qip/public?siteId=${siteId}` : `/api/qip/public`;
@@ -94,7 +101,7 @@ export default function QipPublic() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`${embedded ? "" : "min-h-screen "}bg-gray-50`}>
       {/* Header */}
       <div className="bg-white border-b shadow-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-3 flex items-center gap-4">

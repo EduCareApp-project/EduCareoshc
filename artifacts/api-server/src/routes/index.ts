@@ -95,9 +95,21 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
     return;
   }
   const ownSchoolDocumentPath = new RegExp(`^/schools/${user.siteId}/vital-records/\\d+/document$`);
+  const requestedServiceDocsSiteId = typeof req.query.siteId === "string" ? Number(req.query.siteId) : NaN;
+  const ownServiceDocsListPath =
+    req.path === "/service-docs/public" && requestedServiceDocsSiteId === user.siteId;
+  const publicServiceDocsFilePath = req.path.startsWith("/service-docs/public/file/");
+  const requestedQipSiteId = typeof req.query.siteId === "string" ? Number(req.query.siteId) : NaN;
+  const ownQipPublicPath = req.path === "/qip/public" && requestedQipSiteId === user.siteId;
   if (
     req.method === "GET" &&
-    (req.path === `/schools/${user.siteId}/portal` || ownSchoolDocumentPath.test(req.path))
+    (
+      req.path === `/schools/${user.siteId}/portal`
+      || ownSchoolDocumentPath.test(req.path)
+      || ownServiceDocsListPath
+      || publicServiceDocsFilePath
+      || ownQipPublicPath
+    )
   ) {
     next();
     return;

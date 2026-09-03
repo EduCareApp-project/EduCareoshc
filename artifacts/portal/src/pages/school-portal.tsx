@@ -19,11 +19,14 @@ import { format } from "date-fns";
 import { 
   Building2, Users, FileText, ClipboardCheck, ArrowLeft, 
   Plus, Trash2, CalendarIcon, FileClock,
-  MapPin, Clock, Paperclip
+  MapPin, Clock, Paperclip, ChevronDown, BookOpen, TrendingUp
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ServiceDocumentationPanel } from "@/components/service-documentation-panel";
+import QipPublic from "@/pages/qip-public";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
@@ -68,6 +71,7 @@ export default function SchoolPortal() {
   const { data, isLoading } = useGetSchoolPortal(siteId);
 
   const [vitalOpen, setVitalOpen] = useState(false);
+  const [serviceDocsOpen, setServiceDocsOpen] = useState(false);
   const [vecraOpen, setVecraOpen] = useState(false);
   const [vitalFile, setVitalFile] = useState<File | null>(null);
   const [vitalUploadError, setVitalUploadError] = useState<string | null>(null);
@@ -259,6 +263,13 @@ export default function SchoolPortal() {
           >
             <FileText className="w-4 h-4 mr-2" />
             Reports
+          </TabsTrigger>
+          <TabsTrigger
+            value="qip"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-6 h-12"
+          >
+            <TrendingUp className="w-4 h-4 mr-2" />
+            QIP
           </TabsTrigger>
         </TabsList>
 
@@ -481,6 +492,42 @@ export default function SchoolPortal() {
                 ))}
               </div>
             )}
+
+            <Collapsible
+              open={serviceDocsOpen}
+              onOpenChange={setServiceDocsOpen}
+              className="mt-8"
+            >
+              <Card className="overflow-hidden">
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="flex h-auto w-full items-center justify-between rounded-none px-5 py-4 text-left hover:bg-muted/50"
+                  >
+                    <span className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-primary" />
+                      <span>
+                        <span className="block font-semibold">Service Documentation</span>
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          Published documents available for this site, as shown to parents
+                        </span>
+                      </span>
+                    </span>
+                    <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${serviceDocsOpen ? "rotate-180" : ""}`} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="border-t bg-muted/10 p-5">
+                    <ServiceDocumentationPanel siteId={site.id} />
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          </TabsContent>
+
+          {/* Public QIP Tab */}
+          <TabsContent value="qip" className="mt-0">
+            <QipPublic siteId={site.id} embedded />
           </TabsContent>
 
           {/* VECRA Visits Tab */}

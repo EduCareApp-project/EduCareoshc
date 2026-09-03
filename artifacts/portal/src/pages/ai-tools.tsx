@@ -263,7 +263,8 @@ export default function AiTools() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Workspace Column */}
         <div className="xl:col-span-2 space-y-6">
           <div className="bg-card border rounded-xl p-1 shadow-sm">
@@ -377,9 +378,10 @@ export default function AiTools() {
             </div>
           )}
         </div>
+        </div>
 
         {/* History Column */}
-        <div className="xl:col-span-1">
+        <div className="w-full">
           <div className="bg-card border rounded-xl overflow-hidden shadow-sm flex flex-col h-[500px] xl:h-full max-h-[800px]">
             <div className="p-5 border-b bg-muted/10 flex items-center justify-between">
               <h2 className="font-semibold text-lg flex items-center gap-2 text-foreground">

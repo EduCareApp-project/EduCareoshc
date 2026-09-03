@@ -75,7 +75,7 @@ function AttendanceTable({
                       onChange={(event) => onChange?.(row.id, day, event.target.value)}
                     />
                   ) : (
-                    row[day] || "—"
+                    row[day] ?? "—"
                   )}
                 </TableCell>
               ))}

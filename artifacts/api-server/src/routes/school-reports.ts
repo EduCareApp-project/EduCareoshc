@@ -3,10 +3,12 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import {
   db,
   schoolReportRowsTable,
+  schoolReportSummariesTable,
   schoolReportTermsTable,
   sitesTable,
 } from "@workspace/db";
 import { calculateReportWeekBeginnings, isValidDateRange } from "../lib/schoolReportDates";
+import { calculateSchoolReportStatistics } from "../lib/schoolReportStatistics";
 
 const router: IRouter = Router();
 const REPORT_MANAGER_ROLES = new Set(["admin", "educational_leader"]);
@@ -379,9 +381,48 @@ router.put("/school-reports/:siteId/terms/:termNumber/attendance", async (req, r
             eq(schoolReportRowsTable.termId, term.id),
           ));
       }
-      return tx.select().from(schoolReportRowsTable)
+      const updatedRows = await tx.select().from(schoolReportRowsTable)
         .where(eq(schoolReportRowsTable.termId, term.id))
         .orderBy(asc(schoolReportRowsTable.weekNumber), asc(schoolReportRowsTable.id));
+
+      const draftReports = await tx.select().from(schoolReportSummariesTable).where(and(
+        eq(schoolReportSummariesTable.siteId, siteId),
+        eq(schoolReportSummariesTable.reportYear, reportYear),
+        eq(schoolReportSummariesTable.status, "draft"),
+      ));
+      const affectedReports = draftReports.filter((report) =>
+        report.statistics.termNumbers.includes(termNumber),
+      );
+
+      if (affectedReports.length > 0) {
+        const selectedTermNumbers = Array.from(new Set(
+          affectedReports.flatMap((report) => report.statistics.termNumbers),
+        ));
+        const selectedTerms = await tx.select().from(schoolReportTermsTable).where(and(
+          eq(schoolReportTermsTable.siteId, siteId),
+          eq(schoolReportTermsTable.reportYear, reportYear),
+          inArray(schoolReportTermsTable.termNumber, selectedTermNumbers),
+        ));
+        const selectedRows = await tx.select().from(schoolReportRowsTable).where(
+          inArray(schoolReportRowsTable.termId, selectedTerms.map((selectedTerm) => selectedTerm.id)),
+        );
+        const now = new Date();
+
+        for (const report of affectedReports) {
+          const reportTerms = selectedTerms
+            .filter((selectedTerm) => report.statistics.termNumbers.includes(selectedTerm.termNumber))
+            .map((selectedTerm) => ({
+              ...selectedTerm,
+              rows: selectedRows.filter((row) => row.termId === selectedTerm.id),
+            }));
+          await tx.update(schoolReportSummariesTable).set({
+            statistics: calculateSchoolReportStatistics(reportTerms, report.periodLabel),
+            updatedAt: now,
+          }).where(eq(schoolReportSummariesTable.id, report.id));
+        }
+      }
+
+      return updatedRows;
     });
     res.json({ ...term, status: "open", rows: savedRows });
   } catch (error) {

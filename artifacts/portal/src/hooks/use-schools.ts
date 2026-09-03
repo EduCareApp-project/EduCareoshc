@@ -238,7 +238,12 @@ export function useSaveSchoolReportTerm(siteId: number) {
       if (!res.ok) throw new Error(result.error ?? "Failed to save report dates");
       return result as SchoolReportTerm;
     },
-    onSuccess: (_result, variables) => queryClient.invalidateQueries({ queryKey: ["school-reports", siteId, variables.reportYear] }),
+    onSuccess: async (_result, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["school-reports", siteId, variables.reportYear] }),
+        queryClient.invalidateQueries({ queryKey: ["school-report-summaries", siteId, variables.reportYear] }),
+      ]);
+    },
   });
 }
 
@@ -290,7 +295,12 @@ export function useSaveSchoolReportAttendance(siteId: number) {
       if (!res.ok) throw new Error(result.error ?? "Failed to save attendance");
       return result as SchoolReportTerm;
     },
-    onSuccess: (_result, variables) => queryClient.invalidateQueries({ queryKey: ["school-reports", siteId, variables.reportYear] }),
+    onSuccess: async (_result, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["school-reports", siteId, variables.reportYear] }),
+        queryClient.invalidateQueries({ queryKey: ["school-report-summaries", siteId, variables.reportYear] }),
+      ]);
+    },
   });
 }
 

@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, date, timestamp, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, date, timestamp, boolean, unique } from "drizzle-orm/pg-core";
 import { sitesTable } from "./sites";
 import { staffTable } from "./staff";
 
@@ -30,6 +30,11 @@ export const schoolReportRowsTable = pgTable("school_report_rows", {
   wednesday: text("wednesday"),
   thursday: text("thursday"),
   friday: text("friday"),
+  mondayPupilFree: boolean("monday_pupil_free").notNull().default(false),
+  tuesdayPupilFree: boolean("tuesday_pupil_free").notNull().default(false),
+  wednesdayPupilFree: boolean("wednesday_pupil_free").notNull().default(false),
+  thursdayPupilFree: boolean("thursday_pupil_free").notNull().default(false),
+  fridayPupilFree: boolean("friday_pupil_free").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   unique("uq_school_report_row_term_week_service").on(table.termId, table.weekNumber, table.serviceType),

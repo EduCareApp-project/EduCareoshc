@@ -62,6 +62,11 @@ export type SchoolReportRow = {
   wednesday: string | null;
   thursday: string | null;
   friday: string | null;
+  mondayPupilFree: boolean;
+  tuesdayPupilFree: boolean;
+  wednesdayPupilFree: boolean;
+  thursdayPupilFree: boolean;
+  fridayPupilFree: boolean;
 };
 
 export type SchoolReportTerm = {
@@ -225,6 +230,11 @@ export function useSaveSchoolReportAttendance(siteId: number) {
         wednesday: string | null;
         thursday: string | null;
         friday: string | null;
+        mondayPupilFree: boolean;
+        tuesdayPupilFree: boolean;
+        wednesdayPupilFree: boolean;
+        thursdayPupilFree: boolean;
+        fridayPupilFree: boolean;
       }>;
     }) => {
       const res = await fetch(`/api/school-reports/${siteId}/terms/${termNumber}/attendance`, {

@@ -268,9 +268,17 @@ router.put("/school-reports/:siteId/terms/:termNumber/attendance", async (req, r
   }
 
   const dayFields = ["monday", "tuesday", "wednesday", "thursday", "friday"] as const;
+  const pupilFreeFields = [
+    "mondayPupilFree",
+    "tuesdayPupilFree",
+    "wednesdayPupilFree",
+    "thursdayPupilFree",
+    "fridayPupilFree",
+  ] as const;
   const parsedRows: Array<{
     id: number;
-    values: Record<(typeof dayFields)[number], string | null>;
+    values: Record<(typeof dayFields)[number], string | null> &
+      Record<(typeof pupilFreeFields)[number], boolean>;
   }> = [];
   for (const input of inputRows) {
     const id = Number(input?.id);
@@ -278,8 +286,9 @@ router.put("/school-reports/:siteId/terms/:termNumber/attendance", async (req, r
       res.status(400).json({ error: "Invalid attendance row" });
       return;
     }
-    const values = {} as Record<(typeof dayFields)[number], string | null>;
-    for (const field of dayFields) {
+    const values = {} as Record<(typeof dayFields)[number], string | null> &
+      Record<(typeof pupilFreeFields)[number], boolean>;
+    for (const [index, field] of dayFields.entries()) {
       const value = input?.[field];
       if (value === "" || value === null || typeof value === "undefined") {
         values[field] = null;
@@ -287,6 +296,16 @@ router.put("/school-reports/:siteId/terms/:termNumber/attendance", async (req, r
         values[field] = String(Number(value));
       } else {
         res.status(400).json({ error: "Attendance values must be whole numbers zero or above" });
+        return;
+      }
+      const pupilFreeField = pupilFreeFields[index];
+      const pupilFree = input?.[pupilFreeField];
+      if (typeof pupilFree === "undefined") {
+        values[pupilFreeField] = false;
+      } else if (typeof pupilFree === "boolean") {
+        values[pupilFreeField] = pupilFree;
+      } else {
+        res.status(400).json({ error: "Pupil free day values must be boolean" });
         return;
       }
     }
@@ -303,7 +322,10 @@ router.put("/school-reports/:siteId/terms/:termNumber/attendance", async (req, r
       return;
     }
 
-    const existingRows = await db.select({ id: schoolReportRowsTable.id })
+    const existingRows = await db.select({
+      id: schoolReportRowsTable.id,
+      serviceType: schoolReportRowsTable.serviceType,
+    })
       .from(schoolReportRowsTable)
       .where(and(
         eq(schoolReportRowsTable.termId, term.id),
@@ -311,6 +333,14 @@ router.put("/school-reports/:siteId/terms/:termNumber/attendance", async (req, r
       ));
     if (existingRows.length !== parsedRows.length) {
       res.status(400).json({ error: "Attendance rows do not belong to this report" });
+      return;
+    }
+    const serviceTypeById = new Map(existingRows.map((row) => [row.id, row.serviceType]));
+    if (parsedRows.some((row) =>
+      serviceTypeById.get(row.id) === "VAC" &&
+      pupilFreeFields.some((field) => row.values[field]),
+    )) {
+      res.status(400).json({ error: "Pupil free days can only be marked for BSC and ASC sessions" });
       return;
     }
 

@@ -19,6 +19,7 @@ import {
   ATTENDANCE_DAYS,
   type AttendanceDay,
   type AttendanceValues,
+  type PupilFreeDays,
   SchoolReportAttendanceForm,
   SchoolReportTable,
 } from "@/components/school-report-table";
@@ -72,6 +73,7 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
   const [editingTerm, setEditingTerm] = useState<SchoolReportTerm | null>(null);
   const [form, setForm] = useState<TermForm>(EMPTY_FORM);
   const [attendanceValues, setAttendanceValues] = useState<AttendanceValues>({});
+  const [pupilFreeDays, setPupilFreeDays] = useState<PupilFreeDays>({});
   const selectedTerm = data?.terms.find((term) => term.termNumber === selectedTermNumber) ?? null;
   const calculatedWeeks = calculateWeeks(form.termStartDate, form.termEndDate);
 
@@ -97,6 +99,10 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
       row.id,
       Object.fromEntries(ATTENDANCE_DAYS.map((day) => [day, row[day] ?? ""])),
     ])) as AttendanceValues);
+    setPupilFreeDays(Object.fromEntries(selectedTerm.rows.map((row) => [
+      row.id,
+      Object.fromEntries(ATTENDANCE_DAYS.map((day) => [day, row[`${day}PupilFree` as keyof typeof row] === true])),
+    ])) as PupilFreeDays);
   }, [contributingTermNumber, selectedTerm]);
 
   function saveDates() {
@@ -152,6 +158,19 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
     }));
   }
 
+  function updatePupilFreeDay(rowId: number, day: AttendanceDay, checked: boolean) {
+    setPupilFreeDays((current) => ({
+      ...current,
+      [rowId]: {
+        ...current[rowId],
+        [day]: checked,
+      },
+    }));
+    if (checked) {
+      updateAttendance(rowId, day, "");
+    }
+  }
+
   function saveAttendanceValues() {
     if (!selectedTerm) return;
     saveAttendance.mutate({
@@ -163,6 +182,11 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
         wednesday: attendanceValues[row.id]?.wednesday || null,
         thursday: attendanceValues[row.id]?.thursday || null,
         friday: attendanceValues[row.id]?.friday || null,
+        mondayPupilFree: pupilFreeDays[row.id]?.monday ?? false,
+        tuesdayPupilFree: pupilFreeDays[row.id]?.tuesday ?? false,
+        wednesdayPupilFree: pupilFreeDays[row.id]?.wednesday ?? false,
+        thursdayPupilFree: pupilFreeDays[row.id]?.thursday ?? false,
+        fridayPupilFree: pupilFreeDays[row.id]?.friday ?? false,
       })),
     }, {
       onSuccess: () => toast({
@@ -292,7 +316,9 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
               <SchoolReportAttendanceForm
                 term={selectedTerm}
                 values={attendanceValues}
+                pupilFreeDays={pupilFreeDays}
                 onChange={updateAttendance}
+                onPupilFreeDayChange={updatePupilFreeDay}
                 onSave={saveAttendanceValues}
                 isSaving={saveAttendance.isPending}
               />

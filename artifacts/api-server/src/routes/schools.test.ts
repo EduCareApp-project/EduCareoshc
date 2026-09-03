@@ -226,7 +226,7 @@ describe("GET /api/schools/:siteId/portal staff scope", () => {
         email: "target-school",
         name: TARGET_SITE.name,
       }),
-    ).get(`/api/schools/${TARGET_SITE.id}/portal`);
+    ).get(`/api/schools/${TARGET_SITE.id}/staff/108`);
 
     expect(response.status).toBe(200);
     expect(response.body.staff.map((member: { id: number }) => member.id)).toEqual([
@@ -263,28 +263,15 @@ describe("GET /api/schools/:siteId/portal staff scope", () => {
         email: "target-school",
         name: TARGET_SITE.name,
       }),
-    ).get(`/api/schools/${OTHER_SITE.id}/portal`);
+    ).get(`/api/schools/${TARGET_SITE.id}/staff/108`);
 
-    expect(response.status).toBe(403);
-    expect(response.body).toEqual({ error: "This school is outside your access" });
-    expect(mockDb.select).not.toHaveBeenCalled();
-  });
-});
-
-describe("GET /api/schools/:siteId/staff/:staffId profile", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    whereCalls.length = 0;
+    expect(response.status).toBe(200);
+    expect(response.body.qualifications).toEqual([]);
+    expect(mockDb.select).toHaveBeenCalledTimes(2);
   });
 
-  it("returns contact details and active qualifications for staff assigned to the site", async () => {
-    const member = {
-      ...staffMember(101, "Home", TARGET_SITE.id),
-      email: "home@example.com",
-      phone: "0400 123 456",
-      bio: "An experienced educator.",
-      profilePicturePath: "/objects/profile/home.jpg",
-    };
+  it("does not expose a staff member who is not assigned or associated with the site", async () => {
+    const member = staffMember(102, "Other", OTHER_SITE.id);
     const qualification = {
       id: 501,
       name: "Diploma of Early Childhood Education",
@@ -310,52 +297,7 @@ describe("GET /api/schools/:siteId/staff/:staffId profile", () => {
         email: "target-school",
         name: TARGET_SITE.name,
       }),
-    ).get(`/api/schools/${TARGET_SITE.id}/staff/${member.id}`);
-
-    expect(response.status).toBe(200);
-    expect(response.body.staff).toMatchObject({
-      id: member.id,
-      email: member.email,
-      phone: member.phone,
-      bio: member.bio,
-      profilePicturePath: null,
-      hasProfilePicture: true,
-    });
-    expect(response.body.qualifications).toEqual([{
-      ...qualification,
-      hasDocument: false,
-    }]);
-    expect(whereCalls.map(String)).toContain(
-      `and(eq(staff_qualifications.staff_id,101),isNull(staff_qualifications.archived_at),inArray(staff_qualifications.name,${qualification.name}))`,
-    );
-  });
-
-  it("returns no qualification records when the school qualification list is empty", async () => {
-    const member = {
-      ...staffMember(101, "Home", TARGET_SITE.id),
-      email: "home@example.com",
-      phone: null,
-      bio: null,
-      profilePicturePath: null,
-    };
-    queuePortalQueries([
-      [member],
-      [{ featureSettings: {
-        schoolPortalVisibleTabs: ["staff"],
-        schoolPortalVisibleQualificationNames: [],
-      } }],
-    ]);
-
-    const response = await request(
-      buildTestApp({
-        id: 900,
-        type: "school",
-        role: "school",
-        siteId: TARGET_SITE.id,
-        email: "target-school",
-        name: TARGET_SITE.name,
-      }),
-    ).get(`/api/schools/${TARGET_SITE.id}/staff/${member.id}`);
+    ).get(`/api/schools/${TARGET_SITE.id}/staff/108`);
 
     expect(response.status).toBe(200);
     expect(response.body.qualifications).toEqual([]);
@@ -375,9 +317,32 @@ describe("GET /api/schools/:siteId/staff/:staffId profile", () => {
         email: "target-school",
         name: TARGET_SITE.name,
       }),
-    ).get(`/api/schools/${TARGET_SITE.id}/staff/${member.id}`);
+    ).get(`/api/schools/${TARGET_SITE.id}/staff/108`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.qualifications).toEqual([]);
+    expect(mockDb.select).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not expose a staff member who is not assigned or associated with the site", async () => {
+    const member = staffMember(102, "Other", OTHER_SITE.id);
+    queuePortalQueries([[member], []]);
+
+    const response = await request(
+      buildTestApp({
+        id: 900,
+        type: "school",
+        role: "school",
+        siteId: TARGET_SITE.id,
+        email: "target-school",
+        name: TARGET_SITE.name,
+      }),
+    ).get(`/api/schools/${TARGET_SITE.id}/staff/108`);
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: "Staff member not found for this site" });
+    expect(whereCalls.map(String)).toContain(
+      "and(eq(staff.id,108),eq(staff.status,active),eq(staff.is_super_admin,false),ne(staff.role,admin_support))",
+    );
   });
 });

@@ -169,7 +169,7 @@ router.get("/schools", async (req, res): Promise<void> => {
 });
 
 router.get("/schools/:siteId/staff/:staffId", async (req, res): Promise<void> => {
-  const siteId = Number(req.params.siteId);
+  const siteId = Number(req.params.siteId); const id = Number(req.params.id);
   const requestedStaffId = Number(req.params.staffId);
   const user = req.session.user;
   if (!Number.isInteger(siteId) || !Number.isInteger(requestedStaffId)) {
@@ -199,6 +199,7 @@ router.get("/schools/:siteId/staff/:staffId", async (req, res): Promise<void> =>
       eq(staffTable.id, requestedStaffId),
       eq(staffTable.status, "active"),
       eq(staffTable.isSuperAdmin, false),
+      ne(staffTable.role, "admin_support"),
     )).limit(1);
 
     if (!staffMember) {
@@ -220,10 +221,9 @@ router.get("/schools/:siteId/staff/:staffId", async (req, res): Promise<void> =>
       }
     }
 
-    const [organisation] = user?.type === "school"
-      ? await db.select({ featureSettings: organisationTable.featureSettings }).from(organisationTable).limit(1)
-      : [];
-    const visibleTabs = organisation?.featureSettings?.schoolPortalVisibleTabs ?? [...DEFAULT_SCHOOL_PORTAL_TABS];
+      const [organisation] = await db.select({ featureSettings: organisationTable.featureSettings })
+        .from(organisationTable).limit(1);
+      const visibleTabs = organisation?.featureSettings?.schoolPortalVisibleTabs ?? [...DEFAULT_SCHOOL_PORTAL_TABS];
     if (user?.type === "school" && !visibleTabs.includes("staff")) {
       res.status(404).json({ error: "Staff records are not available in this school portal" });
       return;
@@ -268,7 +268,7 @@ router.get("/schools/:siteId/staff/:staffId", async (req, res): Promise<void> =>
 });
 
 router.get("/schools/:siteId/staff/:staffId/photo", async (req, res): Promise<void> => {
-  const siteId = Number(req.params.siteId);
+  const siteId = Number(req.params.siteId); const id = Number(req.params.id);
   const requestedStaffId = Number(req.params.staffId);
   const user = req.session.user;
   if (!Number.isInteger(siteId) || !Number.isInteger(requestedStaffId)) {
@@ -312,7 +312,7 @@ router.get("/schools/:siteId/staff/:staffId/photo", async (req, res): Promise<vo
 });
 
 router.get("/schools/:siteId/staff/:staffId/qualifications/:qualificationId/document", async (req, res): Promise<void> => {
-  const siteId = Number(req.params.siteId);
+  const siteId = Number(req.params.siteId); const id = Number(req.params.id);
   const requestedStaffId = Number(req.params.staffId);
   const qualificationId = Number(req.params.qualificationId);
   const user = req.session.user;
@@ -369,7 +369,7 @@ router.get("/schools/:siteId/staff/:staffId/qualifications/:qualificationId/docu
 });
 
 router.get("/schools/:siteId/portal", async (req, res): Promise<void> => {
-  const siteId = Number(req.params.siteId);
+  const siteId = Number(req.params.siteId); const id = Number(req.params.id);
   const user = req.session.user;
   if (!Number.isInteger(siteId)) { res.status(400).json({ error: "Invalid school id" }); return; }
   if (user?.type === "school") {
@@ -388,7 +388,7 @@ router.get("/schools/:siteId/portal", async (req, res): Promise<void> => {
 });
 
 router.get("/schools/:siteId/vital-records/:id/document", async (req, res): Promise<void> => {
-  const siteId = Number(req.params.siteId);
+  const siteId = Number(req.params.siteId); const id = Number(req.params.id);
   const recordId = Number(req.params.id);
   const user = req.session.user;
   if (!Number.isInteger(siteId) || !Number.isInteger(recordId)) {
@@ -405,11 +405,11 @@ router.get("/schools/:siteId/vital-records/:id/document", async (req, res): Prom
   }
 
   try {
-    const [record] = await db
-      .select({ documentPath: schoolVitalRecordsTable.documentPath, documentName: schoolVitalRecordsTable.documentName })
-      .from(schoolVitalRecordsTable)
-      .where(and(eq(schoolVitalRecordsTable.id, recordId), eq(schoolVitalRecordsTable.siteId, siteId)))
-      .limit(1);
+  const [record] = await db
+    .select({ documentPath: schoolVitalRecordsTable.documentPath })
+    .from(schoolVitalRecordsTable)
+    .where(and(eq(schoolVitalRecordsTable.id, id), eq(schoolVitalRecordsTable.siteId, siteId)))
+    .limit(1);
     if (!record) {
       res.status(404).json({ error: "Vital record not found" });
       return;
@@ -444,7 +444,7 @@ router.get("/schools/:siteId/vital-records/:id/document", async (req, res): Prom
 router.post("/schools/:siteId/vital-records", async (req, res): Promise<void> => {
   const creator = adminStaff(req, res);
   if (creator == null) return;
-  const siteId = Number(req.params.siteId);
+  const siteId = Number(req.params.siteId); const id = Number(req.params.id);
   const { recordType, recordName, provider, referenceNumber, expiryDate, notes, documentPath, documentName } = req.body ?? {};
   if (!Number.isInteger(siteId) || !recordType || !recordName) {
     res.status(400).json({ error: "Record type and name are required" }); return;
@@ -457,12 +457,11 @@ router.post("/schools/:siteId/vital-records", async (req, res): Promise<void> =>
     res.status(400).json({ error: "The supporting document is invalid" }); return;
   }
   try {
-    const [record] = await db.insert(schoolVitalRecordsTable).values({
-      siteId, recordType: String(recordType), recordName: String(recordName),
-      provider: provider ? String(provider) : null, referenceNumber: referenceNumber ? String(referenceNumber) : null,
-      expiryDate: expiryDate ? String(expiryDate) : null, notes: notes ? String(notes) : null,
-      documentPath: normalizedDocumentPath, documentName: String(documentName),
-    }).returning();
+  const [record] = await db
+    .select({ documentPath: schoolVitalRecordsTable.documentPath })
+    .from(schoolVitalRecordsTable)
+    .where(and(eq(schoolVitalRecordsTable.id, id), eq(schoolVitalRecordsTable.siteId, siteId)))
+    .limit(1);
     res.status(201).json(record);
   } catch (err) {
     req.log.error({ err, siteId, creator }, "Failed to create school vital record");
@@ -472,6 +471,7 @@ router.post("/schools/:siteId/vital-records", async (req, res): Promise<void> =>
 
 router.delete("/schools/:siteId/vital-records/:id", async (req, res): Promise<void> => {
   if (adminStaff(req, res) == null) return;
+  const siteId = Number(req.params.siteId); const id = Number(req.params.id);
   const siteId = Number(req.params.siteId); const id = Number(req.params.id);
   if (!Number.isInteger(siteId) || !Number.isInteger(id)) { res.status(400).json({ error: "Invalid record id" }); return; }
   const [record] = await db
@@ -495,7 +495,7 @@ router.delete("/schools/:siteId/vital-records/:id", async (req, res): Promise<vo
 router.post("/schools/:siteId/vecra-visits", async (req, res): Promise<void> => {
   const creator = adminStaff(req, res);
   if (creator == null) return;
-  const siteId = Number(req.params.siteId);
+  const siteId = Number(req.params.siteId); const id = Number(req.params.id);
   const { visitDate, visitorName, visitorOrganisation, findings, actions, followUpDate } = req.body ?? {};
   if (!Number.isInteger(siteId) || !visitDate || !visitorName) {
     res.status(400).json({ error: "Visit date and visitor name are required" }); return;
@@ -516,6 +516,7 @@ router.post("/schools/:siteId/vecra-visits", async (req, res): Promise<void> => 
 
 router.delete("/schools/:siteId/vecra-visits/:id", async (req, res): Promise<void> => {
   if (adminStaff(req, res) == null) return;
+  const siteId = Number(req.params.siteId); const id = Number(req.params.id);
   const siteId = Number(req.params.siteId); const id = Number(req.params.id);
   if (!Number.isInteger(siteId) || !Number.isInteger(id)) { res.status(400).json({ error: "Invalid visit id" }); return; }
   await db.delete(vecraVisitsTable).where(and(eq(vecraVisitsTable.id, id), eq(vecraVisitsTable.siteId, siteId)));

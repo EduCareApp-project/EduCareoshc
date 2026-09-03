@@ -7,4 +7,4 @@ Generated Service Statistics are snapshots of selected attendance and holiday-pr
 
 **Why:** Draft graphs must reflect attendance entered after the report was first created, while a finalised PDF must remain a stable historical record.
 
-**How to apply:** New report outputs, exports, and views read the stored snapshot. Refresh draft statistics transactionally when included-term attendance is saved; never alter a finalised report.
+**How to apply:** New outputs, exports, and views read the stored snapshot. Refresh drafts when included-term attendance is saved, and self-heal stale drafts when loaded; never alter a finalised report.

@@ -14,6 +14,7 @@ import {
   selectedTermNumbers,
 } from "../lib/schoolReportStatistics";
 import { createSchoolReportPdf } from "../lib/schoolReportPdf";
+import { refreshDraftSchoolReportSummaries } from "../lib/refreshDraftSchoolReportSummaries";
 
 const router: IRouter = Router();
 const REPORT_MANAGER_ROLES = new Set(["admin", "educational_leader"]);
@@ -73,6 +74,7 @@ router.get("/school-reports/:siteId/summaries", async (req, res): Promise<void> 
     return;
   }
   try {
+    await refreshDraftSchoolReportSummaries(siteId, reportYear);
     const reports = await db.select().from(schoolReportSummariesTable).where(and(
       eq(schoolReportSummariesTable.siteId, siteId),
       eq(schoolReportSummariesTable.reportYear, reportYear),

@@ -82,6 +82,13 @@ export default function ReportsSchools() {
   const selectedTerm = data?.terms.find((term) => term.termNumber === selectedTermNumber) ?? null;
   const calculatedWeeks = calculateWeeks(form.termStartDate, form.termEndDate);
 
+  useEffect(() => {
+    const linkedTerm = data?.terms.find((term) => term.termNumber === queryTermNumber);
+    if (linkedTerm && linkedTerm.status === "pending" && !editingTerm) {
+      openDateDialog(linkedTerm);
+    }
+  }, [data, editingTerm, queryTermNumber]);
+
   function openDateDialog(term: SchoolReportTerm) {
     setEditingTerm(term);
     setForm({

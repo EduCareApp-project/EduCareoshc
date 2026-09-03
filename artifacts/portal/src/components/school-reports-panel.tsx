@@ -189,10 +189,11 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
         fridayPupilFree: pupilFreeDays[row.id]?.friday ?? false,
       })),
     }, {
-      onSuccess: () => toast({
-        title: "Attendance saved",
-        description: `Term ${selectedTerm.termNumber} attendance has been updated.`,
-      }),
+      onSuccess: () => {
+        setContributingTermNumber(null);
+        setAttendanceValues({});
+        setPupilFreeDays({});
+      },
       onError: (error: Error) => toast({
         title: "Unable to save attendance",
         description: error.message,

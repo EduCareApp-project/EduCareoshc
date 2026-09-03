@@ -178,13 +178,28 @@ export default function ReportsSchools() {
                   <div className="flex gap-2 pt-1">
                     <Button variant="outline" size="sm" className="flex-1" onClick={(event) => { event.stopPropagation(); openDateDialog(term); }}>
                       <Settings2 className="mr-1.5 h-3.5 w-3.5" />
-                      {term.status === "pending" ? "Set dates" : "Edit dates"}
+                      {term.status === "pending" ? "Begin" : "Edit dates"}
                     </Button>
                     {term.status === "open" && (
-                      <Button size="sm" className="flex-1" disabled={generateReport.isPending} onClick={(event) => { event.stopPropagation(); generate(term); }}>
-                        {generateReport.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5" />}
-                        {term.generatedAt ? "Regenerate" : "Generate"}
-                      </Button>
+                      term.generatedAt ? (
+                        <Button
+                          size="sm"
+                          className="flex-1"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedTermNumber(term.termNumber);
+                            document.getElementById("selected-school-report")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                          }}
+                        >
+                          <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5" />
+                          Contribute
+                        </Button>
+                      ) : (
+                        <Button size="sm" className="flex-1" disabled={generateReport.isPending} onClick={(event) => { event.stopPropagation(); generate(term); }}>
+                          {generateReport.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5" />}
+                          Generate
+                        </Button>
+                      )
                     )}
                   </div>
                 </CardContent>
@@ -193,7 +208,7 @@ export default function ReportsSchools() {
           </div>
 
           {selectedTerm && (
-            <Card>
+            <Card id="selected-school-report">
               <CardHeader>
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>

@@ -384,6 +384,15 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
       .filter((group) => group.items.length > 0);
   }
 
+  if (!["admin", "educational_leader"].includes(user?.role ?? "")) {
+    finalGroups = finalGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => item.href !== "/reports/schools"),
+      }))
+      .filter((group) => group.items.length > 0);
+  }
+
   if (ownProfileOnly && user?.id) {
     finalGroups = finalGroups.map((group) => ({
       ...group,

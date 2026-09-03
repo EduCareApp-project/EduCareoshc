@@ -29,7 +29,6 @@ const STAFF_ITEMS: { href: string; label: string; group: string }[] = [
   { href: "/reports/service",     label: "Service Compliance",    group: "Reports" },
   { href: "/reports/staff",       label: "Staff Compliance",      group: "Reports" },
   { href: "/reports/system-access", label: "System Access",       group: "Reports" },
-  { href: "/reports/schools",    label: "School Reports",         group: "Reports" },
   { href: "/appraisals",          label: "Appraisals",            group: "Reports" },
   { href: "/sites",               label: "Sites",                 group: "System" },
   { href: "/settings",            label: "Settings",              group: "System" },

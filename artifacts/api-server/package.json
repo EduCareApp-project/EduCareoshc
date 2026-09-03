@@ -25,6 +25,7 @@
     "express-session": "^1.19.0",
     "google-auth-library": "^10.6.2",
     "nodemailer": "^8.0.5",
+    "pdf-lib": "^1.17.1",
     "pino": "^9",
     "pino-http": "^10"
   },

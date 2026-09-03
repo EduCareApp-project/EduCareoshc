@@ -22,6 +22,10 @@ export interface FeatureSettings {
   staffAppraisalCycleDays?: number;
   staffProfilesVisibleToPeers?: boolean;
   staffCustomRoles?: string[];
+  staffQualificationNames?: string[];
+  staffCannotWorkQuals?: string[];
+  staffResponsiblePersonQuals?: string[];
+  staffEducatorQuals?: string[];
   childrenRequireMedicalNotes?: boolean;
   childrenShowDobOnProfile?: boolean;
   childDocumentTypes?: string[];

@@ -8,6 +8,8 @@ servers:
 tags:
   - name: Storage
     description: Object storage upload and serving endpoints.
+  - name: ai-tools
+    description: Staff productivity tools powered by document processing.
   - name: health
   - name: children
   - name: staff
@@ -260,6 +262,27 @@ paths:
                 $ref: "#/components/schemas/NewPasswordResult"
         "404":
           description: Not found
+
+  /guardians/{email}/login-logs:
+    get:
+      operationId: listGuardianLoginLogs
+      tags: [guardians]
+      summary: List login logs for a guardian (by email)
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GuardianLoginLog"
 
   /staff:
     get:
@@ -1735,6 +1758,152 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
 
+  /ai-tools/document-merge/upload-url:
+    post:
+      operationId: requestDocumentMergeUploadUrl
+      tags: [ai-tools]
+      summary: Request an upload URL for a document merge source file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentMergeUploadRequest"
+      responses:
+        "200":
+          description: Upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentMergeUploadResponse"
+        "400":
+          description: Unsupported or invalid file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /ai-tools/document-merges:
+    get:
+      operationId: listMergedDocuments
+      tags: [ai-tools]
+      summary: List merged documents created by the signed-in staff member
+      responses:
+        "200":
+          description: Merged documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MergedDocument"
+
+  /ai-tools/document-merges/merge:
+    post:
+      operationId: mergeDocuments
+      tags: [ai-tools]
+      summary: Merge uploaded PDFs and images into a single PDF
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MergeDocumentsRequest"
+      responses:
+        "201":
+          description: Documents merged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MergedDocument"
+        "400":
+          description: Invalid source files
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /ai-tools/document-merges/{id}/view:
+    get:
+      operationId: viewMergedDocument
+      tags: [ai-tools]
+      summary: View a merged PDF
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Merged PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /ai-tools/document-merges/{id}/download:
+    get:
+      operationId: downloadMergedDocument
+      tags: [ai-tools]
+      summary: Download a merged PDF
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Merged PDF download
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /ai-tools/document-merges/{id}:
+    delete:
+      operationId: deleteMergedDocument
+      tags: [ai-tools]
+      summary: Delete a merged PDF
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+        "404":
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /wellbeing:
     get:
       operationId: listWellbeingReports
@@ -2344,6 +2513,18 @@ paths:
           schema:
             type: integer
             minimum: 0
+        - name: childId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: siteId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
       responses:
         "200":
           description: OK
@@ -3424,6 +3605,16 @@ components:
         username:
           type: string
 
+    GuardianLoginLog:
+      type: object
+      required: [id, loggedInAt]
+      properties:
+        id:
+          type: integer
+        loggedInAt:
+          type: string
+          format: date-time
+
     NewPasswordResult:
       type: object
       required: [newPassword]
@@ -3545,6 +3736,10 @@ components:
           type: boolean
           default: false
           description: Child has at least one active medication listed in their profile
+        hasMealConsideration:
+          type: boolean
+        mealConsiderationDetails:
+          type: ["string", "null"]
         medicalRiskPlan:
           type: ["object", "null"]
           additionalProperties: true
@@ -3571,6 +3766,10 @@ components:
           type: string
         hasMedicalCondition:
           type: boolean
+        hasMealConsideration:
+          type: boolean
+        mealConsiderationDetails:
+          type: ["string", "null"]
         medicalRiskPlan:
           type: ["object", "null"]
           additionalProperties: true
@@ -3702,6 +3901,10 @@ components:
           type: string
         relationship:
           type: string
+        isApprovedPickup:
+          type: boolean
+        isEmergencyContact:
+          type: boolean
 
     Staff:
       type: object
@@ -4075,7 +4278,7 @@ components:
           type: string
         type:
           type: string
-          enum: [observation, post, incident, condition_report]
+          enum: [observation, post, incident, condition_report, welfare_note, behavioural_notification]
         label:
           type: string
         detail:
@@ -4845,6 +5048,69 @@ components:
           type: string
         metadata:
           $ref: '#/components/schemas/UploadUrlRequest'
+
+    DocumentMergeUploadRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 26214400
+        contentType:
+          type: string
+          enum: [application/pdf, image/jpeg, image/png]
+
+    DocumentMergeUploadResponse:
+      type: object
+      required: [uploadURL, objectPath, name, contentType]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string
+        name:
+          type: string
+        contentType:
+          type: string
+
+    MergeDocumentsRequest:
+      type: object
+      required: [files]
+      properties:
+        files:
+          type: array
+          minItems: 2
+          maxItems: 20
+          items:
+            type: object
+            required: [objectPath]
+            properties:
+              objectPath:
+                type: string
+
+    MergedDocument:
+      type: object
+      required: [id, name, sourceNames, pageCount, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        sourceNames:
+          type: array
+          items:
+            type: string
+        pageCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
     ErrorEnvelope:
       type: object
       required: [error]
@@ -5398,7 +5664,7 @@ components:
 
     Post:
       type: object
-      required: [id, title, images, outcomeIds, createdAt, likeCount, likedByMe]
+      required: [id, title, images, outcomeIds, createdAt, likeCount, likedByMe, commentCount, unviewedCommentCount]
       properties:
         id:
           type: integer
@@ -5464,6 +5730,12 @@ components:
         likedByMe:
           type: boolean
           default: false
+        commentCount:
+          type: integer
+          default: 0
+        unviewedCommentCount:
+          type: integer
+          default: 0
 
     PostComment:
       type: object
@@ -6155,6 +6427,22 @@ components:
           type: array
           items:
             type: string
+        staffQualificationNames:
+          type: array
+          items:
+            type: string
+        staffCannotWorkQuals:
+          type: array
+          items:
+            type: string
+        staffResponsiblePersonQuals:
+          type: array
+          items:
+            type: string
+        staffEducatorQuals:
+          type: array
+          items:
+            type: string
         childrenRequireMedicalNotes:
           type: boolean
         childrenShowDobOnProfile:
@@ -6255,6 +6543,8 @@ components:
           type: ["integer", "null"]
         siteId:
           type: ["integer", "null"]
+        siteName:
+          type: ["string", "null"]
 
     Notification:
       type: object

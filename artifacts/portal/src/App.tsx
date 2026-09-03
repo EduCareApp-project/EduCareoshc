@@ -64,6 +64,7 @@ import ReportsStaff from "@/pages/reports-staff";
 import ReportsSystemAccess from "@/pages/reports-system-access";
 import ReportsWeeklyPlans from "@/pages/reports-weekly-plans";
 import ReportsFinancial from "@/pages/reports-financial";
+import AiTools from "@/pages/ai-tools";
 import Sites from "@/pages/sites";
 import SiteInstructions from "@/pages/site-instructions";
 import Settings from "@/pages/settings";
@@ -202,6 +203,7 @@ function StaffRoutes() {
         <Route path="/reports/weekly-plans" component={ReportsWeeklyPlans} />
         <Route path="/reports/financial" component={ReportsFinancial} />
         <Route path="/clickup-reports" component={ClickUpReports} />
+        <Route path="/ai-tools" component={AiTools} />
 
         <Route path="/appraisals" component={Appraisals} />
         <Route path="/appraisals/:id/stage1" component={AppraisalStage1} />

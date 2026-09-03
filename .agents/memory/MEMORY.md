@@ -2,3 +2,4 @@
 - [Posts test mock pattern](posts-test-mock.md) — subChain must be a thenable + have groupBy; mid-test clearAllMocks blocks must re-wire groupBy and use mockReturnValue (not mockResolvedValue) for subChain.where.
 - [Guardian financial feature](guardian-financial.md) — 3 tables (guardian_financial_accounts, guardian_communication_logs, guardian_payment_plans); route file guardian-financial.ts registered BEFORE guardiansRouter; guardian-detail uses tab nav via URL ?tab=financial.
 - [Generated contract reconciliation](generated-contract-reconciliation.md) — codegen can surface unrelated spec drift; isolate new endpoint output while preserving existing generated contracts until their callers are migrated.
+- [Document merge storage](document-merge-storage.md) — source uploads are staff-owned DB records; merged PDFs stay private and temporary sources are removed after successful merging.

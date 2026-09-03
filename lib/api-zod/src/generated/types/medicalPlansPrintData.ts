@@ -13,6 +13,9 @@ export interface MedicalPlansPrintData {
   firstName: string;
   lastName: string;
   hasMedicalCondition: boolean;
+  hasMealConsideration?: boolean;
+  /** @nullable */
+  mealConsiderationDetails?: string | null;
   /** @nullable */
   medicalRiskPlan: MedicalPlansPrintDataMedicalRiskPlan;
   /** @nullable */

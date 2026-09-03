@@ -14,4 +14,6 @@ export const ActivityItemType = {
   post: "post",
   incident: "incident",
   condition_report: "condition_report",
+  welfare_note: "welfare_note",
+  behavioural_notification: "behavioural_notification",
 } as const;

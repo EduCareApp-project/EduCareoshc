@@ -49,6 +49,7 @@ import medicationsRouter from "./medications";
 import behaviouralNotificationsRouter from "./behavioural-notifications";
 import clickupRouter from "./clickup";
 import superAdminRouter from "./super-admin";
+import aiToolsRouter from "./ai-tools";
 
 const router: IRouter = Router();
 
@@ -131,5 +132,6 @@ router.use(dataImportRouter);
 router.use(medicationsRouter);
 router.use(behaviouralNotificationsRouter);
 router.use(clickupRouter);
+router.use(aiToolsRouter);
 
 export default router;

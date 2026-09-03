@@ -55,10 +55,10 @@ export const ListChildrenResponseItem = zod.object({
     .describe(
       "Child has at least one active medication listed in their profile",
     ),
-  medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
-  communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   hasMealConsideration: zod.boolean().optional(),
   mealConsiderationDetails: zod.string().nullish(),
+  medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
+  communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   approvedPickups: zod
     .array(
       zod.object({
@@ -160,10 +160,10 @@ export const GetChildResponse = zod.object({
     .describe(
       "Child has at least one active medication listed in their profile",
     ),
-  medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
-  communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   hasMealConsideration: zod.boolean().optional(),
   mealConsiderationDetails: zod.string().nullish(),
+  medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
+  communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   approvedPickups: zod
     .array(
       zod.object({
@@ -211,8 +211,6 @@ export const UpdateChildBody = zod.object({
   hasMedicalCondition: zod.boolean().optional(),
   medicalRiskPlan: zod.record(zod.string(), zod.unknown()).optional(),
   communicationPlan: zod.record(zod.string(), zod.unknown()).optional(),
-  hasMealConsideration: zod.boolean().optional(),
-  mealConsiderationDetails: zod.string().nullish(),
   approvedPickups: zod
     .array(
       zod.object({
@@ -265,10 +263,10 @@ export const UpdateChildResponse = zod.object({
     .describe(
       "Child has at least one active medication listed in their profile",
     ),
-  medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
-  communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   hasMealConsideration: zod.boolean().optional(),
   mealConsiderationDetails: zod.string().nullish(),
+  medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullish(),
+  communicationPlan: zod.record(zod.string(), zod.unknown()).nullish(),
   approvedPickups: zod
     .array(
       zod.object({
@@ -297,6 +295,8 @@ export const GetChildMedicalPlansPrintResponse = zod.object({
   firstName: zod.string(),
   lastName: zod.string(),
   hasMedicalCondition: zod.boolean(),
+  hasMealConsideration: zod.boolean().optional(),
+  mealConsiderationDetails: zod.string().nullish(),
   medicalRiskPlan: zod.record(zod.string(), zod.unknown()).nullable(),
   communicationPlan: zod.record(zod.string(), zod.unknown()).nullable(),
 });
@@ -401,6 +401,21 @@ export const ResetGuardianPasswordBody = zod.object({
 export const ResetGuardianPasswordResponse = zod.object({
   newPassword: zod.string(),
 });
+
+/**
+ * @summary List login logs for a guardian (by email)
+ */
+export const ListGuardianLoginLogsParams = zod.object({
+  email: zod.coerce.string(),
+});
+
+export const ListGuardianLoginLogsResponseItem = zod.object({
+  id: zod.number(),
+  loggedInAt: zod.coerce.date(),
+});
+export const ListGuardianLoginLogsResponse = zod.array(
+  ListGuardianLoginLogsResponseItem,
+);
 
 export const ListStaffResponseItem = zod.object({
   id: zod.number(),
@@ -994,7 +1009,14 @@ export const GetOutcomeCountsResponse = zod.array(GetOutcomeCountsResponseItem);
 
 export const GetRecentActivityResponseItem = zod.object({
   id: zod.string(),
-  type: zod.enum(["observation", "post", "incident", "condition_report", "welfare_note", "behavioural_notification"]),
+  type: zod.enum([
+    "observation",
+    "post",
+    "incident",
+    "condition_report",
+    "welfare_note",
+    "behavioural_notification",
+  ]),
   label: zod.string(),
   detail: zod.string().nullish(),
   actor: zod.string().nullish(),
@@ -1784,6 +1806,81 @@ export const GetStorageObjectParams = zod.object({
   objectPath: zod.coerce.string(),
 });
 
+/**
+ * @summary Request an upload URL for a document merge source file
+ */
+
+export const requestDocumentMergeUploadUrlBodySizeMax = 26214400;
+
+export const RequestDocumentMergeUploadUrlBody = zod.object({
+  name: zod.string().min(1),
+  size: zod.number().min(1).max(requestDocumentMergeUploadUrlBodySizeMax),
+  contentType: zod.enum(["application/pdf", "image/jpeg", "image/png"]),
+});
+
+export const RequestDocumentMergeUploadUrlResponse = zod.object({
+  uploadURL: zod.string().url(),
+  objectPath: zod.string(),
+  name: zod.string(),
+  contentType: zod.string(),
+});
+
+/**
+ * @summary List merged documents created by the signed-in staff member
+ */
+export const ListMergedDocumentsResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  sourceNames: zod.array(zod.string()),
+  pageCount: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+export const ListMergedDocumentsResponse = zod.array(
+  ListMergedDocumentsResponseItem,
+);
+
+/**
+ * @summary Merge uploaded PDFs and images into a single PDF
+ */
+export const mergeDocumentsBodyFilesMin = 2;
+export const mergeDocumentsBodyFilesMax = 20;
+
+export const MergeDocumentsBody = zod.object({
+  files: zod
+    .array(
+      zod.object({
+        objectPath: zod.string(),
+      }),
+    )
+    .min(mergeDocumentsBodyFilesMin)
+    .max(mergeDocumentsBodyFilesMax),
+});
+
+/**
+ * @summary View a merged PDF
+ */
+export const ViewMergedDocumentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Download a merged PDF
+ */
+export const DownloadMergedDocumentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Delete a merged PDF
+ */
+export const DeleteMergedDocumentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteMergedDocumentResponse = zod.object({
+  ok: zod.boolean(),
+});
+
 export const ListWellbeingReportsResponseItem = zod.object({
   id: zod.number(),
   childId: zod.number(),
@@ -2328,12 +2425,11 @@ export const UpsertChecklistPeriodOverrideResponse = zod.object({
 export const listPostsQueryOffsetMin = 0;
 
 export const ListPostsQueryParams = zod.object({
-  limit: zod.coerce.number().int().positive().optional(),
-  offset: zod.coerce.number().int().min(listPostsQueryOffsetMin).optional(),
-  childId: zod.coerce.number().int().positive().optional(),
-  siteId: zod.coerce.number().int().positive().optional(),
+  limit: zod.coerce.number().min(1).optional(),
+  offset: zod.coerce.number().min(listPostsQueryOffsetMin).optional(),
+  childId: zod.coerce.number().min(1).optional(),
+  siteId: zod.coerce.number().min(1).optional(),
 });
-export type ListPostsQueryParams = zod.infer<typeof ListPostsQueryParams>;
 
 export const listPostsResponseImagesMax = 3;
 
@@ -2342,6 +2438,8 @@ export const listPostsResponseDocumentNamesDefault = [];
 export const listPostsResponseOutcomeIdsDefault = [];
 export const listPostsResponseLikeCountDefault = 0;
 export const listPostsResponseLikedByMeDefault = false;
+export const listPostsResponseCommentCountDefault = 0;
+export const listPostsResponseUnviewedCommentCountDefault = 0;
 
 export const ListPostsResponseItem = zod.object({
   id: zod.number(),
@@ -2374,8 +2472,10 @@ export const ListPostsResponseItem = zod.object({
   createdAt: zod.coerce.date(),
   likeCount: zod.number().default(listPostsResponseLikeCountDefault),
   likedByMe: zod.boolean().default(listPostsResponseLikedByMeDefault),
-  commentCount: zod.number().default(0),
-  unviewedCommentCount: zod.number().default(0),
+  commentCount: zod.number().default(listPostsResponseCommentCountDefault),
+  unviewedCommentCount: zod
+    .number()
+    .default(listPostsResponseUnviewedCommentCountDefault),
 });
 export const ListPostsResponse = zod.array(ListPostsResponseItem);
 
@@ -2414,6 +2514,8 @@ export const getPostResponseDocumentNamesDefault = [];
 export const getPostResponseOutcomeIdsDefault = [];
 export const getPostResponseLikeCountDefault = 0;
 export const getPostResponseLikedByMeDefault = false;
+export const getPostResponseCommentCountDefault = 0;
+export const getPostResponseUnviewedCommentCountDefault = 0;
 
 export const GetPostResponse = zod.object({
   id: zod.number(),
@@ -2444,6 +2546,10 @@ export const GetPostResponse = zod.object({
   createdAt: zod.coerce.date(),
   likeCount: zod.number().default(getPostResponseLikeCountDefault),
   likedByMe: zod.boolean().default(getPostResponseLikedByMeDefault),
+  commentCount: zod.number().default(getPostResponseCommentCountDefault),
+  unviewedCommentCount: zod
+    .number()
+    .default(getPostResponseUnviewedCommentCountDefault),
 });
 
 export const UpdatePostParams = zod.object({
@@ -2487,6 +2593,8 @@ export const updatePostResponseDocumentNamesDefault = [];
 export const updatePostResponseOutcomeIdsDefault = [];
 export const updatePostResponseLikeCountDefault = 0;
 export const updatePostResponseLikedByMeDefault = false;
+export const updatePostResponseCommentCountDefault = 0;
+export const updatePostResponseUnviewedCommentCountDefault = 0;
 
 export const UpdatePostResponse = zod.object({
   id: zod.number(),
@@ -2519,6 +2627,10 @@ export const UpdatePostResponse = zod.object({
   createdAt: zod.coerce.date(),
   likeCount: zod.number().default(updatePostResponseLikeCountDefault),
   likedByMe: zod.boolean().default(updatePostResponseLikedByMeDefault),
+  commentCount: zod.number().default(updatePostResponseCommentCountDefault),
+  unviewedCommentCount: zod
+    .number()
+    .default(updatePostResponseUnviewedCommentCountDefault),
 });
 
 export const DeletePostParams = zod.object({
@@ -3441,8 +3553,8 @@ export const ListSitesResponseItem = zod.object({
   name: zod.string(),
   address: zod.string().nullish(),
   grouping: zod.string().nullish(),
-  status: zod.string().default("active"),
-  isDoscel: zod.boolean().default(false),
+  status: zod.enum(["active", "pending", "closed"]).optional(),
+  isDoscel: zod.boolean().optional(),
   createdAt: zod.coerce.date(),
 });
 export const ListSitesResponse = zod.array(ListSitesResponseItem);
@@ -3462,7 +3574,7 @@ export const UpdateSiteParams = zod.object({
 export const UpdateSiteBody = zod.object({
   name: zod.string().optional(),
   address: zod.string().optional(),
-  grouping: zod.string().nullish(),
+  grouping: zod.string().optional(),
   status: zod.enum(["active", "pending", "closed"]).optional(),
   isDoscel: zod.boolean().optional(),
 });
@@ -3472,8 +3584,8 @@ export const UpdateSiteResponse = zod.object({
   name: zod.string(),
   address: zod.string().nullish(),
   grouping: zod.string().nullish(),
-  status: zod.string().default("active"),
-  isDoscel: zod.boolean().default(false),
+  status: zod.enum(["active", "pending", "closed"]).optional(),
+  isDoscel: zod.boolean().optional(),
   createdAt: zod.coerce.date(),
 });
 
@@ -3539,6 +3651,10 @@ export const GetFeatureSettingsResponse = zod.object({
   staffAppraisalCycleDays: zod.number().optional(),
   staffProfilesVisibleToPeers: zod.boolean().optional(),
   staffCustomRoles: zod.array(zod.string()).optional(),
+  staffQualificationNames: zod.array(zod.string()).optional(),
+  staffCannotWorkQuals: zod.array(zod.string()).optional(),
+  staffResponsiblePersonQuals: zod.array(zod.string()).optional(),
+  staffEducatorQuals: zod.array(zod.string()).optional(),
   childrenRequireMedicalNotes: zod.boolean().optional(),
   childrenShowDobOnProfile: zod.boolean().optional(),
   childDocumentTypes: zod.array(zod.string()).optional(),
@@ -3577,10 +3693,6 @@ export const GetFeatureSettingsResponse = zod.object({
   complianceReviewCycleDays: zod.number().optional(),
   staffComplianceWarnDays: zod.number().optional(),
   staffComplianceSuspendOnExpiry: zod.boolean().optional(),
-  staffQualificationNames: zod.array(zod.string()).optional(),
-  staffCannotWorkQuals: zod.array(zod.string()).optional(),
-  staffResponsiblePersonQuals: zod.array(zod.string()).optional(),
-  staffEducatorQuals: zod.array(zod.string()).optional(),
   jottingsVisibleToGuardians: zod.boolean().optional(),
   jottingsRequireChild: zod.boolean().optional(),
   evacuationDrillFrequencyDays: zod.number().optional(),
@@ -3602,6 +3714,10 @@ export const UpdateFeatureSettingsBody = zod.object({
   staffAppraisalCycleDays: zod.number().optional(),
   staffProfilesVisibleToPeers: zod.boolean().optional(),
   staffCustomRoles: zod.array(zod.string()).optional(),
+  staffQualificationNames: zod.array(zod.string()).optional(),
+  staffCannotWorkQuals: zod.array(zod.string()).optional(),
+  staffResponsiblePersonQuals: zod.array(zod.string()).optional(),
+  staffEducatorQuals: zod.array(zod.string()).optional(),
   childrenRequireMedicalNotes: zod.boolean().optional(),
   childrenShowDobOnProfile: zod.boolean().optional(),
   childDocumentTypes: zod.array(zod.string()).optional(),
@@ -3640,10 +3756,6 @@ export const UpdateFeatureSettingsBody = zod.object({
   complianceReviewCycleDays: zod.number().optional(),
   staffComplianceWarnDays: zod.number().optional(),
   staffComplianceSuspendOnExpiry: zod.boolean().optional(),
-  staffQualificationNames: zod.array(zod.string()).optional(),
-  staffCannotWorkQuals: zod.array(zod.string()).optional(),
-  staffResponsiblePersonQuals: zod.array(zod.string()).optional(),
-  staffEducatorQuals: zod.array(zod.string()).optional(),
   jottingsVisibleToGuardians: zod.boolean().optional(),
   jottingsRequireChild: zod.boolean().optional(),
   evacuationDrillFrequencyDays: zod.number().optional(),
@@ -3662,6 +3774,10 @@ export const UpdateFeatureSettingsResponse = zod.object({
   staffAppraisalCycleDays: zod.number().optional(),
   staffProfilesVisibleToPeers: zod.boolean().optional(),
   staffCustomRoles: zod.array(zod.string()).optional(),
+  staffQualificationNames: zod.array(zod.string()).optional(),
+  staffCannotWorkQuals: zod.array(zod.string()).optional(),
+  staffResponsiblePersonQuals: zod.array(zod.string()).optional(),
+  staffEducatorQuals: zod.array(zod.string()).optional(),
   childrenRequireMedicalNotes: zod.boolean().optional(),
   childrenShowDobOnProfile: zod.boolean().optional(),
   childDocumentTypes: zod.array(zod.string()).optional(),
@@ -3700,10 +3816,6 @@ export const UpdateFeatureSettingsResponse = zod.object({
   complianceReviewCycleDays: zod.number().optional(),
   staffComplianceWarnDays: zod.number().optional(),
   staffComplianceSuspendOnExpiry: zod.boolean().optional(),
-  staffQualificationNames: zod.array(zod.string()).optional(),
-  staffCannotWorkQuals: zod.array(zod.string()).optional(),
-  staffResponsiblePersonQuals: zod.array(zod.string()).optional(),
-  staffEducatorQuals: zod.array(zod.string()).optional(),
   jottingsVisibleToGuardians: zod.boolean().optional(),
   jottingsRequireChild: zod.boolean().optional(),
   evacuationDrillFrequencyDays: zod.number().optional(),
@@ -3758,6 +3870,7 @@ export const UpdateNotificationSettingsBodyItem = zod.object({
   enabled: zod.boolean(),
   advanceDays: zod.number().nullish(),
   siteId: zod.number().nullish(),
+  siteName: zod.string().nullish(),
 });
 export const UpdateNotificationSettingsBody = zod.array(
   UpdateNotificationSettingsBodyItem,
@@ -3779,7 +3892,6 @@ export const GetExpiringMedicationsResponseItem = zod.object({
   childFirstName: zod.string(),
   childLastName: zod.string(),
   siteId: zod.number().nullish(),
-  siteName: zod.string().nullish(),
   medications: zod.array(
     zod.object({
       slot: zod.number(),
@@ -4189,20 +4301,6 @@ export const UpdateWeeklyReviewResponse = zod.object({
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
-
-/**
- * @summary List login logs for a guardian
- */
-export const ListGuardianLoginLogsParams = zod.object({
-  email: zod.string(),
-});
-
-export const ListGuardianLoginLogsResponseItem = zod.object({
-  id: zod.number(),
-  loggedInAt: zod.coerce.date(),
-});
-
-export const ListGuardianLoginLogsResponse = zod.array(ListGuardianLoginLogsResponseItem);
 
 /**
  * @summary Delete a weekly review

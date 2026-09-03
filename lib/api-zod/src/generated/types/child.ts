@@ -45,6 +45,9 @@ export interface Child {
   hasMedicalCondition?: boolean;
   /** Child has at least one active medication listed in their profile */
   hasMedications?: boolean;
+  hasMealConsideration?: boolean;
+  /** @nullable */
+  mealConsiderationDetails?: string | null;
   /** @nullable */
   medicalRiskPlan?: ChildMedicalRiskPlan;
   /** @nullable */

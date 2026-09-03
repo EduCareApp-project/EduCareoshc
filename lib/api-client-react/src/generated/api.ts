@@ -47,6 +47,9 @@ import type {
   ConfidentialNoteInput,
   DashboardSummary,
   DeleteBehaviouralNotification200,
+  DeleteMergedDocument200,
+  DocumentMergeUploadRequest,
+  DocumentMergeUploadResponse,
   ErrorEnvelope,
   Evacuation,
   EvacuationInput,
@@ -89,6 +92,8 @@ import type {
   MedicationLog,
   MedicationLogPayload,
   MedicationSlotPayload,
+  MergeDocumentsRequest,
+  MergedDocument,
   NewPasswordResult,
   Notice,
   NoticeInput,
@@ -1137,6 +1142,95 @@ export const useResetGuardianPassword = <
 > => {
   return useMutation(getResetGuardianPasswordMutationOptions(options));
 };
+
+/**
+ * @summary List login logs for a guardian (by email)
+ */
+export const getListGuardianLoginLogsUrl = (email: string) => {
+  return `/api/guardians/${email}/login-logs`;
+};
+
+export const listGuardianLoginLogs = async (
+  email: string,
+  options?: RequestInit,
+): Promise<GuardianLoginLog[]> => {
+  return customFetch<GuardianLoginLog[]>(getListGuardianLoginLogsUrl(email), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListGuardianLoginLogsQueryKey = (email: string) => {
+  return [`/api/guardians/${email}/login-logs`] as const;
+};
+
+export const getListGuardianLoginLogsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGuardianLoginLogs>>,
+  TError = ErrorType<unknown>,
+>(
+  email: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listGuardianLoginLogs>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListGuardianLoginLogsQueryKey(email);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listGuardianLoginLogs>>
+  > = ({ signal }) =>
+    listGuardianLoginLogs(email, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!email,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listGuardianLoginLogs>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListGuardianLoginLogsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listGuardianLoginLogs>>
+>;
+export type ListGuardianLoginLogsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List login logs for a guardian (by email)
+ */
+
+export function useListGuardianLoginLogs<
+  TData = Awaited<ReturnType<typeof listGuardianLoginLogs>>,
+  TError = ErrorType<unknown>,
+>(
+  email: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listGuardianLoginLogs>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListGuardianLoginLogsQueryOptions(email, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 export const getListStaffUrl = () => {
   return `/api/staff`;
@@ -7563,6 +7657,517 @@ export function useGetStorageObject<
   return { ...query, queryKey: queryOptions.queryKey };
 }
 
+/**
+ * @summary Request an upload URL for a document merge source file
+ */
+export const getRequestDocumentMergeUploadUrlUrl = () => {
+  return `/api/ai-tools/document-merge/upload-url`;
+};
+
+export const requestDocumentMergeUploadUrl = async (
+  documentMergeUploadRequest: DocumentMergeUploadRequest,
+  options?: RequestInit,
+): Promise<DocumentMergeUploadResponse> => {
+  return customFetch<DocumentMergeUploadResponse>(
+    getRequestDocumentMergeUploadUrlUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(documentMergeUploadRequest),
+    },
+  );
+};
+
+export const getRequestDocumentMergeUploadUrlMutationOptions = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestDocumentMergeUploadUrl>>,
+    TError,
+    { data: BodyType<DocumentMergeUploadRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof requestDocumentMergeUploadUrl>>,
+  TError,
+  { data: BodyType<DocumentMergeUploadRequest> },
+  TContext
+> => {
+  const mutationKey = ["requestDocumentMergeUploadUrl"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof requestDocumentMergeUploadUrl>>,
+    { data: BodyType<DocumentMergeUploadRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return requestDocumentMergeUploadUrl(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RequestDocumentMergeUploadUrlMutationResult = NonNullable<
+  Awaited<ReturnType<typeof requestDocumentMergeUploadUrl>>
+>;
+export type RequestDocumentMergeUploadUrlMutationBody =
+  BodyType<DocumentMergeUploadRequest>;
+export type RequestDocumentMergeUploadUrlMutationError =
+  ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Request an upload URL for a document merge source file
+ */
+export const useRequestDocumentMergeUploadUrl = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestDocumentMergeUploadUrl>>,
+    TError,
+    { data: BodyType<DocumentMergeUploadRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof requestDocumentMergeUploadUrl>>,
+  TError,
+  { data: BodyType<DocumentMergeUploadRequest> },
+  TContext
+> => {
+  return useMutation(getRequestDocumentMergeUploadUrlMutationOptions(options));
+};
+
+/**
+ * @summary List merged documents created by the signed-in staff member
+ */
+export const getListMergedDocumentsUrl = () => {
+  return `/api/ai-tools/document-merges`;
+};
+
+export const listMergedDocuments = async (
+  options?: RequestInit,
+): Promise<MergedDocument[]> => {
+  return customFetch<MergedDocument[]>(getListMergedDocumentsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMergedDocumentsQueryKey = () => {
+  return [`/api/ai-tools/document-merges`] as const;
+};
+
+export const getListMergedDocumentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMergedDocuments>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMergedDocuments>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListMergedDocumentsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listMergedDocuments>>
+  > = ({ signal }) => listMergedDocuments({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMergedDocuments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMergedDocumentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMergedDocuments>>
+>;
+export type ListMergedDocumentsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List merged documents created by the signed-in staff member
+ */
+
+export function useListMergedDocuments<
+  TData = Awaited<ReturnType<typeof listMergedDocuments>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMergedDocuments>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMergedDocumentsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Merge uploaded PDFs and images into a single PDF
+ */
+export const getMergeDocumentsUrl = () => {
+  return `/api/ai-tools/document-merges/merge`;
+};
+
+export const mergeDocuments = async (
+  mergeDocumentsRequest: MergeDocumentsRequest,
+  options?: RequestInit,
+): Promise<MergedDocument> => {
+  return customFetch<MergedDocument>(getMergeDocumentsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(mergeDocumentsRequest),
+  });
+};
+
+export const getMergeDocumentsMutationOptions = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof mergeDocuments>>,
+    TError,
+    { data: BodyType<MergeDocumentsRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof mergeDocuments>>,
+  TError,
+  { data: BodyType<MergeDocumentsRequest> },
+  TContext
+> => {
+  const mutationKey = ["mergeDocuments"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof mergeDocuments>>,
+    { data: BodyType<MergeDocumentsRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return mergeDocuments(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type MergeDocumentsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof mergeDocuments>>
+>;
+export type MergeDocumentsMutationBody = BodyType<MergeDocumentsRequest>;
+export type MergeDocumentsMutationError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Merge uploaded PDFs and images into a single PDF
+ */
+export const useMergeDocuments = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof mergeDocuments>>,
+    TError,
+    { data: BodyType<MergeDocumentsRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof mergeDocuments>>,
+  TError,
+  { data: BodyType<MergeDocumentsRequest> },
+  TContext
+> => {
+  return useMutation(getMergeDocumentsMutationOptions(options));
+};
+
+/**
+ * @summary View a merged PDF
+ */
+export const getViewMergedDocumentUrl = (id: number) => {
+  return `/api/ai-tools/document-merges/${id}/view`;
+};
+
+export const viewMergedDocument = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getViewMergedDocumentUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getViewMergedDocumentQueryKey = (id: number) => {
+  return [`/api/ai-tools/document-merges/${id}/view`] as const;
+};
+
+export const getViewMergedDocumentQueryOptions = <
+  TData = Awaited<ReturnType<typeof viewMergedDocument>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof viewMergedDocument>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getViewMergedDocumentQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof viewMergedDocument>>
+  > = ({ signal }) => viewMergedDocument(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof viewMergedDocument>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ViewMergedDocumentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof viewMergedDocument>>
+>;
+export type ViewMergedDocumentQueryError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary View a merged PDF
+ */
+
+export function useViewMergedDocument<
+  TData = Awaited<ReturnType<typeof viewMergedDocument>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof viewMergedDocument>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getViewMergedDocumentQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Download a merged PDF
+ */
+export const getDownloadMergedDocumentUrl = (id: number) => {
+  return `/api/ai-tools/document-merges/${id}/download`;
+};
+
+export const downloadMergedDocument = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getDownloadMergedDocumentUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getDownloadMergedDocumentQueryKey = (id: number) => {
+  return [`/api/ai-tools/document-merges/${id}/download`] as const;
+};
+
+export const getDownloadMergedDocumentQueryOptions = <
+  TData = Awaited<ReturnType<typeof downloadMergedDocument>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof downloadMergedDocument>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getDownloadMergedDocumentQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof downloadMergedDocument>>
+  > = ({ signal }) => downloadMergedDocument(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof downloadMergedDocument>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type DownloadMergedDocumentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof downloadMergedDocument>>
+>;
+export type DownloadMergedDocumentQueryError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Download a merged PDF
+ */
+
+export function useDownloadMergedDocument<
+  TData = Awaited<ReturnType<typeof downloadMergedDocument>>,
+  TError = ErrorType<ErrorEnvelope>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof downloadMergedDocument>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getDownloadMergedDocumentQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Delete a merged PDF
+ */
+export const getDeleteMergedDocumentUrl = (id: number) => {
+  return `/api/ai-tools/document-merges/${id}`;
+};
+
+export const deleteMergedDocument = async (
+  id: number,
+  options?: RequestInit,
+): Promise<DeleteMergedDocument200> => {
+  return customFetch<DeleteMergedDocument200>(getDeleteMergedDocumentUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteMergedDocumentMutationOptions = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMergedDocument>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteMergedDocument>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteMergedDocument"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteMergedDocument>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteMergedDocument(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteMergedDocumentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteMergedDocument>>
+>;
+
+export type DeleteMergedDocumentMutationError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Delete a merged PDF
+ */
+export const useDeleteMergedDocument = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteMergedDocument>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteMergedDocument>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteMergedDocumentMutationOptions(options));
+};
+
 export const getListWellbeingReportsUrl = () => {
   return `/api/wellbeing`;
 };
@@ -10259,13 +10864,19 @@ export const useUpsertChecklistPeriodOverride = <
 };
 
 export const getListPostsUrl = (params?: ListPostsParams) => {
-  const search = new URLSearchParams();
-  if (params?.limit !== undefined) search.set("limit", String(params.limit));
-  if (params?.offset !== undefined) search.set("offset", String(params.offset));
-  if (params?.childId !== undefined) search.set("childId", String(params.childId));
-  if (params?.siteId !== undefined) search.set("siteId", String(params.siteId));
-  const qs = search.toString();
-  return qs ? `/api/posts?${qs}` : `/api/posts`;
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/posts?${stringifiedParams}`
+    : `/api/posts`;
 };
 
 export const listPosts = async (
@@ -10279,18 +10890,24 @@ export const listPosts = async (
 };
 
 export const getListPostsQueryKey = (params?: ListPostsParams) => {
-  return params ? ([`/api/posts`, params] as const) : ([`/api/posts`] as const);
+  return [`/api/posts`, ...(params ? [params] : [])] as const;
 };
 
 export const getListPostsQueryOptions = <
   TData = Awaited<ReturnType<typeof listPosts>>,
   TError = ErrorType<unknown>,
->(options?: {
-  params?: ListPostsParams;
-  query?: UseQueryOptions<Awaited<ReturnType<typeof listPosts>>, TError, TData>;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
-  const { params, query: queryOptions, request: requestOptions } = options ?? {};
+>(
+  params?: ListPostsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listPosts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
 
   const queryKey = queryOptions?.queryKey ?? getListPostsQueryKey(params);
 
@@ -10313,12 +10930,18 @@ export type ListPostsQueryError = ErrorType<unknown>;
 export function useListPosts<
   TData = Awaited<ReturnType<typeof listPosts>>,
   TError = ErrorType<unknown>,
->(options?: {
-  params?: ListPostsParams;
-  query?: UseQueryOptions<Awaited<ReturnType<typeof listPosts>>, TError, TData>;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListPostsQueryOptions(options);
+>(
+  params?: ListPostsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listPosts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPostsQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -14969,80 +15592,3 @@ export const useDeleteWeeklyReview = <
 > => {
   return useMutation(getDeleteWeeklyReviewMutationOptions(options));
 };
-
-// ── Guardian Login Logs ───────────────────────────────────────────────────────
-
-export const getListGuardianLoginLogsUrl = (email: string) => {
-  return `/api/guardians/${email}/login-logs`;
-};
-
-export const listGuardianLoginLogs = async (
-  email: string,
-  options?: RequestInit,
-): Promise<GuardianLoginLog[]> => {
-  return customFetch<GuardianLoginLog[]>(getListGuardianLoginLogsUrl(email), {
-    ...options,
-    method: "GET",
-  });
-};
-
-export const getListGuardianLoginLogsQueryKey = (email: string) => {
-  return [`/api/guardians/${email}/login-logs`] as const;
-};
-
-export const getListGuardianLoginLogsQueryOptions = <
-  TData = Awaited<ReturnType<typeof listGuardianLoginLogs>>,
-  TError = ErrorType<unknown>,
->(
-  email: string,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof listGuardianLoginLogs>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-  const queryKey = queryOptions?.queryKey ?? getListGuardianLoginLogsQueryKey(email);
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof listGuardianLoginLogs>>> = ({ signal }) =>
-    listGuardianLoginLogs(email, { signal, ...requestOptions });
-  return {
-    queryKey,
-    queryFn,
-    enabled: !!email,
-    ...queryOptions,
-  } as UseQueryOptions<
-    Awaited<ReturnType<typeof listGuardianLoginLogs>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type ListGuardianLoginLogsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof listGuardianLoginLogs>>
->;
-export type ListGuardianLoginLogsQueryError = ErrorType<unknown>;
-
-/**
- * @summary List login logs for a guardian (by email)
- */
-export function useListGuardianLoginLogs<
-  TData = Awaited<ReturnType<typeof listGuardianLoginLogs>>,
-  TError = ErrorType<unknown>,
->(
-  email: string,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof listGuardianLoginLogs>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getListGuardianLoginLogsQueryOptions(email, options);
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
-  return { ...query, queryKey: queryOptions.queryKey };
-}

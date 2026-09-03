@@ -21,6 +21,11 @@ export interface GuardianUpdate {
   username: string;
 }
 
+export interface GuardianLoginLog {
+  id: number;
+  loggedInAt: string;
+}
+
 export interface NewPasswordResult {
   newPassword: string;
 }
@@ -29,6 +34,14 @@ export interface HealthStatus {
   status: string;
 }
 
+export type SiteStatus = (typeof SiteStatus)[keyof typeof SiteStatus];
+
+export const SiteStatus = {
+  active: "active",
+  pending: "pending",
+  closed: "closed",
+} as const;
+
 export interface Site {
   id: number;
   name: string;
@@ -36,24 +49,42 @@ export interface Site {
   address?: string | null;
   /** @nullable */
   grouping?: string | null;
-  status?: string;
+  status?: SiteStatus;
   isDoscel?: boolean;
   createdAt: string;
 }
+
+export type SiteInputStatus =
+  (typeof SiteInputStatus)[keyof typeof SiteInputStatus];
+
+export const SiteInputStatus = {
+  active: "active",
+  pending: "pending",
+  closed: "closed",
+} as const;
 
 export interface SiteInput {
   name: string;
   address?: string;
   grouping?: string;
-  status?: string;
+  status?: SiteInputStatus;
   isDoscel?: boolean;
 }
+
+export type SiteUpdateStatus =
+  (typeof SiteUpdateStatus)[keyof typeof SiteUpdateStatus];
+
+export const SiteUpdateStatus = {
+  active: "active",
+  pending: "pending",
+  closed: "closed",
+} as const;
 
 export interface SiteUpdate {
   name?: string;
   address?: string;
-  grouping?: string | null;
-  status?: string;
+  grouping?: string;
+  status?: SiteUpdateStatus;
   isDoscel?: boolean;
 }
 
@@ -80,6 +111,8 @@ export interface ApprovedPickup {
   fullName: string;
   phone: string;
   relationship: string;
+  isApprovedPickup?: boolean;
+  isEmergencyContact?: boolean;
 }
 
 export interface Child {
@@ -148,6 +181,9 @@ export interface MedicalPlansPrintData {
   firstName: string;
   lastName: string;
   hasMedicalCondition: boolean;
+  hasMealConsideration?: boolean;
+  /** @nullable */
+  mealConsiderationDetails?: string | null;
   /** @nullable */
   medicalRiskPlan: MedicalPlansPrintDataMedicalRiskPlan;
   /** @nullable */
@@ -231,9 +267,6 @@ export interface ChildUpdate {
   /** Child has a photo restriction — do not include in published photos */
   photoRestriction?: boolean;
   hasMedicalCondition?: boolean;
-  hasMealConsideration?: boolean;
-  /** @nullable */
-  mealConsiderationDetails?: string | null;
   medicalRiskPlan?: ChildUpdateMedicalRiskPlan;
   communicationPlan?: ChildUpdateCommunicationPlan;
   approvedPickups?: ApprovedPickup[];
@@ -1101,6 +1134,53 @@ export interface UploadUrlResponse {
   metadata?: UploadUrlRequest;
 }
 
+export type DocumentMergeUploadRequestContentType =
+  (typeof DocumentMergeUploadRequestContentType)[keyof typeof DocumentMergeUploadRequestContentType];
+
+export const DocumentMergeUploadRequestContentType = {
+  "application/pdf": "application/pdf",
+  "image/jpeg": "image/jpeg",
+  "image/png": "image/png",
+} as const;
+
+export interface DocumentMergeUploadRequest {
+  /** @minLength 1 */
+  name: string;
+  /**
+   * @minimum 1
+   * @maximum 26214400
+   */
+  size: number;
+  contentType: DocumentMergeUploadRequestContentType;
+}
+
+export interface DocumentMergeUploadResponse {
+  uploadURL: string;
+  objectPath: string;
+  name: string;
+  contentType: string;
+}
+
+export type MergeDocumentsRequestFilesItem = {
+  objectPath: string;
+};
+
+export interface MergeDocumentsRequest {
+  /**
+   * @minItems 2
+   * @maxItems 20
+   */
+  files: MergeDocumentsRequestFilesItem[];
+}
+
+export interface MergedDocument {
+  id: number;
+  name: string;
+  sourceNames: string[];
+  pageCount: number;
+  createdAt: string;
+}
+
 export interface ErrorEnvelope {
   error: string;
 }
@@ -1945,6 +2025,10 @@ export interface FeatureSettings {
   staffAppraisalCycleDays?: number;
   staffProfilesVisibleToPeers?: boolean;
   staffCustomRoles?: string[];
+  staffQualificationNames?: string[];
+  staffCannotWorkQuals?: string[];
+  staffResponsiblePersonQuals?: string[];
+  staffEducatorQuals?: string[];
   childrenRequireMedicalNotes?: boolean;
   childrenShowDobOnProfile?: boolean;
   childDocumentTypes?: string[];
@@ -1974,10 +2058,6 @@ export interface FeatureSettings {
   complianceReviewCycleDays?: number;
   staffComplianceWarnDays?: number;
   staffComplianceSuspendOnExpiry?: boolean;
-  staffQualificationNames?: string[];
-  staffCannotWorkQuals?: string[];
-  staffResponsiblePersonQuals?: string[];
-  staffEducatorQuals?: string[];
   jottingsVisibleToGuardians?: boolean;
   jottingsRequireChild?: boolean;
   evacuationDrillFrequencyDays?: number;
@@ -1993,6 +2073,8 @@ export interface UpdateNotificationSettingItem {
   advanceDays?: number | null;
   /** @nullable */
   siteId?: number | null;
+  /** @nullable */
+  siteName?: string | null;
 }
 
 export interface Notification {
@@ -2048,8 +2130,6 @@ export interface ExpiringMedicationChild {
   childLastName: string;
   /** @nullable */
   siteId?: number | null;
-  /** @nullable */
-  siteName?: string | null;
   medications: ExpiringMedicationEntry[];
 }
 
@@ -2321,6 +2401,10 @@ export type ListQipStrengthsParams = {
   siteId?: number;
 };
 
+export type DeleteMergedDocument200 = {
+  ok: boolean;
+};
+
 export type ListRoutineItemCompletionsParams = {
   routineId: number;
   periodKey: string;
@@ -2329,6 +2413,25 @@ export type ListRoutineItemCompletionsParams = {
 export type GetChecklistPeriodOverrideParams = {
   routineId: number;
   periodKey: string;
+};
+
+export type ListPostsParams = {
+  /**
+   * @minimum 1
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+  /**
+   * @minimum 1
+   */
+  childId?: number;
+  /**
+   * @minimum 1
+   */
+  siteId?: number;
 };
 
 export type GetLearningStoriesReportParams = {
@@ -2383,17 +2486,5 @@ export type GetWeeklyReviewStatsParams = {
 };
 
 export type ListWeeklyReviewsParams = {
-  siteId?: number;
-};
-
-export interface GuardianLoginLog {
-  id: number;
-  loggedInAt: Date;
-}
-
-export type ListPostsParams = {
-  limit?: number;
-  offset?: number;
-  childId?: number;
   siteId?: number;
 };

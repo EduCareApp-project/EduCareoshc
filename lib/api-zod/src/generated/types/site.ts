@@ -5,11 +5,16 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+import type { SiteStatus } from "./siteStatus";
 
 export interface Site {
   id: number;
   name: string;
   /** @nullable */
   address?: string | null;
+  /** @nullable */
+  grouping?: string | null;
+  status?: SiteStatus;
+  isDoscel?: boolean;
   createdAt: Date;
 }

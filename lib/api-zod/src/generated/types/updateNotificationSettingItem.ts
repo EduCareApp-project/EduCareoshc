@@ -13,4 +13,6 @@ export interface UpdateNotificationSettingItem {
   advanceDays?: number | null;
   /** @nullable */
   siteId?: number | null;
+  /** @nullable */
+  siteName?: string | null;
 }

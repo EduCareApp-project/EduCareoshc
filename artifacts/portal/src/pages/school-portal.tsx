@@ -31,6 +31,15 @@ import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@workspace/object-storage-web";
 
+function formatExpiryDate(value: string): { label: string; expired: boolean } | null {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  return {
+    label: format(date, "MMM d, yyyy"),
+    expired: date < new Date(),
+  };
+}
+
 const vitalRecordSchema = z.object({
   recordType: z.string().min(1, "Record type is required"),
   recordName: z.string().min(1, "Record name is required"),
@@ -60,9 +69,17 @@ export default function SchoolPortal() {
   const [vitalOpen, setVitalOpen] = useState(false);
   const [vecraOpen, setVecraOpen] = useState(false);
   const [vitalFile, setVitalFile] = useState<File | null>(null);
+  const [vitalUploadError, setVitalUploadError] = useState<string | null>(null);
   const vitalFileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile: uploadVitalFile, isUploading: isUploadingVitalFile } = useUpload({
-    onError: () => toast({ title: "Document upload failed", variant: "destructive" }),
+    onError: (error) => {
+      setVitalUploadError(error.message);
+      toast({
+        title: "Document upload failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const createVital = useCreateVitalRecord(siteId!);
@@ -123,6 +140,7 @@ export default function SchoolPortal() {
   const resetVitalForm = () => {
     vitalForm.reset();
     setVitalFile(null);
+    setVitalUploadError(null);
     if (vitalFileInputRef.current) vitalFileInputRef.current.value = "";
   };
 
@@ -131,19 +149,22 @@ export default function SchoolPortal() {
       toast({ title: "Supporting document required", description: "Upload the document for this vital record before saving.", variant: "destructive" });
       return;
     }
-    const upload = await uploadVitalFile(vitalFile);
-    if (!upload) return;
-
-    createVital.mutate({ ...values, documentPath: upload.objectPath, documentName: vitalFile.name }, {
-      onSuccess: () => {
-        toast({ title: "Vital record added successfully" });
-        setVitalOpen(false);
-        resetVitalForm();
-      },
-      onError: (err: Error) => {
-        toast({ title: "Failed to add record", description: err.message, variant: "destructive" });
-      }
-    });
+    setVitalUploadError(null);
+    try {
+      const upload = await uploadVitalFile(vitalFile);
+      if (!upload) return;
+      await createVital.mutateAsync({
+        ...values,
+        documentPath: upload.objectPath,
+        documentName: vitalFile.name,
+      });
+      toast({ title: "Vital record added successfully" });
+      setVitalOpen(false);
+      resetVitalForm();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Please try again.";
+      toast({ title: "Failed to add record", description: message, variant: "destructive" });
+    }
   };
 
   const onVecraSubmit = (values: z.infer<typeof vecraVisitSchema>) => {
@@ -352,7 +373,10 @@ export default function SchoolPortal() {
                           ref={vitalFileInputRef}
                           type="file"
                           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
-                          onChange={(event) => setVitalFile(event.target.files?.[0] ?? null)}
+                           onChange={(event) => {
+                             setVitalFile(event.target.files?.[0] ?? null);
+                             setVitalUploadError(null);
+                           }}
                           required
                         />
                         <p className="text-xs text-muted-foreground">
@@ -364,6 +388,9 @@ export default function SchoolPortal() {
                             {vitalFile.name}
                           </p>
                         )}
+                         {vitalUploadError && (
+                           <p className="text-xs text-destructive">{vitalUploadError}</p>
+                         )}
                       </div>
                       <DialogFooter>
                         <Button type="submit" disabled={createVital.isPending || isUploadingVitalFile}>
@@ -420,14 +447,17 @@ export default function SchoolPortal() {
                           <span className="font-mono text-xs mt-0.5">{record.referenceNumber}</span>
                         </div>
                       )}
-                      {record.expiryDate && (
-                        <div className="flex justify-between pt-1">
-                          <span className="text-muted-foreground">Expires</span>
-                          <span className={`font-medium ${new Date(record.expiryDate) < new Date() ? "text-destructive" : ""}`}>
-                            {format(new Date(record.expiryDate), "MMM d, yyyy")}
-                          </span>
-                        </div>
-                      )}
+                      {record.expiryDate && (() => {
+                        const expiry = formatExpiryDate(record.expiryDate);
+                        return expiry ? (
+                          <div className="flex justify-between pt-1">
+                            <span className="text-muted-foreground">Expires</span>
+                            <span className={`font-medium ${expiry.expired ? "text-destructive" : ""}`}>
+                              {expiry.label}
+                            </span>
+                          </div>
+                        ) : null;
+                      })()}
                       {record.notes && (
                         <div className="pt-2 text-muted-foreground text-xs bg-muted/50 p-2 rounded mt-2">
                           {record.notes}

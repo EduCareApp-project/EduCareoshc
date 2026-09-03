@@ -13,11 +13,14 @@ import {
 } from "lucide-react";
 import {
   type SchoolReportTerm,
+  useCreateSchoolReportSummary,
   useGenerateSchoolReport,
+  useGetSchoolReportSummaries,
   useGetSchoolReports,
   useSaveSchoolReportAttendance,
   useSaveSchoolReportTerm,
 } from "@/hooks/use-schools";
+import { SchoolSummaryReport } from "@/components/school-summary-report";
 import {
   ATTENDANCE_DAYS,
   type AttendanceDay,
@@ -44,13 +47,6 @@ type TermForm = {
 };
 
 type ReportFrequency = "term" | "half-year" | "annual";
-
-type GeneratedReport = {
-  id: number;
-  label: string;
-  frequency: ReportFrequency;
-  reportYear: number;
-};
 
 const EMPTY_FORM: TermForm = {
   termStartDate: "",
@@ -82,6 +78,8 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
   const saveTerm = useSaveSchoolReportTerm(siteId);
   const generateReport = useGenerateSchoolReport(siteId);
   const saveAttendance = useSaveSchoolReportAttendance(siteId);
+  const { data: generatedReports = [], isLoading: reportsLoading } = useGetSchoolReportSummaries(siteId, reportYear);
+  const createSummaryReport = useCreateSchoolReportSummary(siteId);
   const [selectedTermNumber, setSelectedTermNumber] = useState(1);
   const [contributingTermNumber, setContributingTermNumber] = useState<number | null>(null);
   const [editingTerm, setEditingTerm] = useState<SchoolReportTerm | null>(null);
@@ -91,10 +89,10 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportFrequency, setReportFrequency] = useState<ReportFrequency>("term");
   const [reportPeriod, setReportPeriod] = useState("1");
-  const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
+  const [selectedSummaryReportId, setSelectedSummaryReportId] = useState<number | null>(null);
   const selectedTerm = data?.terms.find((term) => term.termNumber === selectedTermNumber) ?? null;
   const calculatedWeeks = calculateWeeks(form.termStartDate, form.termEndDate);
-  const visibleGeneratedReports = generatedReports.filter((report) => report.reportYear === reportYear);
+  const selectedSummaryReport = generatedReports.find((report) => report.id === selectedSummaryReportId) ?? null;
 
   const openDateDialog = (term: SchoolReportTerm) => {
     setEditingTerm(term);
@@ -232,23 +230,28 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
   function updateReportFrequency(frequency: string) {
     const nextFrequency = frequency as ReportFrequency;
     setReportFrequency(nextFrequency);
-    setReportPeriod(nextFrequency === "annual" ? "current-year" : nextFrequency === "half-year" ? "first-half" : "1");
+    setReportPeriod(nextFrequency === "annual" ? "annual" : nextFrequency === "half-year" ? "first-half" : "1");
   }
 
   function generateSummaryReport() {
-    const label = reportFrequency === "term"
-      ? `Term ${reportPeriod}`
-      : reportFrequency === "half-year"
-        ? reportPeriod === "first-half" ? "First half" : "Second half"
-        : `Current year (${reportYear})`;
-    setGeneratedReports((current) => [
-      ...current,
-      { id: Date.now(), label, frequency: reportFrequency, reportYear },
-    ]);
-    setReportDialogOpen(false);
-    toast({
-      title: "Report generated",
-      description: `${label} attendance report is ready.`,
+    createSummaryReport.mutate({
+      reportYear,
+      frequency: reportFrequency,
+      period: reportFrequency === "annual" ? "annual" : reportPeriod,
+    }, {
+      onSuccess: (report) => {
+        setSelectedSummaryReportId(report.id);
+        setReportDialogOpen(false);
+        toast({
+          title: "Report generated",
+          description: `${report.periodLabel} is ready.`,
+        });
+      },
+      onError: (error: Error) => toast({
+        title: "Unable to generate report",
+        description: error.message,
+        variant: "destructive",
+      }),
     });
   }
 
@@ -259,6 +262,7 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
     setSelectedTermNumber(1);
     setContributingTermNumber(null);
     setEditingTerm(null);
+    setSelectedSummaryReportId(null);
     setAttendanceValues({});
     setPupilFreeDays({});
   }
@@ -437,18 +441,33 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
           </div>
         </CardHeader>
         <CardContent>
-          {visibleGeneratedReports.length > 0 ? (
+          {reportsLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : generatedReports.length > 0 ? (
             <div className="space-y-2">
               <p className="text-sm font-medium">Generated reports</p>
               <div className="grid gap-2 sm:grid-cols-2">
-                {visibleGeneratedReports.map((report) => (
-                  <div key={report.id} className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
+                {generatedReports.map((report) => (
+                  <button
+                    type="button"
+                    key={report.id}
+                    onClick={() => setSelectedSummaryReportId(report.id)}
+                    className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors hover:bg-muted/60 ${
+                      selectedSummaryReportId === report.id ? "border-primary bg-primary/5" : "bg-muted/30"
+                    }`}
+                  >
                     <FileText className="h-4 w-4 shrink-0 text-primary" />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{report.label} attendance report</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{report.periodLabel}</p>
                       <p className="text-xs capitalize text-muted-foreground">{report.frequency.replace("-", " ")}</p>
                     </div>
-                  </div>
+                    <Badge variant={report.status === "finalized" ? "default" : "secondary"}>
+                      {report.status === "finalized" ? "Finalised" : "Draft"}
+                    </Badge>
+                  </button>
                 ))}
               </div>
             </div>
@@ -456,6 +475,9 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
             <div className="rounded-lg border border-dashed px-5 py-6 text-sm text-muted-foreground">
               No reports generated yet. Select a reporting period to create one.
             </div>
+          )}
+          {selectedSummaryReport && (
+            <SchoolSummaryReport siteId={siteId} report={selectedSummaryReport} />
           )}
         </CardContent>
       </Card>
@@ -562,8 +584,10 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReportDialogOpen(false)}>Cancel</Button>
-            <Button onClick={generateSummaryReport}>
-              <FileText className="mr-1.5 h-4 w-4" />
+            <Button onClick={generateSummaryReport} disabled={createSummaryReport.isPending}>
+              {createSummaryReport.isPending
+                ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                : <FileText className="mr-1.5 h-4 w-4" />}
               Generate report
             </Button>
           </DialogFooter>

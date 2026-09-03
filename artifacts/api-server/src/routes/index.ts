@@ -52,6 +52,7 @@ import superAdminRouter from "./super-admin";
 import aiToolsRouter from "./ai-tools";
 import schoolsRouter from "./schools";
 import schoolReportsRouter from "./school-reports";
+import schoolReportSummariesRouter from "./school-report-summaries";
 
 const router: IRouter = Router();
 
@@ -170,5 +171,6 @@ router.use(clickupRouter);
 router.use(aiToolsRouter);
 router.use(schoolsRouter);
 router.use(schoolReportsRouter);
+router.use(schoolReportSummariesRouter);
 
 export default router;

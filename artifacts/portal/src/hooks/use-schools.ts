@@ -90,6 +90,40 @@ export type SchoolReportsResponse = {
   terms: SchoolReportTerm[];
 };
 
+export type SchoolReportStatistics = {
+  periodLabel: string;
+  termNumbers: number[];
+  dateRange: { start: string; end: string };
+  weekdayAverages: Array<{ day: string; bsc: number; asc: number }>;
+  weeklyAverages: Array<{ label: string; bsc: number; asc: number }>;
+  holidayWeekdayAverages: Array<{ day: string; value: number }>;
+  holidayWeeklyAverages: Array<{ label: string; value: number }>;
+};
+
+export type SchoolReportObligations = {
+  learningPlayProgramHighlights: string;
+  teamServiceLeadership: string;
+  policyPracticeUpdates: string;
+  childSafetyWellbeing: string;
+  communityFeedbackResolution: string;
+  focusForFuture: string;
+};
+
+export type SchoolReportSummary = {
+  id: number;
+  siteId: number;
+  reportYear: number;
+  frequency: "term" | "half-year" | "annual";
+  period: string;
+  periodLabel: string;
+  statistics: SchoolReportStatistics;
+  reportingObligations: SchoolReportObligations;
+  status: "draft" | "finalized";
+  finalizedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type VitalRecord = {
   id: number;
   siteId: number;
@@ -253,6 +287,85 @@ export function useSaveSchoolReportAttendance(siteId: number) {
       return result as SchoolReportTerm;
     },
     onSuccess: (_result, variables) => queryClient.invalidateQueries({ queryKey: ["school-reports", siteId, variables.reportYear] }),
+  });
+}
+
+export function useGetSchoolReportSummaries(siteId: number, reportYear: number) {
+  return useQuery<SchoolReportSummary[]>({
+    queryKey: ["school-report-summaries", siteId, reportYear],
+    queryFn: async () => {
+      const res = await fetch(`/api/school-reports/${siteId}/summaries?reportYear=${reportYear}`);
+      const result = await res.json().catch(() => []);
+      if (!res.ok) throw new Error(result.error ?? "Failed to fetch generated reports");
+      return result;
+    },
+  });
+}
+
+export function useCreateSchoolReportSummary(siteId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      reportYear: number;
+      frequency: "term" | "half-year" | "annual";
+      period: string;
+    }) => {
+      const res = await fetch(`/api/school-reports/${siteId}/summaries`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error ?? "Failed to generate report");
+      return result as SchoolReportSummary;
+    },
+    onSuccess: (result) => queryClient.invalidateQueries({
+      queryKey: ["school-report-summaries", siteId, result.reportYear],
+    }),
+  });
+}
+
+export function useSaveSchoolReportObligations(siteId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      reportId,
+      reportYear,
+      reportingObligations,
+    }: {
+      reportId: number;
+      reportYear: number;
+      reportingObligations: SchoolReportObligations;
+    }) => {
+      const res = await fetch(`/api/school-reports/${siteId}/summaries/${reportId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reportingObligations }),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error ?? "Failed to save reporting obligations");
+      return result as SchoolReportSummary;
+    },
+    onSuccess: (_result, variables) => queryClient.invalidateQueries({
+      queryKey: ["school-report-summaries", siteId, variables.reportYear],
+    }),
+  });
+}
+
+export function useFinalizeSchoolReportSummary(siteId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ reportId, reportYear }: { reportId: number; reportYear: number }) => {
+      const res = await fetch(`/api/school-reports/${siteId}/summaries/${reportId}/finalize`, {
+        method: "POST",
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error ?? "Failed to finalize report");
+      return result as SchoolReportSummary;
+    },
+    onSuccess: (_result, variables) => queryClient.invalidateQueries({
+      queryKey: ["school-report-summaries", siteId, variables.reportYear],
+    }),
   });
 }
 

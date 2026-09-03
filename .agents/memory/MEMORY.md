@@ -6,3 +6,4 @@
 - [Post-merge schema sync](post-merge-schema-sync.md) — Drizzle push-force can still prompt on populated constraint changes; post-merge must answer no explicitly and allow setup time.
 - [School account boundary](school-account-boundary.md) — each Site owns one generated school account; school sessions are read-only and API-scoped to that account's site.
 - [School report closure semantics](school-report-closure-semantics.md) — pupil-free flags are session-specific; matching BSC and ASC flags mean the service was closed that day.
+- [School report snapshots](school-report-snapshots.md) — generated statistics freeze the selected attendance period; narrative stays editable only until finalisation.

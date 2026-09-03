@@ -56,7 +56,7 @@ export type SchoolReportRow = {
   termId: number;
   weekNumber: number;
   weekBeginning: string;
-  serviceType: "BSC" | "ASC";
+  serviceType: "BSC" | "ASC" | "VAC";
   monday: string | null;
   tuesday: string | null;
   wednesday: string | null;
@@ -204,6 +204,36 @@ export function useGenerateSchoolReport(siteId: number) {
       });
       const result = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(result.error ?? "Failed to generate school report");
+      return result as SchoolReportTerm;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["school-reports", siteId] }),
+  });
+}
+
+export function useSaveSchoolReportAttendance(siteId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      termNumber,
+      rows,
+    }: {
+      termNumber: number;
+      rows: Array<{
+        id: number;
+        monday: string | null;
+        tuesday: string | null;
+        wednesday: string | null;
+        thursday: string | null;
+        friday: string | null;
+      }>;
+    }) => {
+      const res = await fetch(`/api/school-reports/${siteId}/terms/${termNumber}/attendance`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows }),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error ?? "Failed to save attendance");
       return result as SchoolReportTerm;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["school-reports", siteId] }),

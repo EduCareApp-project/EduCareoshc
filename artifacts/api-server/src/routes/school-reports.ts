@@ -199,17 +199,32 @@ router.post("/school-reports/:siteId/terms/:termNumber/generate", async (req, re
       res.status(409).json({ error: "The saved term dates do not produce any report weeks" });
       return;
     }
+    const holidayWeekBeginnings = term.holidayStartDate && term.holidayEndDate
+      ? calculateReportWeekBeginnings(term.holidayStartDate, term.holidayEndDate)
+      : [];
+    if (holidayWeekBeginnings.length > 20) {
+      res.status(409).json({ error: "Holiday program dates must produce no more than 20 weeks" });
+      return;
+    }
 
     const generatedAt = new Date();
     const generatedById = req.session.user!.id;
-    const rows = weekBeginnings.flatMap((weekBeginning, index) =>
+    const rows = [
+      ...weekBeginnings.flatMap((weekBeginning, index) =>
       ["BSC", "ASC"].map((serviceType) => ({
         termId: term.id,
         weekNumber: index + 1,
         weekBeginning,
         serviceType,
       })),
-    );
+      ),
+      ...holidayWeekBeginnings.map((weekBeginning, index) => ({
+        termId: term.id,
+        weekNumber: index + 1,
+        weekBeginning,
+        serviceType: "VAC",
+      })),
+    ];
 
     const generatedRows = await db.transaction(async (tx) => {
       await tx.delete(schoolReportRowsTable).where(eq(schoolReportRowsTable.termId, term.id));
@@ -234,6 +249,87 @@ router.post("/school-reports/:siteId/terms/:termNumber/generate", async (req, re
   } catch (error) {
     req.log.error({ error, siteId, termNumber }, "Failed to generate school report");
     res.status(500).json({ error: "Failed to generate school report" });
+  }
+});
+
+router.put("/school-reports/:siteId/terms/:termNumber/attendance", async (req, res): Promise<void> => {
+  if (!requireReportManager(req, res)) return;
+  const siteId = parseSiteId(req.params.siteId);
+  const termNumber = parseTermNumber(req.params.termNumber);
+  if (!siteId || !termNumber) {
+    res.status(400).json({ error: "Invalid site or term number" });
+    return;
+  }
+
+  const inputRows = Array.isArray(req.body?.rows) ? req.body.rows : null;
+  if (!inputRows) {
+    res.status(400).json({ error: "Attendance rows are required" });
+    return;
+  }
+
+  const dayFields = ["monday", "tuesday", "wednesday", "thursday", "friday"] as const;
+  const parsedRows: Array<{
+    id: number;
+    values: Record<(typeof dayFields)[number], string | null>;
+  }> = [];
+  for (const input of inputRows) {
+    const id = Number(input?.id);
+    if (!Number.isInteger(id) || id < 1) {
+      res.status(400).json({ error: "Invalid attendance row" });
+      return;
+    }
+    const values = {} as Record<(typeof dayFields)[number], string | null>;
+    for (const field of dayFields) {
+      const value = input?.[field];
+      if (value === "" || value === null || typeof value === "undefined") {
+        values[field] = null;
+      } else if (Number.isInteger(Number(value)) && Number(value) >= 0) {
+        values[field] = String(Number(value));
+      } else {
+        res.status(400).json({ error: "Attendance values must be whole numbers zero or above" });
+        return;
+      }
+    }
+    parsedRows.push({ id, values });
+  }
+
+  try {
+    const [term] = await db.select().from(schoolReportTermsTable).where(and(
+      eq(schoolReportTermsTable.siteId, siteId),
+      eq(schoolReportTermsTable.termNumber, termNumber),
+    )).limit(1);
+    if (!term || !term.generatedAt) {
+      res.status(409).json({ error: "Generate this report before entering attendance" });
+      return;
+    }
+
+    const existingRows = await db.select({ id: schoolReportRowsTable.id })
+      .from(schoolReportRowsTable)
+      .where(and(
+        eq(schoolReportRowsTable.termId, term.id),
+        inArray(schoolReportRowsTable.id, parsedRows.map((row) => row.id)),
+      ));
+    if (existingRows.length !== parsedRows.length) {
+      res.status(400).json({ error: "Attendance rows do not belong to this report" });
+      return;
+    }
+
+    const savedRows = await db.transaction(async (tx) => {
+      for (const row of parsedRows) {
+        await tx.update(schoolReportRowsTable).set(row.values)
+          .where(and(
+            eq(schoolReportRowsTable.id, row.id),
+            eq(schoolReportRowsTable.termId, term.id),
+          ));
+      }
+      return tx.select().from(schoolReportRowsTable)
+        .where(eq(schoolReportRowsTable.termId, term.id))
+        .orderBy(asc(schoolReportRowsTable.weekNumber), asc(schoolReportRowsTable.id));
+    });
+    res.json({ ...term, status: "open", rows: savedRows });
+  } catch (error) {
+    req.log.error({ error, siteId, termNumber }, "Failed to save school report attendance");
+    res.status(500).json({ error: "Failed to save attendance" });
   }
 });
 

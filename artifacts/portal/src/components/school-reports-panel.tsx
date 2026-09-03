@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { format, parseISO } from "date-fns";
 import {
   CalendarDays,
@@ -12,9 +12,16 @@ import {
   type SchoolReportTerm,
   useGenerateSchoolReport,
   useGetSchoolReports,
+  useSaveSchoolReportAttendance,
   useSaveSchoolReportTerm,
 } from "@/hooks/use-schools";
-import { SchoolReportTable } from "@/components/school-report-table";
+import {
+  ATTENDANCE_DAYS,
+  type AttendanceDay,
+  type AttendanceValues,
+  SchoolReportAttendanceForm,
+  SchoolReportTable,
+} from "@/components/school-report-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,9 +66,12 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
   const { data, isLoading, isError } = useGetSchoolReports(siteId);
   const saveTerm = useSaveSchoolReportTerm(siteId);
   const generateReport = useGenerateSchoolReport(siteId);
+  const saveAttendance = useSaveSchoolReportAttendance(siteId);
   const [selectedTermNumber, setSelectedTermNumber] = useState(1);
+  const [contributingTermNumber, setContributingTermNumber] = useState<number | null>(null);
   const [editingTerm, setEditingTerm] = useState<SchoolReportTerm | null>(null);
   const [form, setForm] = useState<TermForm>(EMPTY_FORM);
+  const [attendanceValues, setAttendanceValues] = useState<AttendanceValues>({});
   const selectedTerm = data?.terms.find((term) => term.termNumber === selectedTermNumber) ?? null;
   const calculatedWeeks = calculateWeeks(form.termStartDate, form.termEndDate);
 
@@ -80,6 +90,14 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
       setSelectedTermNumber(data.terms[0].termNumber);
     }
   }, [data, selectedTermNumber]);
+
+  useEffect(() => {
+    if (!selectedTerm || contributingTermNumber !== selectedTerm.termNumber) return;
+    setAttendanceValues(Object.fromEntries(selectedTerm.rows.map((row) => [
+      row.id,
+      Object.fromEntries(ATTENDANCE_DAYS.map((day) => [day, row[day] ?? ""])),
+    ])) as AttendanceValues);
+  }, [contributingTermNumber, selectedTerm]);
 
   function saveDates() {
     if (!editingTerm) return;
@@ -123,6 +141,42 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
     });
   }
 
+  function updateAttendance(rowId: number, day: AttendanceDay, value: string) {
+    if (value !== "" && !/^\d+$/.test(value)) return;
+    setAttendanceValues((current) => ({
+      ...current,
+      [rowId]: {
+        ...current[rowId],
+        [day]: value,
+      },
+    }));
+  }
+
+  function saveAttendanceValues() {
+    if (!selectedTerm) return;
+    saveAttendance.mutate({
+      termNumber: selectedTerm.termNumber,
+      rows: selectedTerm.rows.map((row) => ({
+        id: row.id,
+        monday: attendanceValues[row.id]?.monday || null,
+        tuesday: attendanceValues[row.id]?.tuesday || null,
+        wednesday: attendanceValues[row.id]?.wednesday || null,
+        thursday: attendanceValues[row.id]?.thursday || null,
+        friday: attendanceValues[row.id]?.friday || null,
+      })),
+    }, {
+      onSuccess: () => toast({
+        title: "Attendance saved",
+        description: `Term ${selectedTerm.termNumber} attendance has been updated.`,
+      }),
+      onError: (error: Error) => toast({
+        title: "Unable to save attendance",
+        description: error.message,
+        variant: "destructive",
+      }),
+    });
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -150,7 +204,10 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
           <Card
             key={term.termNumber}
             className={`cursor-pointer transition-all hover:border-primary/60 hover:shadow-sm ${selectedTermNumber === term.termNumber ? "border-primary ring-1 ring-primary/20" : ""}`}
-            onClick={() => setSelectedTermNumber(term.termNumber)}
+            onClick={() => {
+              setSelectedTermNumber(term.termNumber);
+              if (contributingTermNumber !== term.termNumber) setContributingTermNumber(null);
+            }}
           >
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3">
@@ -188,7 +245,10 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
                         onClick={(event) => {
                           event.stopPropagation();
                           setSelectedTermNumber(term.termNumber);
-                          document.getElementById("selected-school-report")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                          setContributingTermNumber(term.termNumber);
+                          requestAnimationFrame(() => {
+                            document.getElementById("selected-school-report")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                          });
                         }}
                       >
                         <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5" />
@@ -227,7 +287,19 @@ export function SchoolReportsPanel({ siteId }: { siteId: number }) {
               )}
             </div>
           </CardHeader>
-          <CardContent><SchoolReportTable term={selectedTerm} /></CardContent>
+          <CardContent>
+            {contributingTermNumber === selectedTerm.termNumber ? (
+              <SchoolReportAttendanceForm
+                term={selectedTerm}
+                values={attendanceValues}
+                onChange={updateAttendance}
+                onSave={saveAttendanceValues}
+                isSaving={saveAttendance.isPending}
+              />
+            ) : (
+              <SchoolReportTable term={selectedTerm} />
+            )}
+          </CardContent>
         </Card>
       )}
 

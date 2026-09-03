@@ -502,18 +502,18 @@ export default function SchoolPortal() {
                 <CollapsibleTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="flex h-auto w-full items-center justify-between rounded-none px-5 py-4 text-left hover:bg-muted/50"
+                    className="flex h-auto w-full items-center justify-between rounded-none bg-emerald-600 px-5 py-4 text-left text-white hover:bg-emerald-700 hover:text-white"
                   >
                     <span className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-primary" />
+                      <BookOpen className="h-4 w-4 text-white" />
                       <span>
                         <span className="block font-semibold">Service Documentation</span>
-                        <span className="block text-xs font-normal text-muted-foreground">
+                        <span className="block text-xs font-normal text-white">
                           Published documents available for this site, as shown to parents
                         </span>
                       </span>
                     </span>
-                    <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${serviceDocsOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`h-4 w-4 shrink-0 text-white transition-transform ${serviceDocsOpen ? "rotate-180" : ""}`} />
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent>

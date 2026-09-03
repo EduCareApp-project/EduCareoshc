@@ -3,6 +3,10 @@ import { logger } from "./lib/logger";
 import { logEmailConfig } from "./lib/email";
 import { db, notificationSettingsTable, pool } from "@workspace/db";
 import { sql } from "drizzle-orm";
+import {
+  cleanupAbandonedDocumentMergeUploads,
+  DOCUMENT_MERGE_UPLOAD_CLEANUP_INTERVAL_MS,
+} from "./lib/documentMergeCleanup";
 
 const rawPort = process.env["PORT"];
 
@@ -118,6 +122,31 @@ async function seedSuperAdminStaff(): Promise<void> {
   }
 }
 
+function startDocumentMergeUploadCleanup(): void {
+  let cleanupInProgress = false;
+
+  const runCleanup = async (): Promise<void> => {
+    if (cleanupInProgress) return;
+    cleanupInProgress = true;
+    try {
+      const deletedCount = await cleanupAbandonedDocumentMergeUploads();
+      logger.info({ deletedCount }, "Document merge upload cleanup completed");
+    } catch (err) {
+      // Keep scheduled maintenance failures isolated from the API server and
+      // from merges currently being processed.
+      logger.error({ err }, "Document merge upload cleanup failed");
+    } finally {
+      cleanupInProgress = false;
+    }
+  };
+
+  void runCleanup();
+  const cleanupInterval = setInterval(() => {
+    void runCleanup();
+  }, DOCUMENT_MERGE_UPLOAD_CLEANUP_INTERVAL_MS);
+  cleanupInterval.unref();
+}
+
 app.listen(port, async (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");
@@ -154,4 +183,6 @@ app.listen(port, async (err) => {
   } catch (seedErr) {
     logger.warn({ err: seedErr }, "Failed to seed super admin staff account");
   }
+
+  startDocumentMergeUploadCleanup();
 });

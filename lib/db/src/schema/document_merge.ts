@@ -1,17 +1,23 @@
-import { pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { index, pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { staffTable } from "./staff";
 
-export const documentMergeUploadsTable = pgTable("document_merge_uploads", {
-  id: serial("id").primaryKey(),
-  staffId: integer("staff_id").notNull().references(() => staffTable.id, { onDelete: "cascade" }),
-  objectPath: text("object_path").notNull().unique(),
-  originalName: text("original_name").notNull(),
-  contentType: text("content_type").notNull(),
-  sizeBytes: integer("size_bytes").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const documentMergeUploadsTable = pgTable(
+  "document_merge_uploads",
+  {
+    id: serial("id").primaryKey(),
+    staffId: integer("staff_id").notNull().references(() => staffTable.id, { onDelete: "cascade" }),
+    objectPath: text("object_path").notNull().unique(),
+    originalName: text("original_name").notNull(),
+    contentType: text("content_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    createdAtIdx: index("document_merge_uploads_created_at_idx").on(table.createdAt),
+  }),
+);
 
 export const mergedDocumentsTable = pgTable("merged_documents", {
   id: serial("id").primaryKey(),

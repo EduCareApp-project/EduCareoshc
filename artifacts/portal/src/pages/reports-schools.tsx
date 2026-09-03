@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
+import { useLocation } from "wouter";
 import { useListSites } from "@workspace/api-client-react";
 import {
   CalendarDays,
@@ -59,11 +60,15 @@ function dateRangeLabel(start: string | null, end: string | null): string {
 
 export default function ReportsSchools() {
   const { isAdminOrEL, ownSiteId } = usePermissions();
+  const [location] = useLocation();
   const { toast } = useToast();
   const { data: sites, isLoading: sitesLoading } = useListSites();
   const activeSites = useMemo(() => (sites ?? []).filter((site) => site.status === "active"), [sites]);
-  const [siteId, setSiteId] = useState<number | null>(ownSiteId);
-  const [selectedTermNumber, setSelectedTermNumber] = useState(1);
+  const initialQuery = useMemo(() => new URLSearchParams(location.split("?")[1] ?? ""), [location]);
+  const querySiteId = Number(initialQuery.get("siteId"));
+  const queryTermNumber = Number(initialQuery.get("term"));
+  const [siteId, setSiteId] = useState<number | null>(Number.isInteger(querySiteId) && querySiteId > 0 ? querySiteId : ownSiteId);
+  const [selectedTermNumber, setSelectedTermNumber] = useState(Number.isInteger(queryTermNumber) && queryTermNumber >= 1 && queryTermNumber <= 4 ? queryTermNumber : 1);
   const [editingTerm, setEditingTerm] = useState<SchoolReportTerm | null>(null);
   const [form, setForm] = useState<TermForm>(EMPTY_FORM);
 

@@ -57,6 +57,7 @@ const {
     documents: MergedDocumentRow[];
     files: Map<string, { bytes: Uint8Array; deleted: boolean }>;
     lastFetchBody: unknown;
+    failMergedDocumentInsert: boolean;
     nextUploadId: number;
     nextDocumentId: number;
     nextUploadUrlId: number;
@@ -65,6 +66,7 @@ const {
     documents: [],
     files: new Map(),
     lastFetchBody: undefined,
+    failMergedDocumentInsert: false,
     nextUploadId: 1,
     nextDocumentId: 1,
     nextUploadUrlId: 1,
@@ -136,6 +138,9 @@ const {
       }),
       returning: vi.fn(async () => {
         if (table !== tables.documents || !insertedValues) return [];
+        if (state.failMergedDocumentInsert) {
+          throw new Error("Merged document metadata write failed");
+        }
         const document: MergedDocumentRow = {
           id: state.nextDocumentId++,
           staffId: insertedValues.staffId as number,
@@ -180,8 +185,15 @@ const {
     const id = state.nextUploadUrlId++;
     return `https://storage.test/upload-${id}`;
   });
-  const mockFetch = vi.fn(async (_url: string, init?: { body?: unknown }) => {
+  const mockFetch = vi.fn(async (url: string, init?: { body?: unknown }) => {
     state.lastFetchBody = init?.body;
+    const uploadId = url.split("-").at(-1);
+    if (uploadId) {
+      state.files.set(`/objects/uploads/${uploadId}`, {
+        bytes: init?.body as Uint8Array,
+        deleted: false,
+      });
+    }
     return { ok: true, status: 200 };
   });
 
@@ -190,6 +202,7 @@ const {
     state.documents.length = 0;
     state.files.clear();
     state.lastFetchBody = undefined;
+    state.failMergedDocumentInsert = false;
     state.nextUploadId = 1;
     state.nextDocumentId = 1;
     state.nextUploadUrlId = 1;
@@ -270,6 +283,7 @@ function buildApp(user: { id: number; type: "staff" | "guardian" }) {
   app.use(express.json());
   app.use((req, _res, next) => {
     (req as any).session = { user };
+    (req as any).log = { error: vi.fn(), warn: vi.fn() };
     next();
   });
   app.use("/api", aiToolsRouter);
@@ -368,6 +382,50 @@ describe("AI Tools document merge ownership", () => {
     const merged = await PDFDocument.load(state.lastFetchBody as Uint8Array);
     expect(merged.getPage(0).getWidth()).toBe(400);
     expect(merged.getPage(1).getWidth()).toBe(200);
+  });
+
+  it("deletes the merged object when saving its metadata fails while preserving pending sources", async () => {
+    const firstBytes = await onePagePdf(200);
+    const secondBytes = await onePagePdf(400);
+    const firstPath = "/objects/uploads/first";
+    const secondPath = "/objects/uploads/second";
+    state.uploads.push(
+      {
+        id: 1,
+        staffId: 7,
+        objectPath: firstPath,
+        originalName: "first.pdf",
+        contentType: "application/pdf",
+        sizeBytes: firstBytes.byteLength,
+        createdAt: new Date("2026-09-03T00:00:00.000Z"),
+      },
+      {
+        id: 2,
+        staffId: 7,
+        objectPath: secondPath,
+        originalName: "second.pdf",
+        contentType: "application/pdf",
+        sizeBytes: secondBytes.byteLength,
+        createdAt: new Date("2026-09-03T00:00:00.000Z"),
+      },
+    );
+    state.files.set(firstPath, { bytes: firstBytes, deleted: false });
+    state.files.set(secondPath, { bytes: secondBytes, deleted: false });
+    state.failMergedDocumentInsert = true;
+
+    const response = await request(buildApp({ id: 7, type: "staff" }))
+      .post("/api/ai-tools/document-merges/merge")
+      .send({ files: [{ objectPath: firstPath }, { objectPath: secondPath }] });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      error: "The documents could not be merged. Check that each PDF or image is valid and try again.",
+    });
+    expect(state.documents).toHaveLength(0);
+    expect(state.uploads).toHaveLength(2);
+    expect(state.files.get(firstPath)?.deleted).toBe(false);
+    expect(state.files.get(secondPath)?.deleted).toBe(false);
+    expect(state.files.get("/objects/uploads/1")?.deleted).toBe(true);
   });
 
   it("lists only merged documents owned by the signed-in staff member", async () => {

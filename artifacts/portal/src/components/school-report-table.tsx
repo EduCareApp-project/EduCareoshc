@@ -66,6 +66,15 @@ function AttendanceTable({
       })
       .map((day) => `Week ${weekNumber}, ${DAY_LABELS[day]}`),
   );
+  const isServiceClosed = (row: SchoolReportRow, day: AttendanceDay) => {
+    const weekRows = rowsByWeek.get(row.weekNumber);
+    return Boolean(
+      weekRows?.BSC &&
+      weekRows.ASC &&
+      isPupilFreeDay(weekRows.BSC, day) &&
+      isPupilFreeDay(weekRows.ASC, day),
+    );
+  };
 
   return (
     <div className="space-y-2">
@@ -123,7 +132,11 @@ function AttendanceTable({
                           )}
                         </div>
                       ) : (
-                        isPupilFree ? "PFD" : row[day] ?? "—"
+                        isPupilFree ? (
+                          <span className="inline-flex whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                            {isServiceClosed(row, day) ? "Service Closed" : "Pupil Free"}
+                          </span>
+                        ) : row[day] ?? "—"
                       )}
                     </TableCell>
                   );

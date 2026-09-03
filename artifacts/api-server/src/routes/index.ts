@@ -95,6 +95,7 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
     return;
   }
   const ownSchoolDocumentPath = new RegExp(`^/schools/${user.siteId}/vital-records/\\d+/document$`);
+  const ownSchoolStaffProfilePath = new RegExp(`^/schools/${user.siteId}/staff/\\d+$`);
   const requestedServiceDocsSiteId = typeof req.query.siteId === "string" ? Number(req.query.siteId) : NaN;
   const ownServiceDocsListPath =
     req.path === "/service-docs/public" && requestedServiceDocsSiteId === user.siteId;
@@ -105,6 +106,7 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
     req.method === "GET" &&
     (
       req.path === `/schools/${user.siteId}/portal`
+      || ownSchoolStaffProfilePath.test(req.path)
       || ownSchoolDocumentPath.test(req.path)
       || ownServiceDocsListPath
       || publicServiceDocsFilePath

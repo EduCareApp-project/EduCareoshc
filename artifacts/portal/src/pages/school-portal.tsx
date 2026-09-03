@@ -3,6 +3,7 @@ import { useParams, Link } from "wouter";
 import { useAuth } from "@/contexts/auth";
 import { 
   useGetSchoolPortal, 
+  useGetSchoolStaff,
   useCreateVitalRecord, 
   useDeleteVitalRecord,
   useCreateVecraVisit,
@@ -19,7 +20,7 @@ import { format } from "date-fns";
 import { 
   Building2, Users, FileText, ClipboardCheck, ArrowLeft, 
   Plus, Trash2, CalendarIcon, FileClock,
-  MapPin, Clock, Paperclip, ChevronDown, BookOpen, TrendingUp
+  MapPin, Clock, Paperclip, ChevronDown, BookOpen, TrendingUp, Mail, Phone, User, GraduationCap
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -62,6 +63,168 @@ const vecraVisitSchema = z.object({
   followUpDate: z.string().optional(),
 });
 
+function profileImageUrl(path: string) {
+  return `/api/storage/objects/${path.replace(/^\/objects\//, "")}`;
+}
+
+function SchoolStaffProfileView({
+  siteId,
+  staffId,
+  onBack,
+}: {
+  siteId: number;
+  staffId: number;
+  onBack: () => void;
+}) {
+  const { data, isLoading, isError } = useGetSchoolStaff(siteId, staffId);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-9 w-40" />
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-56 w-full" />
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Service Staff
+        </Button>
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            <p>Unable to load this staff profile.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const { staff: member, qualifications } = data;
+  const roleLabel = member.role.replace(/_/g, " ");
+
+  return (
+    <div className="space-y-6">
+      <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Service Staff
+      </Button>
+
+      <Card>
+        <CardContent className="p-6 md:p-8">
+          <div className="flex flex-col gap-6 md:flex-row md:items-start">
+            <div className="shrink-0">
+              {member.profilePicturePath ? (
+                <img
+                  src={profileImageUrl(member.profilePicturePath)}
+                  alt={`${member.firstName} ${member.lastName}`}
+                  className="h-28 w-28 rounded-2xl border-2 border-border object-cover"
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                    (event.currentTarget.nextElementSibling as HTMLElement | null)?.style.removeProperty("display");
+                  }}
+                />
+              ) : null}
+              <div
+                className={`flex h-28 w-28 items-center justify-center rounded-2xl border-2 border-border bg-primary/10 text-primary/60 ${member.profilePicturePath ? "hidden" : ""}`}
+              >
+                <User className="h-12 w-12" />
+              </div>
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-2xl font-bold tracking-tight">
+                  {member.firstName} {member.lastName}
+                </h2>
+                <Badge variant="secondary" className="capitalize">{roleLabel}</Badge>
+              </div>
+
+              <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+                <a href={`mailto:${member.email}`} className="flex min-w-0 items-center gap-2 text-primary hover:underline">
+                  <Mail className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{member.email}</span>
+                </a>
+                {member.phone ? (
+                  <a href={`tel:${member.phone}`} className="flex items-center gap-2 text-primary hover:underline">
+                    <Phone className="h-4 w-4 shrink-0" />
+                    {member.phone}
+                  </a>
+                ) : (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-4 w-4 shrink-0" />
+                    Phone not provided
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 border-t pt-5">
+                <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Bio</h3>
+                {member.bio ? (
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{member.bio}</p>
+                ) : (
+                  <p className="text-sm italic text-muted-foreground">No bio provided.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <GraduationCap className="h-5 w-5 text-primary" />
+            <div>
+              <CardTitle className="text-lg">Qualifications</CardTitle>
+              <CardDescription>All qualifications recorded for this staff member.</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {qualifications.length === 0 ? (
+            <div className="rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
+              No qualifications recorded.
+            </div>
+          ) : (
+            <div className="divide-y rounded-lg border">
+              {qualifications.map((qualification) => {
+                const expiry = qualification.expiryDate ? formatExpiryDate(String(qualification.expiryDate)) : null;
+                return (
+                  <div key={qualification.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="font-semibold">{qualification.name}</p>
+                      {qualification.referenceNumber && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Reference: <span className="font-mono">{qualification.referenceNumber}</span>
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <Badge variant={qualification.status === "current" ? "default" : "secondary"} className="capitalize">
+                        {qualification.status.replace(/_/g, " ")}
+                      </Badge>
+                      {expiry && (
+                        <span className={expiry.expired ? "font-medium text-destructive" : "text-muted-foreground"}>
+                          Expires {expiry.label}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function SchoolPortal() {
   const { user } = useAuth();
   const params = useParams();
@@ -72,6 +235,7 @@ export default function SchoolPortal() {
 
   const [vitalOpen, setVitalOpen] = useState(false);
   const [serviceDocsOpen, setServiceDocsOpen] = useState(false);
+  const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
   const [vecraOpen, setVecraOpen] = useState(false);
   const [vitalFile, setVitalFile] = useState<File | null>(null);
   const [vitalUploadError, setVitalUploadError] = useState<string | null>(null);
@@ -255,7 +419,7 @@ export default function SchoolPortal() {
             className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-6 h-12"
           >
             <Users className="w-4 h-4 mr-2" />
-            Staff
+            Service Staff
           </TabsTrigger>
           <TabsTrigger 
             value="reports"
@@ -711,50 +875,62 @@ export default function SchoolPortal() {
 
           {/* Staff Tab */}
           <TabsContent value="staff" className="mt-0">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-semibold">School Staff</h3>
-                <p className="text-sm text-muted-foreground">List of educators and staff members assigned or associated with this site.</p>
-              </div>
-            </div>
-            
-            <Card>
-              <div className="divide-y">
+            {selectedStaffId ? (
+              <SchoolStaffProfileView
+                siteId={site.id}
+                staffId={selectedStaffId}
+                onBack={() => setSelectedStaffId(null)}
+              />
+            ) : (
+              <>
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold">Service Staff</h3>
+                  <p className="text-sm text-muted-foreground">Educators and staff members assigned or associated with this site.</p>
+                </div>
+
                 {staff.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">
-                    No staff members found for this site.
-                  </div>
+                  <Card>
+                    <CardContent className="p-8 text-center text-muted-foreground">
+                      No staff members found for this site.
+                    </CardContent>
+                  </Card>
                 ) : (
-                  staff.map((member) => (
-                    <div key={member.id} className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center font-semibold text-sm shrink-0">
-                          {member.firstName[0]}{member.lastName[0]}
-                        </div>
-                        <div>
-                          <p className="font-medium">{member.firstName} {member.lastName}</p>
-                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                            <span className="text-xs text-muted-foreground capitalize bg-muted px-1.5 py-0.5 rounded">{member.role.replace("_", " ")}</span>
-                            {member.qualifications && (
-                              <span className="text-xs text-muted-foreground">{member.qualifications}</span>
-                            )}
-                            {member.associatedSites && member.associatedSites.length > 0 && (
-                              <span className="text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded border border-muted flex items-center gap-1">
-                                <Building2 className="h-3 w-3" />
-                                {member.associatedSites.map(s => s.name).join(", ")}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <Badge variant={member.status === "active" ? "default" : "secondary"}>
-                        {member.status}
-                      </Badge>
-                    </div>
-                  ))
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {staff.map((member) => (
+                      <button
+                        key={member.id}
+                        type="button"
+                        className="text-left"
+                        onClick={() => setSelectedStaffId(member.id)}
+                        aria-label={`Open profile for ${member.firstName} ${member.lastName}`}
+                      >
+                        <Card className="h-full transition-colors hover:border-primary hover:bg-muted/30">
+                          <CardContent className="flex h-full items-start gap-4 p-5">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+                              {member.firstName[0]}{member.lastName[0]}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold">{member.firstName} {member.lastName}</p>
+                              <p className="mt-1 text-xs capitalize text-primary">{member.role.replace(/_/g, " ")}</p>
+                              {member.qualifications && (
+                                <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{member.qualifications}</p>
+                              )}
+                              {member.associatedSites && member.associatedSites.length > 0 && (
+                                <p className="mt-2 flex items-start gap-1 text-xs text-muted-foreground">
+                                  <Building2 className="mt-0.5 h-3 w-3 shrink-0" />
+                                  <span className="line-clamp-2">{member.associatedSites.map((associatedSite) => associatedSite.name).join(", ")}</span>
+                                </p>
+                              )}
+                              <p className="mt-4 text-xs font-medium text-primary">View profile</p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </button>
+                    ))}
+                  </div>
                 )}
-              </div>
-            </Card>
+              </>
+            )}
           </TabsContent>
 
           {/* Reports Placeholder */}

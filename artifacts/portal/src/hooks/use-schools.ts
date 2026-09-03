@@ -30,6 +30,26 @@ export type Staff = {
   associatedSites?: { id: number; name: string }[];
 };
 
+export type SchoolStaffProfile = Staff & {
+  email: string;
+  phone: string | null;
+  bio: string | null;
+  profilePicturePath: string | null;
+};
+
+export type StaffQualification = {
+  id: number;
+  name: string;
+  status: string;
+  referenceNumber: string | null;
+  expiryDate: string | null;
+};
+
+export type SchoolStaffProfileResponse = {
+  staff: SchoolStaffProfile;
+  qualifications: StaffQualification[];
+};
+
 export type VitalRecord = {
   id: number;
   siteId: number;
@@ -86,6 +106,18 @@ export function useGetSchoolPortal(siteId?: number | null) {
       return res.json();
     },
     enabled: !!siteId,
+  });
+}
+
+export function useGetSchoolStaff(siteId?: number | null, staffId?: number | null) {
+  return useQuery<SchoolStaffProfileResponse>({
+    queryKey: ["schools", siteId, "staff", staffId],
+    queryFn: async () => {
+      const res = await fetch(`/api/schools/${siteId}/staff/${staffId}`);
+      if (!res.ok) throw new Error("Failed to fetch staff profile");
+      return res.json();
+    },
+    enabled: !!siteId && !!staffId,
   });
 }
 

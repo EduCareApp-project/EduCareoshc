@@ -63,11 +63,25 @@ vi.mock("@workspace/db", () => ({
     id: "staff.id",
     firstName: "staff.first_name",
     lastName: "staff.last_name",
+    email: "staff.email",
+    phone: "staff.phone",
     role: "staff.role",
     qualifications: "staff.qualifications",
+    bio: "staff.bio",
+    profilePicturePath: "staff.profile_picture_path",
     status: "staff.status",
     siteId: "staff.site_id",
     isSuperAdmin: "staff.is_super_admin",
+  },
+  staffQualificationsTable: {
+    id: "staff_qualifications.id",
+    staffId: "staff_qualifications.staff_id",
+    name: "staff_qualifications.name",
+    status: "staff_qualifications.status",
+    referenceNumber: "staff_qualifications.reference_number",
+    expiryDate: "staff_qualifications.expiry_date",
+    archivedAt: "staff_qualifications.archived_at",
+    createdAt: "staff_qualifications.created_at",
   },
   vecraVisitsTable: { siteId: "vecra_visits.site_id" },
 }));
@@ -77,6 +91,7 @@ vi.mock("drizzle-orm", () => ({
   asc: (column: unknown) => `asc(${String(column)})`,
   eq: (column: unknown, value: unknown) => `eq(${String(column)},${String(value)})`,
   inArray: (column: unknown, values: unknown[]) => `inArray(${String(column)},${values.join(",")})`,
+  isNull: (column: unknown) => `isNull(${String(column)})`,
   or: (...predicates: unknown[]) => `or(${predicates.join(",")})`,
 }));
 
@@ -211,5 +226,73 @@ describe("GET /api/schools/:siteId/portal staff scope", () => {
     expect(response.status).toBe(403);
     expect(response.body).toEqual({ error: "This school is outside your access" });
     expect(mockDb.select).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/schools/:siteId/staff/:staffId profile", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    whereCalls.length = 0;
+  });
+
+  it("returns contact details and active qualifications for staff assigned to the site", async () => {
+    const member = {
+      ...staffMember(101, "Home", TARGET_SITE.id),
+      email: "home@example.com",
+      phone: "0400 123 456",
+      bio: "An experienced educator.",
+      profilePicturePath: "/objects/profile/home.jpg",
+    };
+    const qualification = {
+      id: 501,
+      name: "Diploma of Early Childhood Education",
+      status: "current",
+      referenceNumber: "DIP-501",
+      expiryDate: null,
+    };
+    queuePortalQueries([[member], [qualification]]);
+
+    const response = await request(
+      buildTestApp({
+        id: 900,
+        type: "school",
+        role: "school",
+        siteId: TARGET_SITE.id,
+        email: "target-school",
+        name: TARGET_SITE.name,
+      }),
+    ).get(`/api/schools/${TARGET_SITE.id}/staff/${member.id}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.staff).toMatchObject({
+      id: member.id,
+      email: member.email,
+      phone: member.phone,
+      bio: member.bio,
+      profilePicturePath: member.profilePicturePath,
+    });
+    expect(response.body.qualifications).toEqual([qualification]);
+    expect(whereCalls.map(String)).toContain(
+      "and(eq(staff_qualifications.staff_id,101),isNull(staff_qualifications.archived_at))",
+    );
+  });
+
+  it("does not expose a staff member who is not assigned or associated with the site", async () => {
+    const member = staffMember(102, "Other", OTHER_SITE.id);
+    queuePortalQueries([[member], []]);
+
+    const response = await request(
+      buildTestApp({
+        id: 900,
+        type: "school",
+        role: "school",
+        siteId: TARGET_SITE.id,
+        email: "target-school",
+        name: TARGET_SITE.name,
+      }),
+    ).get(`/api/schools/${TARGET_SITE.id}/staff/${member.id}`);
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: "Staff member not found for this site" });
   });
 });

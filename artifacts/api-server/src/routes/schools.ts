@@ -1,8 +1,8 @@
 import { Readable } from "stream";
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, asc, eq, inArray, or } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, or } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { db, schoolAccountsTable, schoolVitalRecordsTable, sitesTable, staffSitesTable, staffTable, vecraVisitsTable } from "@workspace/db";
+import { db, schoolAccountsTable, schoolVitalRecordsTable, sitesTable, staffSitesTable, staffTable, staffQualificationsTable, vecraVisitsTable } from "@workspace/db";
 import { ensureSchoolAccount } from "../lib/schoolAccounts";
 import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage";
 
@@ -85,6 +85,76 @@ router.get("/schools", async (req, res): Promise<void> => {
   } catch (err) {
     req.log.error({ err }, "Failed to list schools");
     res.status(500).json({ error: "Failed to list schools" });
+  }
+});
+
+router.get("/schools/:siteId/staff/:staffId", async (req, res): Promise<void> => {
+  const siteId = Number(req.params.siteId);
+  const requestedStaffId = Number(req.params.staffId);
+  const user = req.session.user;
+  if (!Number.isInteger(siteId) || !Number.isInteger(requestedStaffId)) {
+    res.status(400).json({ error: "Invalid school or staff id" });
+    return;
+  }
+  if (user?.type === "school") {
+    if (user.siteId !== siteId) { res.status(403).json({ error: "This school is outside your access" }); return; }
+  } else if (adminStaff(req, res) == null) {
+    return;
+  }
+
+  try {
+    const [staffMember] = await db.select({
+      id: staffTable.id,
+      firstName: staffTable.firstName,
+      lastName: staffTable.lastName,
+      email: staffTable.email,
+      phone: staffTable.phone,
+      role: staffTable.role,
+      qualifications: staffTable.qualifications,
+      bio: staffTable.bio,
+      profilePicturePath: staffTable.profilePicturePath,
+      status: staffTable.status,
+      siteId: staffTable.siteId,
+    }).from(staffTable).where(and(
+      eq(staffTable.id, requestedStaffId),
+      eq(staffTable.status, "active"),
+      eq(staffTable.isSuperAdmin, false),
+    )).limit(1);
+
+    if (!staffMember) {
+      res.status(404).json({ error: "Staff member not found for this site" });
+      return;
+    }
+
+    if (staffMember.siteId !== siteId) {
+      const [association] = await db.select({ staffId: staffSitesTable.staffId })
+        .from(staffSitesTable)
+        .where(and(
+          eq(staffSitesTable.staffId, requestedStaffId),
+          eq(staffSitesTable.siteId, siteId),
+        ))
+        .limit(1);
+      if (!association) {
+        res.status(404).json({ error: "Staff member not found for this site" });
+        return;
+      }
+    }
+
+    const qualifications = await db.select({
+      id: staffQualificationsTable.id,
+      name: staffQualificationsTable.name,
+      status: staffQualificationsTable.status,
+      referenceNumber: staffQualificationsTable.referenceNumber,
+      expiryDate: staffQualificationsTable.expiryDate,
+    }).from(staffQualificationsTable).where(and(
+      eq(staffQualificationsTable.staffId, requestedStaffId),
+      isNull(staffQualificationsTable.archivedAt),
+    )).orderBy(asc(staffQualificationsTable.createdAt));
+
+    res.json({ staff: staffMember, qualifications });
+  } catch (err) {
+    req.log.error({ err, siteId, staffId: requestedStaffId }, "Failed to load school staff profile");
+    res.status(500).json({ error: "Failed to load staff profile" });
   }
 });
 

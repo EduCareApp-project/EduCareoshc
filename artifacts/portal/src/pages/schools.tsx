@@ -2,15 +2,155 @@ import { useGetSchools } from "@/hooks/use-schools";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
 import { format } from "date-fns";
-import { Building2, Search, ArrowRight, ShieldBan, ShieldCheck } from "lucide-react";
+import { Building2, Search, ArrowRight, ShieldBan, ShieldCheck, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { SchoolItem } from "@/hooks/use-schools";
+
+async function updateSchoolUsername(id: number, username: string) {
+  const res = await fetch(`/api/reports/system-access/school/${id}/username`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Failed to update username");
+}
+
+async function updateSchoolPassword(id: number, password: string) {
+  const res = await fetch(`/api/reports/system-access/school/${id}/set-password`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Failed to set password");
+}
+
+function EditSchoolLoginDialog({
+  school,
+  open,
+  onClose,
+}: {
+  school: SchoolItem;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [username, setUsername] = useState(school.username);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const nextUsername = username.trim().toLowerCase();
+      if (!/^[a-z0-9][a-z0-9._-]{2,63}$/.test(nextUsername)) {
+        throw new Error("Use 3–64 lowercase letters, numbers, dots, dashes, or underscores for the username.");
+      }
+      if (password && password.length < 8) {
+        throw new Error("Password must be at least 8 characters.");
+      }
+      if (password && password !== confirmPassword) {
+        throw new Error("Passwords do not match.");
+      }
+
+      if (nextUsername !== school.username) {
+        await updateSchoolUsername(school.id, nextUsername);
+      }
+      if (password) {
+        await updateSchoolPassword(school.id, password);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schools"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/system-access"] });
+      toast({
+        title: "School login details updated",
+        description: `${school.siteName} can use the new credentials.`,
+      });
+      handleClose();
+    },
+    onError: (err: Error) => setError(err.message),
+  });
+
+  function handleClose() {
+    setUsername(school.username);
+    setPassword("");
+    setConfirmPassword("");
+    setError(null);
+    onClose();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && handleClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Edit login details — {school.siteName}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 pt-1">
+          <div className="space-y-1.5">
+            <Label htmlFor={`school-login-username-${school.id}`}>Username</Label>
+            <Input
+              id={`school-login-username-${school.id}`}
+              value={username}
+              onChange={(event) => setUsername(event.target.value.toLowerCase())}
+              autoComplete="off"
+              placeholder="school.username"
+            />
+            <p className="text-xs text-muted-foreground">
+              Choose the username the school will enter on the login page.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={`school-login-password-${school.id}`}>New password</Label>
+            <Input
+              id={`school-login-password-${school.id}`}
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="new-password"
+              placeholder={school.passwordSet ? "Leave blank to keep current password" : "Create a password"}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={`school-login-confirm-${school.id}`}>Confirm password</Label>
+            <Input
+              id={`school-login-confirm-${school.id}`}
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              autoComplete="new-password"
+              placeholder="Repeat the new password"
+            />
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="outline" onClick={handleClose} disabled={saveMutation.isPending}>
+              Cancel
+            </Button>
+            <Button onClick={() => { setError(null); saveMutation.mutate(); }} disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? "Saving…" : "Save login details"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function Schools() {
   const { data: schools, isLoading } = useGetSchools();
   const [search, setSearch] = useState("");
+  const [editingSchool, setEditingSchool] = useState<SchoolItem | null>(null);
 
   const filtered = schools?.filter(s => 
     s.siteName.toLowerCase().includes(search.toLowerCase()) || 
@@ -58,8 +198,8 @@ export default function Schools() {
           ) : (
             <div className="divide-y">
               {filtered?.map((school) => (
-                <Link key={school.id} href={`/schools/${school.siteId}`}>
-                  <div className="group flex items-center p-4 hover:bg-muted/50 transition-colors cursor-pointer">
+                <div key={school.id} className="group flex items-center p-4 hover:bg-muted/50 transition-colors">
+                  <Link href={`/schools/${school.siteId}`} className="flex min-w-0 flex-1 items-center cursor-pointer">
                     <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mr-4">
                       <Building2 className="h-5 w-5" />
                     </div>
@@ -95,8 +235,22 @@ export default function Schools() {
                       </p>
                     </div>
                     <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all transform -translate-x-2 group-hover:translate-x-0" />
-                  </div>
-                </Link>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-4 shrink-0 gap-1.5"
+                    onClick={() => setEditingSchool(school)}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Edit login</span>
+                  </Button>
+                  <EditSchoolLoginDialog
+                    school={school}
+                    open={editingSchool?.id === school.id}
+                    onClose={() => setEditingSchool(null)}
+                  />
+                </div>
               ))}
             </div>
           )}

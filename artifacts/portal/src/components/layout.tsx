@@ -102,6 +102,7 @@ const NAV_GROUPS = [
       { href: "/reports/service", label: "Service Compliance", icon: ShieldCheck },
       { href: "/reports/staff", label: "Staff Compliance", icon: UserCheck },
       { href: "/reports/system-access", label: "System Access", icon: UserCog },
+      { href: "/reports/schools", label: "School Reports", icon: ClipboardCheck },
       { href: "/appraisals", label: "Appraisals", icon: Star },
       { href: "/clickup-reports", label: "Site Visits", icon: ClipboardList },
       { href: "/reports/financial", label: "Financial Accounts", educatorLabel: "Suspensions Report", icon: CreditCard },
@@ -361,7 +362,7 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
   })).filter((group) => group.items.length > 0);
 
   const isEducatorRole = ["educator", "coordinator"].includes(user?.role ?? "");
-  const EDUCATOR_HIDDEN = new Set(["/guardians", "/settings", "/reports/service", "/reports/staff", "/reports/system-access", "/appraisals"]);
+  const EDUCATOR_HIDDEN = new Set(["/guardians", "/settings", "/reports/service", "/reports/staff", "/reports/system-access", "/reports/schools", "/appraisals"]);
   const ADMIN_ONLY = new Set(["/clickup-reports"]);
   const ownProfileOnly = !isAdmin && !disabledHrefs.includes("staff_own_profile");
 

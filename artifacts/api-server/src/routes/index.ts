@@ -51,6 +51,7 @@ import clickupRouter from "./clickup";
 import superAdminRouter from "./super-admin";
 import aiToolsRouter from "./ai-tools";
 import schoolsRouter from "./schools";
+import schoolReportsRouter from "./school-reports";
 
 const router: IRouter = Router();
 
@@ -102,6 +103,9 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
   const publicServiceDocsFilePath = req.path.startsWith("/service-docs/public/file/");
   const requestedQipSiteId = typeof req.query.siteId === "string" ? Number(req.query.siteId) : NaN;
   const ownQipPublicPath = req.path === "/qip/public" && requestedQipSiteId === user.siteId;
+  const requestedSchoolReportSiteId = typeof req.query.siteId === "string" ? Number(req.query.siteId) : NaN;
+  const ownSchoolReportsPath =
+    req.path === "/school-reports" && requestedSchoolReportSiteId === user.siteId;
   if (
     req.method === "GET" &&
     (
@@ -111,6 +115,7 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
       || ownServiceDocsListPath
       || publicServiceDocsFilePath
       || ownQipPublicPath
+      || ownSchoolReportsPath
     )
   ) {
     next();
@@ -168,5 +173,6 @@ router.use(behaviouralNotificationsRouter);
 router.use(clickupRouter);
 router.use(aiToolsRouter);
 router.use(schoolsRouter);
+router.use(schoolReportsRouter);
 
 export default router;

@@ -51,6 +51,38 @@ export type SchoolStaffProfileResponse = {
   qualifications: StaffQualification[];
 };
 
+export type SchoolReportRow = {
+  id: number;
+  termId: number;
+  weekNumber: number;
+  weekBeginning: string;
+  serviceType: "BSC" | "ASC";
+  monday: string | null;
+  tuesday: string | null;
+  wednesday: string | null;
+  thursday: string | null;
+  friday: string | null;
+};
+
+export type SchoolReportTerm = {
+  id: number | null;
+  siteId: number;
+  termNumber: number;
+  status: "pending" | "open";
+  termStartDate: string | null;
+  termEndDate: string | null;
+  holidayStartDate: string | null;
+  holidayEndDate: string | null;
+  weekCount: number;
+  generatedAt: string | null;
+  rows: SchoolReportRow[];
+};
+
+export type SchoolReportsResponse = {
+  siteId: number;
+  terms: SchoolReportTerm[];
+};
+
 export type VitalRecord = {
   id: number;
   siteId: number;
@@ -119,6 +151,62 @@ export function useGetSchoolStaff(siteId?: number | null, staffId?: number | nul
       return res.json();
     },
     enabled: !!siteId && !!staffId,
+  });
+}
+
+export function useGetSchoolReports(siteId?: number | null) {
+  return useQuery<SchoolReportsResponse>({
+    queryKey: ["school-reports", siteId],
+    queryFn: async () => {
+      const res = await fetch(`/api/school-reports?siteId=${siteId}`);
+      if (!res.ok) throw new Error("Failed to fetch school reports");
+      return res.json();
+    },
+    enabled: !!siteId,
+  });
+}
+
+export function useSaveSchoolReportTerm(siteId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      termNumber,
+      termStartDate,
+      termEndDate,
+      holidayStartDate,
+      holidayEndDate,
+    }: {
+      termNumber: number;
+      termStartDate: string;
+      termEndDate: string;
+      holidayStartDate: string | null;
+      holidayEndDate: string | null;
+    }) => {
+      const res = await fetch(`/api/school-reports/${siteId}/terms/${termNumber}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ termStartDate, termEndDate, holidayStartDate, holidayEndDate }),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error ?? "Failed to save report dates");
+      return result as SchoolReportTerm;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["school-reports", siteId] }),
+  });
+}
+
+export function useGenerateSchoolReport(siteId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (termNumber: number) => {
+      const res = await fetch(`/api/school-reports/${siteId}/terms/${termNumber}/generate`, {
+        method: "POST",
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error ?? "Failed to generate school report");
+      return result as SchoolReportTerm;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["school-reports", siteId] }),
   });
 }
 

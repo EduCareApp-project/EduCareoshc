@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/auth";
 import { 
   useGetSchoolPortal, 
   useGetSchoolStaff,
+  useGetSchoolReports,
   useCreateVitalRecord, 
   useDeleteVitalRecord,
   useCreateVecraVisit,
@@ -27,6 +28,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Label } from "@/components/ui/label";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ServiceDocumentationPanel } from "@/components/service-documentation-panel";
+import { SchoolReportTable } from "@/components/school-report-table";
 import QipPublic from "@/pages/qip-public";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -244,10 +246,12 @@ export default function SchoolPortal() {
   const { toast } = useToast();
 
   const { data, isLoading } = useGetSchoolPortal(siteId);
+  const { data: schoolReports, isLoading: schoolReportsLoading } = useGetSchoolReports(siteId);
 
   const [vitalOpen, setVitalOpen] = useState(false);
   const [serviceDocsOpen, setServiceDocsOpen] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
+  const [selectedReportTerm, setSelectedReportTerm] = useState(1);
   const [vecraOpen, setVecraOpen] = useState(false);
   const [vitalFile, setVitalFile] = useState<File | null>(null);
   const [vitalUploadError, setVitalUploadError] = useState<string | null>(null);
@@ -947,15 +951,58 @@ export default function SchoolPortal() {
 
           {/* Reports Placeholder */}
           <TabsContent value="reports" className="mt-0">
-             <Card className="border-dashed shadow-none bg-muted/30">
-                <CardContent className="flex flex-col items-center justify-center py-20 text-muted-foreground text-center">
-                  <FileText className="w-16 h-16 opacity-20 mb-4" />
-                  <h3 className="text-xl font-semibold text-foreground mb-2">School Reports</h3>
-                  <p className="max-w-sm">
-                    Detailed reporting and analytics for this school are coming later. Check back soon for updates.
-                  </p>
-                </CardContent>
-              </Card>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold">School Reports</h3>
+              <p className="text-sm text-muted-foreground">Term reports shared with your school.</p>
+            </div>
+            {schoolReportsLoading ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {[1, 2, 3, 4].map((term) => <Skeleton key={term} className="h-36" />)}
+              </div>
+            ) : (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {(schoolReports?.terms ?? []).map((term) => (
+                    <button
+                      key={term.termNumber}
+                      type="button"
+                      className="text-left"
+                      onClick={() => setSelectedReportTerm(term.termNumber)}
+                    >
+                      <Card className={`h-full transition-colors hover:border-primary ${selectedReportTerm === term.termNumber ? "border-primary ring-1 ring-primary/20" : ""}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-semibold">Term {term.termNumber}</p>
+                            <Badge variant={term.status === "open" ? "default" : "secondary"} className="capitalize">{term.status}</Badge>
+                          </div>
+                          <p className="mt-3 text-xs text-muted-foreground">
+                            {term.termStartDate && term.termEndDate
+                              ? `${format(new Date(`${term.termStartDate}T00:00:00`), "d MMM")} – ${format(new Date(`${term.termEndDate}T00:00:00`), "d MMM yyyy")}`
+                              : "Dates not set"}
+                          </p>
+                          <p className="mt-2 text-sm">{term.weekCount ? `${term.weekCount} weeks` : "Awaiting setup"}</p>
+                        </CardContent>
+                      </Card>
+                    </button>
+                  ))}
+                </div>
+                {schoolReports?.terms.find((term) => term.termNumber === selectedReportTerm) && (
+                  <Card className="mt-6">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Term {selectedReportTerm} report</CardTitle>
+                      <CardDescription>
+                        {schoolReports.terms.find((term) => term.termNumber === selectedReportTerm)?.generatedAt
+                          ? "Weekly BSC and ASC report"
+                          : "This report has not been generated yet."}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <SchoolReportTable term={schoolReports.terms.find((term) => term.termNumber === selectedReportTerm)!} />
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
           </TabsContent>
 
         </div>

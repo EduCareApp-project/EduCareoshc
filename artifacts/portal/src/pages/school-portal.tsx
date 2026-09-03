@@ -205,14 +205,14 @@ function SchoolStaffProfileView({
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <Badge variant={qualification.status === "current" ? "default" : "secondary"} className="capitalize">
-                        {qualification.status.replace(/_/g, " ")}
-                      </Badge>
                       {expiry && (
                         <span className={expiry.expired ? "font-medium text-destructive" : "text-muted-foreground"}>
                           Expires {expiry.label}
                         </span>
                       )}
+                      <Badge variant={qualification.status === "current" ? "default" : "secondary"} className="capitalize">
+                        {qualification.status.replace(/_/g, " ")}
+                      </Badge>
                     </div>
                   </div>
                 );

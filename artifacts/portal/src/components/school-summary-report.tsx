@@ -256,12 +256,17 @@ export function SchoolSummaryReport({
           ))}
 
           <div className="flex flex-wrap justify-end gap-2 border-t pt-5">
+            <Button
+              variant="outline"
+              onClick={save}
+              disabled={locked || saveObligations.isPending || !hasUnsavedChanges}
+              title={locked ? "Historical reports are read-only" : undefined}
+            >
+              {saveObligations.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Save
+            </Button>
             {!locked && (
               <>
-                <Button variant="outline" onClick={save} disabled={saveObligations.isPending || !hasUnsavedChanges}>
-                  {saveObligations.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                  Save
-                </Button>
                 <Button
                   onClick={() => setConfirmFinalizeOpen(true)}
                   disabled={hasUnsavedChanges}
@@ -282,10 +287,14 @@ export function SchoolSummaryReport({
             href={`/api/school-reports/${siteId}/summaries/${report.id}/pdf`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-3 rounded-xl bg-green-600 px-6 py-5 text-center font-semibold text-white shadow-sm transition-colors hover:bg-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2"
+            className={report.archivedAt
+              ? "inline-flex items-center gap-2 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+              : "flex w-full items-center justify-center gap-3 rounded-xl bg-green-600 px-6 py-5 text-center font-semibold text-white shadow-sm transition-colors hover:bg-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2"}
           >
             <ExternalLink className="h-5 w-5" />
-            <span>{report.finalizedPdfName || `${report.periodLabel} PDF`}</span>
+            <span>
+              {report.archivedAt ? "Open archived report PDF" : report.finalizedPdfName || `${report.periodLabel} PDF`}
+            </span>
           </a>
           {canManageLifecycle && !report.archivedAt && (
             <Button

@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { 
-  Building2, Users, FileText, ClipboardCheck, ArrowLeft, 
+  Building2, Users, FileText, ClipboardCheck, ArrowLeft, BarChart3,
   Plus, Trash2, CalendarIcon, FileClock,
   MapPin, Clock, Paperclip, ChevronDown, BookOpen, TrendingUp, Mail, Phone, User, GraduationCap, Eye
 } from "lucide-react";
@@ -317,7 +317,7 @@ export default function SchoolPortal() {
 
   const { site, staff, vitalRecords, vecraVisits } = data;
   const visiblePortalTabs = isStaff
-    ? ["vital", "vecra", "staff", "reports", "qip"]
+    ? ["vital", "vecra", "staff", "statistics", "reports", "qip"]
     : data.portalSettings.visibleTabs;
   const defaultPortalTab = visiblePortalTabs[0] ?? "staff";
 
@@ -420,7 +420,7 @@ export default function SchoolPortal() {
           </CardContent>
         </Card>
       ) : <Tabs defaultValue={defaultPortalTab} className="w-full">
-        <TabsList className="w-full justify-start border-b rounded-none h-12 bg-transparent p-0">
+        <TabsList className="w-full justify-start overflow-x-auto border-b rounded-none h-12 bg-transparent p-0">
           {visiblePortalTabs.includes("vital") && <TabsTrigger
             value="vital" 
             className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-6 h-12"
@@ -441,6 +441,13 @@ export default function SchoolPortal() {
           >
             <Users className="w-4 h-4 mr-2" />
             Service Staff
+          </TabsTrigger>}
+          {visiblePortalTabs.includes("statistics") && <TabsTrigger
+            value="statistics"
+            className="h-10 shrink-0 rounded-md bg-purple-600 px-5 text-white shadow-sm hover:bg-purple-700 hover:text-white data-[state=active]:bg-purple-700 data-[state=active]:text-white data-[state=active]:shadow-md"
+          >
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Live Service Statistics
           </TabsTrigger>}
           {visiblePortalTabs.includes("reports") && <TabsTrigger
             value="reports"
@@ -953,6 +960,13 @@ export default function SchoolPortal() {
               </>
             )}
           </TabsContent>}
+
+          {/* Reports Placeholder */}
+          {visiblePortalTabs.includes("statistics") && (
+            <TabsContent value="statistics" className="mt-0">
+              <SchoolCurrentReportsPanel siteId={site.id} showCompletedReports={false} />
+            </TabsContent>
+          )}
 
           {/* Reports Placeholder */}
           {visiblePortalTabs.includes("reports") && <TabsContent value="reports" className="mt-0">

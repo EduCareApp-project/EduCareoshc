@@ -336,7 +336,7 @@ export function useGetSchoolReportSummaries(siteId: number, reportYear: number) 
   });
 }
 
-export function useGetSchoolCompletedReports(siteId: number) {
+export function useGetSchoolCompletedReports(siteId: number, enabled = true) {
   return useQuery<SchoolReportSummary[]>({
     queryKey: ["school-completed-reports", siteId],
     queryFn: async () => {
@@ -345,6 +345,7 @@ export function useGetSchoolCompletedReports(siteId: number) {
       if (!res.ok) throw new Error(result.error ?? "Failed to fetch completed reports");
       return result;
     },
+    enabled,
   });
 }
 

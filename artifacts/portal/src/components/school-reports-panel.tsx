@@ -458,7 +458,7 @@ export function SchoolReportsPanel({ siteId, isAdmin = false }: { siteId: number
             </div>
             <Button onClick={openReportDialog}>
               <FileText className="mr-1.5 h-4 w-4" />
-              New report
+              Generate report
             </Button>
           </div>
         </CardHeader>
@@ -472,7 +472,18 @@ export function SchoolReportsPanel({ siteId, isAdmin = false }: { siteId: number
             <div className="space-y-2">
               <p className="text-sm font-medium">Generated reports</p>
               <div className="grid gap-2 sm:grid-cols-2">
-                {generatedReports.map((report) => (
+                {generatedReports.map((report) => report.archivedAt ? (
+                  <button
+                    type="button"
+                    key={report.id}
+                    onClick={() => setSelectedSummaryReportId(report.id)}
+                    className="flex items-center gap-2 px-1 py-1.5 text-left text-sm text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    <FileText className="h-3.5 w-3.5 shrink-0" />
+                    <span>{report.periodLabel}</span>
+                    <span className="text-xs">(Archived)</span>
+                  </button>
+                ) : (
                   <button
                     type="button"
                     key={report.id}
@@ -633,8 +644,14 @@ export function SchoolReportsPanel({ siteId, isAdmin = false }: { siteId: number
   );
 }
 
-export function SchoolCurrentReportsPanel({ siteId }: { siteId: number }) {
-  const { data: reports = [], isLoading } = useGetSchoolCompletedReports(siteId);
+export function SchoolCurrentReportsPanel({
+  siteId,
+  showCompletedReports = true,
+}: {
+  siteId: number;
+  showCompletedReports?: boolean;
+}) {
+  const { data: reports = [], isLoading } = useGetSchoolCompletedReports(siteId, showCompletedReports);
   const { data: liveStats, isLoading: liveStatsLoading } = useGetSchoolLiveReportStatistics(siteId);
 
   return (
@@ -778,50 +795,54 @@ export function SchoolCurrentReportsPanel({ siteId }: { siteId: number }) {
         </Card>
       )}
 
-      <div className="border-t pt-8">
-        <h3 className="text-lg font-semibold">Completed Reports</h3>
-        <p className="text-sm text-muted-foreground">
-          Open a completed report in a new tab to view or download its PDF.
-        </p>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Report PDFs</CardTitle>
-          <CardDescription>Most recently completed reports appear first.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? <Skeleton className="h-24 w-full" /> : reports.length === 0 ? (
-            <div className="rounded-lg border border-dashed px-5 py-8 text-center text-sm text-muted-foreground">
-              No completed report PDFs are currently available.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {reports.map((report) => (
-                <a
-                  key={report.id}
-                  href={`/api/school-reports/${siteId}/summaries/${report.id}/pdf`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex w-full items-center gap-4 rounded-xl bg-green-600 px-5 py-4 text-left text-white shadow-sm transition-colors hover:bg-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2"
-                >
-                  <FileText className="h-5 w-5 shrink-0" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-semibold">
-                      {report.finalizedPdfName || report.periodLabel}
-                    </span>
-                    {report.finalizedAt && (
-                      <span className="mt-0.5 block text-xs text-green-50">
-                        Completed {format(parseISO(report.finalizedAt), "d MMMM yyyy")}
+      {showCompletedReports && (
+        <>
+          <div className="border-t pt-8">
+            <h3 className="text-lg font-semibold">Completed Reports</h3>
+            <p className="text-sm text-muted-foreground">
+              Open a completed report in a new tab to view or download its PDF.
+            </p>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Report PDFs</CardTitle>
+              <CardDescription>Most recently completed reports appear first.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? <Skeleton className="h-24 w-full" /> : reports.length === 0 ? (
+                <div className="rounded-lg border border-dashed px-5 py-8 text-center text-sm text-muted-foreground">
+                  No completed report PDFs are currently available.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {reports.map((report) => (
+                    <a
+                      key={report.id}
+                      href={`/api/school-reports/${siteId}/summaries/${report.id}/pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex w-full items-center gap-4 rounded-xl bg-green-600 px-5 py-4 text-left text-white shadow-sm transition-colors hover:bg-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2"
+                    >
+                      <FileText className="h-5 w-5 shrink-0" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-semibold">
+                          {report.finalizedPdfName || report.periodLabel}
+                        </span>
+                        {report.finalizedAt && (
+                          <span className="mt-0.5 block text-xs text-green-50">
+                            Completed {format(parseISO(report.finalizedAt), "d MMMM yyyy")}
+                          </span>
+                        )}
                       </span>
-                    )}
-                  </span>
-                  <ExternalLink className="h-5 w-5 shrink-0" />
-                </a>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                      <ExternalLink className="h-5 w-5 shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

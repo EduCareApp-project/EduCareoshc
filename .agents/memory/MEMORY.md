@@ -8,3 +8,4 @@
 - [Admin Support role](admin-support-role.md) — admin-equivalent access, but intentionally site-less and excluded from educator, compliance, guardian, and school-facing staff views.
 - [School report closure semantics](school-report-closure-semantics.md) — pupil-free flags are session-specific; matching BSC and ASC flags mean the service was closed that day.
 - [School report snapshots](school-report-snapshots.md) — generated statistics freeze the selected attendance period; narrative stays editable only until finalisation.
+- [Finalised school report PDFs](finalised-school-report-pdfs.md) — preserve obligations and store one immutable private PDF with a stable organisation/service/period/year filename.

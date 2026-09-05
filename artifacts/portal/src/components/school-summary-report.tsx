@@ -142,19 +142,6 @@ export function SchoolSummaryReport({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {report.status === "finalized" && (
-            <Button asChild>
-              <a href={`/api/school-reports/${siteId}/summaries/${report.id}/pdf`}>
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF
-              </a>
-            </Button>
-          )}
-          {canManageLifecycle && !report.archivedAt && (
-            <Button variant="outline" onClick={() => setConfirmAction("archive")}>
-              <Archive className="mr-2 h-4 w-4" />Archive
-            </Button>
-          )}
           {canManageLifecycle && (
             <Button variant="destructive" onClick={() => setConfirmAction("delete")}>
               <Trash2 className="mr-2 h-4 w-4" />Delete
@@ -269,14 +256,7 @@ export function SchoolSummaryReport({
           ))}
 
           <div className="flex flex-wrap justify-end gap-2 border-t pt-5">
-            {locked ? (
-              <Button asChild>
-                <a href={`/api/school-reports/${siteId}/summaries/${report.id}/pdf`}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Download PDF
-                </a>
-              </Button>
-            ) : (
+            {!locked && (
               <>
                 <Button variant="outline" onClick={save} disabled={saveObligations.isPending || !hasUnsavedChanges}>
                   {saveObligations.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -295,6 +275,28 @@ export function SchoolSummaryReport({
           </div>
         </CardContent>
       </Card>
+
+      {report.status === "finalized" && (
+        <div className="space-y-3">
+          <a
+            href={`/api/school-reports/${siteId}/summaries/${report.id}/pdf`}
+            className="flex w-full items-center justify-center gap-3 rounded-xl bg-green-600 px-6 py-5 text-center font-semibold text-white shadow-sm transition-colors hover:bg-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2"
+          >
+            <Download className="h-5 w-5" />
+            <span>{report.finalizedPdfName || `${report.periodLabel} PDF`}</span>
+          </a>
+          {canManageLifecycle && !report.archivedAt && (
+            <Button
+              variant="outline"
+              className="h-auto w-full py-4"
+              onClick={() => setConfirmAction("archive")}
+            >
+              <Archive className="mr-2 h-5 w-5" />
+              Archive report and allow a replacement
+            </Button>
+          )}
+        </div>
+      )}
 
       <Dialog open={confirmFinalizeOpen} onOpenChange={setConfirmFinalizeOpen}>
         <DialogContent>

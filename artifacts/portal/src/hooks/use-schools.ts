@@ -124,6 +124,9 @@ export type SchoolReportSummary = {
   reportingObligations: SchoolReportObligations;
   status: "draft" | "finalized";
   finalizedAt: string | null;
+  finalizedPdfPath: string | null;
+  finalizedPdfName: string | null;
+  finalizedPdfCreatedAt: string | null;
   archivedAt: string | null;
   createdAt: string;
   updatedAt: string;

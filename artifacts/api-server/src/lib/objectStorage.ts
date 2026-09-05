@@ -128,6 +128,22 @@ export class ObjectStorageService {
     });
   }
 
+  async saveObjectEntity(
+    data: Uint8Array | Buffer,
+    contentType: string,
+    folder: string = "generated"
+  ): Promise<string> {
+    const privateObjectDir = this.getPrivateObjectDir().replace(/\/$/, "");
+    const objectId = randomUUID();
+    const relativePath = `${folder.replace(/^\/|\/$/g, "")}/${objectId}`;
+    const { bucketName, objectName } = parseObjectPath(`${privateObjectDir}/${relativePath}`);
+    await objectStorageClient.bucket(bucketName).file(objectName).save(Buffer.from(data), {
+      contentType,
+      resumable: false,
+    });
+    return `/objects/${relativePath}`;
+  }
+
   async getObjectEntityFile(objectPath: string): Promise<File> {
     if (!objectPath.startsWith("/objects/")) {
       throw new ObjectNotFoundError();

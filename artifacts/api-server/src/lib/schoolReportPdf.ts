@@ -154,13 +154,17 @@ function drawHolidayBars(
   });
 }
 
-export async function createSchoolReportPdf(report: SchoolReportSummary, siteName: string): Promise<Uint8Array> {
+export async function createSchoolReportPdf(
+  report: SchoolReportSummary,
+  siteName: string,
+  organisationName?: string,
+): Promise<Uint8Array> {
   const document = await PDFDocument.create();
   const regular = await document.embedFont(StandardFonts.Helvetica);
   const bold = await document.embedFont(StandardFonts.HelveticaBold);
 
   const overview = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-  overview.drawText("School Report", { x: MARGIN, y: 780, size: 25, font: bold, color: TEXT });
+  overview.drawText(organisationName || "School Report", { x: MARGIN, y: 780, size: 25, font: bold, color: TEXT });
   overview.drawText(siteName, { x: MARGIN, y: 752, size: 15, font: bold, color: BLUE });
   overview.drawText(report.periodLabel, { x: MARGIN, y: 731, size: 11, font: regular, color: MUTED });
   overview.drawText("SERVICE STATISTICS", { x: MARGIN, y: 690, size: 10, font: bold, color: MUTED });
@@ -190,7 +194,7 @@ export async function createSchoolReportPdf(report: SchoolReportSummary, siteNam
     y -= 18;
   }
 
-  document.setTitle(`${siteName} - ${report.periodLabel}`);
+  document.setTitle(`${organisationName ? `${organisationName} - ` : ""}${siteName} - ${report.periodLabel}`);
   document.setSubject("School Report");
   document.setCreator("EduCare");
   return document.save();

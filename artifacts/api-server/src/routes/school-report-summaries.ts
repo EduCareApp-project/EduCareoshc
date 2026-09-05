@@ -2,11 +2,13 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import {
   db,
+  organisationTable,
   schoolReportRowsTable,
   schoolReportSummariesTable,
   schoolReportTermsTable,
   sitesTable,
   type SchoolReportObligations,
+  type SchoolReportSummary,
 } from "@workspace/db";
 import {
   calculateSchoolReportStatistics,
@@ -15,8 +17,11 @@ import {
 } from "../lib/schoolReportStatistics";
 import { createSchoolReportPdf } from "../lib/schoolReportPdf";
 import { refreshDraftSchoolReportSummaries } from "../lib/refreshDraftSchoolReportSummaries";
+import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage";
+import { Readable } from "node:stream";
 
 const router: IRouter = Router();
+const objectStorageService = new ObjectStorageService();
 const REPORT_MANAGER_ROLES = new Set(["admin", "admin_support", "educational_leader"]);
 const OBLIGATION_KEYS: Array<keyof SchoolReportObligations> = [
   "learningPlayProgramHighlights",
@@ -66,6 +71,35 @@ function parsePositiveInteger(value: unknown): number | null {
 function parseReportYear(value: unknown): number | null {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed >= 2000 && parsed <= 2200 ? parsed : null;
+}
+
+function safeFilenamePart(value: string): string {
+  return value.replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, " ").trim();
+}
+
+function finalizedReportFilename(organisationName: string, siteName: string, report: SchoolReportSummary): string {
+  const reportType = report.frequency === "term"
+    ? `Term ${report.period} Report`
+    : `${report.periodLabel.replace(/\s+\d{4}$/, "")} Report`;
+  return [
+    safeFilenamePart(organisationName),
+    safeFilenamePart(siteName),
+    safeFilenamePart(reportType),
+    String(report.reportYear),
+  ].join(" - ") + ".pdf";
+}
+
+async function createStoredPdf(report: SchoolReportSummary) {
+  const [[site], [organisation]] = await Promise.all([
+    db.select({ name: sitesTable.name }).from(sitesTable).where(eq(sitesTable.id, report.siteId)).limit(1),
+    db.select({ name: organisationTable.name }).from(organisationTable).limit(1),
+  ]);
+  const siteName = site?.name ?? "School";
+  const organisationName = organisation?.name?.trim() || "Elysium OSHC";
+  const name = finalizedReportFilename(organisationName, siteName, report);
+  const bytes = await createSchoolReportPdf(report, siteName, organisationName);
+  const path = await objectStorageService.saveObjectEntity(bytes, "application/pdf", "generated/school-reports");
+  return { path, name, createdAt: new Date() };
 }
 
 async function canReadSiteReports(req: Request, siteId: number): Promise<boolean> {
@@ -242,17 +276,37 @@ router.post("/school-reports/:siteId/summaries/:reportId/finalize", async (req, 
       return;
     }
     if (report.status === "finalized") {
-      res.json(report);
+      if (report.finalizedPdfPath && report.finalizedPdfName) {
+        res.json(report);
+        return;
+      }
+      const pdf = await createStoredPdf(report);
+      const [backfilled] = await db.update(schoolReportSummariesTable).set({
+        finalizedPdfPath: pdf.path,
+        finalizedPdfName: pdf.name,
+        finalizedPdfCreatedAt: pdf.createdAt,
+        updatedAt: pdf.createdAt,
+      }).where(eq(schoolReportSummariesTable.id, reportId)).returning();
+      res.json(backfilled);
       return;
     }
+    const pdf = await createStoredPdf(report);
     const now = new Date();
-    const [finalized] = await db.update(schoolReportSummariesTable).set({
-      status: "finalized",
-      finalizedAt: now,
-      finalizedById: req.session.user!.id,
-      updatedAt: now,
-    }).where(eq(schoolReportSummariesTable.id, reportId)).returning();
-    res.json(finalized);
+    try {
+      const [finalized] = await db.update(schoolReportSummariesTable).set({
+        status: "finalized",
+        finalizedAt: now,
+        finalizedById: req.session.user!.id,
+        finalizedPdfPath: pdf.path,
+        finalizedPdfName: pdf.name,
+        finalizedPdfCreatedAt: pdf.createdAt,
+        updatedAt: now,
+      }).where(eq(schoolReportSummariesTable.id, reportId)).returning();
+      res.json(finalized);
+    } catch (error) {
+      await objectStorageService.deleteObjectEntity(pdf.path).catch(() => undefined);
+      throw error;
+    }
   } catch (error) {
     req.log.error({ error, siteId, reportId }, "Failed to finalize school report");
     res.status(500).json({ error: "Failed to finalize report" });
@@ -287,15 +341,33 @@ router.get("/school-reports/:siteId/summaries/:reportId/pdf", async (req, res): 
       res.status(409).json({ error: "Finalize the report before downloading its PDF" });
       return;
     }
-    const [site] = await db.select({ name: sitesTable.name }).from(sitesTable)
-      .where(eq(sitesTable.id, siteId)).limit(1);
-    const bytes = await createSchoolReportPdf(report, site?.name ?? "School");
-    const filename = `${(site?.name ?? "school").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase()}-${report.periodLabel.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.pdf`;
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-    res.setHeader("Content-Length", String(bytes.length));
-    res.send(Buffer.from(bytes));
+    let pdfPath = report.finalizedPdfPath;
+    let filename = report.finalizedPdfName;
+    if (!pdfPath || !filename) {
+      const pdf = await createStoredPdf(report);
+      pdfPath = pdf.path;
+      filename = pdf.name;
+      await db.update(schoolReportSummariesTable).set({
+        finalizedPdfPath: pdf.path,
+        finalizedPdfName: pdf.name,
+        finalizedPdfCreatedAt: pdf.createdAt,
+      }).where(eq(schoolReportSummariesTable.id, reportId));
+    }
+    const file = await objectStorageService.getObjectEntityFile(pdfPath);
+    const response = await objectStorageService.downloadObject(file, 0);
+    res.status(response.status);
+    response.headers.forEach((value, key) => res.setHeader(key, value));
+    res.setHeader("Content-Disposition", `attachment; filename="${filename.replace(/["\r\n]/g, "")}"`);
+    if (response.body) {
+      Readable.fromWeb(response.body as ReadableStream<Uint8Array>).pipe(res);
+    } else {
+      res.end();
+    }
   } catch (error) {
+    if (error instanceof ObjectNotFoundError) {
+      res.status(404).json({ error: "The saved report PDF could not be found" });
+      return;
+    }
     req.log.error({ error, siteId, reportId }, "Failed to create school report PDF");
     res.status(500).json({ error: "Failed to create report PDF" });
   }

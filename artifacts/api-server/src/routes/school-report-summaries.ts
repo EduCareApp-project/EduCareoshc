@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lte } from "drizzle-orm";
 import {
   db,
   organisationTable,
@@ -12,6 +12,7 @@ import {
 } from "@workspace/db";
 import {
   calculateSchoolReportStatistics,
+  calculateLiveSchoolReportStatistics,
   reportPeriodLabel,
   selectedTermNumbers,
 } from "../lib/schoolReportStatistics";
@@ -107,6 +108,38 @@ async function canReadSiteReports(req: Request, siteId: number): Promise<boolean
   return isReportManager(req) || (user?.type === "school" && user.siteId === siteId);
 }
 
+router.get("/school-reports/:siteId/live-statistics", async (req, res): Promise<void> => {
+  const siteId = parsePositiveInteger(req.params.siteId);
+  if (!siteId) {
+    res.status(400).json({ error: "Invalid site" });
+    return;
+  }
+  if (!(await canReadSiteReports(req, siteId))) {
+    res.status(403).json({ error: "You cannot access these school report statistics" });
+    return;
+  }
+  const end = new Date();
+  const start = new Date(end);
+  start.setMonth(start.getMonth() - 6);
+  const rangeStart = start.toISOString().slice(0, 10);
+  const rangeEnd = end.toISOString().slice(0, 10);
+  try {
+    const result = await db.select({ row: schoolReportRowsTable })
+      .from(schoolReportRowsTable)
+      .innerJoin(schoolReportTermsTable, eq(schoolReportRowsTable.termId, schoolReportTermsTable.id))
+      .where(and(
+        eq(schoolReportTermsTable.siteId, siteId),
+        gte(schoolReportRowsTable.weekBeginning, rangeStart),
+        lte(schoolReportRowsTable.weekBeginning, rangeEnd),
+      ))
+      .orderBy(schoolReportRowsTable.weekBeginning, schoolReportRowsTable.serviceType);
+    res.json(calculateLiveSchoolReportStatistics(result.map(({ row }) => row), rangeStart, rangeEnd));
+  } catch (error) {
+    req.log.error({ error, siteId }, "Failed to load live school report statistics");
+    res.status(500).json({ error: "Failed to load live attendance statistics" });
+  }
+});
+
 router.get("/school-reports/:siteId/summaries", async (req, res): Promise<void> => {
   const siteId = parsePositiveInteger(req.params.siteId);
   const reportYear = parseReportYear(req.query.reportYear);
@@ -127,7 +160,7 @@ router.get("/school-reports/:siteId/summaries", async (req, res): Promise<void> 
       eq(schoolReportSummariesTable.siteId, siteId),
       eq(schoolReportSummariesTable.reportYear, reportYear),
       visibility,
-    )).orderBy(asc(schoolReportSummariesTable.createdAt));
+    )).orderBy(desc(schoolReportSummariesTable.createdAt), desc(schoolReportSummariesTable.id));
     res.json(reports);
   } catch (error) {
     req.log.error({ error, siteId, reportYear }, "Failed to load generated school reports");

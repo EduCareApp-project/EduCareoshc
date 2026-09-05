@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SchoolReportRow, SchoolReportTerm } from "@workspace/db";
 import {
+  calculateLiveSchoolReportStatistics,
   calculateSchoolReportStatistics,
   reportPeriodLabel,
   selectedTermNumbers,
@@ -105,5 +106,27 @@ describe("school report statistics", () => {
     expect(statistics.holidayProgramApplies).toBe(false);
     expect(statistics.holidayWeekdayAverages.every((item) => item.value === 0)).toBe(true);
     expect(statistics.holidayWeeklyAverages).toEqual([]);
+  });
+
+  it("calculates six-month live weekday, weekly, and overall service averages", () => {
+    const weekOneBsc = row(1, "BSC", 1, [5, 10, 15, 20, 0]);
+    const weekOneAsc = row(2, "ASC", 1, [10, 10, 10, 10, 10]);
+    const weekOneVac = row(3, "VAC", 1, [0, 20, 10, 0, 30]);
+    const weekTwoBsc = { ...row(4, "BSC", 2, [15, 10, 5, 0, 20]), weekBeginning: "2026-02-02" };
+    const weekTwoAsc = { ...row(5, "ASC", 2, [20, 20, 20, 20, 20]), weekBeginning: "2026-02-02" };
+
+    const statistics = calculateLiveSchoolReportStatistics(
+      [weekOneBsc, weekOneAsc, weekOneVac, weekTwoBsc, weekTwoAsc],
+      "2025-08-05",
+      "2026-02-05",
+    );
+
+    expect(statistics.weekdayAverages[0]).toEqual({ day: "Monday", bsc: 10, asc: 15, vac: 0 });
+    expect(statistics.weeklyAverages).toEqual([
+      { weekBeginning: "2026-01-26", bsc: 10, asc: 10, vac: 20 },
+      { weekBeginning: "2026-02-02", bsc: 10, asc: 20, vac: 0 },
+    ]);
+    expect(statistics.overallAverages).toEqual({ bsc: 10, asc: 15, vac: 20 });
+    expect(statistics.hasVacationCare).toBe(true);
   });
 });

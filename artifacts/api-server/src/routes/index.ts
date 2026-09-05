@@ -107,7 +107,9 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
   const publicServiceDocsFilePath = req.path.startsWith("/service-docs/public/file/");
   const requestedQipSiteId = typeof req.query.siteId === "string" ? Number(req.query.siteId) : NaN;
   const ownQipPublicPath = req.path === "/qip/public" && requestedQipSiteId === user.siteId;
-  const ownSchoolReportPath = new RegExp(`^/school-reports/${user.siteId}/summaries(?:/\\d+/pdf)?$`);
+  const ownSchoolReportPath = new RegExp(
+    `^/school-reports/${user.siteId}/(?:summaries(?:/\\d+/pdf)?|live-statistics)$`,
+  );
   if (
     req.method === "GET" &&
     (

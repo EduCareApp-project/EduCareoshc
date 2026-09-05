@@ -1,6 +1,18 @@
 import { useEffect, useState } from "react";
 import { format, parseISO } from "date-fns";
 import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
   CalendarDays,
   Check,
   ChevronLeft,
@@ -15,6 +27,7 @@ import {
   type SchoolReportTerm,
   useCreateSchoolReportSummary,
   useGenerateSchoolReport,
+  useGetSchoolLiveReportStatistics,
   useGetSchoolReportSummaries,
   useGetSchoolReports,
   useSaveSchoolReportAttendance,
@@ -620,13 +633,155 @@ export function SchoolReportsPanel({ siteId, isAdmin = false }: { siteId: number
 
 export function SchoolCurrentReportsPanel({ siteId }: { siteId: number }) {
   const [reportYear, setReportYear] = useState(() => new Date().getFullYear());
-  const { data: reports = [], isLoading } = useGetSchoolReportSummaries(siteId, reportYear);
+  const { data: reportsData = [], isLoading: reportsLoading } = useGetSchoolReportSummaries(siteId, reportYear);
+  const { data: liveStats, isLoading: liveStatsLoading } = useGetSchoolLiveReportStatistics(siteId);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  const reports = [...reportsData].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const selected = reports.find((report) => report.id === selectedId) ?? reports[0] ?? null;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold">Live Service Statistics</h3>
+          <p className="text-sm text-muted-foreground">Rolling six-month attendance averages for this school.</p>
+        </div>
+      </div>
+
+      {liveStatsLoading ? (
+        <Card>
+          <CardContent className="p-6">
+            <Skeleton className="h-72 w-full" />
+          </CardContent>
+        </Card>
+      ) : liveStats ? (
+        <div className="grid gap-6 xl:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Average Usage by Day</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {liveStats.weeklyAverages.length > 0 ? (
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%" debounce={0}>
+                    <BarChart data={liveStats.weekdayAverages}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
+                      <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#71717a" }} stroke="#71717a" />
+                      <YAxis tick={{ fontSize: 12, fill: "#71717a" }} stroke="#71717a" allowDecimals={false} />
+                      <Tooltip
+                        isAnimationActive={false}
+                        cursor={{ fill: "rgba(0,0,0,0.05)", stroke: "none" }}
+                        contentStyle={{
+                          backgroundColor: "#fff",
+                          borderRadius: "6px",
+                          border: "1px solid #e0e0e0",
+                          color: "#1a1a1a",
+                          fontSize: "13px",
+                        }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: "13px" }} />
+                      <Bar dataKey="bsc" name="Before School" fill="#0079F2" radius={[2, 2, 0, 0]} isAnimationActive={false} />
+                      <Bar dataKey="asc" name="After School" fill="#795EFF" radius={[2, 2, 0, 0]} isAnimationActive={false} />
+                      {liveStats.hasVacationCare && (
+                        <Bar dataKey="vac" name="Vacation Care" fill="#009118" radius={[2, 2, 0, 0]} isAnimationActive={false} />
+                      )}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="flex h-72 items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
+                  No daily attendance data available for the last six months.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Average Daily Usage by Week</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {liveStats.weeklyAverages.length > 0 ? (
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%" debounce={0}>
+                    <LineChart data={liveStats.weeklyAverages}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" />
+                      <XAxis
+                        dataKey="weekBeginning"
+                        tick={{ fontSize: 12, fill: "#71717a" }}
+                        stroke="#71717a"
+                        interval="preserveStartEnd"
+                        minTickGap={28}
+                        tickFormatter={(d) => d.split("-").slice(1).join("/")}
+                      />
+                      <YAxis tick={{ fontSize: 12, fill: "#71717a" }} stroke="#71717a" allowDecimals={false} />
+                      <Tooltip
+                        isAnimationActive={false}
+                        cursor={{ stroke: "#71717a", strokeDasharray: "3 3" }}
+                        contentStyle={{
+                          backgroundColor: "#fff",
+                          borderRadius: "6px",
+                          border: "1px solid #e0e0e0",
+                          color: "#1a1a1a",
+                          fontSize: "13px",
+                        }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: "13px" }} />
+                      <Line type="monotone" dataKey="bsc" name="Before School" stroke="#0079F2" strokeWidth={2} dot={false} isAnimationActive={false} />
+                      <Line type="monotone" dataKey="asc" name="After School" stroke="#795EFF" strokeWidth={2} dot={false} isAnimationActive={false} />
+                      {liveStats.hasVacationCare && (
+                        <Line type="monotone" dataKey="vac" name="Vacation Care" stroke="#009118" strokeWidth={2} dot={false} isAnimationActive={false} />
+                      )}
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="flex h-72 items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
+                  No weekly attendance data available for the last six months.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Average Attendances</CardTitle>
+              <CardDescription>
+                Daily averages from {format(parseISO(liveStats.rangeStart), "d MMM yyyy")} to{" "}
+                {format(parseISO(liveStats.rangeEnd), "d MMM yyyy")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-xl border bg-blue-50/60 p-5">
+                <p className="text-sm font-medium text-muted-foreground">Before School Care</p>
+                <p className="mt-1 text-3xl font-bold text-blue-700">{liveStats.overallAverages.bsc}</p>
+                <p className="mt-1 text-xs text-muted-foreground">average daily attendance</p>
+              </div>
+              <div className="rounded-xl border bg-violet-50/60 p-5">
+                <p className="text-sm font-medium text-muted-foreground">After School Care</p>
+                <p className="mt-1 text-3xl font-bold text-violet-700">{liveStats.overallAverages.asc}</p>
+                <p className="mt-1 text-xs text-muted-foreground">average daily attendance</p>
+              </div>
+              {liveStats.hasVacationCare && liveStats.overallAverages.vac !== null && (
+                <div className="rounded-xl border bg-green-50/60 p-5">
+                  <p className="text-sm font-medium text-muted-foreground">Vacation Care</p>
+                  <p className="mt-1 text-3xl font-bold text-green-700">{liveStats.overallAverages.vac}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">average daily attendance</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="flex h-72 items-center justify-center text-sm text-muted-foreground p-6">
+            Unable to load live attendance statistics.
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-4 mt-8 pt-8 border-t">
         <div>
           <h3 className="text-lg font-semibold">School Reports</h3>
           <p className="text-sm text-muted-foreground">View the current reports shared with your school.</p>
@@ -647,7 +802,7 @@ export function SchoolCurrentReportsPanel({ siteId }: { siteId: number }) {
           <CardDescription>Archived versions are available to Admin users only.</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? <Skeleton className="h-20 w-full" /> : reports.length === 0 ? (
+          {reportsLoading ? <Skeleton className="h-20 w-full" /> : reports.length === 0 ? (
             <div className="rounded-lg border border-dashed px-5 py-8 text-center text-sm text-muted-foreground">
               No report is currently available for {reportYear}.
             </div>

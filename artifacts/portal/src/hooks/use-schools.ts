@@ -104,6 +104,15 @@ export type SchoolReportStatistics = {
   holidayWeeklyAverages: Array<{ label: string; value: number }>;
 };
 
+export type SchoolLiveReportStatistics = {
+  rangeStart: string;
+  rangeEnd: string;
+  weekdayAverages: Array<{ day: string; bsc: number; asc: number; vac: number }>;
+  weeklyAverages: Array<{ weekBeginning: string; bsc: number; asc: number; vac: number }>;
+  overallAverages: { bsc: number; asc: number; vac: number | null };
+  hasVacationCare: boolean;
+};
+
 export type SchoolReportObligations = {
   learningPlayProgramHighlights: string;
   teamServiceLeadership: string;
@@ -252,6 +261,7 @@ export function useSaveSchoolReportTerm(siteId: number) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["school-reports", siteId, variables.reportYear] }),
         queryClient.invalidateQueries({ queryKey: ["school-report-summaries", siteId, variables.reportYear] }),
+        queryClient.invalidateQueries({ queryKey: ["school-report-live-statistics", siteId] }),
       ]);
     },
   });
@@ -323,6 +333,20 @@ export function useGetSchoolReportSummaries(siteId: number, reportYear: number) 
       if (!res.ok) throw new Error(result.error ?? "Failed to fetch generated reports");
       return result;
     },
+  });
+}
+
+export function useGetSchoolLiveReportStatistics(siteId: number) {
+  return useQuery<SchoolLiveReportStatistics>({
+    queryKey: ["school-report-live-statistics", siteId],
+    queryFn: async () => {
+      const res = await fetch(`/api/school-reports/${siteId}/live-statistics`);
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error ?? "Failed to fetch live attendance statistics");
+      return result;
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
 

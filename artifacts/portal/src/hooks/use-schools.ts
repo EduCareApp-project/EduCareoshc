@@ -336,6 +336,18 @@ export function useGetSchoolReportSummaries(siteId: number, reportYear: number) 
   });
 }
 
+export function useGetSchoolCompletedReports(siteId: number) {
+  return useQuery<SchoolReportSummary[]>({
+    queryKey: ["school-completed-reports", siteId],
+    queryFn: async () => {
+      const res = await fetch(`/api/school-reports/${siteId}/summaries`);
+      const result = await res.json().catch(() => []);
+      if (!res.ok) throw new Error(result.error ?? "Failed to fetch completed reports");
+      return result;
+    },
+  });
+}
+
 export function useGetSchoolLiveReportStatistics(siteId: number) {
   return useQuery<SchoolLiveReportStatistics>({
     queryKey: ["school-report-live-statistics", siteId],

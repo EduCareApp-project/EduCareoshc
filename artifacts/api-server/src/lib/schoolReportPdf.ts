@@ -1,15 +1,24 @@
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import {
+  PDFDocument,
+  StandardFonts,
+  rgb,
+  type PDFImage,
+  type PDFFont,
+  type PDFPage,
+} from "pdf-lib";
 import type { SchoolReportSummary } from "@workspace/db";
 
 const PAGE_WIDTH = 595;
 const PAGE_HEIGHT = 842;
 const MARGIN = 48;
-const BLUE = rgb(0.12, 0.36, 0.68);
-const ORANGE = rgb(0.93, 0.48, 0.16);
-const GREEN = rgb(0.2, 0.62, 0.42);
-const PURPLE = rgb(0.49, 0.28, 0.78);
-const TEXT = rgb(0.15, 0.18, 0.23);
-const MUTED = rgb(0.42, 0.46, 0.52);
+const BRAND_GREEN = rgb(0, 0.53, 0.28);
+const DEEP_GREEN = rgb(0.03, 0.32, 0.18);
+const SOFT_GREEN = rgb(0.67, 0.84, 0.73);
+const PALE_GREEN = rgb(0.94, 0.98, 0.95);
+const BLACK = rgb(0.08, 0.1, 0.09);
+const TEXT = rgb(0.15, 0.18, 0.16);
+const MUTED = rgb(0.4, 0.44, 0.42);
+const GRID = rgb(0.86, 0.89, 0.87);
 
 const OBLIGATION_HEADINGS: Array<[keyof SchoolReportSummary["reportingObligations"], string]> = [
   ["learningPlayProgramHighlights", "Learning, Play & Program Highlights"],
@@ -19,6 +28,11 @@ const OBLIGATION_HEADINGS: Array<[keyof SchoolReportSummary["reportingObligation
   ["communityFeedbackResolution", "Community Feedback & Resolution"],
   ["focusForFuture", "Our Focus for the Future"],
 ];
+
+type PdfBranding = {
+  educareLogoBytes?: Uint8Array;
+  companyLogoBytes?: Uint8Array;
+};
 
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const paragraphs = (text || "No information provided.").split(/\n/);
@@ -40,9 +54,152 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): 
   return lines;
 }
 
+function centeredX(text: string, font: PDFFont, size: number): number {
+  return (PAGE_WIDTH - font.widthOfTextAtSize(text, size)) / 2;
+}
+
+async function embedImage(document: PDFDocument, bytes?: Uint8Array): Promise<PDFImage | undefined> {
+  if (!bytes?.length) return undefined;
+  try {
+    return await document.embedPng(bytes);
+  } catch {
+    try {
+      return await document.embedJpg(bytes);
+    } catch {
+      return undefined;
+    }
+  }
+}
+
+function fitImage(image: PDFImage, maxWidth: number, maxHeight: number) {
+  const scale = Math.min(maxWidth / image.width, maxHeight / image.height);
+  return { width: image.width * scale, height: image.height * scale };
+}
+
+function drawEduCareHeader(
+  page: PDFPage,
+  regular: PDFFont,
+  bold: PDFFont,
+  logo?: PDFImage,
+) {
+  page.drawRectangle({ x: 0, y: 780, width: PAGE_WIDTH, height: 62, color: rgb(1, 1, 1) });
+  page.drawRectangle({ x: 0, y: 778, width: PAGE_WIDTH, height: 2, color: BRAND_GREEN });
+  let textX = MARGIN;
+  if (logo) {
+    const size = fitImage(logo, 30, 30);
+    page.drawImage(logo, { x: MARGIN, y: 796, width: size.width, height: size.height });
+    textX += size.width + 10;
+  } else {
+    page.drawCircle({ x: MARGIN + 14, y: 811, size: 14, color: BRAND_GREEN });
+    page.drawText("E", { x: MARGIN + 9, y: 805, size: 14, font: bold, color: rgb(1, 1, 1) });
+    textX += 38;
+  }
+  page.drawText("EduCare", { x: textX, y: 803, size: 18, font: bold, color: BLACK });
+  const dividerX = textX + bold.widthOfTextAtSize("EduCare", 18) + 16;
+  page.drawLine({
+    start: { x: dividerX, y: 796 },
+    end: { x: dividerX, y: 824 },
+    thickness: 1,
+    color: GRID,
+  });
+  page.drawText("School Report", { x: dividerX + 16, y: 805, size: 11, font: regular, color: MUTED });
+}
+
+function reportHeading(report: SchoolReportSummary): string {
+  if (report.frequency === "term") return `Term ${report.period} Report - ${report.reportYear}`;
+  return `${report.periodLabel.replace(/\s+\d{4}$/, "")} Report - ${report.reportYear}`;
+}
+
+function drawReportIdentity(
+  page: PDFPage,
+  report: SchoolReportSummary,
+  organisationName: string,
+  siteName: string,
+  regular: PDFFont,
+  bold: PDFFont,
+  companyLogo?: PDFImage,
+) {
+  const title = `${organisationName} - ${siteName}`;
+  const titleSize = 19;
+  const titleWidth = bold.widthOfTextAtSize(title, titleSize);
+  const logoBox = companyLogo ? 42 : 0;
+  const gap = companyLogo ? 12 : 0;
+  const groupWidth = logoBox + gap + titleWidth;
+  const groupX = (PAGE_WIDTH - groupWidth) / 2;
+  if (companyLogo) {
+    const size = fitImage(companyLogo, logoBox, 38);
+    page.drawImage(companyLogo, {
+      x: groupX + (logoBox - size.width) / 2,
+      y: 720 + (38 - size.height) / 2,
+      width: size.width,
+      height: size.height,
+    });
+  }
+  page.drawText(title, {
+    x: groupX + logoBox + gap,
+    y: 730,
+    size: titleSize,
+    font: bold,
+    color: BLACK,
+  });
+  const subtitle = reportHeading(report);
+  page.drawText(subtitle, {
+    x: centeredX(subtitle, bold, 13),
+    y: 696,
+    size: 13,
+    font: bold,
+    color: BRAND_GREEN,
+  });
+  const period = `Reporting period: ${report.statistics.dateRange.start} to ${report.statistics.dateRange.end}`;
+  page.drawText(period, {
+    x: centeredX(period, regular, 8),
+    y: 679,
+    size: 8,
+    font: regular,
+    color: MUTED,
+  });
+}
+
+function niceMaximum(value: number): number {
+  const minimum = Math.max(value, 1);
+  const magnitude = 10 ** Math.floor(Math.log10(minimum));
+  const normalized = minimum / magnitude;
+  const nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  return nice * magnitude;
+}
+
+function drawYAxis(
+  page: PDFPage,
+  left: number,
+  bottom: number,
+  width: number,
+  height: number,
+  maximum: number,
+  font: PDFFont,
+) {
+  for (let tick = 0; tick <= 4; tick += 1) {
+    const value = (maximum * tick) / 4;
+    const y = bottom + (height * tick) / 4;
+    page.drawLine({
+      start: { x: left, y },
+      end: { x: left + width, y },
+      thickness: tick === 0 ? 0.8 : 0.35,
+      color: tick === 0 ? MUTED : GRID,
+    });
+    const label = Number.isInteger(value) ? String(value) : value.toFixed(1);
+    page.drawText(label, {
+      x: left - font.widthOfTextAtSize(label, 6) - 5,
+      y: y - 2,
+      size: 6,
+      font,
+      color: MUTED,
+    });
+  }
+}
+
 function drawChartFrame(page: PDFPage, title: string, x: number, y: number, width: number, height: number, font: PDFFont) {
-  page.drawRectangle({ x, y, width, height, borderColor: rgb(0.82, 0.84, 0.87), borderWidth: 1 });
-  page.drawText(title, { x: x + 12, y: y + height - 22, size: 11, font, color: TEXT });
+  page.drawRectangle({ x, y, width, height, borderColor: GRID, borderWidth: 1, color: rgb(1, 1, 1) });
+  page.drawText(title, { x: x + 12, y: y + height - 20, size: 9, font, color: BLACK });
 }
 
 function drawWeekdayBars(
@@ -56,26 +213,47 @@ function drawWeekdayBars(
 ) {
   drawChartFrame(page, "Average Usage by Day", x, y, width, height, font);
   const data = report.statistics.weekdayAverages;
-  const max = Math.max(1, ...data.flatMap((item) => [item.bsc, item.asc, item.pupilFree ?? 0]));
-  const chartBottom = y + 34;
-  const chartHeight = height - 72;
-  const groupWidth = (width - 34) / data.length;
+  const maximum = niceMaximum(Math.max(1, ...data.flatMap((item) => [item.bsc, item.asc, item.pupilFree ?? 0])));
+  const left = x + 35;
+  const bottom = y + 28;
+  const chartWidth = width - 47;
+  const chartHeight = height - 62;
+  drawYAxis(page, left, bottom, chartWidth, chartHeight, maximum, font);
+  const groupWidth = chartWidth / Math.max(data.length, 1);
+  const barWidth = Math.min(8, (groupWidth - 8) / 3);
   data.forEach((item, index) => {
-    const baseX = x + 20 + index * groupWidth;
-    const bscHeight = (item.bsc / max) * chartHeight;
-    const ascHeight = (item.asc / max) * chartHeight;
-    const pupilFreeHeight = ((item.pupilFree ?? 0) / max) * chartHeight;
-    page.drawRectangle({ x: baseX + 2, y: chartBottom, width: 10, height: bscHeight, color: BLUE });
-    page.drawRectangle({ x: baseX + 14, y: chartBottom, width: 10, height: ascHeight, color: ORANGE });
-    page.drawRectangle({ x: baseX + 26, y: chartBottom, width: 10, height: pupilFreeHeight, color: PURPLE });
-    page.drawText(item.day.slice(0, 3), { x: baseX + 5, y: y + 14, size: 7, font, color: MUTED });
+    const baseX = left + index * groupWidth + (groupWidth - barWidth * 3 - 4) / 2;
+    const values = [
+      { value: item.bsc, color: BRAND_GREEN },
+      { value: item.asc, color: BLACK },
+      { value: item.pupilFree ?? 0, color: SOFT_GREEN },
+    ];
+    values.forEach(({ value, color }, valueIndex) => {
+      page.drawRectangle({
+        x: baseX + valueIndex * (barWidth + 2),
+        y: bottom,
+        width: barWidth,
+        height: (value / maximum) * chartHeight,
+        color,
+      });
+    });
+    page.drawText(item.day.slice(0, 3), {
+      x: left + index * groupWidth + groupWidth / 2 - 7,
+      y: y + 11,
+      size: 6,
+      font,
+      color: MUTED,
+    });
   });
-  page.drawRectangle({ x: x + width - 175, y: y + height - 23, width: 7, height: 7, color: BLUE });
-  page.drawText("BSC", { x: x + width - 164, y: y + height - 23, size: 7, font, color: MUTED });
-  page.drawRectangle({ x: x + width - 129, y: y + height - 23, width: 7, height: 7, color: ORANGE });
-  page.drawText("ASC", { x: x + width - 118, y: y + height - 23, size: 7, font, color: MUTED });
-  page.drawRectangle({ x: x + width - 83, y: y + height - 23, width: 7, height: 7, color: PURPLE });
-  page.drawText("Pupil Free", { x: x + width - 72, y: y + height - 23, size: 7, font, color: MUTED });
+  const legend = [
+    { label: "BSC", color: BRAND_GREEN, x: x + width - 112 },
+    { label: "ASC", color: BLACK, x: x + width - 72 },
+    { label: "PF", color: SOFT_GREEN, x: x + width - 32 },
+  ];
+  legend.forEach((item) => {
+    page.drawRectangle({ x: item.x, y: y + height - 20, width: 6, height: 6, color: item.color });
+    page.drawText(item.label, { x: item.x + 9, y: y + height - 20, size: 6, font, color: MUTED });
+  });
 }
 
 function drawWeeklyLines(
@@ -89,41 +267,51 @@ function drawWeeklyLines(
 ) {
   drawChartFrame(page, "Average Daily Usage by Week", x, y, width, height, font);
   const data = report.statistics.weeklyAverages;
-  const max = Math.max(1, ...data.flatMap((item) => [item.bsc, item.asc, item.pupilFree ?? 0]));
-  const left = x + 25;
-  const bottom = y + 34;
-  const usableWidth = width - 50;
-  const usableHeight = height - 70;
-  const gap = data.length > 1 ? usableWidth / (data.length - 1) : 0;
-  for (let index = 1; index < data.length; index += 1) {
-    const previous = data[index - 1];
-    const current = data[index];
-    page.drawLine({
-      start: { x: left + (index - 1) * gap, y: bottom + (previous.bsc / max) * usableHeight },
-      end: { x: left + index * gap, y: bottom + (current.bsc / max) * usableHeight },
-      thickness: 2,
-      color: BLUE,
-    });
-    page.drawLine({
-      start: { x: left + (index - 1) * gap, y: bottom + (previous.asc / max) * usableHeight },
-      end: { x: left + index * gap, y: bottom + (current.asc / max) * usableHeight },
-      thickness: 2,
-      color: ORANGE,
-    });
-    page.drawLine({
-      start: { x: left + (index - 1) * gap, y: bottom + ((previous.pupilFree ?? 0) / max) * usableHeight },
-      end: { x: left + index * gap, y: bottom + ((current.pupilFree ?? 0) / max) * usableHeight },
-      thickness: 2,
-      color: PURPLE,
+  const maximum = niceMaximum(Math.max(1, ...data.flatMap((item) => [item.bsc, item.asc, item.pupilFree ?? 0])));
+  const left = x + 35;
+  const bottom = y + 28;
+  const chartWidth = width - 47;
+  const chartHeight = height - 62;
+  drawYAxis(page, left, bottom, chartWidth, chartHeight, maximum, font);
+  const gap = data.length > 1 ? chartWidth / (data.length - 1) : 0;
+  const series = [
+    { key: "bsc" as const, color: BRAND_GREEN },
+    { key: "asc" as const, color: BLACK },
+    { key: "pupilFree" as const, color: SOFT_GREEN },
+  ];
+  for (const { key, color } of series) {
+    for (let index = 1; index < data.length; index += 1) {
+      page.drawLine({
+        start: {
+          x: left + (index - 1) * gap,
+          y: bottom + ((data[index - 1][key] ?? 0) / maximum) * chartHeight,
+        },
+        end: {
+          x: left + index * gap,
+          y: bottom + ((data[index][key] ?? 0) / maximum) * chartHeight,
+        },
+        thickness: 1.6,
+        color,
+      });
+    }
+    data.forEach((item, index) => {
+      page.drawCircle({
+        x: left + index * gap,
+        y: bottom + ((item[key] ?? 0) / maximum) * chartHeight,
+        size: 2,
+        color,
+      });
     });
   }
   data.forEach((item, index) => {
-    const pointX = left + index * gap;
-    page.drawCircle({ x: pointX, y: bottom + (item.bsc / max) * usableHeight, size: 2.5, color: BLUE });
-    page.drawCircle({ x: pointX, y: bottom + (item.asc / max) * usableHeight, size: 2.5, color: ORANGE });
-    page.drawCircle({ x: pointX, y: bottom + ((item.pupilFree ?? 0) / max) * usableHeight, size: 2.5, color: PURPLE });
-    if (data.length <= 14 || index % Math.ceil(data.length / 12) === 0) {
-      page.drawText(item.label, { x: pointX - 7, y: y + 13, size: 5.5, font, color: MUTED, rotate: undefined });
+    if (data.length <= 10 || index % Math.ceil(data.length / 8) === 0 || index === data.length - 1) {
+      page.drawText(item.label.replace("Week ", "W"), {
+        x: left + index * gap - 5,
+        y: y + 11,
+        size: 5.5,
+        font,
+        color: MUTED,
+      });
     }
   });
 }
@@ -137,55 +325,153 @@ function drawHolidayBars(
   width: number,
   height: number,
 ) {
-  drawChartFrame(page, "Average Holiday Program Usage by Day", x, y, width, height, font);
+  drawChartFrame(page, "Average Vacation Care Usage by Day", x, y, width, height, font);
   const data = report.statistics.holidayWeekdayAverages;
-  const max = Math.max(1, ...data.map((item) => item.value));
+  const maximum = niceMaximum(Math.max(1, ...data.map((item) => item.value)));
+  const left = x + 35;
+  const bottom = y + 28;
+  const chartWidth = width - 47;
+  const chartHeight = height - 62;
+  drawYAxis(page, left, bottom, chartWidth, chartHeight, maximum, font);
+  const groupWidth = chartWidth / Math.max(data.length, 1);
+  const barWidth = Math.min(20, groupWidth * 0.45);
   data.forEach((item, index) => {
-    const rowY = y + height - 50 - index * 28;
-    page.drawText(item.day, { x: x + 14, y: rowY + 4, size: 8, font, color: MUTED });
     page.drawRectangle({
-      x: x + 82,
-      y: rowY,
-      width: ((width - 115) * item.value) / max,
-      height: 13,
-      color: GREEN,
+      x: left + index * groupWidth + (groupWidth - barWidth) / 2,
+      y: bottom,
+      width: barWidth,
+      height: (item.value / maximum) * chartHeight,
+      color: BRAND_GREEN,
     });
-    page.drawText(String(item.value), { x: x + width - 27, y: rowY + 3, size: 7, font, color: TEXT });
+    page.drawText(item.day.slice(0, 3), {
+      x: left + index * groupWidth + groupWidth / 2 - 7,
+      y: y + 11,
+      size: 6,
+      font,
+      color: MUTED,
+    });
+  });
+}
+
+function average(values: number[]): number {
+  return Math.round((values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1)) * 10) / 10;
+}
+
+function drawAveragePanel(
+  page: PDFPage,
+  report: SchoolReportSummary,
+  regular: PDFFont,
+  bold: PDFFont,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  page.drawRectangle({ x, y, width, height, color: PALE_GREEN, borderColor: SOFT_GREEN, borderWidth: 1 });
+  page.drawRectangle({ x, y: y + height - 5, width, height: 5, color: BRAND_GREEN });
+  page.drawText("AVERAGE SERVICE", { x: x + 15, y: y + height - 31, size: 8, font: bold, color: DEEP_GREEN });
+  page.drawText("ATTENDANCES", { x: x + 15, y: y + height - 43, size: 8, font: bold, color: DEEP_GREEN });
+  page.drawText("Average daily numbers", { x: x + 15, y: y + height - 62, size: 7, font: regular, color: MUTED });
+
+  const weekday = report.statistics.weekdayAverages;
+  const entries: Array<{ label: string; value: number; color: ReturnType<typeof rgb> }> = [
+    { label: "Before School Care", value: average(weekday.map((item) => item.bsc)), color: BRAND_GREEN },
+    { label: "After School Care", value: average(weekday.map((item) => item.asc)), color: BLACK },
+  ];
+  const vacationValues = report.statistics.holidayWeekdayAverages
+    .map((item) => item.value)
+    .filter((value) => value > 0);
+  if (report.statistics.holidayProgramApplies !== false && vacationValues.length) {
+    entries.push({ label: "Vacation Care", value: average(vacationValues), color: DEEP_GREEN });
+  }
+
+  entries.forEach((entry, index) => {
+    const cardTop = y + height - 94 - index * 92;
+    page.drawRectangle({
+      x: x + 12,
+      y: cardTop - 63,
+      width: width - 24,
+      height: 68,
+      color: rgb(1, 1, 1),
+      borderColor: GRID,
+      borderWidth: 0.6,
+    });
+    const labelLines = wrapText(entry.label, regular, 7.5, width - 42);
+    labelLines.slice(0, 2).forEach((line, lineIndex) => {
+      page.drawText(line, {
+        x: x + 22,
+        y: cardTop - 13 - lineIndex * 10,
+        size: 7.5,
+        font: regular,
+        color: MUTED,
+      });
+    });
+    page.drawText(String(entry.value), {
+      x: x + 22,
+      y: cardTop - 51,
+      size: 22,
+      font: bold,
+      color: entry.color,
+    });
   });
 }
 
 export async function createSchoolReportPdf(
   report: SchoolReportSummary,
   siteName: string,
-  organisationName?: string,
+  organisationName = "Elysium OSHC",
+  branding: PdfBranding = {},
 ): Promise<Uint8Array> {
   const document = await PDFDocument.create();
   const regular = await document.embedFont(StandardFonts.Helvetica);
   const bold = await document.embedFont(StandardFonts.HelveticaBold);
+  const [educareLogo, companyLogo] = await Promise.all([
+    embedImage(document, branding.educareLogoBytes),
+    embedImage(document, branding.companyLogoBytes),
+  ]);
 
   const overview = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-  overview.drawText(organisationName || "School Report", { x: MARGIN, y: 780, size: 25, font: bold, color: TEXT });
-  overview.drawText(siteName, { x: MARGIN, y: 752, size: 15, font: bold, color: BLUE });
-  overview.drawText(report.periodLabel, { x: MARGIN, y: 731, size: 11, font: regular, color: MUTED });
-  overview.drawText("SERVICE STATISTICS", { x: MARGIN, y: 690, size: 10, font: bold, color: MUTED });
-  drawWeekdayBars(overview, report, bold, MARGIN, 444, 499, 220);
-  drawWeeklyLines(overview, report, bold, MARGIN, 205, 499, 215);
-  if (report.statistics.holidayProgramApplies !== false) {
-    drawHolidayBars(overview, report, bold, MARGIN, 38, 499, 145);
+  drawEduCareHeader(overview, regular, bold, educareLogo);
+  drawReportIdentity(overview, report, organisationName, siteName, regular, bold, companyLogo);
+  overview.drawText("SERVICE DATA", { x: MARGIN, y: 654, size: 9, font: bold, color: DEEP_GREEN });
+
+  const chartsWidth = 326;
+  const summaryX = MARGIN + chartsWidth + 14;
+  const summaryWidth = PAGE_WIDTH - MARGIN - summaryX;
+  const hasVacationCare = report.statistics.holidayProgramApplies !== false
+    && report.statistics.holidayWeekdayAverages.some((item) => item.value > 0);
+  drawWeekdayBars(overview, report, regular, MARGIN, 443, chartsWidth, 194);
+  drawWeeklyLines(overview, report, regular, MARGIN, 239, chartsWidth, 190);
+  if (hasVacationCare) {
+    drawHolidayBars(overview, report, regular, MARGIN, 47, chartsWidth, 178);
   }
+  drawAveragePanel(
+    overview,
+    report,
+    regular,
+    bold,
+    summaryX,
+    hasVacationCare ? 47 : 239,
+    summaryWidth,
+    hasVacationCare ? 590 : 398,
+  );
 
   let page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
   let y = 788;
-  page.drawText("REPORTING OBLIGATIONS", { x: MARGIN, y, size: 10, font: bold, color: MUTED });
+  page.drawRectangle({ x: 0, y: 824, width: PAGE_WIDTH, height: 18, color: BRAND_GREEN });
+  page.drawText("EduCare", { x: MARGIN, y: 804, size: 10, font: bold, color: DEEP_GREEN });
+  page.drawText("REPORTING OBLIGATIONS", { x: MARGIN, y, size: 10, font: bold, color: DEEP_GREEN });
   y -= 32;
   for (const [key, heading] of OBLIGATION_HEADINGS) {
     const lines = wrapText(report.reportingObligations[key], regular, 10, PAGE_WIDTH - MARGIN * 2);
     const required = 24 + lines.length * 14 + 18;
     if (y - required < MARGIN) {
       page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-      y = 788;
+      page.drawRectangle({ x: 0, y: 824, width: PAGE_WIDTH, height: 18, color: BRAND_GREEN });
+      page.drawText("EduCare", { x: MARGIN, y: 804, size: 10, font: bold, color: DEEP_GREEN });
+      y = 776;
     }
-    page.drawText(heading, { x: MARGIN, y, size: 13, font: bold, color: TEXT });
+    page.drawText(heading, { x: MARGIN, y, size: 13, font: bold, color: BLACK });
     y -= 19;
     for (const line of lines) {
       page.drawText(line, { x: MARGIN, y, size: 10, font: regular, color: TEXT });
@@ -194,7 +480,7 @@ export async function createSchoolReportPdf(
     y -= 18;
   }
 
-  document.setTitle(`${organisationName ? `${organisationName} - ` : ""}${siteName} - ${report.periodLabel}`);
+  document.setTitle(`${organisationName} - ${siteName} - ${reportHeading(report)}`);
   document.setSubject("School Report");
   document.setCreator("EduCare");
   return document.save();

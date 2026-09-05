@@ -14,7 +14,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Archive, Download, FileCheck2, Loader2, Save, Trash2 } from "lucide-react";
+import { Archive, ExternalLink, FileCheck2, Loader2, Save, Trash2 } from "lucide-react";
 import {
   type SchoolReportObligations,
   type SchoolReportSummary,
@@ -280,9 +280,11 @@ export function SchoolSummaryReport({
         <div className="space-y-3">
           <a
             href={`/api/school-reports/${siteId}/summaries/${report.id}/pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex w-full items-center justify-center gap-3 rounded-xl bg-green-600 px-6 py-5 text-center font-semibold text-white shadow-sm transition-colors hover:bg-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2"
           >
-            <Download className="h-5 w-5" />
+            <ExternalLink className="h-5 w-5" />
             <span>{report.finalizedPdfName || `${report.periodLabel} PDF`}</span>
           </a>
           {canManageLifecycle && !report.archivedAt && (

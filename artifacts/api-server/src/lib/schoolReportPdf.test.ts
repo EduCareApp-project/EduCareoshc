@@ -1,4 +1,5 @@
 import { PDFDocument } from "pdf-lib";
+import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import type { SchoolReportSummary } from "@workspace/db";
 import { createSchoolReportPdf } from "./schoolReportPdf";
@@ -58,11 +59,19 @@ describe("school report PDF", () => {
       updatedAt: new Date(),
     } satisfies SchoolReportSummary;
 
-    const bytes = await createSchoolReportPdf(report, "Mahogany Rise Primary School");
+    const logo = new Uint8Array(await readFile("assets/educare-logo-dark.png"));
+    const bytes = await createSchoolReportPdf(
+      report,
+      "Mahogany Rise Primary School",
+      "Elysium OSHC",
+      { educareLogoBytes: logo, companyLogoBytes: logo },
+    );
     const document = await PDFDocument.load(bytes);
 
     expect(bytes.length).toBeGreaterThan(1_000);
     expect(document.getPageCount()).toBeGreaterThanOrEqual(2);
-    expect(document.getTitle()).toBe("Mahogany Rise Primary School - Term 1 2026");
+    expect(document.getTitle()).toBe(
+      "Elysium OSHC - Mahogany Rise Primary School - Term 1 Report - 2026",
+    );
   });
 });

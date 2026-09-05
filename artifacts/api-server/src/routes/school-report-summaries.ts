@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { and, asc, desc, eq, gte, inArray, isNull, lte } from "drizzle-orm";
 import {
   db,
+  emailSettingsTable,
   organisationTable,
   schoolReportRowsTable,
   schoolReportSummariesTable,
@@ -20,6 +21,8 @@ import { createSchoolReportPdf } from "../lib/schoolReportPdf";
 import { refreshDraftSchoolReportSummaries } from "../lib/refreshDraftSchoolReportSummaries";
 import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage";
 import { Readable } from "node:stream";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -91,14 +94,30 @@ function finalizedReportFilename(organisationName: string, siteName: string, rep
 }
 
 async function createStoredPdf(report: SchoolReportSummary) {
-  const [[site], [organisation]] = await Promise.all([
+  const [[site], [organisation], [emailSettings]] = await Promise.all([
     db.select({ name: sitesTable.name }).from(sitesTable).where(eq(sitesTable.id, report.siteId)).limit(1),
     db.select({ name: organisationTable.name }).from(organisationTable).limit(1),
+    db.select({ logoPath: emailSettingsTable.logoPath }).from(emailSettingsTable).limit(1),
   ]);
   const siteName = site?.name ?? "School";
   const organisationName = organisation?.name?.trim() || "Elysium OSHC";
   const name = finalizedReportFilename(organisationName, siteName, report);
-  const bytes = await createSchoolReportPdf(report, siteName, organisationName);
+  const [educareLogoBytes, companyLogoBytes] = await Promise.all([
+    readFile(resolve(process.cwd(), "assets/educare-logo-dark.png"))
+      .then((bytes) => new Uint8Array(bytes))
+      .catch(() => undefined),
+    emailSettings?.logoPath
+      ? objectStorageService.getObjectEntityFile(emailSettings.logoPath)
+          .then((file) => objectStorageService.downloadObject(file))
+          .then((response) => response.arrayBuffer())
+          .then((bytes) => new Uint8Array(bytes))
+          .catch(() => undefined)
+      : Promise.resolve(undefined),
+  ]);
+  const bytes = await createSchoolReportPdf(report, siteName, organisationName, {
+    educareLogoBytes,
+    companyLogoBytes,
+  });
   const path = await objectStorageService.saveObjectEntity(bytes, "application/pdf", "generated/school-reports");
   return { path, name, createdAt: new Date() };
 }
@@ -142,8 +161,9 @@ router.get("/school-reports/:siteId/live-statistics", async (req, res): Promise<
 
 router.get("/school-reports/:siteId/summaries", async (req, res): Promise<void> => {
   const siteId = parsePositiveInteger(req.params.siteId);
-  const reportYear = parseReportYear(req.query.reportYear);
-  if (!siteId || !reportYear) {
+  const isSchoolRequest = req.session.user?.type === "school";
+  const reportYear = req.query.reportYear === undefined ? null : parseReportYear(req.query.reportYear);
+  if (!siteId || (!isSchoolRequest && !reportYear) || (req.query.reportYear !== undefined && !reportYear)) {
     res.status(400).json({ error: "Invalid site or report year" });
     return;
   }
@@ -152,13 +172,16 @@ router.get("/school-reports/:siteId/summaries", async (req, res): Promise<void> 
     return;
   }
   try {
-    await refreshDraftSchoolReportSummaries(siteId, reportYear);
-    const visibility = req.session.user?.type === "school"
-      ? isNull(schoolReportSummariesTable.archivedAt)
+    if (reportYear) await refreshDraftSchoolReportSummaries(siteId, reportYear);
+    const visibility = isSchoolRequest
+      ? and(
+          isNull(schoolReportSummariesTable.archivedAt),
+          eq(schoolReportSummariesTable.status, "finalized"),
+        )
       : undefined;
     const reports = await db.select().from(schoolReportSummariesTable).where(and(
       eq(schoolReportSummariesTable.siteId, siteId),
-      eq(schoolReportSummariesTable.reportYear, reportYear),
+      reportYear ? eq(schoolReportSummariesTable.reportYear, reportYear) : undefined,
       visibility,
     )).orderBy(desc(schoolReportSummariesTable.createdAt), desc(schoolReportSummariesTable.id));
     res.json(reports);
@@ -366,7 +389,10 @@ router.get("/school-reports/:siteId/summaries/:reportId/pdf", async (req, res): 
       res.status(404).json({ error: "Report not found" });
       return;
     }
-    if (req.session.user?.type === "school" && report.archivedAt) {
+    if (
+      req.session.user?.type === "school"
+      && (report.archivedAt || report.status !== "finalized")
+    ) {
       res.status(404).json({ error: "Report not found" });
       return;
     }
@@ -390,7 +416,10 @@ router.get("/school-reports/:siteId/summaries/:reportId/pdf", async (req, res): 
     const response = await objectStorageService.downloadObject(file, 0);
     res.status(response.status);
     response.headers.forEach((value, key) => res.setHeader(key, value));
-    res.setHeader("Content-Disposition", `attachment; filename="${filename.replace(/["\r\n]/g, "")}"`);
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${filename.replace(/["\r\n]/g, "")}"`,
+    );
     if (response.body) {
       Readable.fromWeb(response.body as ReadableStream<Uint8Array>).pipe(res);
     } else {

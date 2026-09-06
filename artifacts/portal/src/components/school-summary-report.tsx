@@ -45,6 +45,11 @@ const OBLIGATION_FIELDS: Array<{
 
 const CHART_COLORS = ["#2563eb", "#16a34a", "#f59e0b", "#8b5cf6", "#ef4444"];
 
+function formatAustralianDate(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
+}
+
 export function SchoolSummaryReport({
   siteId,
   report,
@@ -186,7 +191,7 @@ export function SchoolSummaryReport({
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            {report.statistics.dateRange.start} to {report.statistics.dateRange.end}
+            {formatAustralianDate(report.statistics.dateRange.start)} to {formatAustralianDate(report.statistics.dateRange.end)}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

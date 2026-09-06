@@ -19,6 +19,10 @@ const BLACK = rgb(0.08, 0.1, 0.09);
 const TEXT = rgb(0.15, 0.18, 0.16);
 const MUTED = rgb(0.4, 0.44, 0.42);
 const GRID = rgb(0.86, 0.89, 0.87);
+const BSC_BLUE = rgb(0.15, 0.39, 0.92);
+const ASC_ORANGE = rgb(0.98, 0.45, 0.09);
+const PUPIL_FREE_PURPLE = rgb(0.49, 0.23, 0.93);
+const VACATION_GREEN = rgb(0.09, 0.64, 0.29);
 
 const OBLIGATION_HEADINGS: Array<[keyof SchoolReportSummary["reportingObligations"], string]> = [
   ["learningPlayProgramHighlights", "Learning, Play & Program Highlights"],
@@ -33,6 +37,11 @@ type PdfBranding = {
   educareLogoBytes?: Uint8Array;
   companyLogoBytes?: Uint8Array;
 };
+
+function formatAustralianDate(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
+}
 
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const paragraphs = (text || "No information provided.").split(/\n/);
@@ -150,7 +159,7 @@ function drawReportIdentity(
     font: bold,
     color: BRAND_GREEN,
   });
-  const period = `Reporting period: ${report.statistics.dateRange.start} to ${report.statistics.dateRange.end}`;
+  const period = `Reporting period: ${formatAustralianDate(report.statistics.dateRange.start)} to ${formatAustralianDate(report.statistics.dateRange.end)}`;
   page.drawText(period, {
     x: centeredX(period, regular, 8),
     y: 679,
@@ -224,9 +233,9 @@ function drawWeekdayBars(
   data.forEach((item, index) => {
     const baseX = left + index * groupWidth + (groupWidth - barWidth * 3 - 4) / 2;
     const values = [
-      { value: item.bsc, color: BRAND_GREEN },
-      { value: item.asc, color: BLACK },
-      { value: item.pupilFree ?? 0, color: SOFT_GREEN },
+      { value: item.bsc, color: BSC_BLUE },
+      { value: item.asc, color: ASC_ORANGE },
+      { value: item.pupilFree ?? 0, color: PUPIL_FREE_PURPLE },
     ];
     values.forEach(({ value, color }, valueIndex) => {
       page.drawRectangle({
@@ -246,9 +255,9 @@ function drawWeekdayBars(
     });
   });
   const legend = [
-    { label: "BSC", color: BRAND_GREEN, x: x + width - 112 },
-    { label: "ASC", color: BLACK, x: x + width - 72 },
-    { label: "PF", color: SOFT_GREEN, x: x + width - 32 },
+    { label: "BSC", color: BSC_BLUE, x: x + width - 112 },
+    { label: "ASC", color: ASC_ORANGE, x: x + width - 72 },
+    { label: "PF", color: PUPIL_FREE_PURPLE, x: x + width - 32 },
   ];
   legend.forEach((item) => {
     page.drawRectangle({ x: item.x, y: y + height - 20, width: 6, height: 6, color: item.color });
@@ -275,9 +284,9 @@ function drawWeeklyLines(
   drawYAxis(page, left, bottom, chartWidth, chartHeight, maximum, font);
   const gap = data.length > 1 ? chartWidth / (data.length - 1) : 0;
   const series = [
-    { key: "bsc" as const, color: BRAND_GREEN },
-    { key: "asc" as const, color: BLACK },
-    { key: "pupilFree" as const, color: SOFT_GREEN },
+    { key: "bsc" as const, color: BSC_BLUE },
+    { key: "asc" as const, color: ASC_ORANGE },
+    { key: "pupilFree" as const, color: PUPIL_FREE_PURPLE },
   ];
   for (const { key, color } of series) {
     for (let index = 1; index < data.length; index += 1) {
@@ -341,7 +350,7 @@ function drawHolidayBars(
       y: bottom,
       width: barWidth,
       height: (item.value / maximum) * chartHeight,
-      color: BRAND_GREEN,
+      color: VACATION_GREEN,
     });
     page.drawText(item.day.slice(0, 3), {
       x: left + index * groupWidth + groupWidth / 2 - 7,
@@ -375,14 +384,14 @@ function drawAveragePanel(
 
   const weekday = report.statistics.weekdayAverages;
   const entries: Array<{ label: string; value: number; color: ReturnType<typeof rgb> }> = [
-    { label: "Before School Care", value: average(weekday.map((item) => item.bsc)), color: BRAND_GREEN },
-    { label: "After School Care", value: average(weekday.map((item) => item.asc)), color: BLACK },
+    { label: "Before School Care", value: average(weekday.map((item) => item.bsc)), color: BSC_BLUE },
+    { label: "After School Care", value: average(weekday.map((item) => item.asc)), color: ASC_ORANGE },
   ];
   const vacationValues = report.statistics.holidayWeekdayAverages
     .map((item) => item.value)
     .filter((value) => value > 0);
   if (report.statistics.holidayProgramApplies !== false && vacationValues.length) {
-    entries.push({ label: "Vacation Care", value: average(vacationValues), color: DEEP_GREEN });
+    entries.push({ label: "Vacation Care", value: average(vacationValues), color: VACATION_GREEN });
   }
 
   entries.forEach((entry, index) => {

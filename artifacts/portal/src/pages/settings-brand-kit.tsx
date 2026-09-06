@@ -1,11 +1,12 @@
 import { useLocation } from "wouter";
-import { ArrowLeft, Copy, Check, Download } from "lucide-react";
+import { ArrowLeft, Copy, Check, Download, ImagePlus, Loader2, Save, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
@@ -135,6 +136,109 @@ const RADIUS_VALUES = [
 
 export default function SettingsBrandKit() {
   const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const companyLogoInputRef = useRef<HTMLInputElement>(null);
+  const [companyLogoPath, setCompanyLogoPath] = useState<string | null>(null);
+  const [companyLogoFile, setCompanyLogoFile] = useState<File | null>(null);
+  const [companyLogoPreview, setCompanyLogoPreview] = useState<string | null>(null);
+  const [companyLogoLoading, setCompanyLogoLoading] = useState(true);
+  const [companyLogoSaving, setCompanyLogoSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/email-settings")
+      .then((response) => {
+        if (!response.ok) throw new Error("Unable to load company logo");
+        return response.json();
+      })
+      .then((settings) => setCompanyLogoPath(settings.companyLogoPath ?? null))
+      .catch(() => toast({ title: "Unable to load company logo", variant: "destructive" }))
+      .finally(() => setCompanyLogoLoading(false));
+  }, [toast]);
+
+  useEffect(() => () => {
+    if (companyLogoPreview) URL.revokeObjectURL(companyLogoPreview);
+  }, [companyLogoPreview]);
+
+  function selectCompanyLogo(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!["image/png", "image/jpeg"].includes(file.type)) {
+      toast({ title: "Please choose a PNG or JPG image", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Company logo must be smaller than 5 MB", variant: "destructive" });
+      return;
+    }
+    setCompanyLogoFile(file);
+    setCompanyLogoPreview(URL.createObjectURL(file));
+  }
+
+  async function uploadCompanyLogo(file: File): Promise<string> {
+    const request = await fetch("/api/storage/uploads/request-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+    });
+    if (!request.ok) throw new Error("Unable to prepare the company logo upload");
+    const { uploadURL, objectPath } = await request.json();
+    const upload = await fetch(uploadURL, {
+      method: "PUT",
+      headers: { "Content-Type": file.type },
+      body: file,
+    });
+    if (!upload.ok) throw new Error("Unable to upload the company logo");
+    return objectPath;
+  }
+
+  async function saveCompanyLogo() {
+    if (!companyLogoFile) return;
+    setCompanyLogoSaving(true);
+    try {
+      const uploadedPath = await uploadCompanyLogo(companyLogoFile);
+      const response = await fetch("/api/email-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyLogoPath: uploadedPath }),
+      });
+      if (!response.ok) throw new Error("Unable to save the company logo");
+      setCompanyLogoPath(uploadedPath);
+      setCompanyLogoFile(null);
+      setCompanyLogoPreview(null);
+      toast({ title: "Company logo saved", description: "It will appear before the company and service name in new school report PDFs." });
+    } catch (error) {
+      toast({
+        title: "Unable to save company logo",
+        description: error instanceof Error ? error.message : undefined,
+        variant: "destructive",
+      });
+    } finally {
+      setCompanyLogoSaving(false);
+    }
+  }
+
+  async function removeCompanyLogo() {
+    setCompanyLogoSaving(true);
+    try {
+      const response = await fetch("/api/email-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyLogoPath: null }),
+      });
+      if (!response.ok) throw new Error("Unable to remove the company logo");
+      setCompanyLogoPath(null);
+      setCompanyLogoFile(null);
+      setCompanyLogoPreview(null);
+      toast({ title: "Company logo removed" });
+    } catch {
+      toast({ title: "Unable to remove company logo", variant: "destructive" });
+    } finally {
+      setCompanyLogoSaving(false);
+    }
+  }
+
+  const companyLogoUrl = companyLogoPreview ?? (companyLogoPath ? "/api/email-settings/company-logo" : null);
 
   return (
     <div className="space-y-12 max-w-4xl">
@@ -157,6 +261,68 @@ export default function SettingsBrandKit() {
       {/* ── IDENTITY ──────────────────────────────────────────────── */}
       <section className="space-y-4">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Identity</h2>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Company Logo</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              This logo appears immediately before the company and service heading in newly generated school report PDFs.
+            </p>
+          </CardHeader>
+          <CardContent>
+            {companyLogoLoading ? (
+              <div className="flex h-24 items-center text-sm text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading company logo…
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={() => companyLogoInputRef.current?.click()}
+                  className="flex h-24 w-52 items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/30 transition-colors hover:border-primary/40 hover:bg-muted/50"
+                >
+                  {companyLogoUrl ? (
+                    <img src={companyLogoUrl} alt="Company logo preview" className="max-h-20 max-w-48 object-contain p-2" />
+                  ) : (
+                    <span className="flex flex-col items-center gap-1 text-sm text-muted-foreground">
+                      <ImagePlus className="h-7 w-7 opacity-50" />
+                      Upload company logo
+                    </span>
+                  )}
+                </button>
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={() => companyLogoInputRef.current?.click()}>
+                      <Upload className="mr-2 h-4 w-4" />
+                      {companyLogoUrl ? "Replace" : "Upload"}
+                    </Button>
+                    {companyLogoFile && (
+                      <Button size="sm" onClick={saveCompanyLogo} disabled={companyLogoSaving}>
+                        {companyLogoSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Save logo
+                      </Button>
+                    )}
+                    {companyLogoPath && !companyLogoFile && (
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={removeCompanyLogo} disabled={companyLogoSaving}>
+                        <X className="mr-2 h-4 w-4" />
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">PNG or JPG, up to 5 MB. A transparent PNG works best.</p>
+                </div>
+                <input
+                  ref={companyLogoInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  className="hidden"
+                  onChange={selectCompanyLogo}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Logo on brand green */}

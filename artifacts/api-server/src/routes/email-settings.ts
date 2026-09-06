@@ -29,7 +29,7 @@ router.get("/email-settings", async (req: Request, res: Response): Promise<void>
 
 // PUT /email-settings — updates settings
 router.put("/email-settings", async (req: Request, res: Response): Promise<void> => {
-  const { senderName, logoPath, templates } = req.body;
+  const { senderName, logoPath, companyLogoPath, templates } = req.body;
   try {
     const row = await getOrCreateSettings();
     await db
@@ -37,6 +37,7 @@ router.put("/email-settings", async (req: Request, res: Response): Promise<void>
       .set({
         senderName: senderName ?? row.senderName,
         logoPath: logoPath !== undefined ? logoPath : row.logoPath,
+        companyLogoPath: companyLogoPath !== undefined ? companyLogoPath : row.companyLogoPath,
         templates: templates ?? row.templates,
         updatedAt: new Date(),
       })
@@ -46,6 +47,31 @@ router.put("/email-settings", async (req: Request, res: Response): Promise<void>
   } catch (err) {
     req.log.error({ err }, "Failed to update email settings");
     res.status(500).json({ error: "Failed to update email settings" });
+  }
+});
+
+router.get("/email-settings/company-logo", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const [row] = await db.select({ companyLogoPath: emailSettingsTable.companyLogoPath }).from(emailSettingsTable).limit(1);
+    if (!row?.companyLogoPath) {
+      res.status(404).json({ error: "No company logo configured" });
+      return;
+    }
+    const objectFile = await objectStorageService.getObjectEntityFile(row.companyLogoPath);
+    const response = await objectStorageService.downloadObject(objectFile);
+    res.status(response.status);
+    response.headers.forEach((value, key) => res.setHeader(key, value));
+    if (response.body) {
+      Readable.fromWeb(response.body as ReadableStream<Uint8Array>).pipe(res);
+    } else {
+      res.end();
+    }
+  } catch (err) {
+    if (err instanceof ObjectNotFoundError) {
+      res.status(404).json({ error: "Company logo not found in storage" });
+    } else {
+      res.status(500).json({ error: "Failed to serve company logo" });
+    }
   }
 });
 

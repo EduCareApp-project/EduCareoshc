@@ -104,17 +104,18 @@ async function createStoredPdf(report: SchoolReportSummary) {
   const [[site], [organisation], [emailSettings]] = await Promise.all([
     db.select({ name: sitesTable.name }).from(sitesTable).where(eq(sitesTable.id, report.siteId)).limit(1),
     db.select({ name: organisationTable.name }).from(organisationTable).limit(1),
-    db.select({ logoPath: emailSettingsTable.logoPath }).from(emailSettingsTable).limit(1),
+    db.select({ companyLogoPath: emailSettingsTable.companyLogoPath }).from(emailSettingsTable).limit(1),
   ]);
   const siteName = site?.name ?? "School";
   const organisationName = organisation?.name?.trim() || "Elysium OSHC";
   const name = finalizedReportFilename(organisationName, siteName, report);
   const [educareLogoBytes, companyLogoBytes] = await Promise.all([
-    readFile(resolve(process.cwd(), "assets/educare-logo-dark.png"))
+    readFile(resolve(process.cwd(), "dist/assets/educare-logo-dark.png"))
+      .catch(() => readFile(resolve(process.cwd(), "assets/educare-logo-dark.png")))
       .then((bytes) => new Uint8Array(bytes))
       .catch(() => undefined),
-    emailSettings?.logoPath
-      ? objectStorageService.getObjectEntityFile(emailSettings.logoPath)
+    emailSettings?.companyLogoPath
+      ? objectStorageService.getObjectEntityFile(emailSettings.companyLogoPath)
           .then((file) => objectStorageService.downloadObject(file))
           .then((response) => response.arrayBuffer())
           .then((bytes) => new Uint8Array(bytes))

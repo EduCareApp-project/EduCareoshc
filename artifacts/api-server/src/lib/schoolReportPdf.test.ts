@@ -67,9 +67,13 @@ describe("school report PDF", () => {
       { educareLogoBytes: logo, companyLogoBytes: logo },
     );
     const document = await PDFDocument.load(bytes);
+    const embeddedImages = document.context
+      .enumerateIndirectObjects()
+      .filter(([, object]) => object.toString().includes("/Subtype /Image"));
 
     expect(bytes.length).toBeGreaterThan(1_000);
     expect(document.getPageCount()).toBeGreaterThanOrEqual(2);
+    expect(embeddedImages.length).toBeGreaterThanOrEqual(2);
     expect(document.getTitle()).toBe(
       "Elysium OSHC - Mahogany Rise Primary School - Term 1 Report - 2026",
     );

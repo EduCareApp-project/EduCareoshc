@@ -91,27 +91,28 @@ function drawEduCareHeader(
   bold: PDFFont,
   logo?: PDFImage,
 ) {
-  page.drawRectangle({ x: 0, y: 780, width: PAGE_WIDTH, height: 62, color: rgb(1, 1, 1) });
-  page.drawRectangle({ x: 0, y: 778, width: PAGE_WIDTH, height: 2, color: BRAND_GREEN });
+  page.drawRectangle({ x: 0, y: 782, width: PAGE_WIDTH, height: 60, color: rgb(1, 1, 1) });
+  page.drawLine({
+    start: { x: 0, y: 781 },
+    end: { x: PAGE_WIDTH, y: 781 },
+    thickness: 0.7,
+    color: GRID,
+  });
   let textX = MARGIN;
   if (logo) {
-    const size = fitImage(logo, 30, 30);
-    page.drawImage(logo, { x: MARGIN, y: 796, width: size.width, height: size.height });
-    textX += size.width + 10;
-  } else {
-    page.drawCircle({ x: MARGIN + 14, y: 811, size: 14, color: BRAND_GREEN });
-    page.drawText("E", { x: MARGIN + 9, y: 805, size: 14, font: bold, color: rgb(1, 1, 1) });
-    textX += 38;
+    const size = fitImage(logo, 27, 27);
+    page.drawImage(logo, { x: MARGIN, y: 798, width: size.width, height: size.height });
+    textX += size.width + 9;
   }
-  page.drawText("EduCare", { x: textX, y: 803, size: 18, font: bold, color: BLACK });
-  const dividerX = textX + bold.widthOfTextAtSize("EduCare", 18) + 16;
+  page.drawText("EduCare", { x: textX, y: 804, size: 15, font: bold, color: BLACK });
+  const dividerX = textX + bold.widthOfTextAtSize("EduCare", 15) + 14;
   page.drawLine({
-    start: { x: dividerX, y: 796 },
-    end: { x: dividerX, y: 824 },
+    start: { x: dividerX, y: 797 },
+    end: { x: dividerX, y: 825 },
     thickness: 1,
     color: GRID,
   });
-  page.drawText("School Report", { x: dividerX + 16, y: 805, size: 11, font: regular, color: MUTED });
+  page.drawText("School Report", { x: dividerX + 14, y: 806, size: 11, font: regular, color: TEXT });
 }
 
 function reportHeading(report: SchoolReportSummary): string {

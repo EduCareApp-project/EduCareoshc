@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, asc, desc, eq, gte, inArray, isNull, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte } from "drizzle-orm";
 import {
   db,
   emailSettingsTable,
@@ -43,6 +43,13 @@ const EMPTY_OBLIGATIONS: SchoolReportObligations = {
   communityFeedbackResolution: "",
   focusForFuture: "",
 };
+
+function hasSavedObligations(obligations: SchoolReportObligations): boolean {
+  return OBLIGATION_KEYS.some((key) => {
+    const value = obligations[key];
+    return typeof value === "string" && value.trim().length > 0;
+  });
+}
 
 function isReportManager(req: Request): boolean {
   return req.session.user?.type === "staff" && REPORT_MANAGER_ROLES.has(req.session.user.role);
@@ -184,7 +191,32 @@ router.get("/school-reports/:siteId/summaries", async (req, res): Promise<void> 
       reportYear ? eq(schoolReportSummariesTable.reportYear, reportYear) : undefined,
       visibility,
     )).orderBy(desc(schoolReportSummariesTable.createdAt), desc(schoolReportSummariesTable.id));
-    res.json(reports);
+    const repairedReports = isSchoolRequest ? reports : await Promise.all(reports.map(async (report) => {
+      if (
+        report.status !== "draft"
+        || report.archivedAt
+        || hasSavedObligations(report.reportingObligations)
+      ) {
+        return report;
+      }
+      const source = reports.find((candidate) => (
+        candidate.archivedAt
+        && candidate.frequency === report.frequency
+        && candidate.period === report.period
+        && hasSavedObligations(candidate.reportingObligations)
+      ));
+      if (!source) return report;
+      const [repaired] = await db.update(schoolReportSummariesTable).set({
+        reportingObligations: source.reportingObligations,
+        updatedAt: new Date(),
+      }).where(and(
+        eq(schoolReportSummariesTable.id, report.id),
+        eq(schoolReportSummariesTable.status, "draft"),
+        isNull(schoolReportSummariesTable.archivedAt),
+      )).returning();
+      return repaired ?? report;
+    }));
+    res.json(repairedReports);
   } catch (error) {
     req.log.error({ error, siteId, reportYear }, "Failed to load generated school reports");
     res.status(500).json({ error: "Failed to load generated reports" });
@@ -241,11 +273,28 @@ router.post("/school-reports/:siteId/summaries", async (req, res): Promise<void>
       return;
     }
 
+    const needsCarriedText = !existing || !hasSavedObligations(existing.reportingObligations);
+    const [previousArchived] = !needsCarriedText ? [] : await db.select({
+      reportingObligations: schoolReportSummariesTable.reportingObligations,
+    }).from(schoolReportSummariesTable).where(and(
+      eq(schoolReportSummariesTable.siteId, siteId),
+      eq(schoolReportSummariesTable.reportYear, reportYear),
+      eq(schoolReportSummariesTable.frequency, frequency),
+      eq(schoolReportSummariesTable.period, period),
+      isNotNull(schoolReportSummariesTable.archivedAt),
+    )).orderBy(
+      desc(schoolReportSummariesTable.archivedAt),
+      desc(schoolReportSummariesTable.id),
+    ).limit(1);
+
     const now = new Date();
     const [saved] = existing
       ? await db.update(schoolReportSummariesTable).set({
         periodLabel,
         statistics,
+        ...(previousArchived
+          ? { reportingObligations: previousArchived.reportingObligations }
+          : {}),
         updatedAt: now,
       }).where(eq(schoolReportSummariesTable.id, existing.id)).returning()
       : await db.insert(schoolReportSummariesTable).values({
@@ -255,7 +304,7 @@ router.post("/school-reports/:siteId/summaries", async (req, res): Promise<void>
         period,
         periodLabel,
         statistics,
-        reportingObligations: EMPTY_OBLIGATIONS,
+         reportingObligations: previousArchived?.reportingObligations ?? EMPTY_OBLIGATIONS,
         createdById: req.session.user!.id,
       }).returning();
     res.status(existing ? 200 : 201).json(saved);

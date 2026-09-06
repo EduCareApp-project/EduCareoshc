@@ -127,6 +127,54 @@ export function SchoolSummaryReport({
     });
   }
 
+  if (report.archivedAt) {
+    return (
+      <>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">{report.periodLabel}</span>
+              <Badge variant="outline">Archived</Badge>
+            </div>
+            <a
+              href={`/api/school-reports/${siteId}/summaries/${report.id}/pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 inline-flex items-center gap-1.5 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              {report.finalizedPdfName || "Open archived report PDF"}
+            </a>
+          </div>
+          {canManageLifecycle && (
+            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setConfirmAction("delete")}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          )}
+        </div>
+
+        <Dialog open={confirmAction === "delete"} onOpenChange={(open) => !open && setConfirmAction(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Permanently delete this report?</DialogTitle>
+              <DialogDescription>
+                This cannot be undone. The archived report and its saved PDF reference will be permanently removed.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfirmAction(null)}>Cancel</Button>
+              <Button variant="destructive" onClick={performLifecycleAction} disabled={deleteReport.isPending}>
+                {deleteReport.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Delete report
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
   return (
     <div className="mt-6 space-y-6 border-t pt-6">
       <div className="flex flex-wrap items-start justify-between gap-3">

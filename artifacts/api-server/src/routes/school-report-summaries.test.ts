@@ -43,6 +43,7 @@ const { mockDb, queueSelect, writes, mockRefresh, columns } = vi.hoisted(() => {
       status: "status",
       archivedAt: "archivedAt",
       reportingObligations: "reportingObligations",
+      finalizedAt: "finalizedAt",
       createdAt: "createdAt",
       termNumber: "termNumber",
       termId: "termId",
@@ -121,12 +122,12 @@ function app() {
   return instance;
 }
 
-function term() {
+function term(termNumber = 1) {
   return {
     id: 21,
     siteId: 4,
     reportYear: 2026,
-    termNumber: 1,
+    termNumber,
     termStartDate: "2026-01-27",
     termEndDate: "2026-04-02",
     holidayProgramApplies: false,
@@ -179,6 +180,30 @@ describe("school report replacement text preservation", () => {
     expect(statistics.weeklyAverages[0]).toMatchObject({ label: "Week 1", bsc: 5 });
     expect(archived).toEqual(archivedSnapshot);
     expect(writes).toHaveLength(1);
+  });
+
+  it("carries every obligation into the next reporting period", async () => {
+    const previousPeriod = {
+      ...archived,
+      period: "1",
+      periodLabel: "Term 1 2026",
+      archivedAt: null,
+      finalizedAt: new Date("2026-04-01T00:00:00Z"),
+    };
+    queueSelect([term(2)], [row("30")], [], [previousPeriod]);
+
+    const response = await request(app())
+      .post("/api/school-reports/4/summaries")
+      .send({ reportYear: 2026, frequency: "term", period: "2" });
+
+    expect(response.status).toBe(201);
+    const inserted = writes.find((write) => write.kind === "insert")?.value as Record<string, unknown>;
+    expect(inserted.reportingObligations).toEqual(obligations);
+    expect(inserted.period).toBe("2");
+    const statistics = inserted.statistics as {
+      weekdayAverages: Array<{ day: string; bsc: number }>;
+    };
+    expect(statistics.weekdayAverages[0]).toMatchObject({ day: "Monday", bsc: 30 });
   });
 
   it("regenerates an existing draft without overwriting its edited text", async () => {

@@ -458,7 +458,7 @@ export default function SchoolPortal() {
           </TabsTrigger>}
           {visiblePortalTabs.includes("statistics") && <TabsTrigger
             value="statistics"
-            className="h-10 shrink-0 rounded-md bg-purple-600 px-5 text-white shadow-sm hover:bg-purple-700 hover:text-white data-[state=active]:bg-purple-700 data-[state=active]:text-white data-[state=active]:shadow-md"
+            className="ml-auto h-10 shrink-0 rounded-md bg-purple-600 px-5 text-white shadow-sm hover:bg-purple-700 hover:text-white data-[state=active]:bg-purple-700 data-[state=active]:text-white data-[state=active]:shadow-md"
           >
             <BarChart3 className="mr-2 h-4 w-4" />
             Live Service Statistics

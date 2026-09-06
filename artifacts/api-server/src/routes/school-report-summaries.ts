@@ -279,16 +279,13 @@ router.post("/school-reports/:siteId/summaries", async (req, res): Promise<void>
     }
 
     const needsCarriedText = !existing || !hasSavedObligations(existing.reportingObligations);
-    const [previousArchived] = !needsCarriedText ? [] : await db.select({
+    const [previousReport] = !needsCarriedText ? [] : await db.select({
       reportingObligations: schoolReportSummariesTable.reportingObligations,
     }).from(schoolReportSummariesTable).where(and(
       eq(schoolReportSummariesTable.siteId, siteId),
-      eq(schoolReportSummariesTable.reportYear, reportYear),
-      eq(schoolReportSummariesTable.frequency, frequency),
-      eq(schoolReportSummariesTable.period, period),
-      isNotNull(schoolReportSummariesTable.archivedAt),
+      eq(schoolReportSummariesTable.status, "finalized"),
     )).orderBy(
-      desc(schoolReportSummariesTable.archivedAt),
+      desc(schoolReportSummariesTable.finalizedAt),
       desc(schoolReportSummariesTable.id),
     ).limit(1);
 
@@ -297,8 +294,8 @@ router.post("/school-reports/:siteId/summaries", async (req, res): Promise<void>
       ? await db.update(schoolReportSummariesTable).set({
         periodLabel,
         statistics,
-        ...(previousArchived
-          ? { reportingObligations: previousArchived.reportingObligations }
+        ...(previousReport
+          ? { reportingObligations: previousReport.reportingObligations }
           : {}),
         updatedAt: now,
       }).where(eq(schoolReportSummariesTable.id, existing.id)).returning()
@@ -309,7 +306,7 @@ router.post("/school-reports/:siteId/summaries", async (req, res): Promise<void>
         period,
         periodLabel,
         statistics,
-         reportingObligations: previousArchived?.reportingObligations ?? EMPTY_OBLIGATIONS,
+        reportingObligations: previousReport?.reportingObligations ?? EMPTY_OBLIGATIONS,
         createdById: req.session.user!.id,
       }).returning();
     res.status(existing ? 200 : 201).json(saved);

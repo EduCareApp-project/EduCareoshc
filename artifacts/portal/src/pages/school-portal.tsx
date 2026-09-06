@@ -442,13 +442,6 @@ export default function SchoolPortal() {
             <Users className="w-4 h-4 mr-2" />
             Service Staff
           </TabsTrigger>}
-          {visiblePortalTabs.includes("statistics") && <TabsTrigger
-            value="statistics"
-            className="h-10 shrink-0 rounded-md bg-purple-600 px-5 text-white shadow-sm hover:bg-purple-700 hover:text-white data-[state=active]:bg-purple-700 data-[state=active]:text-white data-[state=active]:shadow-md"
-          >
-            <BarChart3 className="mr-2 h-4 w-4" />
-            Live Service Statistics
-          </TabsTrigger>}
           {visiblePortalTabs.includes("reports") && <TabsTrigger
             value="reports"
             className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-6 h-12"
@@ -462,6 +455,13 @@ export default function SchoolPortal() {
           >
             <TrendingUp className="w-4 h-4 mr-2" />
             QIP
+          </TabsTrigger>}
+          {visiblePortalTabs.includes("statistics") && <TabsTrigger
+            value="statistics"
+            className="h-10 shrink-0 rounded-md bg-purple-600 px-5 text-white shadow-sm hover:bg-purple-700 hover:text-white data-[state=active]:bg-purple-700 data-[state=active]:text-white data-[state=active]:shadow-md"
+          >
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Live Service Statistics
           </TabsTrigger>}
         </TabsList>
 

@@ -603,7 +603,7 @@ function IncidentDetail({ incident, onDelete }: { incident: any; onDelete: () =>
             {incident.attachmentPath && (
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">Attachment</p>
-                <a href={incident.attachmentPath} target="_blank" rel="noopener noreferrer" className="text-primary text-sm flex items-center gap-1 underline">
+                <a href={`/api/storage${incident.attachmentPath}`} target="_blank" rel="noopener noreferrer" className="text-primary text-sm flex items-center gap-1 underline">
                   <Paperclip className="h-3.5 w-3.5" />View file
                 </a>
               </div>

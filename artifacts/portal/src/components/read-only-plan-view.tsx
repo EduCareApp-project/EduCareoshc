@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Send, Printer } from "lucide-react";
+import { Send, Printer, Pencil } from "lucide-react";
 import { RichTextView } from "@/components/rich-text-editor";
 
 // ── Shared types ──────────────────────────────────────────────────────────────
@@ -35,6 +35,7 @@ export type ExistingPlan = {
   weeklyPlanData?: any;
   siteId?: number | null;
   stage?: string | null;
+  startDate?: string | null;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -140,10 +141,12 @@ export function ReadOnlyPlanView({
   plan,
   siteName,
   onClose,
+  onEdit,
 }: {
   plan: ExistingPlan;
   siteName?: string;
   onClose: () => void;
+  onEdit?: () => void;
 }) {
   const grid = initGridFromPlan(plan);
   const cellOutcomes: CellOutcomes = (plan.weeklyPlanData as any)?.cellOutcomes ?? {};
@@ -166,6 +169,15 @@ export function ReadOnlyPlanView({
               <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 border border-blue-300 px-2.5 py-0.5 text-xs font-medium gap-1">
                 <Send className="h-3 w-3" /> Published
               </span>
+              {onEdit && (
+                <button
+                  onClick={onEdit}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                >
+                  <Pencil className="h-3 w-3" />
+                  Edit Plan
+                </button>
+              )}
               <button
                 onClick={() => window.open(`/planning/print?id=${plan.id}`, "_blank")}
                 className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"

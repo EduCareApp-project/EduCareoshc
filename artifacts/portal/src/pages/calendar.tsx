@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   useListPlanningExperiences, useCreatePlanningExperience, useUpdatePlanningExperience, useListSites,
   useListWeeklyReviews, useCreateWeeklyReview, useUpdateWeeklyReview, useDeleteWeeklyReview,
@@ -33,39 +33,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import {
   ReadOnlyPlanView, ExistingPlan,
   DayKey, RowKey, ROW_LABELS, DAY_KEYS, DAY_LABELS,
   WeeklyPlanGrid, CellOutcomes,
   emptyGrid, initGridFromPlan, bubbleClassForSub, dotClassForSub, MTOP_OUTCOMES,
 } from "@/components/read-only-plan-view";
-
-function AutoResizeTextarea({
-  value, onChange, className, placeholder,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  className?: string;
-  placeholder?: string;
-}) {
-  const ref = useRef<HTMLTextAreaElement>(null);
-  useLayoutEffect(() => {
-    if (!ref.current) return;
-    ref.current.style.height = "auto";
-    ref.current.style.height = `${ref.current.scrollHeight}px`;
-  }, [value]);
-  return (
-    <textarea
-      ref={ref}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={1}
-      className={className}
-      style={{ overflow: "hidden", resize: "none" }}
-    />
-  );
-}
 
 function getWeeksInMonth(month: Date): Date[][] {
   const start = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
@@ -307,11 +281,12 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
                       const selected = cellOutcomes[ck] ?? [];
                       return (
                         <td key={day} className="border border-gray-200 px-2 py-1.5 align-top min-w-[140px]">
-                          <AutoResizeTextarea
+                          <RichTextEditor
                             value={grid[key][day]}
                             onChange={(v) => setCell(key, day, v)}
-                            className="min-h-[60px] text-xs border-0 shadow-none bg-transparent p-0 w-full focus:outline-none"
+                            className="border-0 shadow-none bg-transparent"
                             placeholder="Add notes…"
+                            compact
                           />
                           {selected.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">

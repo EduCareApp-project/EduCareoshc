@@ -9,6 +9,7 @@ import {
 } from "@/components/read-only-plan-view";
 import { format } from "date-fns";
 import { fmtMelb } from "@/lib/timezone";
+import { RichTextView } from "@/components/rich-text-editor";
 
 export default function WeeklyPlanPrint() {
   const search = useSearch();
@@ -133,7 +134,9 @@ export default function WeeklyPlanPrint() {
                     return (
                       <td key={day} className="border border-slate-200 px-2 py-2.5 align-top min-w-[100px] print:min-w-0">
                         {text && (
-                          <p className="whitespace-pre-wrap text-slate-800 mb-1 leading-snug print:text-[11px]">{text}</p>
+                          /<[a-z][\s\S]*>/i.test(text)
+                            ? <RichTextView html={text} className="text-slate-800 mb-1 leading-snug print:text-[11px] [&_p]:my-0" />
+                            : <p className="whitespace-pre-wrap text-slate-800 mb-1 leading-snug print:text-[11px]">{text}</p>
                         )}
                         {outcomes.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">

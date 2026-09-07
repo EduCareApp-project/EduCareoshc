@@ -1,4 +1,5 @@
 import { useEditor, EditorContent } from "@tiptap/react";
+import { useEffect } from "react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 // Note: StarterKit does NOT include Underline — it's safe to add separately.
@@ -15,9 +16,10 @@ interface RichTextEditorProps {
   onChange: (html: string) => void;
   placeholder?: string;
   className?: string;
+  compact?: boolean;
 }
 
-export function RichTextEditor({ value, onChange, placeholder = "Write something…", className }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, placeholder = "Write something…", className, compact = false }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -31,10 +33,17 @@ export function RichTextEditor({ value, onChange, placeholder = "Write something
     },
     editorProps: {
       attributes: {
-        class: "min-h-[100px] px-3 py-2 text-sm focus:outline-none prose prose-sm max-w-none",
+        class: compact
+          ? "min-h-[60px] text-xs focus:outline-none prose prose-sm max-w-none [&_p]:my-0"
+          : "min-h-[100px] px-3 py-2 text-sm focus:outline-none prose prose-sm max-w-none",
       },
     },
   });
+
+  useEffect(() => {
+    if (!editor || editor.getHTML() === value) return;
+    editor.commands.setContent(value || "", { emitUpdate: false });
+  }, [editor, value]);
 
   if (!editor) return null;
 
@@ -57,7 +66,7 @@ export function RichTextEditor({ value, onChange, placeholder = "Write something
   return (
     <div className={cn("border rounded-md overflow-hidden bg-background", className)}>
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 border-b px-2 py-1 bg-muted/30">
+      {!compact && <div className="flex flex-wrap items-center gap-0.5 border-b px-2 py-1 bg-muted/30">
         <ToolbarBtn title="Bold" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}>
           <Bold className="h-3.5 w-3.5" />
         </ToolbarBtn>
@@ -91,10 +100,18 @@ export function RichTextEditor({ value, onChange, placeholder = "Write something
         <ToolbarBtn title="Redo" onClick={() => editor.chain().focus().redo().run()}>
           <Redo className="h-3.5 w-3.5" />
         </ToolbarBtn>
-      </div>
+      </div>}
 
       {/* Editor area */}
-      <EditorContent editor={editor} />
+      <EditorContent
+        editor={editor}
+        onKeyDown={(event) => {
+          if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") {
+            event.preventDefault();
+            editor.chain().focus().toggleBold().run();
+          }
+        }}
+      />
     </div>
   );
 }

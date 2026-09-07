@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Send, Printer } from "lucide-react";
+import { RichTextView } from "@/components/rich-text-editor";
 
 // ── Shared types ──────────────────────────────────────────────────────────────
 export type DayKey = "mon" | "tue" | "wed" | "thu" | "fri";
@@ -201,7 +202,9 @@ export function ReadOnlyPlanView({
                     return (
                       <td key={day} className="border border-slate-200 px-2 py-2 align-top min-w-[100px]">
                         {text && (
-                          <p className="whitespace-pre-wrap text-slate-800 mb-1 leading-snug">{text}</p>
+                          /<[a-z][\s\S]*>/i.test(text)
+                            ? <RichTextView html={text} className="text-slate-800 mb-1 leading-snug [&_p]:my-0" />
+                            : <p className="whitespace-pre-wrap text-slate-800 mb-1 leading-snug">{text}</p>
                         )}
                         {outcomes.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">

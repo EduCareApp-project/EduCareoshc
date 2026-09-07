@@ -996,15 +996,7 @@ export default function Calendar() {
                           <div className="h-full bg-green-50/70 border-y border-green-200 flex items-center px-3">
                             <Badge
                               className="bg-green-100 text-green-800 text-xs gap-1 pointer-events-auto cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (isGuardianMode) {
-                                  setViewPlan(published[0]);
-                                } else {
-                                  setPlanWeek(monday);
-                                  setPlanExisting(published[0]);
-                                }
-                              }}
+                              onClick={(e) => { e.stopPropagation(); setViewPlan(published[0]); }}
                             >
                               <Send className="h-3 w-3" />
                               {published.length === 1 ? published[0].title : `${published.length} published`}

@@ -103,15 +103,7 @@ export function RichTextEditor({ value, onChange, placeholder = "Write something
       </div>}
 
       {/* Editor area */}
-      <EditorContent
-        editor={editor}
-        onKeyDown={(event) => {
-          if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") {
-            event.preventDefault();
-            editor.chain().focus().toggleBold().run();
-          }
-        }}
-      />
+      <EditorContent editor={editor} />
     </div>
   );
 }

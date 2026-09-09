@@ -129,4 +129,47 @@ describe("school report statistics", () => {
     expect(statistics.overallAverages).toEqual({ bsc: 10, asc: 15, vac: 20 });
     expect(statistics.hasVacationCare).toBe(true);
   });
+
+  it("excludes all-zero weeks independently from each service average", () => {
+    const statistics = calculateSchoolReportStatistics([
+      term([
+        row(1, "BSC", 1, [10, 10, 10, 10, 10]),
+        row(2, "ASC", 1, [20, 20, 20, 20, 20]),
+        row(3, "BSC", 2, [0, 0, 0, 0, 0]),
+        row(4, "ASC", 2, [30, 30, 30, 30, 30]),
+        row(5, "BSC", 3, [0, 0, 0, 0, 0]),
+        row(6, "ASC", 3, [0, 0, 0, 0, 0]),
+        row(7, "VAC", 3, [0, 0, 0, 0, 0]),
+      ]),
+    ], "Term 1 2026");
+
+    expect(statistics.weekdayAverages[0]).toEqual({ day: "Monday", bsc: 10, asc: 25, pupilFree: 0 });
+    expect(statistics.weeklyAverages).toEqual([
+      { label: "Week 1", bsc: 10, asc: 20, pupilFree: 0 },
+      { label: "Week 2", bsc: 0, asc: 30, pupilFree: 0 },
+    ]);
+    expect(statistics.holidayWeeklyAverages).toEqual([]);
+  });
+
+  it("excludes represented all-zero weeks from live service averages", () => {
+    const activeBsc = row(1, "BSC", 1, [10, 10, 10, 10, 10]);
+    const activeAsc = row(2, "ASC", 1, [20, 20, 20, 20, 20]);
+    const zeroBsc = { ...row(3, "BSC", 2, [0, 0, 0, 0, 0]), weekBeginning: "2026-02-02" };
+    const activeSecondAsc = { ...row(4, "ASC", 2, [30, 30, 30, 30, 30]), weekBeginning: "2026-02-02" };
+    const zeroThirdBsc = { ...row(5, "BSC", 3, [0, 0, 0, 0, 0]), weekBeginning: "2026-02-09" };
+    const zeroThirdAsc = { ...row(6, "ASC", 3, [0, 0, 0, 0, 0]), weekBeginning: "2026-02-09" };
+
+    const statistics = calculateLiveSchoolReportStatistics(
+      [activeBsc, activeAsc, zeroBsc, activeSecondAsc, zeroThirdBsc, zeroThirdAsc],
+      "2025-08-05",
+      "2026-02-10",
+    );
+
+    expect(statistics.weekdayAverages[0]).toEqual({ day: "Monday", bsc: 10, asc: 25, vac: 0 });
+    expect(statistics.overallAverages).toEqual({ bsc: 10, asc: 25, vac: null });
+    expect(statistics.weeklyAverages).toEqual([
+      { weekBeginning: "2026-01-26", bsc: 10, asc: 20, vac: 0 },
+      { weekBeginning: "2026-02-02", bsc: 0, asc: 30, vac: 0 },
+    ]);
+  });
 });

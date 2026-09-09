@@ -48,6 +48,20 @@ function metricsForDay(
   };
 }
 
+type AttendanceMetric = keyof ReturnType<typeof metricsForDay>;
+
+function weekHasAttendance(
+  bsc: SchoolReportRow | undefined,
+  asc: SchoolReportRow | undefined,
+  metric: AttendanceMetric,
+): boolean {
+  return DAYS.some((day) => metricsForDay(bsc, asc, day)[metric] > 0);
+}
+
+function vacationWeekHasAttendance(row: SchoolReportRow | undefined): boolean {
+  return DAYS.some((day) => attendanceValue(row?.[day] ?? null) > 0);
+}
+
 export function calculateLiveSchoolReportStatistics(
   rows: SchoolReportRow[],
   rangeStart: string,
@@ -70,17 +84,27 @@ export function calculateLiveSchoolReportStatistics(
   const vacRows = rows.filter((row) => row.serviceType === "VAC");
 
   const weekdayAverages = DAYS.map((day, index) => {
-    const standardMetrics = standardWeeks.map(([, week]) => metricsForDay(week.bsc, week.asc, day));
+    const bscMetrics = standardWeeks
+      .filter(([, week]) => weekHasAttendance(week.bsc, week.asc, "bsc"))
+      .map(([, week]) => metricsForDay(week.bsc, week.asc, day).bsc);
+    const ascMetrics = standardWeeks
+      .filter(([, week]) => weekHasAttendance(week.bsc, week.asc, "asc"))
+      .map(([, week]) => metricsForDay(week.bsc, week.asc, day).asc);
     const vacValues = vacRows.map((row) => attendanceValue(row[day])).filter((value) => value > 0);
     return {
       day: DAY_LABELS[index],
-      bsc: round(standardMetrics.reduce((sum, value) => sum + value.bsc, 0) / Math.max(standardMetrics.length, 1)),
-      asc: round(standardMetrics.reduce((sum, value) => sum + value.asc, 0) / Math.max(standardMetrics.length, 1)),
+      bsc: round(bscMetrics.reduce((sum, value) => sum + value, 0) / Math.max(bscMetrics.length, 1)),
+      asc: round(ascMetrics.reduce((sum, value) => sum + value, 0) / Math.max(ascMetrics.length, 1)),
       vac: round(vacValues.reduce((sum, value) => sum + value, 0) / Math.max(vacValues.length, 1)),
     };
   });
 
-  const weeklyAverages = weeks.map(([weekBeginning, week]) => {
+  const weeklyAverages = weeks.filter(([, week]) =>
+    weekHasAttendance(week.bsc, week.asc, "bsc")
+      || weekHasAttendance(week.bsc, week.asc, "asc")
+      || weekHasAttendance(week.bsc, week.asc, "pupilFree")
+      || vacationWeekHasAttendance(week.vac)
+  ).map(([weekBeginning, week]) => {
     const standardMetrics = DAYS.map((day) => metricsForDay(week.bsc, week.asc, day));
     const vacValues = DAYS.map((day) => attendanceValue(week.vac?.[day] ?? null)).filter((value) => value > 0);
     return {
@@ -91,9 +115,13 @@ export function calculateLiveSchoolReportStatistics(
     };
   });
 
-  const standardDayCount = Math.max(standardWeeks.length * DAYS.length, 1);
-  const standardMetrics = standardWeeks.flatMap(([, week]) =>
-    DAYS.map((day) => metricsForDay(week.bsc, week.asc, day))
+  const bscWeeks = standardWeeks.filter(([, week]) => weekHasAttendance(week.bsc, week.asc, "bsc"));
+  const ascWeeks = standardWeeks.filter(([, week]) => weekHasAttendance(week.bsc, week.asc, "asc"));
+  const bscMetrics = bscWeeks.flatMap(([, week]) =>
+    DAYS.map((day) => metricsForDay(week.bsc, week.asc, day).bsc)
+  );
+  const ascMetrics = ascWeeks.flatMap(([, week]) =>
+    DAYS.map((day) => metricsForDay(week.bsc, week.asc, day).asc)
   );
   const vacValues = vacRows.flatMap((row) =>
     DAYS.map((day) => attendanceValue(row[day])).filter((value) => value > 0)
@@ -104,8 +132,8 @@ export function calculateLiveSchoolReportStatistics(
     weekdayAverages,
     weeklyAverages,
     overallAverages: {
-      bsc: round(standardMetrics.reduce((sum, value) => sum + value.bsc, 0) / standardDayCount),
-      asc: round(standardMetrics.reduce((sum, value) => sum + value.asc, 0) / standardDayCount),
+      bsc: round(bscMetrics.reduce((sum, value) => sum + value, 0) / Math.max(bscMetrics.length, 1)),
+      asc: round(ascMetrics.reduce((sum, value) => sum + value, 0) / Math.max(ascMetrics.length, 1)),
       vac: vacValues.length
         ? round(vacValues.reduce((sum, value) => sum + value, 0) / vacValues.length)
         : null,
@@ -154,16 +182,27 @@ export function calculateSchoolReportStatistics(
       bsc: term.rows.find((row) => row.serviceType === "BSC" && row.weekNumber === weekNumber),
       asc: term.rows.find((row) => row.serviceType === "ASC" && row.weekNumber === weekNumber),
     }));
-  });
+  }).filter((pair) =>
+    weekHasAttendance(pair.bsc, pair.asc, "bsc")
+      || weekHasAttendance(pair.bsc, pair.asc, "asc")
+      || weekHasAttendance(pair.bsc, pair.asc, "pupilFree")
+  );
 
   const weekdayAverages = DAYS.map((day, index) => {
-    const dayMetrics = weekPairs.map((pair) => metricsForDay(pair.bsc, pair.asc, day));
-    const divisor = Math.max(weekPairs.length, 1);
+    const bscMetrics = weekPairs
+      .filter((pair) => weekHasAttendance(pair.bsc, pair.asc, "bsc"))
+      .map((pair) => metricsForDay(pair.bsc, pair.asc, day).bsc);
+    const ascMetrics = weekPairs
+      .filter((pair) => weekHasAttendance(pair.bsc, pair.asc, "asc"))
+      .map((pair) => metricsForDay(pair.bsc, pair.asc, day).asc);
+    const pupilFreeMetrics = weekPairs
+      .filter((pair) => weekHasAttendance(pair.bsc, pair.asc, "pupilFree"))
+      .map((pair) => metricsForDay(pair.bsc, pair.asc, day).pupilFree);
     return {
       day: DAY_LABELS[index],
-      bsc: round(dayMetrics.reduce((sum, metrics) => sum + metrics.bsc, 0) / divisor),
-      asc: round(dayMetrics.reduce((sum, metrics) => sum + metrics.asc, 0) / divisor),
-      pupilFree: round(dayMetrics.reduce((sum, metrics) => sum + metrics.pupilFree, 0) / divisor),
+      bsc: round(bscMetrics.reduce((sum, value) => sum + value, 0) / Math.max(bscMetrics.length, 1)),
+      asc: round(ascMetrics.reduce((sum, value) => sum + value, 0) / Math.max(ascMetrics.length, 1)),
+      pupilFree: round(pupilFreeMetrics.reduce((sum, value) => sum + value, 0) / Math.max(pupilFreeMetrics.length, 1)),
     };
   });
 
@@ -187,7 +226,7 @@ export function calculateSchoolReportStatistics(
     };
   });
 
-  const holidayWeeklyAverages = holidayRows.map((row) => {
+  const holidayWeeklyAverages = holidayRows.filter(vacationWeekHasAttendance).map((row) => {
     const operatedValues = DAYS
       .map((day) => attendanceValue(row[day]))
       .filter((value) => value > 0);

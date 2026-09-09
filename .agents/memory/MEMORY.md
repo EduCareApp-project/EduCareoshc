@@ -10,3 +10,4 @@
 - [School report snapshots](school-report-snapshots.md) — generated statistics freeze the selected attendance period; narrative stays editable only until finalisation.
 - [Finalised school report PDFs](finalised-school-report-pdfs.md) — preserve obligations and store one immutable private PDF with a stable organisation/service/period/year filename.
 - [School report carry-forward](school-report-carry-forward.md) — new reports inherit narrative from the latest finalised report, while attendance statistics always recalculate for the selected period.
+- [Attendance average denominators](attendance-average-denominators.md) — exclude a whole week from a service’s average when that service recorded zero attendance across all five days.

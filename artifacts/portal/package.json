@@ -83,9 +83,11 @@
     "zod": "catalog:"
   },
   "dependencies": {
+    "@tiptap/extension-color": "3.23.4",
+    "@tiptap/extension-highlight": "3.23.4",
     "@tiptap/extension-placeholder": "^3.23.4",
     "@tiptap/extension-text-align": "^3.23.4",
-    "@tiptap/extension-underline": "^3.23.4",
+    "@tiptap/extension-text-style": "3.23.4",
     "@tiptap/pm": "^3.23.4",
     "@tiptap/react": "^3.23.4",
     "@tiptap/starter-kit": "^3.23.4",

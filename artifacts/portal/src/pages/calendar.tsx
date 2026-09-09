@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { Editor } from "@tiptap/react";
 import {
   useListPlanningExperiences, useCreatePlanningExperience, useUpdatePlanningExperience, useListSites,
   useListWeeklyReviews, useCreateWeeklyReview, useUpdateWeeklyReview, useDeleteWeeklyReview,
@@ -33,7 +34,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/auth";
-import { RichTextEditor } from "@/components/rich-text-editor";
+import { RichTextEditor, RichTextToolbar } from "@/components/rich-text-editor";
 import {
   ReadOnlyPlanView, ExistingPlan,
   DayKey, RowKey, ROW_LABELS, DAY_KEYS, DAY_LABELS,
@@ -76,6 +77,7 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
   const [title, setTitle] = useState(defaultTitle);
   const [grid, setGrid] = useState<WeeklyPlanGrid>(() => existingPlan ? initGridFromPlan(existingPlan) : emptyGrid());
   const [cellOutcomes, setCellOutcomes] = useState<CellOutcomes>(() => existingPlan?.weeklyPlanData?.cellOutcomes ?? {});
+  const [activeCellEditor, setActiveCellEditor] = useState<Editor | null>(null);
   const [copyFromId, setCopyFromId] = useState<string>("");
   const [copyConfirm, setCopyConfirm] = useState(false);
   const [showDuplicate, setShowDuplicate] = useState(false);
@@ -262,7 +264,9 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
             )
           )}
 
-          <div className="overflow-x-auto">
+          <div className="border rounded-md overflow-hidden">
+            <RichTextToolbar editor={activeCellEditor} />
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
@@ -287,6 +291,7 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
                             className="border-0 shadow-none bg-transparent"
                             placeholder="Add notes…"
                             compact
+                            onFocus={setActiveCellEditor}
                           />
                           {selected.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
@@ -386,6 +391,7 @@ function WeekPlanModal({ weekMonday, siteId, siteName, existingPlan, onClose, on
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
 

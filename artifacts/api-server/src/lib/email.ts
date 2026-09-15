@@ -334,6 +334,64 @@ export interface GuardianNoticeEmailOptions {
   portalUrl: string;
 }
 
+export interface GuardianExcursionEmailOptions {
+  excursionHeading: string;
+  excursionDate: string;
+  portalUrl: string;
+}
+
+export async function sendGuardianExcursionEmail(
+  recipients: string[],
+  opts: GuardianExcursionEmailOptions,
+  branding?: EmailBranding,
+): Promise<void> {
+  if (recipients.length === 0) return;
+  const from = smtpFrom();
+  const transport = createTransport();
+  if (!transport) {
+    logger.warn({ count: recipients.length }, "SMTP not configured — guardian excursion emails were not sent");
+    return;
+  }
+  const subject = `Permission required: ${opts.excursionHeading}`;
+  const errors: string[] = [];
+  for (let i = 0; i < recipients.length; i++) {
+    const email = recipients[i];
+    try {
+      await transport.sendMail({
+        from: `"${fromName(branding)}" <${from}>`,
+        to: email,
+        subject,
+        text: [
+          "Hi,",
+          "",
+          `Permission is required for the excursion "${opts.excursionHeading}" on ${opts.excursionDate}.`,
+          "",
+          "View the excursion and respond in the Family Portal:",
+          opts.portalUrl,
+          "",
+          `— ${fromName(branding)}`,
+        ].join("\n"),
+        html: `
+          <!DOCTYPE html>
+          <html><body style="font-family:sans-serif;color:#1a1a1a;max-width:560px;margin:0 auto;padding:24px;">
+            ${buildLogoHtml(branding)}
+            <h2 style="margin:0 0 8px;">Excursion permission required</h2>
+            <p style="color:#555;">Please review <strong>${opts.excursionHeading.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</strong> on ${opts.excursionDate.replace(/</g, "&lt;")} and submit your permission decision.</p>
+            <a href="${opts.portalUrl}" style="display:inline-block;margin:12px 0;padding:12px 24px;background:#2d6a4f;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View excursion</a>
+            <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
+            <p style="color:#aaa;font-size:12px;">You received this email because your Family Portal account is linked to a child attending this excursion.</p>
+          </body></html>
+        `,
+      });
+    } catch (err) {
+      errors.push(email);
+      logger.error({ email, err }, "Failed to send guardian excursion email");
+    }
+    if (i < recipients.length - 1) await sleep(SEND_DELAY_MS);
+  }
+  logger.info({ sent: recipients.length - errors.length, failed: errors.length }, "Guardian excursion emails dispatched");
+}
+
 export async function sendGuardianNoticeEmail(
   recipients: string[],
   opts: GuardianNoticeEmailOptions,

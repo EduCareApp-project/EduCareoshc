@@ -1,11 +1,11 @@
 import { ReactNode, useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { 
-  LayoutDashboard, 
+import {
+  LayoutDashboard,
   Users,
   User,
-  Baby, 
-  BookOpen, 
+  Baby,
+  BookOpen,
   BookMarked,
   Menu,
   ShieldCheck,
@@ -36,7 +36,8 @@ import {
   ClipboardCheck,
   CreditCard,
   Sparkles,
-  Map
+  Bus,
+  Map,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "./ui/button";
@@ -56,7 +57,12 @@ import {
 } from "@workspace/api-client-react";
 
 type AccessSettings = Record<string, string[]>;
-type NavItem = { href: string; label: string; educatorLabel?: string; icon: React.ElementType };
+type NavItem = {
+  href: string;
+  label: string;
+  educatorLabel?: string;
+  icon: React.ElementType;
+};
 
 const NAV_GROUPS = [
   {
@@ -67,15 +73,14 @@ const NAV_GROUPS = [
       { href: "/guardians", label: "Guardians", icon: UserCog },
       { href: "/staff", label: "Staff", icon: Users },
       { href: "/schools", label: "Schools", icon: GraduationCap },
-    ]
+    ],
   },
   {
     label: "PROGRAMMING",
     items: [
       { href: "/calendar", label: "Calendar", icon: CalendarDays },
       { href: "/planning", label: "Planning Cycle", icon: Layers },
-      { href: "/excursions", label: "Excursions", icon: Map },
-    ]
+    ],
   },
   {
     label: "LEARNING",
@@ -83,43 +88,57 @@ const NAV_GROUPS = [
       { href: "/posts", label: "Posts", icon: Newspaper },
       { href: "/jottings", label: "Jottings", icon: StickyNote },
       { href: "/observations", label: "Observations", icon: BookOpen },
-    ]
+    ],
   },
   {
     label: "SERVICE OPERATIONS",
     items: [
       { href: "/incidents", label: "Incident Log", icon: AlertTriangle },
-      { href: "/condition-reports", label: "Condition Report", icon: ClipboardX },
+      {
+        href: "/condition-reports",
+        label: "Condition Report",
+        icon: ClipboardX,
+      },
       { href: "/evacuations", label: "Safety Evacuation", icon: ShieldAlert },
       { href: "/qip", label: "QIP", icon: TrendingUp },
       { href: "/policies", label: "Policies & Files", icon: FolderOpen },
       { href: "/checklists", label: "Checklists", icon: CheckSquare },
+      { href: "/excursions", label: "Excursions", icon: Bus },
       { href: "/sites", label: "Sites", icon: Building2 },
-    ]
+    ],
   },
   {
     label: "REPORTS",
     items: [
-      { href: "/reports/learning", label: "Learning Compliance", icon: BookMarked },
-      { href: "/reports/service", label: "Service Compliance", icon: ShieldCheck },
+      {
+        href: "/reports/learning",
+        label: "Learning Compliance",
+        icon: BookMarked,
+      },
+      {
+        href: "/reports/service",
+        label: "Service Compliance",
+        icon: ShieldCheck,
+      },
       { href: "/reports/staff", label: "Staff Compliance", icon: UserCheck },
       { href: "/reports/system-access", label: "System Access", icon: UserCog },
       { href: "/appraisals", label: "Appraisals", icon: Star },
       { href: "/clickup-reports", label: "Site Visits", icon: ClipboardList },
-      { href: "/reports/financial", label: "Financial Accounts", educatorLabel: "Suspensions Report", icon: CreditCard },
-    ]
+      {
+        href: "/reports/financial",
+        label: "Financial Accounts",
+        educatorLabel: "Suspensions Report",
+        icon: CreditCard,
+      },
+    ],
   },
   {
     label: "PRODUCTIVITY",
-    items: [
-      { href: "/ai-tools", label: "AI Tools", icon: Sparkles },
-    ]
+    items: [{ href: "/ai-tools", label: "AI Tools", icon: Sparkles }],
   },
   {
     label: null,
-    items: [
-      { href: "/settings", label: "Settings", icon: Settings2 },
-    ]
+    items: [{ href: "/settings", label: "Settings", icon: Settings2 }],
   },
 ];
 
@@ -144,7 +163,10 @@ function timeAgo(iso: string): string {
   if (hrs < 24) return `${hrs}h ago`;
   const days = Math.floor(hrs / 24);
   if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short" });
+  return new Date(iso).toLocaleDateString("en-AU", {
+    day: "numeric",
+    month: "short",
+  });
 }
 
 function NotificationBell({ dark = false }: { dark?: boolean }) {
@@ -178,8 +200,10 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
       onMutate: () => {
         // Optimistically zero the badge and mark all items read in cache
         queryClient.setQueryData(countQueryKey, { count: 0 });
-        queryClient.setQueryData(listQueryKey, (old: { id: number; read: boolean }[] | undefined) =>
-          old?.map((n) => ({ ...n, read: true }))
+        queryClient.setQueryData(
+          listQueryKey,
+          (old: { id: number; read: boolean }[] | undefined) =>
+            old?.map((n) => ({ ...n, read: true })),
         );
       },
       onError: () => {
@@ -193,11 +217,16 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
     mutation: {
       onMutate: ({ id }) => {
         // Optimistically mark the single item read and decrement badge
-        queryClient.setQueryData(countQueryKey, (old: { count: number } | undefined) => ({
-          count: Math.max(0, (old?.count ?? 1) - 1),
-        }));
-        queryClient.setQueryData(listQueryKey, (old: { id: number; read: boolean }[] | undefined) =>
-          old?.map((n) => n.id === id ? { ...n, read: true } : n)
+        queryClient.setQueryData(
+          countQueryKey,
+          (old: { count: number } | undefined) => ({
+            count: Math.max(0, (old?.count ?? 1) - 1),
+          }),
+        );
+        queryClient.setQueryData(
+          listQueryKey,
+          (old: { id: number; read: boolean }[] | undefined) =>
+            old?.map((n) => (n.id === id ? { ...n, read: true } : n)),
         );
       },
       onError: () => {
@@ -214,7 +243,11 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
     if (!n.read) markOne({ id: n.id });
   }
 
-  function handleNotificationTextClick(n: { id: number; href?: string | null; read: boolean }) {
+  function handleNotificationTextClick(n: {
+    id: number;
+    href?: string | null;
+    read: boolean;
+  }) {
     // Opening a notification also acknowledges it (optimistic — happens instantly)
     if (!n.read) markOne({ id: n.id });
     if (n.href) {
@@ -279,34 +312,41 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
                 >
                   {/* Unread dot */}
                   <div className="mt-1.5 shrink-0">
-                    {!n.read
-                      ? (
-                        <button
-                          type="button"
-                          className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                          aria-label={`Acknowledge notification: ${n.title}`}
-                          title="Acknowledge notification"
-                          onClick={() => acknowledgeNotification(n)}
-                        >
-                          <span className="block h-2 w-2 rounded-full bg-blue-500" />
-                        </button>
-                      )
-                      : <span className="block h-2 w-2" />
-                    }
+                    {!n.read ? (
+                      <button
+                        type="button"
+                        className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                        aria-label={`Acknowledge notification: ${n.title}`}
+                        title="Acknowledge notification"
+                        onClick={() => acknowledgeNotification(n)}
+                      >
+                        <span className="block h-2 w-2 rounded-full bg-blue-500" />
+                      </button>
+                    ) : (
+                      <span className="block h-2 w-2" />
+                    )}
                   </div>
                   <button
                     type="button"
                     className="flex-1 min-w-0 space-y-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-sm"
-                    aria-label={n.href ? `Open notification: ${n.title}` : n.title}
+                    aria-label={
+                      n.href ? `Open notification: ${n.title}` : n.title
+                    }
                     onClick={() => handleNotificationTextClick(n)}
                   >
-                    <p className={`text-sm leading-snug break-words ${!n.read ? "font-semibold" : "font-medium text-muted-foreground"}`}>
+                    <p
+                      className={`text-sm leading-snug break-words ${!n.read ? "font-semibold" : "font-medium text-muted-foreground"}`}
+                    >
                       {n.title}
                     </p>
                     {n.body && (
-                      <p className="text-xs text-muted-foreground break-words line-clamp-2">{n.body}</p>
+                      <p className="text-xs text-muted-foreground break-words line-clamp-2">
+                        {n.body}
+                      </p>
                     )}
-                    <p className="text-[11px] text-muted-foreground/70">{timeAgo(n.createdAt)}</p>
+                    <p className="text-[11px] text-muted-foreground/70">
+                      {timeAgo(n.createdAt)}
+                    </p>
                   </button>
                   {n.href && (
                     <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 mt-1" />
@@ -322,7 +362,10 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
             variant="link"
             size="sm"
             className="h-6 text-xs text-muted-foreground p-0"
-            onClick={() => { setOpen(false); setLocation("/settings/notifications"); }}
+            onClick={() => {
+              setOpen(false);
+              setLocation("/settings/notifications");
+            }}
           >
             Notification settings
           </Button>
@@ -332,7 +375,13 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
   );
 }
 
-function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () => void }) {
+function NavLinks({
+  location,
+  onNavigate,
+}: {
+  location: string;
+  onNavigate?: () => void;
+}) {
   const { user, logout } = useAuth();
 
   const { data: featureSettings } = useGetFeatureSettings({
@@ -364,9 +413,23 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
   })).filter((group) => group.items.length > 0);
 
   const isEducatorRole = ["educator", "coordinator"].includes(user?.role ?? "");
-  const EDUCATOR_HIDDEN = new Set(["/guardians", "/settings", "/reports/service", "/reports/staff", "/reports/system-access", "/appraisals"]);
+  const EDUCATOR_HIDDEN = new Set([
+    "/guardians",
+    "/settings",
+    "/reports/service",
+    "/reports/staff",
+    "/reports/system-access",
+    "/appraisals",
+  ]);
   const ADMIN_ONLY = new Set(["/clickup-reports"]);
-  const ownProfileOnly = !isAdmin && !disabledHrefs.includes("staff_own_profile");
+
+  const isAdminOrEL = isAdmin || user?.role === "educational_leader";
+  if (!isAdminOrEL) {
+    ADMIN_ONLY.add("/excursions");
+  }
+
+  const ownProfileOnly =
+    !isAdmin && !disabledHrefs.includes("staff_own_profile");
 
   let finalGroups = isEducatorRole
     ? visibleGroups
@@ -391,16 +454,28 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
       ...group,
       items: group.items.map((item) =>
         item.href === "/staff"
-          ? { ...item, href: `/staff/${user!.id}`, label: "My Profile", icon: User }
-          : item
+          ? {
+              ...item,
+              href: `/staff/${user!.id}`,
+              label: "My Profile",
+              icon: User,
+            }
+          : item,
       ),
     }));
   }
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-2 py-4 flex items-center space-x-1 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.2)" }}>
-        <img src="/educare-logo.png" alt="EduCare" className="h-28 w-28 object-contain" />
+      <div
+        className="px-2 py-4 flex items-center space-x-1 shrink-0"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.2)" }}
+      >
+        <img
+          src="/educare-logo.png"
+          alt="EduCare"
+          className="h-28 w-28 object-contain"
+        />
         <span className="text-3xl font-bold text-white">EduCare</span>
       </div>
       <ScrollArea className="flex-1">
@@ -412,29 +487,37 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
                   {group.label}
                 </p>
               )}
-              {group.items.map(({ href, label, educatorLabel, icon: Icon }: NavItem) => {
-                const displayLabel = isEducatorRole && educatorLabel ? educatorLabel : label;
-                const isActive = href === "/" ? location === "/" : location.startsWith(href);
-                return (
-                  <Link key={href} href={href} onClick={onNavigate}>
-                    <div
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
-                        isActive
-                          ? "bg-white/20 text-white"
-                          : "text-white/70 hover:bg-white/10 hover:text-white"
-                      }`}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      {displayLabel}
-                    </div>
-                  </Link>
-                );
-              })}
+              {group.items.map(
+                ({ href, label, educatorLabel, icon: Icon }: NavItem) => {
+                  const displayLabel =
+                    isEducatorRole && educatorLabel ? educatorLabel : label;
+                  const isActive =
+                    href === "/" ? location === "/" : location.startsWith(href);
+                  return (
+                    <Link key={href} href={href} onClick={onNavigate}>
+                      <div
+                        className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
+                          isActive
+                            ? "bg-white/20 text-white"
+                            : "text-white/70 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {displayLabel}
+                      </div>
+                    </Link>
+                  );
+                },
+              )}
             </div>
           ))}
           {!isEducatorRole && (
             <div className="space-y-1">
-              <a href="https://educareoshc.com.au" target="_blank" rel="noopener noreferrer">
+              <a
+                href="https://educareoshc.com.au"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors cursor-pointer text-white/70 hover:bg-white/10 hover:text-white">
                   <Globe className="h-4 w-4 shrink-0" />
                   Website
@@ -442,22 +525,30 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
               </a>
             </div>
           )}
-          {(featureSettings as any)?.webmailEnabled && (featureSettings as any)?.webmailUrl && (
-            <div className="space-y-1">
-              <a href={(featureSettings as any).webmailUrl} target="_blank" rel="noopener noreferrer">
-                <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors cursor-pointer text-white/70 hover:bg-white/10 hover:text-white">
-                  <ExternalLink className="h-4 w-4 shrink-0" />
-                  Webmail
-                </div>
-              </a>
-            </div>
-          )}
+          {(featureSettings as any)?.webmailEnabled &&
+            (featureSettings as any)?.webmailUrl && (
+              <div className="space-y-1">
+                <a
+                  href={(featureSettings as any).webmailUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors cursor-pointer text-white/70 hover:bg-white/10 hover:text-white">
+                    <ExternalLink className="h-4 w-4 shrink-0" />
+                    Webmail
+                  </div>
+                </a>
+              </div>
+            )}
         </div>
       </ScrollArea>
 
       {/* User info + logout */}
       {user && (
-        <div className="px-3 py-3 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.2)" }}>
+        <div
+          className="px-3 py-3 shrink-0"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.2)" }}
+        >
           <Link href="/my-profile" onClick={onNavigate}>
             <div className="flex items-center gap-2 px-2 mb-2 rounded-lg py-1.5 hover:bg-white/10 transition-colors cursor-pointer">
               <div className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
@@ -466,7 +557,9 @@ function NavLinks({ location, onNavigate }: { location: string; onNavigate?: () 
                 </span>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-white truncate leading-tight">{user.name}</p>
+                <p className="text-xs font-semibold text-white truncate leading-tight">
+                  {user.name}
+                </p>
                 <p className="text-[10px] text-white/50 leading-tight capitalize">
                   {ROLE_LABELS[user.role] ?? user.role}
                 </p>
@@ -505,19 +598,34 @@ export function Layout({ children }: { children: ReactNode }) {
       {/* Mobile top bar */}
       <div
         className="md:hidden fixed top-0 left-0 right-0 z-30 flex items-center h-14 px-4 gap-3"
-        style={{ backgroundColor: "#1b5e20", borderBottom: "1px solid rgba(255,255,255,0.2)" }}
+        style={{
+          backgroundColor: "#1b5e20",
+          borderBottom: "1px solid rgba(255,255,255,0.2)",
+        }}
       >
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8 shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/10 h-8 w-8 shrink-0"
+            >
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-72 border-r-0" style={{ backgroundColor: "#1b5e20" }}>
+          <SheetContent
+            side="left"
+            className="p-0 w-72 border-r-0"
+            style={{ backgroundColor: "#1b5e20" }}
+          >
             <NavLinks location={location} />
           </SheetContent>
         </Sheet>
-        <img src="/educare-logo.png" alt="EduCare" className="h-8 w-8 object-contain" />
+        <img
+          src="/educare-logo.png"
+          alt="EduCare"
+          className="h-8 w-8 object-contain"
+        />
         <span className="text-xl font-bold text-white flex-1">EduCare</span>
         {user && <NotificationBell dark />}
       </div>
@@ -529,9 +637,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="hidden md:flex items-center justify-end px-6 py-3 border-b bg-background/95 sticky top-0 z-20">
           {user && <NotificationBell />}
         </div>
-        <div className="p-4 md:p-6 lg:p-8">
-          {children}
-        </div>
+        <div className="p-4 md:p-6 lg:p-8">{children}</div>
       </main>
     </div>
   );

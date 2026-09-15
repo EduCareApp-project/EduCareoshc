@@ -53,6 +53,17 @@ import type {
   ErrorEnvelope,
   Evacuation,
   EvacuationInput,
+  Excursion,
+  ExcursionDecisionInput,
+  ExcursionDetail,
+  ExcursionInput,
+  ExcursionRecipient,
+  ExcursionRecipientVerification,
+  ExcursionRecipientsInput,
+  ExcursionRiskAssessmentUploadInput,
+  ExcursionRiskAssessmentUploadResponse,
+  ExcursionUpdate,
+  ExcursionVerificationInput,
   ExpiringMedicationChild,
   FeatureSettings,
   FileCategory,
@@ -69,8 +80,10 @@ import type {
   GetServiceComplianceReportParams,
   GetWeeklyReviewStatsParams,
   Guardian,
+  GuardianExcursion,
   GuardianLoginLog,
   GuardianMedicationLog,
+  GuardianNotification,
   GuardianUpdate,
   HealthStatus,
   Incident,
@@ -7478,6 +7491,99 @@ export const useRequestUploadUrl = <
   TContext
 > => {
   return useMutation(getRequestUploadUrlMutationOptions(options));
+};
+
+/**
+ * @summary Request a protected upload URL for an excursion risk assessment
+ */
+export const getRequestExcursionRiskAssessmentUploadUrlUrl = () => {
+  return `/api/excursions/risk-assessments/uploads/request-url`;
+};
+
+export const requestExcursionRiskAssessmentUploadUrl = async (
+  excursionRiskAssessmentUploadInput: ExcursionRiskAssessmentUploadInput,
+  options?: RequestInit,
+): Promise<ExcursionRiskAssessmentUploadResponse> => {
+  return customFetch<ExcursionRiskAssessmentUploadResponse>(
+    getRequestExcursionRiskAssessmentUploadUrlUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(excursionRiskAssessmentUploadInput),
+    },
+  );
+};
+
+export const getRequestExcursionRiskAssessmentUploadUrlMutationOptions = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestExcursionRiskAssessmentUploadUrl>>,
+    TError,
+    { data: BodyType<ExcursionRiskAssessmentUploadInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof requestExcursionRiskAssessmentUploadUrl>>,
+  TError,
+  { data: BodyType<ExcursionRiskAssessmentUploadInput> },
+  TContext
+> => {
+  const mutationKey = ["requestExcursionRiskAssessmentUploadUrl"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof requestExcursionRiskAssessmentUploadUrl>>,
+    { data: BodyType<ExcursionRiskAssessmentUploadInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return requestExcursionRiskAssessmentUploadUrl(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RequestExcursionRiskAssessmentUploadUrlMutationResult = NonNullable<
+  Awaited<ReturnType<typeof requestExcursionRiskAssessmentUploadUrl>>
+>;
+export type RequestExcursionRiskAssessmentUploadUrlMutationBody =
+  BodyType<ExcursionRiskAssessmentUploadInput>;
+export type RequestExcursionRiskAssessmentUploadUrlMutationError =
+  ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Request a protected upload URL for an excursion risk assessment
+ */
+export const useRequestExcursionRiskAssessmentUploadUrl = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestExcursionRiskAssessmentUploadUrl>>,
+    TError,
+    { data: BodyType<ExcursionRiskAssessmentUploadInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof requestExcursionRiskAssessmentUploadUrl>>,
+  TError,
+  { data: BodyType<ExcursionRiskAssessmentUploadInput> },
+  TContext
+> => {
+  return useMutation(
+    getRequestExcursionRiskAssessmentUploadUrlMutationOptions(options),
+  );
 };
 
 /**
@@ -15588,3 +15694,1303 @@ export const useDeleteWeeklyReview = <
 > => {
   return useMutation(getDeleteWeeklyReviewMutationOptions(options));
 };
+
+export const getListExcursionsUrl = () => {
+  return `/api/excursions`;
+};
+
+export const listExcursions = async (
+  options?: RequestInit,
+): Promise<Excursion[]> => {
+  return customFetch<Excursion[]>(getListExcursionsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListExcursionsQueryKey = () => {
+  return [`/api/excursions`] as const;
+};
+
+export const getListExcursionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listExcursions>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listExcursions>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListExcursionsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listExcursions>>> = ({
+    signal,
+  }) => listExcursions({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listExcursions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListExcursionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listExcursions>>
+>;
+export type ListExcursionsQueryError = ErrorType<unknown>;
+
+export function useListExcursions<
+  TData = Awaited<ReturnType<typeof listExcursions>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listExcursions>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListExcursionsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateExcursionUrl = () => {
+  return `/api/excursions`;
+};
+
+export const createExcursion = async (
+  excursionInput: ExcursionInput,
+  options?: RequestInit,
+): Promise<Excursion> => {
+  return customFetch<Excursion>(getCreateExcursionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(excursionInput),
+  });
+};
+
+export const getCreateExcursionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createExcursion>>,
+    TError,
+    { data: BodyType<ExcursionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createExcursion>>,
+  TError,
+  { data: BodyType<ExcursionInput> },
+  TContext
+> => {
+  const mutationKey = ["createExcursion"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createExcursion>>,
+    { data: BodyType<ExcursionInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createExcursion(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateExcursionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createExcursion>>
+>;
+export type CreateExcursionMutationBody = BodyType<ExcursionInput>;
+export type CreateExcursionMutationError = ErrorType<unknown>;
+
+export const useCreateExcursion = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createExcursion>>,
+    TError,
+    { data: BodyType<ExcursionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createExcursion>>,
+  TError,
+  { data: BodyType<ExcursionInput> },
+  TContext
+> => {
+  return useMutation(getCreateExcursionMutationOptions(options));
+};
+
+export const getVerifyExcursionRecipientsUrl = () => {
+  return `/api/excursions/recipients/verify`;
+};
+
+export const verifyExcursionRecipients = async (
+  excursionVerificationInput: ExcursionVerificationInput,
+  options?: RequestInit,
+): Promise<ExcursionRecipientVerification[]> => {
+  return customFetch<ExcursionRecipientVerification[]>(
+    getVerifyExcursionRecipientsUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(excursionVerificationInput),
+    },
+  );
+};
+
+export const getVerifyExcursionRecipientsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof verifyExcursionRecipients>>,
+    TError,
+    { data: BodyType<ExcursionVerificationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof verifyExcursionRecipients>>,
+  TError,
+  { data: BodyType<ExcursionVerificationInput> },
+  TContext
+> => {
+  const mutationKey = ["verifyExcursionRecipients"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof verifyExcursionRecipients>>,
+    { data: BodyType<ExcursionVerificationInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return verifyExcursionRecipients(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type VerifyExcursionRecipientsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof verifyExcursionRecipients>>
+>;
+export type VerifyExcursionRecipientsMutationBody =
+  BodyType<ExcursionVerificationInput>;
+export type VerifyExcursionRecipientsMutationError = ErrorType<unknown>;
+
+export const useVerifyExcursionRecipients = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof verifyExcursionRecipients>>,
+    TError,
+    { data: BodyType<ExcursionVerificationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof verifyExcursionRecipients>>,
+  TError,
+  { data: BodyType<ExcursionVerificationInput> },
+  TContext
+> => {
+  return useMutation(getVerifyExcursionRecipientsMutationOptions(options));
+};
+
+export const getGetExcursionUrl = (id: number) => {
+  return `/api/excursions/${id}`;
+};
+
+export const getExcursion = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ExcursionDetail> => {
+  return customFetch<ExcursionDetail>(getGetExcursionUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetExcursionQueryKey = (id: number) => {
+  return [`/api/excursions/${id}`] as const;
+};
+
+export const getGetExcursionQueryOptions = <
+  TData = Awaited<ReturnType<typeof getExcursion>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getExcursion>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetExcursionQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getExcursion>>> = ({
+    signal,
+  }) => getExcursion(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getExcursion>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetExcursionQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getExcursion>>
+>;
+export type GetExcursionQueryError = ErrorType<unknown>;
+
+export function useGetExcursion<
+  TData = Awaited<ReturnType<typeof getExcursion>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getExcursion>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetExcursionQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getUpdateExcursionUrl = (id: number) => {
+  return `/api/excursions/${id}`;
+};
+
+export const updateExcursion = async (
+  id: number,
+  excursionUpdate: ExcursionUpdate,
+  options?: RequestInit,
+): Promise<Excursion> => {
+  return customFetch<Excursion>(getUpdateExcursionUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(excursionUpdate),
+  });
+};
+
+export const getUpdateExcursionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateExcursion>>,
+    TError,
+    { id: number; data: BodyType<ExcursionUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateExcursion>>,
+  TError,
+  { id: number; data: BodyType<ExcursionUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateExcursion"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateExcursion>>,
+    { id: number; data: BodyType<ExcursionUpdate> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateExcursion(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateExcursionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateExcursion>>
+>;
+export type UpdateExcursionMutationBody = BodyType<ExcursionUpdate>;
+export type UpdateExcursionMutationError = ErrorType<unknown>;
+
+export const useUpdateExcursion = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateExcursion>>,
+    TError,
+    { id: number; data: BodyType<ExcursionUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateExcursion>>,
+  TError,
+  { id: number; data: BodyType<ExcursionUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateExcursionMutationOptions(options));
+};
+
+export const getAddExcursionRecipientsUrl = (id: number) => {
+  return `/api/excursions/${id}/recipients`;
+};
+
+export const addExcursionRecipients = async (
+  id: number,
+  excursionRecipientsInput: ExcursionRecipientsInput,
+  options?: RequestInit,
+): Promise<ExcursionRecipient[]> => {
+  return customFetch<ExcursionRecipient[]>(getAddExcursionRecipientsUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(excursionRecipientsInput),
+  });
+};
+
+export const getAddExcursionRecipientsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addExcursionRecipients>>,
+    TError,
+    { id: number; data: BodyType<ExcursionRecipientsInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof addExcursionRecipients>>,
+  TError,
+  { id: number; data: BodyType<ExcursionRecipientsInput> },
+  TContext
+> => {
+  const mutationKey = ["addExcursionRecipients"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof addExcursionRecipients>>,
+    { id: number; data: BodyType<ExcursionRecipientsInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return addExcursionRecipients(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AddExcursionRecipientsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof addExcursionRecipients>>
+>;
+export type AddExcursionRecipientsMutationBody =
+  BodyType<ExcursionRecipientsInput>;
+export type AddExcursionRecipientsMutationError = ErrorType<unknown>;
+
+export const useAddExcursionRecipients = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addExcursionRecipients>>,
+    TError,
+    { id: number; data: BodyType<ExcursionRecipientsInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof addExcursionRecipients>>,
+  TError,
+  { id: number; data: BodyType<ExcursionRecipientsInput> },
+  TContext
+> => {
+  return useMutation(getAddExcursionRecipientsMutationOptions(options));
+};
+
+export const getSendExcursionUrl = (id: number) => {
+  return `/api/excursions/${id}/send`;
+};
+
+export const sendExcursion = async (
+  id: number,
+  excursionRecipientsInput?: ExcursionRecipientsInput,
+  options?: RequestInit,
+): Promise<ExcursionDetail> => {
+  return customFetch<ExcursionDetail>(getSendExcursionUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(excursionRecipientsInput),
+  });
+};
+
+export const getSendExcursionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendExcursion>>,
+    TError,
+    { id: number; data: BodyType<ExcursionRecipientsInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendExcursion>>,
+  TError,
+  { id: number; data: BodyType<ExcursionRecipientsInput> },
+  TContext
+> => {
+  const mutationKey = ["sendExcursion"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendExcursion>>,
+    { id: number; data: BodyType<ExcursionRecipientsInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return sendExcursion(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendExcursionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendExcursion>>
+>;
+export type SendExcursionMutationBody = BodyType<ExcursionRecipientsInput>;
+export type SendExcursionMutationError = ErrorType<unknown>;
+
+export const useSendExcursion = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendExcursion>>,
+    TError,
+    { id: number; data: BodyType<ExcursionRecipientsInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendExcursion>>,
+  TError,
+  { id: number; data: BodyType<ExcursionRecipientsInput> },
+  TContext
+> => {
+  return useMutation(getSendExcursionMutationOptions(options));
+};
+
+export const getSendExcursionReminderUrl = (id: number) => {
+  return `/api/excursions/${id}/reminder`;
+};
+
+export const sendExcursionReminder = async (
+  id: number,
+  options?: RequestInit,
+): Promise<ExcursionDetail> => {
+  return customFetch<ExcursionDetail>(getSendExcursionReminderUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getSendExcursionReminderMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendExcursionReminder>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendExcursionReminder>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["sendExcursionReminder"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendExcursionReminder>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return sendExcursionReminder(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendExcursionReminderMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendExcursionReminder>>
+>;
+
+export type SendExcursionReminderMutationError = ErrorType<unknown>;
+
+export const useSendExcursionReminder = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendExcursionReminder>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendExcursionReminder>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getSendExcursionReminderMutationOptions(options));
+};
+
+export const getRemoveExcursionRecipientUrl = (
+  id: number,
+  recipientId: number,
+) => {
+  return `/api/excursions/${id}/recipients/${recipientId}`;
+};
+
+export const removeExcursionRecipient = async (
+  id: number,
+  recipientId: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getRemoveExcursionRecipientUrl(id, recipientId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getRemoveExcursionRecipientMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeExcursionRecipient>>,
+    TError,
+    { id: number; recipientId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof removeExcursionRecipient>>,
+  TError,
+  { id: number; recipientId: number },
+  TContext
+> => {
+  const mutationKey = ["removeExcursionRecipient"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof removeExcursionRecipient>>,
+    { id: number; recipientId: number }
+  > = (props) => {
+    const { id, recipientId } = props ?? {};
+
+    return removeExcursionRecipient(id, recipientId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RemoveExcursionRecipientMutationResult = NonNullable<
+  Awaited<ReturnType<typeof removeExcursionRecipient>>
+>;
+
+export type RemoveExcursionRecipientMutationError = ErrorType<unknown>;
+
+export const useRemoveExcursionRecipient = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeExcursionRecipient>>,
+    TError,
+    { id: number; recipientId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof removeExcursionRecipient>>,
+  TError,
+  { id: number; recipientId: number },
+  TContext
+> => {
+  return useMutation(getRemoveExcursionRecipientMutationOptions(options));
+};
+
+export const getGetExcursionRiskAssessmentUrl = (id: number) => {
+  return `/api/excursions/${id}/risk-assessment`;
+};
+
+export const getExcursionRiskAssessment = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getGetExcursionRiskAssessmentUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetExcursionRiskAssessmentQueryKey = (id: number) => {
+  return [`/api/excursions/${id}/risk-assessment`] as const;
+};
+
+export const getGetExcursionRiskAssessmentQueryOptions = <
+  TData = Awaited<ReturnType<typeof getExcursionRiskAssessment>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getExcursionRiskAssessment>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetExcursionRiskAssessmentQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getExcursionRiskAssessment>>
+  > = ({ signal }) =>
+    getExcursionRiskAssessment(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getExcursionRiskAssessment>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetExcursionRiskAssessmentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getExcursionRiskAssessment>>
+>;
+export type GetExcursionRiskAssessmentQueryError = ErrorType<unknown>;
+
+export function useGetExcursionRiskAssessment<
+  TData = Awaited<ReturnType<typeof getExcursionRiskAssessment>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getExcursionRiskAssessment>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetExcursionRiskAssessmentQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getListGuardianExcursionsUrl = () => {
+  return `/api/guardian/excursions`;
+};
+
+export const listGuardianExcursions = async (
+  options?: RequestInit,
+): Promise<GuardianExcursion[]> => {
+  return customFetch<GuardianExcursion[]>(getListGuardianExcursionsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListGuardianExcursionsQueryKey = () => {
+  return [`/api/guardian/excursions`] as const;
+};
+
+export const getListGuardianExcursionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGuardianExcursions>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGuardianExcursions>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListGuardianExcursionsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listGuardianExcursions>>
+  > = ({ signal }) => listGuardianExcursions({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listGuardianExcursions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListGuardianExcursionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listGuardianExcursions>>
+>;
+export type ListGuardianExcursionsQueryError = ErrorType<unknown>;
+
+export function useListGuardianExcursions<
+  TData = Awaited<ReturnType<typeof listGuardianExcursions>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGuardianExcursions>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListGuardianExcursionsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getGetGuardianExcursionUrl = (id: number, recipientId: number) => {
+  return `/api/guardian/excursions/${id}/recipients/${recipientId}`;
+};
+
+export const getGuardianExcursion = async (
+  id: number,
+  recipientId: number,
+  options?: RequestInit,
+): Promise<GuardianExcursion> => {
+  return customFetch<GuardianExcursion>(
+    getGetGuardianExcursionUrl(id, recipientId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetGuardianExcursionQueryKey = (
+  id: number,
+  recipientId: number,
+) => {
+  return [`/api/guardian/excursions/${id}/recipients/${recipientId}`] as const;
+};
+
+export const getGetGuardianExcursionQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGuardianExcursion>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  recipientId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getGuardianExcursion>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetGuardianExcursionQueryKey(id, recipientId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getGuardianExcursion>>
+  > = ({ signal }) =>
+    getGuardianExcursion(id, recipientId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(id && recipientId),
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getGuardianExcursion>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetGuardianExcursionQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGuardianExcursion>>
+>;
+export type GetGuardianExcursionQueryError = ErrorType<unknown>;
+
+export function useGetGuardianExcursion<
+  TData = Awaited<ReturnType<typeof getGuardianExcursion>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  recipientId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getGuardianExcursion>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGuardianExcursionQueryOptions(
+    id,
+    recipientId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getMarkGuardianExcursionViewedUrl = (
+  id: number,
+  recipientId: number,
+) => {
+  return `/api/guardian/excursions/${id}/recipients/${recipientId}/viewed`;
+};
+
+export const markGuardianExcursionViewed = async (
+  id: number,
+  recipientId: number,
+  options?: RequestInit,
+): Promise<GuardianExcursion> => {
+  return customFetch<GuardianExcursion>(
+    getMarkGuardianExcursionViewedUrl(id, recipientId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getMarkGuardianExcursionViewedMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof markGuardianExcursionViewed>>,
+    TError,
+    { id: number; recipientId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof markGuardianExcursionViewed>>,
+  TError,
+  { id: number; recipientId: number },
+  TContext
+> => {
+  const mutationKey = ["markGuardianExcursionViewed"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof markGuardianExcursionViewed>>,
+    { id: number; recipientId: number }
+  > = (props) => {
+    const { id, recipientId } = props ?? {};
+
+    return markGuardianExcursionViewed(id, recipientId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type MarkGuardianExcursionViewedMutationResult = NonNullable<
+  Awaited<ReturnType<typeof markGuardianExcursionViewed>>
+>;
+
+export type MarkGuardianExcursionViewedMutationError = ErrorType<unknown>;
+
+export const useMarkGuardianExcursionViewed = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof markGuardianExcursionViewed>>,
+    TError,
+    { id: number; recipientId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof markGuardianExcursionViewed>>,
+  TError,
+  { id: number; recipientId: number },
+  TContext
+> => {
+  return useMutation(getMarkGuardianExcursionViewedMutationOptions(options));
+};
+
+export const getAcknowledgeGuardianExcursionUrl = (
+  id: number,
+  recipientId: number,
+) => {
+  return `/api/guardian/excursions/${id}/recipients/${recipientId}/acknowledged`;
+};
+
+export const acknowledgeGuardianExcursion = async (
+  id: number,
+  recipientId: number,
+  options?: RequestInit,
+): Promise<GuardianExcursion> => {
+  return customFetch<GuardianExcursion>(
+    getAcknowledgeGuardianExcursionUrl(id, recipientId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getAcknowledgeGuardianExcursionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acknowledgeGuardianExcursion>>,
+    TError,
+    { id: number; recipientId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof acknowledgeGuardianExcursion>>,
+  TError,
+  { id: number; recipientId: number },
+  TContext
+> => {
+  const mutationKey = ["acknowledgeGuardianExcursion"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof acknowledgeGuardianExcursion>>,
+    { id: number; recipientId: number }
+  > = (props) => {
+    const { id, recipientId } = props ?? {};
+
+    return acknowledgeGuardianExcursion(id, recipientId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AcknowledgeGuardianExcursionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof acknowledgeGuardianExcursion>>
+>;
+
+export type AcknowledgeGuardianExcursionMutationError = ErrorType<unknown>;
+
+export const useAcknowledgeGuardianExcursion = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acknowledgeGuardianExcursion>>,
+    TError,
+    { id: number; recipientId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof acknowledgeGuardianExcursion>>,
+  TError,
+  { id: number; recipientId: number },
+  TContext
+> => {
+  return useMutation(getAcknowledgeGuardianExcursionMutationOptions(options));
+};
+
+export const getSubmitGuardianExcursionDecisionUrl = (
+  id: number,
+  recipientId: number,
+) => {
+  return `/api/guardian/excursions/${id}/recipients/${recipientId}/decision`;
+};
+
+export const submitGuardianExcursionDecision = async (
+  id: number,
+  recipientId: number,
+  excursionDecisionInput: ExcursionDecisionInput,
+  options?: RequestInit,
+): Promise<GuardianExcursion> => {
+  return customFetch<GuardianExcursion>(
+    getSubmitGuardianExcursionDecisionUrl(id, recipientId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(excursionDecisionInput),
+    },
+  );
+};
+
+export const getSubmitGuardianExcursionDecisionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitGuardianExcursionDecision>>,
+    TError,
+    { id: number; recipientId: number; data: BodyType<ExcursionDecisionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitGuardianExcursionDecision>>,
+  TError,
+  { id: number; recipientId: number; data: BodyType<ExcursionDecisionInput> },
+  TContext
+> => {
+  const mutationKey = ["submitGuardianExcursionDecision"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitGuardianExcursionDecision>>,
+    { id: number; recipientId: number; data: BodyType<ExcursionDecisionInput> }
+  > = (props) => {
+    const { id, recipientId, data } = props ?? {};
+
+    return submitGuardianExcursionDecision(
+      id,
+      recipientId,
+      data,
+      requestOptions,
+    );
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitGuardianExcursionDecisionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitGuardianExcursionDecision>>
+>;
+export type SubmitGuardianExcursionDecisionMutationBody =
+  BodyType<ExcursionDecisionInput>;
+export type SubmitGuardianExcursionDecisionMutationError = ErrorType<unknown>;
+
+export const useSubmitGuardianExcursionDecision = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitGuardianExcursionDecision>>,
+    TError,
+    { id: number; recipientId: number; data: BodyType<ExcursionDecisionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitGuardianExcursionDecision>>,
+  TError,
+  { id: number; recipientId: number; data: BodyType<ExcursionDecisionInput> },
+  TContext
+> => {
+  return useMutation(
+    getSubmitGuardianExcursionDecisionMutationOptions(options),
+  );
+};
+
+export const getListGuardianNotificationsUrl = () => {
+  return `/api/guardian/notifications`;
+};
+
+export const listGuardianNotifications = async (
+  options?: RequestInit,
+): Promise<GuardianNotification[]> => {
+  return customFetch<GuardianNotification[]>(
+    getListGuardianNotificationsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListGuardianNotificationsQueryKey = () => {
+  return [`/api/guardian/notifications`] as const;
+};
+
+export const getListGuardianNotificationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGuardianNotifications>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGuardianNotifications>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListGuardianNotificationsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listGuardianNotifications>>
+  > = ({ signal }) => listGuardianNotifications({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listGuardianNotifications>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListGuardianNotificationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listGuardianNotifications>>
+>;
+export type ListGuardianNotificationsQueryError = ErrorType<unknown>;
+
+export function useListGuardianNotifications<
+  TData = Awaited<ReturnType<typeof listGuardianNotifications>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGuardianNotifications>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListGuardianNotificationsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}

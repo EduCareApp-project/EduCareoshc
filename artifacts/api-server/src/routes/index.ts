@@ -53,6 +53,7 @@ import aiToolsRouter from "./ai-tools";
 import schoolsRouter from "./schools";
 import schoolReportsRouter from "./school-reports";
 import schoolReportSummariesRouter from "./school-report-summaries";
+import excursionsRouter from "./excursions";
 
 const router: IRouter = Router();
 
@@ -66,7 +67,6 @@ router.use(superAdminRouter);
 router.use("/qip/public", (req: Request, res: Response, next: NextFunction) => next());
 router.use("/service-docs/public", (req: Request, res: Response, next: NextFunction) => next());
 router.use("/email-settings/logo", (req: Request, res: Response, next: NextFunction) => next());
-router.use("/storage/objects", (req: Request, res: Response, next: NextFunction) => next());
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 router.use((req: Request, res: Response, next: NextFunction): void => {
@@ -74,7 +74,6 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
   if (
     req.path.startsWith("/qip/public") ||
     req.path.startsWith("/service-docs/public") ||
-    req.path.startsWith("/storage/objects") ||
     req.path === "/email-settings/logo" ||
     req.path === "/contact-enquiry"
   ) {
@@ -180,5 +179,6 @@ router.use(aiToolsRouter);
 router.use(schoolsRouter);
 router.use(schoolReportsRouter);
 router.use(schoolReportSummariesRouter);
+router.use(excursionsRouter);
 
 export default router;

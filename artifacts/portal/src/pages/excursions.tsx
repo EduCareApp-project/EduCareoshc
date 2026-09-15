@@ -1,20 +1,31 @@
-import { useState } from "react";
-import { 
-  Map, 
-  Plus, 
-  Upload, 
-  FileText, 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle, 
-  ChevronLeft, 
-  Filter,
+import { useState, useRef, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  MapPin,
+  Plus,
+  Upload,
+  FileText,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  ChevronLeft,
   Mail,
-  ShieldAlert
+  ShieldAlert,
+  X,
+  Building2,
+  Trash2,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -25,264 +36,553 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  useListExcursions,
+  useCreateExcursion,
+  useUpdateExcursion,
+  useGetExcursion,
+  useVerifyExcursionRecipients,
+  useAddExcursionRecipients,
+  useSendExcursion,
+  useSendExcursionReminder,
+  useRemoveExcursionRecipient,
+  useListSites,
+  getListExcursionsQueryKey,
+  getGetExcursionQueryKey,
+  useRequestExcursionRiskAssessmentUploadUrl,
+  Excursion,
+  ExcursionInput,
+} from "@workspace/api-client-react";
+import { usePermissions } from "@/hooks/use-permissions";
+import { useToast } from "@/hooks/use-toast";
 
-type GuardianRequest = {
-  id: string;
-  guardianName: string;
-  childName: string;
-  email: string;
-  isActiveAccount: boolean;
-  acknowledged: boolean;
-  permission: "pending" | "granted" | "declined";
-};
+export default function Excursions() {
+  const [selectedExcursionId, setSelectedExcursionId] = useState<number | null>(null);
+  const [editExcursionId, setEditExcursionId] = useState<number | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
-type Excursion = {
-  id: string;
-  title: string;
-  location: string;
-  date: string;
-  description: string;
-  riskAssessmentUrl: string;
-  status: "active" | "completed" | "draft";
-  guardians: GuardianRequest[];
-};
-
-const EXCURSIONS_DATA: Excursion[] = [
-  {
-    id: "exc-001",
-    title: "Local Library Storytime",
-    location: "City Library, Main Street",
-    date: "22 Sep 2026 - 10:00 AM",
-    description: "A short walk to the local library for their weekly toddler storytime and interactive reading session. Children will learn about community resources.",
-    riskAssessmentUrl: "#",
-    status: "active",
-    guardians: [
-      { id: "g-1", guardianName: "Sarah Miller", childName: "Leo Miller", email: "sarah.m@example.com", isActiveAccount: true, acknowledged: true, permission: "granted" },
-      { id: "g-2", guardianName: "David Chen", childName: "Mia Chen", email: "david.c@example.com", isActiveAccount: true, acknowledged: true, permission: "pending" },
-      { id: "g-3", guardianName: "Emma Watson", childName: "Noah Watson", email: "emma.w@example.com", isActiveAccount: false, acknowledged: false, permission: "pending" },
-      { id: "g-4", guardianName: "James Wilson", childName: "Ava Wilson", email: "james.w@example.com", isActiveAccount: true, acknowledged: true, permission: "declined" },
-    ]
-  },
-  {
-    id: "exc-002",
-    title: "Botanical Gardens Picnic",
-    location: "Royal Botanical Gardens",
-    date: "09 Oct 2026 - 11:30 AM",
-    description: "Bus trip to the botanical gardens. We will be exploring the native flora, having a picnic lunch, and doing nature rubbings.",
-    riskAssessmentUrl: "#",
-    status: "draft",
-    guardians: []
-  },
-  {
-    id: "exc-003",
-    title: "Fire Station Visit",
-    location: "Central Fire Station",
-    date: "28 Aug 2026 - 09:00 AM",
-    description: "Educational visit to the local fire station to learn about fire safety. Includes a demonstration of the fire engine.",
-    riskAssessmentUrl: "#",
-    status: "completed",
-    guardians: [
-      { id: "g-5", guardianName: "Michael Chang", childName: "Oliver Chang", email: "m.chang@example.com", isActiveAccount: true, acknowledged: true, permission: "granted" },
-      { id: "g-6", guardianName: "Jessica Lee", childName: "Sophie Lee", email: "jess.lee@example.com", isActiveAccount: true, acknowledged: true, permission: "granted" },
-    ]
+  if (editExcursionId !== null) {
+    return (
+      <ExcursionForm
+        editId={editExcursionId}
+        onBack={() => setEditExcursionId(null)}
+        onSuccess={() => {
+          setSelectedExcursionId(editExcursionId);
+          setEditExcursionId(null);
+        }}
+      />
+    );
   }
-];
 
-function ExcursionDetail({ excursion, onBack }: { excursion: Excursion, onBack: () => void }) {
+  if (selectedExcursionId !== null) {
+    return (
+      <ExcursionDetail
+        excursionId={selectedExcursionId}
+        onBack={() => setSelectedExcursionId(null)}
+        onEdit={() => {
+          setEditExcursionId(selectedExcursionId);
+          setSelectedExcursionId(null);
+        }}
+      />
+    );
+  }
+
+  if (isCreating) {
+    return (
+      <ExcursionForm
+        onBack={() => setIsCreating(false)}
+        onSuccess={(id) => {
+          setIsCreating(false);
+          setSelectedExcursionId(id);
+        }}
+      />
+    );
+  }
+
+  return (
+    <ExcursionsList
+      onSelect={setSelectedExcursionId}
+      onCreate={() => setIsCreating(true)}
+    />
+  );
+}
+
+// ── List View ─────────────────────────────────────────────────────────────
+function ExcursionsList({
+  onSelect,
+  onCreate,
+}: {
+  onSelect: (id: number) => void;
+  onCreate: () => void;
+}) {
+  const { data: excursions, isLoading } = useListExcursions();
+  const { data: sites } = useListSites();
+  const { isFullAccess, ownSiteId } = usePermissions();
+
+  const [siteFilter, setSiteFilter] = useState<string>("all");
+
+  const filteredExcursions = (excursions ?? [])
+    .filter((e) => {
+      if (!isFullAccess && ownSiteId && e.siteId !== ownSiteId) return false;
+      if (siteFilter !== "all" && e.siteId !== parseInt(siteFilter))
+        return false;
+      return true;
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.excursionDate).getTime() -
+        new Date(a.excursionDate).getTime(),
+    );
+
+  return (
+    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-300">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1
+            className="text-3xl font-bold tracking-tight text-foreground"
+            data-testid="text-page-title"
+          >
+            Excursions
+          </h1>
+          <p
+            className="text-muted-foreground mt-1 text-sm sm:text-base"
+            data-testid="text-page-subtitle"
+          >
+            Plan outings, attach risk assessments, and manage guardian
+            permissions.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          {isFullAccess && sites && sites.length > 0 && (
+            <Select value={siteFilter} onValueChange={setSiteFilter}>
+              <SelectTrigger className="w-[180px]">
+                <Building2 className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="All Sites" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sites</SelectItem>
+                {sites.map((s) => (
+                  <SelectItem key={s.id} value={s.id.toString()}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Button data-testid="button-add-excursion" onClick={onCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            Plan Excursion
+          </Button>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : filteredExcursions.length === 0 ? (
+        <Card>
+          <CardContent className="py-16 text-center text-muted-foreground flex flex-col items-center gap-2">
+            <MapPin className="h-10 w-10 mb-2 text-muted-foreground/50" />
+            <p className="font-medium text-foreground">No excursions found</p>
+            <p className="text-sm">
+              Click Plan Excursion to create your first one.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {filteredExcursions.map((exc) => (
+            <Card
+              key={exc.id}
+              className="cursor-pointer group hover:border-primary/40 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col"
+              onClick={() => onSelect(exc.id)}
+              data-testid={`card-excursion-${exc.id}`}
+            >
+              <CardHeader className="pb-3 bg-muted/10 border-b">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex items-center gap-3">
+                    {exc.status === "sent" && (
+                      <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white">
+                        Sent
+                      </Badge>
+                    )}
+                    {exc.status === "completed" && (
+                      <Badge variant="secondary">Completed</Badge>
+                    )}
+                    {exc.status === "draft" && (
+                      <Badge variant="outline">Draft</Badge>
+                    )}
+
+                    <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5" />
+                      {new Date(exc.excursionDate).toLocaleDateString("en-AU")}
+                    </span>
+                    {isFullAccess && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1.5 border-l pl-3">
+                        <Building2 className="h-3.5 w-3.5" />
+                        {(sites ?? []).find((s) => s.id === exc.siteId)?.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                  {exc.heading}
+                </CardTitle>
+                <CardDescription className="line-clamp-2 mt-1 text-sm leading-relaxed">
+                  {exc.venue} • {exc.description}
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Detail View ─────────────────────────────────────────────────────────────
+function ExcursionDetail({
+  excursionId,
+  onBack,
+  onEdit,
+}: {
+  excursionId: number;
+  onBack: () => void;
+  onEdit: () => void;
+}) {
+  const { data: detail, isLoading } = useGetExcursion(excursionId, {
+    query: {
+      refetchInterval: 15000,
+      queryKey: getGetExcursionQueryKey(excursionId),
+    },
+  });
   const [filter, setFilter] = useState("all");
-  
-  const filteredGuardians = excursion.guardians.filter(g => filter === "all" || g.permission === filter);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const sendReminder = useSendExcursionReminder();
+  const sendMut = useSendExcursion();
+  const removeMut = useRemoveExcursionRecipient();
 
-  const getStatusBadge = (status: Excursion["status"]) => {
-    switch(status) {
-      case "active": return <Badge className="bg-emerald-500 hover:bg-emerald-600">Active</Badge>;
-      case "completed": return <Badge variant="secondary">Completed</Badge>;
-      case "draft": return <Badge variant="outline">Draft</Badge>;
+  if (isLoading) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <Skeleton className="h-10 w-32" />
+        <Skeleton className="h-64" />
+      </div>
+    );
+  }
+
+  if (!detail) return null;
+
+  const filteredGuardians = detail.recipients.filter(
+    (g) =>
+      filter === "all" ||
+      (filter === "pending" ? !g.decision : g.decision === filter),
+  );
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "sent":
+        return (
+          <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white">
+            Sent
+          </Badge>
+        );
+      case "completed":
+        return <Badge variant="secondary">Completed</Badge>;
+      case "draft":
+        return <Badge variant="outline">Draft</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
     }
+  };
+
+  const handleRemind = () => {
+    sendReminder.mutate(
+      { id: excursionId },
+      {
+        onSuccess: () => toast({ title: "Reminders sent successfully" }),
+        onError: (e) =>
+          toast({
+            title: "Failed to send reminders",
+            description: e.message,
+            variant: "destructive",
+          }),
+      },
+    );
+  };
+
+  const handleSendDraft = () => {
+    sendMut.mutate(
+      { id: excursionId, data: undefined as any },
+      {
+        onSuccess: () => {
+          toast({ title: "Excursion sent successfully" });
+          queryClient.invalidateQueries({
+            queryKey: getGetExcursionQueryKey(excursionId),
+          });
+        },
+        onError: (e) =>
+          toast({
+            title: "Failed to send excursion",
+            description: e.message,
+            variant: "destructive",
+          }),
+      }
+    );
+  };
+
+  const handleRemoveRecipient = (recipientId: number) => {
+    if (!confirm("Remove this recipient?")) return;
+    removeMut.mutate(
+      { id: excursionId, recipientId },
+      {
+        onSuccess: () => {
+          toast({ title: "Recipient removed" });
+          queryClient.invalidateQueries({
+            queryKey: getGetExcursionQueryKey(excursionId),
+          });
+        },
+      }
+    );
   };
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        onClick={onBack} 
-        className="-ml-3 text-muted-foreground hover:text-foreground" 
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onBack}
+        className="-ml-3 text-muted-foreground hover:text-foreground"
         data-testid="button-back-excursions"
       >
-        <ChevronLeft className="h-4 w-4 mr-1" />
-        Back to Excursions
+        <ChevronLeft className="h-4 w-4 mr-1" /> Back to Excursions
       </Button>
 
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            {getStatusBadge(excursion.status)}
+            {getStatusBadge(detail.status)}
           </div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground" data-testid={`text-excursion-title-${excursion.id}`}>
-            {excursion.title}
+          <h2
+            className="text-3xl font-bold tracking-tight text-foreground"
+            data-testid={`text-excursion-title-${detail.id}`}
+          >
+            {detail.heading}
           </h2>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5"><Map className="h-4 w-4" /> {excursion.location}</span>
+            <span className="flex items-center gap-1.5">
+              <MapPin className="h-4 w-4" /> {detail.venue}
+            </span>
             <span className="hidden sm:inline">&bull;</span>
-            <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {excursion.date}</span>
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-4 w-4" />{" "}
+              {new Date(detail.excursionDate).toLocaleDateString("en-AU")}
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-           <Button variant="outline" data-testid="button-view-risk-assessment">
-             <ShieldAlert className="h-4 w-4 mr-2 text-amber-500" />
-             Risk Assessment
-           </Button>
-           <Button data-testid="button-edit-excursion">Edit Excursion</Button>
+          {detail.status === "draft" && (
+            <>
+              <Button variant="outline" onClick={onEdit}>
+                Edit Draft
+              </Button>
+              <Button onClick={handleSendDraft} disabled={sendMut.isPending}>
+                {sendMut.isPending ? "Sending..." : "Send Excursion"}
+              </Button>
+            </>
+          )}
+          {detail.riskAssessmentPath && (
+            <Button
+              variant="outline"
+              asChild
+              data-testid="button-view-risk-assessment"
+            >
+              <a
+                href={`/api/excursions/${detail.id}/risk-assessment`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ShieldAlert className="h-4 w-4 mr-2 text-amber-500" /> Risk
+                Assessment
+              </a>
+            </Button>
+          )}
         </div>
       </div>
 
-      <div className="p-4 rounded-lg bg-muted/30 border border-muted/50">
-        <p className="text-foreground leading-relaxed" data-testid="text-excursion-description">
-          {excursion.description}
+      <div className="p-4 rounded-lg bg-muted/30 border border-muted/50 whitespace-pre-wrap">
+        <p
+          className="text-foreground leading-relaxed text-sm"
+          data-testid="text-excursion-description"
+        >
+          {detail.description}
         </p>
       </div>
 
       <div className="pt-2">
         <Tabs defaultValue="permissions" className="w-full">
           <TabsList className="mb-4">
-            <TabsTrigger value="permissions" data-testid="tab-permissions">Guardian Permissions</TabsTrigger>
-            <TabsTrigger value="details" data-testid="tab-details">Requirements & Logistics</TabsTrigger>
+            <TabsTrigger value="permissions" data-testid="tab-permissions">
+              Guardian Permissions
+            </TabsTrigger>
+            <TabsTrigger value="details" data-testid="tab-details">
+              Logistics & Details
+            </TabsTrigger>
+            <TabsTrigger value="activity">Activity Log</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="permissions" className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-               <div className="flex flex-wrap items-center gap-2">
-                 <Input 
-                   placeholder="Search guardians or children..." 
-                   className="w-full sm:w-[280px]" 
-                   data-testid="input-search-guardians" 
-                 />
-                 <div className="flex gap-2">
-                   <Button 
-                     variant={filter === "all" ? "secondary" : "ghost"} 
-                     size="sm" 
-                     onClick={() => setFilter("all")}
-                     className="h-9"
-                   >
-                     All
-                   </Button>
-                   <Button 
-                     variant={filter === "pending" ? "secondary" : "ghost"} 
-                     size="sm" 
-                     onClick={() => setFilter("pending")}
-                     className="h-9"
-                   >
-                     Waiting
-                   </Button>
-                   <Button 
-                      variant={filter === "granted" ? "secondary" : "ghost"} 
-                     size="sm" 
-                      onClick={() => setFilter("granted")}
-                     className="h-9"
-                   >
-                     Granted
-                   </Button>
-                 </div>
-               </div>
-               
-               <Dialog>
-                 <DialogTrigger asChild>
-                   <Button variant="outline" data-testid="button-upload-emails" className="shrink-0 bg-white dark:bg-transparent">
-                     <Upload className="h-4 w-4 mr-2" />
-                      Import Guardian Emails
-                   </Button>
-                 </DialogTrigger>
-                 <DialogContent>
-                   <DialogHeader>
-                     <DialogTitle>Upload Guardian List</DialogTitle>
-                     <DialogDescription>
-                        Upload a CSV file containing guardian emails, then check which addresses belong to active guardian accounts.
-                     </DialogDescription>
-                   </DialogHeader>
-                   <div className="border-2 border-dashed border-muted-foreground/25 rounded-xl p-10 flex flex-col items-center justify-center text-center space-y-4 mt-2 bg-muted/10 transition-colors hover:bg-muted/20">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                        <Upload className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm">Click to upload or drag and drop</p>
-                        <p className="text-xs text-muted-foreground mt-1">CSV or Excel files only, up to 5MB</p>
-                      </div>
-                   </div>
-                   <DialogFooter className="mt-4">
-                     <Button variant="outline" type="button">Cancel</Button>
-                      <Button type="button" data-testid="button-confirm-upload">Check Active Guardians</Button>
-                   </DialogFooter>
-                 </DialogContent>
-               </Dialog>
+              <div className="flex gap-2">
+                <Button
+                  variant={filter === "all" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setFilter("all")}
+                  className="h-9"
+                >
+                  All
+                </Button>
+                <Button
+                  variant={filter === "pending" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setFilter("pending")}
+                  className="h-9"
+                >
+                  Waiting
+                </Button>
+                <Button
+                  variant={filter === "granted" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setFilter("granted")}
+                  className="h-9"
+                >
+                  Granted
+                </Button>
+              </div>
+
+              <div className="flex gap-2">
+                {detail.status === "sent" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRemind()}
+                    disabled={sendReminder.isPending}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    {sendReminder.isPending ? "Sending..." : "Remind Pending"}
+                  </Button>
+                )}
+                {detail.status !== "completed" && (
+                  <AddRecipientsDialog
+                    excursionId={detail.id}
+                    siteId={detail.siteId}
+                  />
+                )}
+              </div>
             </div>
 
             <Card className="overflow-hidden">
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow>
-                    <TableHead>Guardian</TableHead>
+                    <TableHead>Guardian Email</TableHead>
                     <TableHead>Child</TableHead>
-                    <TableHead>Account Status</TableHead>
-                     <TableHead>Acknowledged</TableHead>
-                     <TableHead>Permission</TableHead>
+                    <TableHead>Viewed / Acknowledged</TableHead>
+                    <TableHead>Permission</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredGuardians.length === 0 ? (
                     <TableRow>
-                       <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                        No guardians found matching the criteria.
+                      <TableCell
+                        colSpan={5}
+                        className="h-32 text-center text-muted-foreground"
+                      >
+                        No recipients match this filter.
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredGuardians.map((g) => (
-                      <TableRow key={g.id} data-testid={`row-guardian-${g.id}`} className="hover:bg-muted/30">
+                      <TableRow key={g.id} className="hover:bg-muted/30">
                         <TableCell>
-                          <div className="font-medium">{g.guardianName}</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">{g.email}</div>
+                          <div className="font-medium text-sm">
+                            {g.guardianNameSnapshot || "Guardian"}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {g.guardianEmail}
+                          </div>
                         </TableCell>
-                        <TableCell className="font-medium text-muted-foreground">{g.childName}</TableCell>
+                        <TableCell className="font-medium text-muted-foreground text-sm">
+                          {g.childNameSnapshot}
+                        </TableCell>
                         <TableCell>
-                          {g.isActiveAccount ? (
-                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800 font-normal">
-                              Active Account
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800 font-normal flex w-fit items-center gap-1">
-                               <AlertCircle className="h-3 w-3" /> Unregistered
+                          <div className="text-xs text-muted-foreground space-y-1">
+                            {g.viewedAt ? (
+                              <div>
+                                Viewed:{" "}
+                                {new Date(g.viewedAt).toLocaleDateString()}
+                              </div>
+                            ) : (
+                              <div>Not viewed</div>
+                            )}
+                            {g.acknowledgedAt && (
+                              <div>
+                                Ack'd:{" "}
+                                {new Date(
+                                  g.acknowledgedAt,
+                                ).toLocaleDateString()}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {g.decision === "granted" && (
+                            <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white">
+                              Granted
                             </Badge>
                           )}
-                        </TableCell>
-                        <TableCell>
-                          {g.acknowledged ? (
-                            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                              <CheckCircle2 className="h-4 w-4" /> Yes
-                            </span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">Not yet</span>
+                          {g.decision === "declined" && (
+                            <Badge variant="destructive">Declined</Badge>
                           )}
-                        </TableCell>
-                        <TableCell>
-                          {g.permission === "granted" && <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white border-transparent">Granted</Badge>}
-                          {g.permission === "declined" && <Badge variant="destructive">Declined</Badge>}
-                          {g.permission === "pending" && <Badge variant="secondary" className="text-muted-foreground font-normal">Waiting</Badge>}
+                          {!g.decision && (
+                            <Badge
+                              variant="secondary"
+                              className="text-muted-foreground font-normal"
+                            >
+                              Waiting
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Send Reminder" data-testid={`button-remind-${g.id}`}>
-                            <Mail className="h-4 w-4" />
-                            <span className="sr-only">Send Reminder</span>
-                          </Button>
+                          {detail.status === "draft" && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" title="Remove Recipient" onClick={() => handleRemoveRecipient(g.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))
@@ -291,15 +591,100 @@ function ExcursionDetail({ excursion, onBack }: { excursion: Excursion, onBack: 
               </Table>
             </Card>
           </TabsContent>
+
           <TabsContent value="details">
             <Card>
+              <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8 text-sm">
+                <div className="space-y-1">
+                  <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                    <Clock className="h-4 w-4" /> Departure
+                  </span>
+                  <p>{detail.departureTime}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-muted-foreground font-medium flex items-center gap-1.5">
+                    <Clock className="h-4 w-4" /> Return
+                  </span>
+                  <p>{detail.arrivalTime}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-muted-foreground font-medium">
+                    Cost
+                  </span>
+                  <p>{detail.cost}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-muted-foreground font-medium">
+                    Transport
+                  </span>
+                  <p>{detail.transportMethod}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-muted-foreground font-medium">
+                    Restraints
+                  </span>
+                  <p>{detail.restraintsFitted}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-muted-foreground font-medium">
+                    Ratio
+                  </span>
+                  <p>{detail.childToStaffRatio}</p>
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <span className="text-muted-foreground font-medium">
+                    Staff Attending
+                  </span>
+                  <p>{detail.staffAttending}</p>
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <span className="text-muted-foreground font-medium">
+                    Items to Bring
+                  </span>
+                  <p>{detail.itemsToBring}</p>
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <span className="text-muted-foreground font-medium">
+                    Purpose
+                  </span>
+                  <p>{detail.purpose}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <Card>
               <CardContent className="pt-6">
-                <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground space-y-3">
-                  <FileText className="h-10 w-10 opacity-20" />
-                  <div>
-                    <p className="font-medium text-foreground">No extra details provided</p>
-                    <p className="text-sm mt-1">Additional logistics, transport details, and educator assignments will appear here.</p>
-                  </div>
+                <div className="space-y-4">
+                  {detail.logs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="flex gap-4 items-start text-sm"
+                    >
+                      <div className="w-32 shrink-0 text-muted-foreground text-xs pt-0.5">
+                        {new Date(log.createdAt).toLocaleString("en-AU", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                      <div>
+                        <span className="font-medium">{log.event}</span>
+                        {log.guardianEmail && (
+                          <span className="text-muted-foreground ml-2">
+                            ({log.guardianEmail})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {detail.logs.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No activity recorded yet.
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -310,67 +695,687 @@ function ExcursionDetail({ excursion, onBack }: { excursion: Excursion, onBack: 
   );
 }
 
-export default function Excursions() {
-  const [selectedExcursion, setSelectedExcursion] = useState<Excursion | null>(null);
+// ── Add Recipients Dialog ───────────────────────────────────────────────────
+function AddRecipientsDialog({
+  excursionId,
+  siteId,
+}: {
+  excursionId: number;
+  siteId: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const [emailsRaw, setEmailsRaw] = useState("");
+  const [verifiedList, setVerifiedList] = useState<any[]>([]);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  if (selectedExcursion) {
-    return <ExcursionDetail excursion={selectedExcursion} onBack={() => setSelectedExcursion(null)} />;
-  }
+  const verifyMut = useVerifyExcursionRecipients();
+  const addMut = useAddExcursionRecipients();
+
+  const handleVerify = () => {
+    const emails = emailsRaw
+      .split("\n")
+      .map((e) => e.trim())
+      .filter(Boolean);
+    if (emails.length === 0) return;
+    verifyMut.mutate(
+      { data: { siteId, emails } },
+      {
+        onSuccess: (data) => setVerifiedList(data),
+      },
+    );
+  };
+
+  const handleRemove = (email: string) => {
+    setVerifiedList((prev) => prev.filter((v) => v.email !== email));
+  };
+
+  const handleAdd = () => {
+    const validEmails = verifiedList.filter((v) => v.valid).map((v) => v.email);
+    if (validEmails.length === 0) return;
+    addMut.mutate(
+      { id: excursionId, data: { recipientEmails: validEmails } },
+      {
+        onSuccess: () => {
+          toast({ title: "Recipients added" });
+          queryClient.invalidateQueries({
+            queryKey: getGetExcursionQueryKey(excursionId),
+          });
+          setOpen(false);
+          setEmailsRaw("");
+          setVerifiedList([]);
+        },
+        onError: (e) =>
+          toast({
+            title: "Failed to add",
+            description: e.message,
+            variant: "destructive",
+          }),
+      },
+    );
+  };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-300">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground" data-testid="text-page-title">Excursions</h1>
-          <p className="text-muted-foreground mt-1 text-sm sm:text-base" data-testid="text-page-subtitle">
-            Plan outings, attach risk assessments, and manage guardian permissions.
-          </p>
-        </div>
-        <Button data-testid="button-add-excursion" className="shrink-0">
-          <Plus className="h-4 w-4 mr-2" />
-          Plan Excursion
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          className="shrink-0 bg-white dark:bg-transparent"
+        >
+          <Mail className="h-4 w-4 mr-2" /> Add Recipients
         </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Add Recipients</DialogTitle>
+          <DialogDescription>
+            Paste emails one per line, then verify them against the site's
+            guardians.
+          </DialogDescription>
+        </DialogHeader>
+
+        {verifiedList.length === 0 ? (
+          <div className="space-y-4">
+            <Textarea
+              placeholder="guardian@example.com&#10;another@example.com"
+              value={emailsRaw}
+              onChange={(e) => setEmailsRaw(e.target.value)}
+              className="h-40"
+            />
+            <Button
+              onClick={handleVerify}
+              disabled={verifyMut.isPending || !emailsRaw.trim()}
+            >
+              {verifyMut.isPending ? "Verifying..." : "Verify Emails"}
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+            <div className="space-y-2">
+              {verifiedList.map((v, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center justify-between p-3 rounded-lg border text-sm ${v.valid ? "bg-emerald-50/50 border-emerald-200" : "bg-red-50/50 border-red-200"}`}
+                >
+                  <div>
+                    <div className="font-medium flex items-center gap-2">
+                      {v.email}
+                      {v.valid ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4 text-red-500" />
+                      )}
+                    </div>
+                    {v.valid ? (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {v.guardianName} • Children:{" "}
+                        {v.children.map((c: any) => c.childName).join(", ")}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-red-600 mt-1">
+                        Email not found for this site
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                    onClick={() => handleRemove(v.email)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2 justify-end pt-4 border-t">
+              <Button variant="outline" onClick={() => setVerifiedList([])}>
+                Back to Edit
+              </Button>
+              <Button
+                onClick={handleAdd}
+                disabled={
+                  addMut.isPending || !verifiedList.some((v) => v.valid)
+                }
+              >
+                Add {verifiedList.filter((v) => v.valid).length} Valid
+                Recipients
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Create Form ────────────────────────────────────────────────────────────
+function ExcursionForm({
+  editId,
+  onBack,
+  onSuccess,
+}: {
+  editId?: number;
+  onBack: () => void;
+  onSuccess: (id: number) => void;
+}) {
+  const { data: sites } = useListSites();
+  const { isFullAccess, ownSiteId } = usePermissions();
+  const { toast } = useToast();
+  const [isUploadingRiskAssessment, setIsUploadingRiskAssessment] = useState(false);
+  const requestUploadMut = useRequestExcursionRiskAssessmentUploadUrl();
+  const queryClient = useQueryClient();
+
+  const { data: editData } = useGetExcursion(editId as number, { query: { enabled: !!editId, queryKey: getGetExcursionQueryKey(editId as number) }});
+
+  const createMut = useCreateExcursion();
+  const updateMut = useUpdateExcursion();
+  const sendMut = useSendExcursion();
+  const verifyMut = useVerifyExcursionRecipients();
+
+  const [formData, setFormData] = useState<Partial<ExcursionInput>>({
+    siteId: !isFullAccess && ownSiteId ? ownSiteId : undefined,
+    excursionDate: new Date().toISOString().split("T")[0],
+    heading: "",
+    description: "",
+    venue: "",
+    purpose: "",
+    cost: "Free",
+    departureTime: "09:00 AM",
+    arrivalTime: "02:00 PM",
+    transportMethod: "Walking",
+    restraintsFitted: "N/A",
+    childToStaffRatio: "1:8",
+    staffAttending: "",
+    itemsToBring: "Hat, drink bottle, sensible shoes",
+    medicalAuthorisationText:
+      "In the event of an emergency, illness, or accident concerning my child, and if the nominated contact people cannot be reached, I authorise the educator/person in charge to consent to my child receiving medical, dental, or surgical treatment as deemed necessary by a medical practitioner or hospital.",
+  });
+
+  // Only init once
+  const initialized = useRef(false);
+  useEffect(() => {
+    if (editData && !initialized.current) {
+      initialized.current = true;
+      setFormData({
+        siteId: editData.siteId,
+        excursionDate: new Date(editData.excursionDate).toISOString().split("T")[0],
+        heading: editData.heading,
+        description: editData.description,
+        venue: editData.venue,
+        purpose: editData.purpose,
+        cost: editData.cost,
+        departureTime: editData.departureTime,
+        arrivalTime: editData.arrivalTime,
+        transportMethod: editData.transportMethod,
+        restraintsFitted: editData.restraintsFitted,
+        childToStaffRatio: editData.childToStaffRatio,
+        staffAttending: editData.staffAttending,
+        itemsToBring: editData.itemsToBring,
+        medicalAuthorisationText: editData.medicalAuthorisationText,
+        riskAssessmentPath: editData.riskAssessmentPath || undefined,
+        riskAssessmentName: editData.riskAssessmentName || undefined,
+      });
+    }
+  }, [editData]);
+
+  const [riskFile, setRiskFile] = useState<File | null>(null);
+  const [emailsRaw, setEmailsRaw] = useState("");
+  const [verifiedList, setVerifiedList] = useState<any[]>([]);
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  const handleVerify = () => {
+    if (!formData.siteId) {
+      toast({ title: "Please select a site first", variant: "destructive" });
+      return;
+    }
+    const emails = emailsRaw
+      .split("\n")
+      .map((e) => e.trim())
+      .filter(Boolean);
+    if (emails.length === 0) return;
+    setIsVerifying(true);
+    verifyMut.mutate(
+      { data: { siteId: formData.siteId, emails } },
+      {
+        onSuccess: (data) => setVerifiedList(data),
+        onSettled: () => setIsVerifying(false),
+      },
+    );
+  };
+
+  const handleRemoveVerified = (email: string) => {
+    setVerifiedList((prev) => prev.filter((v) => v.email !== email));
+  };
+
+  const handleSave = async (sendNow: boolean) => {
+    if (
+      !formData.siteId ||
+      !formData.heading ||
+      !formData.excursionDate ||
+      !formData.venue
+    ) {
+      toast({
+        title: "Missing required fields",
+        description: "Site, Heading, Date, and Venue are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if there are any invalid emails remaining in verifiedList
+    if (verifiedList.length > 0 && verifiedList.some((v) => !v.valid)) {
+      toast({
+        title: "Invalid recipients",
+        description: "Please remove invalid email addresses before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    let riskPath = formData.riskAssessmentPath;
+    let riskName = formData.riskAssessmentName;
+
+    if (riskFile) {
+      if (!formData.siteId) {
+        toast({ title: "Site required for upload", variant: "destructive" });
+        return;
+      }
+      setIsUploadingRiskAssessment(true);
+      try {
+        const uploadRes = await requestUploadMut.mutateAsync({
+          data: {
+            siteId: formData.siteId,
+            name: riskFile.name,
+            size: riskFile.size,
+            contentType: "application/pdf",
+          }
+        });
+        const putRes = await fetch(uploadRes.uploadURL, {
+          method: "PUT",
+          body: riskFile,
+          headers: { "Content-Type": riskFile.type || "application/pdf" },
+        });
+        if (!putRes.ok) throw new Error("PUT failed");
+        riskPath = uploadRes.objectPath;
+        riskName = riskFile.name;
+      } catch (err) {
+        toast({ title: "Risk assessment upload failed", variant: "destructive" });
+        setIsUploadingRiskAssessment(false);
+        return;
+      }
+      setIsUploadingRiskAssessment(false);
+    }
+
+    const payload: ExcursionInput = {
+      ...(formData as ExcursionInput),
+      riskAssessmentPath: riskPath,
+      riskAssessmentName: riskName,
+      recipientEmails: verifiedList.filter((v) => v.valid).map((v) => v.email),
+    };
+
+    const handleSaveSuccess = (targetId: number) => {
+      if (sendNow) {
+        sendMut.mutate(
+          {
+            id: targetId,
+            data: undefined as any,
+          },
+          {
+            onSuccess: () => {
+              toast({ title: "Excursion sent successfully" });
+              queryClient.invalidateQueries({ queryKey: getGetExcursionQueryKey(targetId) });
+              onSuccess(targetId);
+            },
+          },
+        );
+      } else {
+        toast({ title: "Excursion draft saved" });
+        queryClient.invalidateQueries({ queryKey: getGetExcursionQueryKey(targetId) });
+        onSuccess(targetId);
+      }
+    };
+
+    if (editId) {
+      updateMut.mutate(
+        { id: editId, data: payload },
+        {
+          onSuccess: () => handleSaveSuccess(editId),
+          onError: (e) =>
+            toast({
+              title: "Failed to update",
+              description: e.message,
+              variant: "destructive",
+            }),
+        }
+      );
+    } else {
+      createMut.mutate(
+        { data: payload },
+        {
+          onSuccess: (created) => handleSaveSuccess(created.id),
+          onError: (e) =>
+            toast({
+              title: "Failed to create",
+              description: e.message,
+              variant: "destructive",
+            }),
+        },
+      );
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onBack}
+          className="text-muted-foreground"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold text-foreground">{editId ? "Edit Excursion" : "Plan Excursion"}</h1>
       </div>
-      
-      <div className="grid gap-4 md:grid-cols-2">
-        {EXCURSIONS_DATA.map(exc => (
-           <Card 
-             key={exc.id} 
-             className="cursor-pointer group hover:border-primary/40 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col" 
-             onClick={() => setSelectedExcursion(exc)} 
-             data-testid={`card-excursion-${exc.id}`}
-           >
-             <CardHeader className="pb-3 bg-muted/20">
-               <div className="flex justify-between items-start mb-3">
-                 {exc.status === "active" && <Badge className="bg-emerald-500 text-white">Active</Badge>}
-                 {exc.status === "completed" && <Badge variant="secondary">Completed</Badge>}
-                 {exc.status === "draft" && <Badge variant="outline">Draft</Badge>}
-                 
-                 <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                   <Clock className="h-3.5 w-3.5" />
-                   {exc.date.split(" - ")[0]}
-                 </span>
-               </div>
-               <CardTitle className="text-xl group-hover:text-primary transition-colors">{exc.title}</CardTitle>
-               <CardDescription className="line-clamp-2 mt-1 text-sm leading-relaxed">
-                 {exc.description}
-               </CardDescription>
-             </CardHeader>
-             <CardContent className="pt-4 flex-1 flex flex-col justify-end">
-               <div className="flex items-center gap-5 text-sm">
-                 <div className="flex items-center gap-1.5 font-medium text-foreground">
-                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    <span>{exc.guardians.filter(g => g.permission === 'granted').length} Approved</span>
-                 </div>
-                 <div className="flex items-center gap-1.5 font-medium text-muted-foreground">
-                   <Clock className="h-4 w-4 text-amber-500" />
-                    <span>{exc.guardians.filter(g => g.permission === 'pending').length} Pending</span>
-                 </div>
-               </div>
-             </CardContent>
-           </Card>
-        ))}
-      </div>
+
+      <Card>
+        <CardContent className="pt-6 space-y-6 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {isFullAccess && (
+              <div className="space-y-1.5 md:col-span-2">
+                <Label>
+                  Site <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={formData.siteId?.toString() ?? ""}
+                  onValueChange={(v) => {
+                    setFormData({ ...formData, siteId: parseInt(v), riskAssessmentPath: undefined, riskAssessmentName: undefined });
+                    setRiskFile(null);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select site" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(sites ?? []).map((s) => (
+                      <SelectItem key={s.id} value={s.id.toString()}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>
+                Heading <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                value={formData.heading}
+                onChange={(e) =>
+                  setFormData({ ...formData, heading: e.target.value })
+                }
+                placeholder="e.g. Local Library Storytime"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>
+                Date <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                type="date"
+                value={formData.excursionDate}
+                onChange={(e) =>
+                  setFormData({ ...formData, excursionDate: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>
+                Venue <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                value={formData.venue}
+                onChange={(e) =>
+                  setFormData({ ...formData, venue: e.target.value })
+                }
+                placeholder="e.g. City Library"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Departure Time</Label>
+              <Input
+                value={formData.departureTime}
+                onChange={(e) =>
+                  setFormData({ ...formData, departureTime: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Return Time</Label>
+              <Input
+                value={formData.arrivalTime}
+                onChange={(e) =>
+                  setFormData({ ...formData, arrivalTime: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>Description of Activities</Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                className="h-24"
+              />
+            </div>
+
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>Educational Purpose</Label>
+              <Input
+                value={formData.purpose}
+                onChange={(e) =>
+                  setFormData({ ...formData, purpose: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>Risk Assessment PDF</Label>
+              <div className="flex flex-col gap-2">
+                <Input
+                  type="file"
+                  accept=".pdf"
+                  disabled={!formData.siteId}
+                  onChange={(e) => setRiskFile(e.target.files?.[0] || null)}
+                />
+                {!formData.siteId && (
+                  <p className="text-xs text-muted-foreground">Please select a site first.</p>
+                )}
+                {formData.siteId && formData.riskAssessmentName && !riskFile && (
+                  <p className="text-xs text-muted-foreground">Current: {formData.riskAssessmentName}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+          <h3 className="font-semibold text-base">Logistics</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Cost</Label>
+              <Input
+                value={formData.cost}
+                onChange={(e) =>
+                  setFormData({ ...formData, cost: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Transport Method</Label>
+              <Input
+                value={formData.transportMethod}
+                onChange={(e) =>
+                  setFormData({ ...formData, transportMethod: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Restraints Fitted?</Label>
+              <Input
+                value={formData.restraintsFitted}
+                onChange={(e) =>
+                  setFormData({ ...formData, restraintsFitted: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Child to Staff Ratio</Label>
+              <Input
+                value={formData.childToStaffRatio}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    childToStaffRatio: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>Staff Attending</Label>
+              <Input
+                value={formData.staffAttending}
+                onChange={(e) =>
+                  setFormData({ ...formData, staffAttending: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>Items to Bring</Label>
+              <Input
+                value={formData.itemsToBring}
+                onChange={(e) =>
+                  setFormData({ ...formData, itemsToBring: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>Medical Authorisation Clause</Label>
+              <Textarea
+                value={formData.medicalAuthorisationText}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    medicalAuthorisationText: e.target.value,
+                  })
+                }
+                className="h-20"
+              />
+            </div>
+          </div>
+
+          <Separator />
+          <h3 className="font-semibold text-base">Recipients (Optional)</h3>
+
+          {verifiedList.length === 0 ? (
+            <div className="space-y-3">
+              <Label>Paste guardian emails (one per line)</Label>
+              <Textarea
+                value={emailsRaw}
+                onChange={(e) => setEmailsRaw(e.target.value)}
+                placeholder="guardian@example.com&#10;another@example.com"
+                className="h-32"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleVerify}
+                disabled={isVerifying || !emailsRaw.trim()}
+              >
+                {isVerifying ? "Verifying..." : "Verify Emails"}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <Label>Verified Recipients</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setVerifiedList([])}
+                  className="h-8"
+                >
+                  Reset List
+                </Button>
+              </div>
+              <div className="space-y-2 border rounded-md p-2 max-h-[300px] overflow-y-auto">
+                {verifiedList.map((v, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-center justify-between p-2 rounded text-sm ${v.valid ? "bg-emerald-50 border border-emerald-100" : "bg-red-50 border border-red-100"}`}
+                  >
+                    <div>
+                      <span className="font-medium">{v.email}</span>
+                      {v.valid ? (
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {v.guardianName} ({v.children.length} children)
+                        </div>
+                      ) : (
+                        <div className="text-xs text-red-600 mt-0.5">
+                          Not found at selected site
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => handleRemoveVerified(v.email)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3 justify-end pt-6">
+            <Button type="button" variant="outline" onClick={onBack}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => handleSave(false)}
+              disabled={createMut.isPending || updateMut.isPending || isUploadingRiskAssessment}
+            >
+              Save Draft
+            </Button>
+            <Button
+              type="button"
+              onClick={() => handleSave(true)}
+              disabled={createMut.isPending || updateMut.isPending || isUploadingRiskAssessment}
+            >
+              {createMut.isPending || updateMut.isPending || isUploadingRiskAssessment
+                ? "Saving..."
+                : "Save & Send Now"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -6,6 +6,8 @@ import {
 } from "@workspace/api-zod";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { ObjectPermission } from "../lib/objectAcl";
+import { db, excursionsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -85,10 +87,34 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
  * be protected with authentication or ACL checks based on the use case.
  */
 router.get("/storage/objects/*path", async (req: Request, res: Response) => {
+  if (!req.session.user || req.session.user.type === "guardian") {
+    res.status(req.session.user ? 403 : 401).json({ error: "Private objects require staff access" });
+    return;
+  }
   try {
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
     const objectPath = `/objects/${wildcardPath}`;
+
+    if (wildcardPath.startsWith("excursions/")) {
+      res.status(403).json({
+        error: "Excursion risk assessments must be accessed through the excursion form",
+      });
+      return;
+    }
+
+    const [excursionDocument] = await db
+      .select({ id: excursionsTable.id })
+      .from(excursionsTable)
+      .where(eq(excursionsTable.riskAssessmentPath, objectPath))
+      .limit(1);
+    if (excursionDocument) {
+      res.status(403).json({
+        error: "Excursion risk assessments must be accessed through the excursion form",
+      });
+      return;
+    }
+
     const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
 
     // --- Protected route example (uncomment when using replit-auth) ---

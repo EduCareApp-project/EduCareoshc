@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/auth";
 import { useLocation } from "wouter";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useListGuardianNotifications, getListGuardianNotificationsQueryKey } from "@workspace/api-client-react";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home", icon: Home },
@@ -21,7 +22,7 @@ const LS_LAST_SEEN = "educare_guardian_last_seen";
 // ── Types ─────────────────────────────────────────────────────────────────────
 type FeedItem = {
   id: string;
-  type: "notice" | "post" | "plan";
+  type: "notice" | "post" | "plan" | "notification";
   title: string;
   subtitle?: string;
   date: string;
@@ -84,6 +85,8 @@ function GuardianNotificationBell({ dark = false }: { dark?: boolean }) {
     refetchInterval: 120_000,
   });
 
+  const { data: guardianNotifications } = useListGuardianNotifications({ query: { queryKey: getListGuardianNotificationsQueryKey(), staleTime: 60_000, refetchInterval: 120_000 } });
+
   const feed: FeedItem[] = [
     ...(notices ?? []).map((n) => ({
       id: `notice-${n.id}`,
@@ -114,6 +117,14 @@ function GuardianNotificationBell({ dark = false }: { dark?: boolean }) {
         date: p.createdAt,
         href: "/",
       })),
+    ...(guardianNotifications ?? []).map((n) => ({
+      id: `notification-${n.id}`,
+      type: "notification" as const,
+      title: n.title,
+      subtitle: n.body ?? undefined,
+      date: n.createdAt as unknown as string,
+      href: n.href,
+    })),
   ]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 20);
@@ -141,16 +152,19 @@ function GuardianNotificationBell({ dark = false }: { dark?: boolean }) {
     notice: Bell,
     post: Newspaper,
     plan: CalendarDays,
+    notification: Bell,
   };
   const TYPE_LABELS: Record<FeedItem["type"], string> = {
     notice: "Notice",
     post: "New post",
     plan: "Calendar",
+    notification: "Update",
   };
   const TYPE_COLORS: Record<FeedItem["type"], string> = {
     notice: "bg-amber-100 text-amber-700",
     post: "bg-green-100 text-green-700",
     plan: "bg-blue-100 text-blue-700",
+    notification: "bg-purple-100 text-purple-700",
   };
 
   return (

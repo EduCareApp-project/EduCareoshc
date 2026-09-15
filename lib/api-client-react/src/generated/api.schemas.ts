@@ -5,6 +5,311 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+export type ExcursionStatus =
+  (typeof ExcursionStatus)[keyof typeof ExcursionStatus];
+
+export const ExcursionStatus = {
+  draft: "draft",
+  sent: "sent",
+  completed: "completed",
+} as const;
+
+export interface Excursion {
+  id: number;
+  siteId: number;
+  heading: string;
+  excursionDate: string;
+  description: string;
+  venue: string;
+  /** @nullable */
+  riskAssessmentPath: string | null;
+  /** @nullable */
+  riskAssessmentName: string | null;
+  purpose: string;
+  cost: string;
+  departureTime: string;
+  arrivalTime: string;
+  transportMethod: string;
+  restraintsFitted: string;
+  childToStaffRatio: string;
+  staffAttending: string;
+  itemsToBring: string;
+  medicalAuthorisationText: string;
+  status: ExcursionStatus;
+  /** @nullable */
+  createdByStaffId: number | null;
+  /** @nullable */
+  sentAt: string | null;
+  /** @nullable */
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExcursionInput {
+  siteId: number;
+  /** @minLength 1 */
+  heading: string;
+  excursionDate: string;
+  description?: string;
+  venue?: string;
+  riskAssessmentPath?: string;
+  riskAssessmentName?: string;
+  purpose?: string;
+  cost?: string;
+  departureTime?: string;
+  arrivalTime?: string;
+  transportMethod?: string;
+  restraintsFitted?: string;
+  childToStaffRatio?: string;
+  staffAttending?: string;
+  itemsToBring?: string;
+  medicalAuthorisationText?: string;
+  recipientEmails?: string[];
+}
+
+export type ExcursionUpdateStatus =
+  (typeof ExcursionUpdateStatus)[keyof typeof ExcursionUpdateStatus];
+
+export const ExcursionUpdateStatus = {
+  draft: "draft",
+  sent: "sent",
+  completed: "completed",
+} as const;
+
+export interface ExcursionUpdate {
+  siteId?: number;
+  /** @minLength 1 */
+  heading?: string;
+  excursionDate?: string;
+  description?: string;
+  venue?: string;
+  riskAssessmentPath?: string;
+  riskAssessmentName?: string;
+  purpose?: string;
+  cost?: string;
+  departureTime?: string;
+  arrivalTime?: string;
+  transportMethod?: string;
+  restraintsFitted?: string;
+  childToStaffRatio?: string;
+  staffAttending?: string;
+  itemsToBring?: string;
+  medicalAuthorisationText?: string;
+  status?: ExcursionUpdateStatus;
+  recipientEmails?: string[];
+}
+
+export interface ExcursionRecipientsInput {
+  /** @minItems 1 */
+  recipientEmails: string[];
+}
+
+export interface ExcursionVerificationInput {
+  siteId: number;
+  emails: string[];
+}
+
+export interface ExcursionRecipientChild {
+  childId: number;
+  childName: string;
+  siteId: number;
+}
+
+export interface ExcursionRecipientVerification {
+  email: string;
+  valid: boolean;
+  /** @nullable */
+  guardianName: string | null;
+  children: ExcursionRecipientChild[];
+}
+
+/**
+ * @nullable
+ */
+export type ExcursionRecipientDecision =
+  | (typeof ExcursionRecipientDecision)[keyof typeof ExcursionRecipientDecision]
+  | null;
+
+export const ExcursionRecipientDecision = {
+  granted: "granted",
+  declined: "declined",
+} as const;
+
+export interface ExcursionRecipient {
+  id: number;
+  excursionId: number;
+  guardianEmail: string;
+  guardianNameSnapshot: string;
+  childId: number;
+  childNameSnapshot: string;
+  /** @nullable */
+  viewedAt: string | null;
+  /** @nullable */
+  acknowledgedAt: string | null;
+  /** @nullable */
+  decision: ExcursionRecipientDecision;
+  createdAt: string;
+}
+
+/**
+ * @nullable
+ */
+export type ExcursionResponseLogMetadata = { [key: string]: unknown } | null;
+
+export interface ExcursionResponseLog {
+  id: number;
+  excursionId: number;
+  /** @nullable */
+  recipientId: number | null;
+  /** @nullable */
+  guardianEmail: string | null;
+  event: string;
+  /** @nullable */
+  metadata: ExcursionResponseLogMetadata;
+  createdAt: string;
+}
+
+export type ExcursionDetail = Excursion & {
+  recipients: ExcursionRecipient[];
+  logs: ExcursionResponseLog[];
+};
+
+export type GuardianExcursionStatus =
+  (typeof GuardianExcursionStatus)[keyof typeof GuardianExcursionStatus];
+
+export const GuardianExcursionStatus = {
+  draft: "draft",
+  sent: "sent",
+  completed: "completed",
+} as const;
+
+/**
+ * @nullable
+ */
+export type GuardianExcursionDecision =
+  | (typeof GuardianExcursionDecision)[keyof typeof GuardianExcursionDecision]
+  | null;
+
+export const GuardianExcursionDecision = {
+  granted: "granted",
+  declined: "declined",
+} as const;
+
+/**
+ * @nullable
+ */
+export type ExcursionSignedMetadata = {
+  guardianName: string;
+  relationship: string;
+  /** @nullable */
+  homePhone: string | null;
+  /** @nullable */
+  workPhone: string | null;
+  /** @nullable */
+  mobilePhone: string | null;
+  medicalAcknowledgement: boolean;
+  typedSignatureName: string;
+  signatureDataUrl: string;
+  signedAt: string;
+  decision: "granted" | "declined";
+} | null;
+
+export interface GuardianExcursion {
+  id: number;
+  siteId: number;
+  heading: string;
+  excursionDate: string;
+  description: string;
+  venue: string;
+  /** @nullable */
+  riskAssessmentName: string | null;
+  purpose: string;
+  cost: string;
+  departureTime: string;
+  arrivalTime: string;
+  transportMethod: string;
+  restraintsFitted: string;
+  childToStaffRatio: string;
+  staffAttending: string;
+  itemsToBring: string;
+  medicalAuthorisationText: string;
+  status: GuardianExcursionStatus;
+  /** @nullable */
+  createdByStaffId: number | null;
+  /** @nullable */
+  sentAt: string | null;
+  /** @nullable */
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  recipientId: number;
+  childId: number;
+  childName: string;
+  /** @nullable */
+  guardianViewedAt: string | null;
+  /** @nullable */
+  guardianAcknowledgedAt: string | null;
+  /** @nullable */
+  decision: GuardianExcursionDecision;
+  /** @nullable */
+  signedAt: string | null;
+  signedMetadata: ExcursionSignedMetadata | null;
+}
+
+export interface GuardianNotification {
+  id: number;
+  guardianEmail: string;
+  type: string;
+  title: string;
+  /** @nullable */
+  body: string | null;
+  href: string;
+  read: boolean;
+  /** @nullable */
+  referenceId: number | null;
+  /** @nullable */
+  referenceType: string | null;
+  dedupeKey: string;
+  createdAt: string;
+}
+
+export type ExcursionDecisionInputDecision =
+  (typeof ExcursionDecisionInputDecision)[keyof typeof ExcursionDecisionInputDecision];
+
+export const ExcursionDecisionInputDecision = {
+  granted: "granted",
+  declined: "declined",
+} as const;
+
+export interface ExcursionDecisionInput {
+  decision: ExcursionDecisionInputDecision;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  typedGuardianName: string;
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  relationship: string;
+  /** @maxLength 50 */
+  homePhone?: string;
+  /** @maxLength 50 */
+  workPhone?: string;
+  /** @maxLength 50 */
+  mobilePhone?: string;
+  medicalAcknowledgement: boolean;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  typedSignatureName: string;
+  /** @maxLength 500000 */
+  signatureDataUrl: string;
+}
+
 export interface Guardian {
   guardianEmail: string;
   guardianName: string;
@@ -1145,6 +1450,32 @@ export interface UploadUrlRequest {
   size: number;
   /** @minLength 1 */
   contentType: string;
+}
+
+export type ExcursionRiskAssessmentUploadInputContentType =
+  (typeof ExcursionRiskAssessmentUploadInputContentType)[keyof typeof ExcursionRiskAssessmentUploadInputContentType];
+
+export const ExcursionRiskAssessmentUploadInputContentType = {
+  "application/pdf": "application/pdf",
+} as const;
+
+export interface ExcursionRiskAssessmentUploadInput {
+  /** @minimum 1 */
+  siteId: number;
+  /** @minLength 1 */
+  name: string;
+  /**
+   * @minimum 1
+   * @maximum 20971520
+   */
+  size: number;
+  contentType: ExcursionRiskAssessmentUploadInputContentType;
+}
+
+export interface ExcursionRiskAssessmentUploadResponse {
+  uploadURL: string;
+  objectPath: string;
+  metadata: ExcursionRiskAssessmentUploadInput;
 }
 
 export interface UploadUrlResponse {

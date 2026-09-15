@@ -46,3 +46,5 @@ export * from './document_merge';
 export * from './schools';
 export * from './school_reports';
 export * from './staff_sites';
+export * from "./excursions";
+export * from "./guardian_notifications";

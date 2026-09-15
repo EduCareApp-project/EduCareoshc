@@ -1875,6 +1875,38 @@ export const RequestUploadUrlResponse = zod.object({
 });
 
 /**
+ * @summary Request a protected upload URL for an excursion risk assessment
+ */
+
+export const requestExcursionRiskAssessmentUploadUrlBodySizeMax = 20971520;
+
+export const RequestExcursionRiskAssessmentUploadUrlBody = zod.object({
+  siteId: zod.number().min(1),
+  name: zod.string().min(1),
+  size: zod
+    .number()
+    .min(1)
+    .max(requestExcursionRiskAssessmentUploadUrlBodySizeMax),
+  contentType: zod.enum(["application/pdf"]),
+});
+
+export const requestExcursionRiskAssessmentUploadUrlResponseMetadataSizeMax = 20971520;
+
+export const RequestExcursionRiskAssessmentUploadUrlResponse = zod.object({
+  uploadURL: zod.string().url(),
+  objectPath: zod.string(),
+  metadata: zod.object({
+    siteId: zod.number().min(1),
+    name: zod.string().min(1),
+    size: zod
+      .number()
+      .min(1)
+      .max(requestExcursionRiskAssessmentUploadUrlResponseMetadataSizeMax),
+    contentType: zod.enum(["application/pdf"]),
+  }),
+});
+
+/**
  * @summary Serve a public asset
  */
 export const GetPublicObjectParams = zod.object({
@@ -4403,3 +4435,697 @@ export const UpdateWeeklyReviewResponse = zod.object({
 export const DeleteWeeklyReviewParams = zod.object({
   id: zod.coerce.number(),
 });
+
+export const ListExcursionsResponseItem = zod.object({
+  id: zod.number(),
+  siteId: zod.number(),
+  heading: zod.string(),
+  excursionDate: zod.coerce.date(),
+  description: zod.string(),
+  venue: zod.string(),
+  riskAssessmentPath: zod.string().nullable(),
+  riskAssessmentName: zod.string().nullable(),
+  purpose: zod.string(),
+  cost: zod.string(),
+  departureTime: zod.string(),
+  arrivalTime: zod.string(),
+  transportMethod: zod.string(),
+  restraintsFitted: zod.string(),
+  childToStaffRatio: zod.string(),
+  staffAttending: zod.string(),
+  itemsToBring: zod.string(),
+  medicalAuthorisationText: zod.string(),
+  status: zod.enum(["draft", "sent", "completed"]),
+  createdByStaffId: zod.number().nullable(),
+  sentAt: zod.coerce.date().nullable(),
+  completedAt: zod.coerce.date().nullable(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListExcursionsResponse = zod.array(ListExcursionsResponseItem);
+
+export const CreateExcursionBody = zod.object({
+  siteId: zod.number(),
+  heading: zod.string().min(1),
+  excursionDate: zod.coerce.date(),
+  description: zod.string().optional(),
+  venue: zod.string().optional(),
+  riskAssessmentPath: zod.string().optional(),
+  riskAssessmentName: zod.string().optional(),
+  purpose: zod.string().optional(),
+  cost: zod.string().optional(),
+  departureTime: zod.string().optional(),
+  arrivalTime: zod.string().optional(),
+  transportMethod: zod.string().optional(),
+  restraintsFitted: zod.string().optional(),
+  childToStaffRatio: zod.string().optional(),
+  staffAttending: zod.string().optional(),
+  itemsToBring: zod.string().optional(),
+  medicalAuthorisationText: zod.string().optional(),
+  recipientEmails: zod.array(zod.string()).optional(),
+});
+
+export const VerifyExcursionRecipientsBody = zod.object({
+  siteId: zod.number(),
+  emails: zod.array(zod.string()),
+});
+
+export const VerifyExcursionRecipientsResponseItem = zod.object({
+  email: zod.string(),
+  valid: zod.boolean(),
+  guardianName: zod.string().nullable(),
+  children: zod.array(
+    zod.object({
+      childId: zod.number(),
+      childName: zod.string(),
+      siteId: zod.number(),
+    }),
+  ),
+});
+export const VerifyExcursionRecipientsResponse = zod.array(
+  VerifyExcursionRecipientsResponseItem,
+);
+
+export const GetExcursionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetExcursionResponse = zod
+  .object({
+    id: zod.number(),
+    siteId: zod.number(),
+    heading: zod.string(),
+    excursionDate: zod.coerce.date(),
+    description: zod.string(),
+    venue: zod.string(),
+    riskAssessmentPath: zod.string().nullable(),
+    riskAssessmentName: zod.string().nullable(),
+    purpose: zod.string(),
+    cost: zod.string(),
+    departureTime: zod.string(),
+    arrivalTime: zod.string(),
+    transportMethod: zod.string(),
+    restraintsFitted: zod.string(),
+    childToStaffRatio: zod.string(),
+    staffAttending: zod.string(),
+    itemsToBring: zod.string(),
+    medicalAuthorisationText: zod.string(),
+    status: zod.enum(["draft", "sent", "completed"]),
+    createdByStaffId: zod.number().nullable(),
+    sentAt: zod.coerce.date().nullable(),
+    completedAt: zod.coerce.date().nullable(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date(),
+  })
+  .and(
+    zod.object({
+      recipients: zod.array(
+        zod.object({
+          id: zod.number(),
+          excursionId: zod.number(),
+          guardianEmail: zod.string(),
+          guardianNameSnapshot: zod.string(),
+          childId: zod.number(),
+          childNameSnapshot: zod.string(),
+          viewedAt: zod.coerce.date().nullable(),
+          acknowledgedAt: zod.coerce.date().nullable(),
+          decision: zod
+            .union([
+              zod.literal("granted"),
+              zod.literal("declined"),
+              zod.literal(null),
+            ])
+            .nullable(),
+          createdAt: zod.coerce.date(),
+        }),
+      ),
+      logs: zod.array(
+        zod.object({
+          id: zod.number(),
+          excursionId: zod.number(),
+          recipientId: zod.number().nullable(),
+          guardianEmail: zod.string().nullable(),
+          event: zod.string(),
+          metadata: zod.record(zod.string(), zod.unknown()).nullable(),
+          createdAt: zod.coerce.date(),
+        }),
+      ),
+    }),
+  );
+
+export const UpdateExcursionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateExcursionBody = zod.object({
+  siteId: zod.number().optional(),
+  heading: zod.string().min(1).optional(),
+  excursionDate: zod.coerce.date().optional(),
+  description: zod.string().optional(),
+  venue: zod.string().optional(),
+  riskAssessmentPath: zod.string().optional(),
+  riskAssessmentName: zod.string().optional(),
+  purpose: zod.string().optional(),
+  cost: zod.string().optional(),
+  departureTime: zod.string().optional(),
+  arrivalTime: zod.string().optional(),
+  transportMethod: zod.string().optional(),
+  restraintsFitted: zod.string().optional(),
+  childToStaffRatio: zod.string().optional(),
+  staffAttending: zod.string().optional(),
+  itemsToBring: zod.string().optional(),
+  medicalAuthorisationText: zod.string().optional(),
+  status: zod.enum(["draft", "sent", "completed"]).optional(),
+  recipientEmails: zod.array(zod.string()).optional(),
+});
+
+export const UpdateExcursionResponse = zod.object({
+  id: zod.number(),
+  siteId: zod.number(),
+  heading: zod.string(),
+  excursionDate: zod.coerce.date(),
+  description: zod.string(),
+  venue: zod.string(),
+  riskAssessmentPath: zod.string().nullable(),
+  riskAssessmentName: zod.string().nullable(),
+  purpose: zod.string(),
+  cost: zod.string(),
+  departureTime: zod.string(),
+  arrivalTime: zod.string(),
+  transportMethod: zod.string(),
+  restraintsFitted: zod.string(),
+  childToStaffRatio: zod.string(),
+  staffAttending: zod.string(),
+  itemsToBring: zod.string(),
+  medicalAuthorisationText: zod.string(),
+  status: zod.enum(["draft", "sent", "completed"]),
+  createdByStaffId: zod.number().nullable(),
+  sentAt: zod.coerce.date().nullable(),
+  completedAt: zod.coerce.date().nullable(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+export const AddExcursionRecipientsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AddExcursionRecipientsBody = zod.object({
+  recipientEmails: zod.array(zod.string()).min(1),
+});
+
+export const AddExcursionRecipientsResponseItem = zod.object({
+  id: zod.number(),
+  excursionId: zod.number(),
+  guardianEmail: zod.string(),
+  guardianNameSnapshot: zod.string(),
+  childId: zod.number(),
+  childNameSnapshot: zod.string(),
+  viewedAt: zod.coerce.date().nullable(),
+  acknowledgedAt: zod.coerce.date().nullable(),
+  decision: zod
+    .union([zod.literal("granted"), zod.literal("declined"), zod.literal(null)])
+    .nullable(),
+  createdAt: zod.coerce.date(),
+});
+export const AddExcursionRecipientsResponse = zod.array(
+  AddExcursionRecipientsResponseItem,
+);
+
+export const SendExcursionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SendExcursionBody = zod.object({
+  recipientEmails: zod.array(zod.string()).min(1),
+});
+
+export const SendExcursionResponse = zod
+  .object({
+    id: zod.number(),
+    siteId: zod.number(),
+    heading: zod.string(),
+    excursionDate: zod.coerce.date(),
+    description: zod.string(),
+    venue: zod.string(),
+    riskAssessmentPath: zod.string().nullable(),
+    riskAssessmentName: zod.string().nullable(),
+    purpose: zod.string(),
+    cost: zod.string(),
+    departureTime: zod.string(),
+    arrivalTime: zod.string(),
+    transportMethod: zod.string(),
+    restraintsFitted: zod.string(),
+    childToStaffRatio: zod.string(),
+    staffAttending: zod.string(),
+    itemsToBring: zod.string(),
+    medicalAuthorisationText: zod.string(),
+    status: zod.enum(["draft", "sent", "completed"]),
+    createdByStaffId: zod.number().nullable(),
+    sentAt: zod.coerce.date().nullable(),
+    completedAt: zod.coerce.date().nullable(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date(),
+  })
+  .and(
+    zod.object({
+      recipients: zod.array(
+        zod.object({
+          id: zod.number(),
+          excursionId: zod.number(),
+          guardianEmail: zod.string(),
+          guardianNameSnapshot: zod.string(),
+          childId: zod.number(),
+          childNameSnapshot: zod.string(),
+          viewedAt: zod.coerce.date().nullable(),
+          acknowledgedAt: zod.coerce.date().nullable(),
+          decision: zod
+            .union([
+              zod.literal("granted"),
+              zod.literal("declined"),
+              zod.literal(null),
+            ])
+            .nullable(),
+          createdAt: zod.coerce.date(),
+        }),
+      ),
+      logs: zod.array(
+        zod.object({
+          id: zod.number(),
+          excursionId: zod.number(),
+          recipientId: zod.number().nullable(),
+          guardianEmail: zod.string().nullable(),
+          event: zod.string(),
+          metadata: zod.record(zod.string(), zod.unknown()).nullable(),
+          createdAt: zod.coerce.date(),
+        }),
+      ),
+    }),
+  );
+
+export const SendExcursionReminderParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SendExcursionReminderResponse = zod
+  .object({
+    id: zod.number(),
+    siteId: zod.number(),
+    heading: zod.string(),
+    excursionDate: zod.coerce.date(),
+    description: zod.string(),
+    venue: zod.string(),
+    riskAssessmentPath: zod.string().nullable(),
+    riskAssessmentName: zod.string().nullable(),
+    purpose: zod.string(),
+    cost: zod.string(),
+    departureTime: zod.string(),
+    arrivalTime: zod.string(),
+    transportMethod: zod.string(),
+    restraintsFitted: zod.string(),
+    childToStaffRatio: zod.string(),
+    staffAttending: zod.string(),
+    itemsToBring: zod.string(),
+    medicalAuthorisationText: zod.string(),
+    status: zod.enum(["draft", "sent", "completed"]),
+    createdByStaffId: zod.number().nullable(),
+    sentAt: zod.coerce.date().nullable(),
+    completedAt: zod.coerce.date().nullable(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date(),
+  })
+  .and(
+    zod.object({
+      recipients: zod.array(
+        zod.object({
+          id: zod.number(),
+          excursionId: zod.number(),
+          guardianEmail: zod.string(),
+          guardianNameSnapshot: zod.string(),
+          childId: zod.number(),
+          childNameSnapshot: zod.string(),
+          viewedAt: zod.coerce.date().nullable(),
+          acknowledgedAt: zod.coerce.date().nullable(),
+          decision: zod
+            .union([
+              zod.literal("granted"),
+              zod.literal("declined"),
+              zod.literal(null),
+            ])
+            .nullable(),
+          createdAt: zod.coerce.date(),
+        }),
+      ),
+      logs: zod.array(
+        zod.object({
+          id: zod.number(),
+          excursionId: zod.number(),
+          recipientId: zod.number().nullable(),
+          guardianEmail: zod.string().nullable(),
+          event: zod.string(),
+          metadata: zod.record(zod.string(), zod.unknown()).nullable(),
+          createdAt: zod.coerce.date(),
+        }),
+      ),
+    }),
+  );
+
+export const RemoveExcursionRecipientParams = zod.object({
+  id: zod.coerce.number(),
+  recipientId: zod.coerce.number(),
+});
+
+export const GetExcursionRiskAssessmentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListGuardianExcursionsResponseItem = zod.object({
+  id: zod.number(),
+  siteId: zod.number(),
+  heading: zod.string(),
+  excursionDate: zod.coerce.date(),
+  description: zod.string(),
+  venue: zod.string(),
+  riskAssessmentName: zod.string().nullable(),
+  purpose: zod.string(),
+  cost: zod.string(),
+  departureTime: zod.string(),
+  arrivalTime: zod.string(),
+  transportMethod: zod.string(),
+  restraintsFitted: zod.string(),
+  childToStaffRatio: zod.string(),
+  staffAttending: zod.string(),
+  itemsToBring: zod.string(),
+  medicalAuthorisationText: zod.string(),
+  status: zod.enum(["draft", "sent", "completed"]),
+  createdByStaffId: zod.number().nullable(),
+  sentAt: zod.coerce.date().nullable(),
+  completedAt: zod.coerce.date().nullable(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  recipientId: zod.number(),
+  childId: zod.number(),
+  childName: zod.string(),
+  guardianViewedAt: zod.coerce.date().nullable(),
+  guardianAcknowledgedAt: zod.coerce.date().nullable(),
+  decision: zod
+    .union([zod.literal("granted"), zod.literal("declined"), zod.literal(null)])
+    .nullable(),
+  signedAt: zod.coerce.date().nullable(),
+  signedMetadata: zod
+    .object({
+      guardianName: zod.string(),
+      relationship: zod.string(),
+      homePhone: zod.string().nullable(),
+      workPhone: zod.string().nullable(),
+      mobilePhone: zod.string().nullable(),
+      medicalAcknowledgement: zod.boolean(),
+      typedSignatureName: zod.string(),
+      signatureDataUrl: zod.string(),
+      signedAt: zod.coerce.date(),
+      decision: zod.enum(["granted", "declined"]),
+    })
+    .nullable(),
+});
+export const ListGuardianExcursionsResponse = zod.array(
+  ListGuardianExcursionsResponseItem,
+);
+
+export const GetGuardianExcursionParams = zod.object({
+  id: zod.coerce.number(),
+  recipientId: zod.coerce.number(),
+});
+
+export const GetGuardianExcursionResponse = zod.object({
+  id: zod.number(),
+  siteId: zod.number(),
+  heading: zod.string(),
+  excursionDate: zod.coerce.date(),
+  description: zod.string(),
+  venue: zod.string(),
+  riskAssessmentName: zod.string().nullable(),
+  purpose: zod.string(),
+  cost: zod.string(),
+  departureTime: zod.string(),
+  arrivalTime: zod.string(),
+  transportMethod: zod.string(),
+  restraintsFitted: zod.string(),
+  childToStaffRatio: zod.string(),
+  staffAttending: zod.string(),
+  itemsToBring: zod.string(),
+  medicalAuthorisationText: zod.string(),
+  status: zod.enum(["draft", "sent", "completed"]),
+  createdByStaffId: zod.number().nullable(),
+  sentAt: zod.coerce.date().nullable(),
+  completedAt: zod.coerce.date().nullable(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  recipientId: zod.number(),
+  childId: zod.number(),
+  childName: zod.string(),
+  guardianViewedAt: zod.coerce.date().nullable(),
+  guardianAcknowledgedAt: zod.coerce.date().nullable(),
+  decision: zod
+    .union([zod.literal("granted"), zod.literal("declined"), zod.literal(null)])
+    .nullable(),
+  signedAt: zod.coerce.date().nullable(),
+  signedMetadata: zod
+    .object({
+      guardianName: zod.string(),
+      relationship: zod.string(),
+      homePhone: zod.string().nullable(),
+      workPhone: zod.string().nullable(),
+      mobilePhone: zod.string().nullable(),
+      medicalAcknowledgement: zod.boolean(),
+      typedSignatureName: zod.string(),
+      signatureDataUrl: zod.string(),
+      signedAt: zod.coerce.date(),
+      decision: zod.enum(["granted", "declined"]),
+    })
+    .nullable(),
+});
+
+export const MarkGuardianExcursionViewedParams = zod.object({
+  id: zod.coerce.number(),
+  recipientId: zod.coerce.number(),
+});
+
+export const MarkGuardianExcursionViewedResponse = zod.object({
+  id: zod.number(),
+  siteId: zod.number(),
+  heading: zod.string(),
+  excursionDate: zod.coerce.date(),
+  description: zod.string(),
+  venue: zod.string(),
+  riskAssessmentName: zod.string().nullable(),
+  purpose: zod.string(),
+  cost: zod.string(),
+  departureTime: zod.string(),
+  arrivalTime: zod.string(),
+  transportMethod: zod.string(),
+  restraintsFitted: zod.string(),
+  childToStaffRatio: zod.string(),
+  staffAttending: zod.string(),
+  itemsToBring: zod.string(),
+  medicalAuthorisationText: zod.string(),
+  status: zod.enum(["draft", "sent", "completed"]),
+  createdByStaffId: zod.number().nullable(),
+  sentAt: zod.coerce.date().nullable(),
+  completedAt: zod.coerce.date().nullable(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  recipientId: zod.number(),
+  childId: zod.number(),
+  childName: zod.string(),
+  guardianViewedAt: zod.coerce.date().nullable(),
+  guardianAcknowledgedAt: zod.coerce.date().nullable(),
+  decision: zod
+    .union([zod.literal("granted"), zod.literal("declined"), zod.literal(null)])
+    .nullable(),
+  signedAt: zod.coerce.date().nullable(),
+  signedMetadata: zod
+    .object({
+      guardianName: zod.string(),
+      relationship: zod.string(),
+      homePhone: zod.string().nullable(),
+      workPhone: zod.string().nullable(),
+      mobilePhone: zod.string().nullable(),
+      medicalAcknowledgement: zod.boolean(),
+      typedSignatureName: zod.string(),
+      signatureDataUrl: zod.string(),
+      signedAt: zod.coerce.date(),
+      decision: zod.enum(["granted", "declined"]),
+    })
+    .nullable(),
+});
+
+export const AcknowledgeGuardianExcursionParams = zod.object({
+  id: zod.coerce.number(),
+  recipientId: zod.coerce.number(),
+});
+
+export const AcknowledgeGuardianExcursionResponse = zod.object({
+  id: zod.number(),
+  siteId: zod.number(),
+  heading: zod.string(),
+  excursionDate: zod.coerce.date(),
+  description: zod.string(),
+  venue: zod.string(),
+  riskAssessmentName: zod.string().nullable(),
+  purpose: zod.string(),
+  cost: zod.string(),
+  departureTime: zod.string(),
+  arrivalTime: zod.string(),
+  transportMethod: zod.string(),
+  restraintsFitted: zod.string(),
+  childToStaffRatio: zod.string(),
+  staffAttending: zod.string(),
+  itemsToBring: zod.string(),
+  medicalAuthorisationText: zod.string(),
+  status: zod.enum(["draft", "sent", "completed"]),
+  createdByStaffId: zod.number().nullable(),
+  sentAt: zod.coerce.date().nullable(),
+  completedAt: zod.coerce.date().nullable(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  recipientId: zod.number(),
+  childId: zod.number(),
+  childName: zod.string(),
+  guardianViewedAt: zod.coerce.date().nullable(),
+  guardianAcknowledgedAt: zod.coerce.date().nullable(),
+  decision: zod
+    .union([zod.literal("granted"), zod.literal("declined"), zod.literal(null)])
+    .nullable(),
+  signedAt: zod.coerce.date().nullable(),
+  signedMetadata: zod
+    .object({
+      guardianName: zod.string(),
+      relationship: zod.string(),
+      homePhone: zod.string().nullable(),
+      workPhone: zod.string().nullable(),
+      mobilePhone: zod.string().nullable(),
+      medicalAcknowledgement: zod.boolean(),
+      typedSignatureName: zod.string(),
+      signatureDataUrl: zod.string(),
+      signedAt: zod.coerce.date(),
+      decision: zod.enum(["granted", "declined"]),
+    })
+    .nullable(),
+});
+
+export const SubmitGuardianExcursionDecisionParams = zod.object({
+  id: zod.coerce.number(),
+  recipientId: zod.coerce.number(),
+});
+
+export const submitGuardianExcursionDecisionBodyTypedGuardianNameMax = 200;
+
+export const submitGuardianExcursionDecisionBodyRelationshipMax = 100;
+
+export const submitGuardianExcursionDecisionBodyHomePhoneMax = 50;
+
+export const submitGuardianExcursionDecisionBodyWorkPhoneMax = 50;
+
+export const submitGuardianExcursionDecisionBodyMobilePhoneMax = 50;
+
+export const submitGuardianExcursionDecisionBodyTypedSignatureNameMax = 200;
+
+export const submitGuardianExcursionDecisionBodySignatureDataUrlMax = 500000;
+
+export const SubmitGuardianExcursionDecisionBody = zod.object({
+  decision: zod.enum(["granted", "declined"]),
+  typedGuardianName: zod
+    .string()
+    .min(1)
+    .max(submitGuardianExcursionDecisionBodyTypedGuardianNameMax),
+  relationship: zod
+    .string()
+    .min(1)
+    .max(submitGuardianExcursionDecisionBodyRelationshipMax),
+  homePhone: zod
+    .string()
+    .max(submitGuardianExcursionDecisionBodyHomePhoneMax)
+    .optional(),
+  workPhone: zod
+    .string()
+    .max(submitGuardianExcursionDecisionBodyWorkPhoneMax)
+    .optional(),
+  mobilePhone: zod
+    .string()
+    .max(submitGuardianExcursionDecisionBodyMobilePhoneMax)
+    .optional(),
+  medicalAcknowledgement: zod.boolean(),
+  typedSignatureName: zod
+    .string()
+    .min(1)
+    .max(submitGuardianExcursionDecisionBodyTypedSignatureNameMax),
+  signatureDataUrl: zod
+    .string()
+    .max(submitGuardianExcursionDecisionBodySignatureDataUrlMax),
+});
+
+export const SubmitGuardianExcursionDecisionResponse = zod.object({
+  id: zod.number(),
+  siteId: zod.number(),
+  heading: zod.string(),
+  excursionDate: zod.coerce.date(),
+  description: zod.string(),
+  venue: zod.string(),
+  riskAssessmentName: zod.string().nullable(),
+  purpose: zod.string(),
+  cost: zod.string(),
+  departureTime: zod.string(),
+  arrivalTime: zod.string(),
+  transportMethod: zod.string(),
+  restraintsFitted: zod.string(),
+  childToStaffRatio: zod.string(),
+  staffAttending: zod.string(),
+  itemsToBring: zod.string(),
+  medicalAuthorisationText: zod.string(),
+  status: zod.enum(["draft", "sent", "completed"]),
+  createdByStaffId: zod.number().nullable(),
+  sentAt: zod.coerce.date().nullable(),
+  completedAt: zod.coerce.date().nullable(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  recipientId: zod.number(),
+  childId: zod.number(),
+  childName: zod.string(),
+  guardianViewedAt: zod.coerce.date().nullable(),
+  guardianAcknowledgedAt: zod.coerce.date().nullable(),
+  decision: zod
+    .union([zod.literal("granted"), zod.literal("declined"), zod.literal(null)])
+    .nullable(),
+  signedAt: zod.coerce.date().nullable(),
+  signedMetadata: zod
+    .object({
+      guardianName: zod.string(),
+      relationship: zod.string(),
+      homePhone: zod.string().nullable(),
+      workPhone: zod.string().nullable(),
+      mobilePhone: zod.string().nullable(),
+      medicalAcknowledgement: zod.boolean(),
+      typedSignatureName: zod.string(),
+      signatureDataUrl: zod.string(),
+      signedAt: zod.coerce.date(),
+      decision: zod.enum(["granted", "declined"]),
+    })
+    .nullable(),
+});
+
+export const ListGuardianNotificationsResponseItem = zod.object({
+  id: zod.number(),
+  guardianEmail: zod.string(),
+  type: zod.string(),
+  title: zod.string(),
+  body: zod.string().nullable(),
+  href: zod.string(),
+  read: zod.boolean(),
+  referenceId: zod.number().nullable(),
+  referenceType: zod.string().nullable(),
+  dedupeKey: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListGuardianNotificationsResponse = zod.array(
+  ListGuardianNotificationsResponseItem,
+);

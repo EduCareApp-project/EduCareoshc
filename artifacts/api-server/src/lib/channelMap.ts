@@ -8,6 +8,7 @@ const DEFAULTS: Record<string, { email: boolean; inApp: boolean }> = {
   guardian_medication:  { email: true,  inApp: false },
   guardian_behavioural: { email: true,  inApp: false },
   guardian_welcome:     { email: true,  inApp: false },
+  guardian_excursion:   { email: true,  inApp: false },
   incident_submitted:   { email: false, inApp: true },
   incident_closed:      { email: false, inApp: true },
   condition_submitted:  { email: false, inApp: true },

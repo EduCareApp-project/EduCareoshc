@@ -19,6 +19,7 @@ import GuardianMedicationLogs from "@/pages/guardian-medication-logs";
 import GuardianMedical from "@/pages/guardian-medical";
 import GuardianPickups from "@/pages/guardian-pickups";
 import GuardianEducators from "@/pages/guardian-educators";
+import GuardianExcursionDetail from "@/pages/guardian-excursion-detail";
 
 import Dashboard from "@/pages/dashboard";
 import ChildrenList from "@/pages/children-list";
@@ -140,6 +141,7 @@ function GuardianRoutes() {
         <Route path="/notices" component={GuardianNotices} />
         <Route path="/medical" component={GuardianMedical} />
         <Route path="/medication-logs" component={GuardianMedicationLogs} />
+        <Route path="/excursions/:id/recipients/:recipientId" component={GuardianExcursionDetail} />
         <Route path="/my-profile" component={MyProfile} />
 
         <Route component={NotFound} />

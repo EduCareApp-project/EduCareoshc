@@ -35,6 +35,7 @@ tags:
   - name: notifications
   - name: notification-settings
   - name: medications
+  - name: excursions
   - name: clickup
 paths:
   /healthz:
@@ -1697,6 +1698,42 @@ paths:
                 $ref: '#/components/schemas/UploadUrlResponse'
         '400':
           description: Missing or invalid required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Failed to generate upload URL.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /excursions/risk-assessments/uploads/request-url:
+    post:
+      tags: [Excursions]
+      operationId: requestExcursionRiskAssessmentUploadUrl
+      summary: Request a protected upload URL for an excursion risk assessment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExcursionRiskAssessmentUploadInput'
+      responses:
+        '200':
+          description: Protected excursion upload URL generated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExcursionRiskAssessmentUploadResponse'
+        '400':
+          description: Missing or invalid required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: Staff role is not permitted to manage excursions.
           content:
             application/json:
               schema:
@@ -3575,8 +3612,531 @@ paths:
         "204":
           description: No Content
 
+  /excursions:
+    get:
+      operationId: listExcursions
+      tags: [excursions]
+      responses:
+        "200":
+          description: Staff excursion list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Excursion"
+    post:
+      operationId: createExcursion
+      tags: [excursions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExcursionInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Excursion"
+
+  /excursions/recipients/verify:
+    post:
+      operationId: verifyExcursionRecipients
+      tags: [excursions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExcursionVerificationInput"
+      responses:
+        "200":
+          description: Recipient verification
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExcursionRecipientVerification"
+
+  /excursions/{id}:
+    get:
+      operationId: getExcursion
+      tags: [excursions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Excursion detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExcursionDetail"
+    patch:
+      operationId: updateExcursion
+      tags: [excursions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExcursionUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Excursion"
+
+  /excursions/{id}/recipients:
+    post:
+      operationId: addExcursionRecipients
+      tags: [excursions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExcursionRecipientsInput"
+      responses:
+        "200":
+          description: Recipients added
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExcursionRecipient"
+
+  /excursions/{id}/send:
+    post:
+      operationId: sendExcursion
+      tags: [excursions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExcursionRecipientsInput"
+      responses:
+        "200":
+          description: Sent excursion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExcursionDetail"
+
+  /excursions/{id}/reminder:
+    post:
+      operationId: sendExcursionReminder
+      tags: [excursions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Reminder sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExcursionDetail"
+
+  /excursions/{id}/recipients/{recipientId}:
+    delete:
+      operationId: removeExcursionRecipient
+      tags: [excursions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: recipientId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Removed
+
+  /excursions/{id}/risk-assessment:
+    get:
+      operationId: getExcursionRiskAssessment
+      tags: [excursions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Private risk assessment document
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /guardian/excursions:
+    get:
+      operationId: listGuardianExcursions
+      tags: [excursions]
+      responses:
+        "200":
+          description: Assigned excursions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GuardianExcursion"
+
+  /guardian/excursions/{id}/recipients/{recipientId}:
+    get:
+      operationId: getGuardianExcursion
+      tags: [excursions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: recipientId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Assigned excursion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuardianExcursion"
+
+  /guardian/excursions/{id}/recipients/{recipientId}/viewed:
+    post:
+      operationId: markGuardianExcursionViewed
+      tags: [excursions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: recipientId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Viewed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuardianExcursion"
+
+  /guardian/excursions/{id}/recipients/{recipientId}/acknowledged:
+    post:
+      operationId: acknowledgeGuardianExcursion
+      tags: [excursions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: recipientId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuardianExcursion"
+
+  /guardian/excursions/{id}/recipients/{recipientId}/decision:
+    post:
+      operationId: submitGuardianExcursionDecision
+      tags: [excursions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: recipientId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExcursionDecisionInput"
+      responses:
+        "200":
+          description: Decision submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuardianExcursion"
+
+  /guardian/notifications:
+    get:
+      operationId: listGuardianNotifications
+      tags: [excursions]
+      responses:
+        "200":
+          description: Guardian in-app notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GuardianNotification"
+
 components:
   schemas:
+    Excursion:
+      type: object
+      required: [id, siteId, heading, excursionDate, description, venue, riskAssessmentPath, riskAssessmentName, purpose, cost, departureTime, arrivalTime, transportMethod, restraintsFitted, childToStaffRatio, staffAttending, itemsToBring, medicalAuthorisationText, status, createdByStaffId, sentAt, completedAt, createdAt, updatedAt]
+      properties:
+        id: { type: integer }
+        siteId: { type: integer }
+        heading: { type: string }
+        excursionDate: { type: string, format: date }
+        description: { type: string }
+        venue: { type: string }
+        riskAssessmentPath: { type: ["string", "null"] }
+        riskAssessmentName: { type: ["string", "null"] }
+        purpose: { type: string }
+        cost: { type: string }
+        departureTime: { type: string }
+        arrivalTime: { type: string }
+        transportMethod: { type: string }
+        restraintsFitted: { type: string }
+        childToStaffRatio: { type: string }
+        staffAttending: { type: string }
+        itemsToBring: { type: string }
+        medicalAuthorisationText: { type: string }
+        status: { type: string, enum: [draft, sent, completed] }
+        createdByStaffId: { type: ["integer", "null"] }
+        sentAt: { type: ["string", "null"], format: date-time }
+        completedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ExcursionInput:
+      type: object
+      required: [siteId, heading, excursionDate]
+      properties:
+        siteId: { type: integer }
+        heading: { type: string, minLength: 1 }
+        excursionDate: { type: string, format: date }
+        description: { type: string }
+        venue: { type: string }
+        riskAssessmentPath: { type: string }
+        riskAssessmentName: { type: string }
+        purpose: { type: string }
+        cost: { type: string }
+        departureTime: { type: string }
+        arrivalTime: { type: string }
+        transportMethod: { type: string }
+        restraintsFitted: { type: string }
+        childToStaffRatio: { type: string }
+        staffAttending: { type: string }
+        itemsToBring: { type: string }
+        medicalAuthorisationText: { type: string }
+        recipientEmails: { type: array, items: { type: string } }
+    ExcursionUpdate:
+      type: object
+      properties:
+        siteId: { type: integer }
+        heading: { type: string, minLength: 1 }
+        excursionDate: { type: string, format: date }
+        description: { type: string }
+        venue: { type: string }
+        riskAssessmentPath: { type: string }
+        riskAssessmentName: { type: string }
+        purpose: { type: string }
+        cost: { type: string }
+        departureTime: { type: string }
+        arrivalTime: { type: string }
+        transportMethod: { type: string }
+        restraintsFitted: { type: string }
+        childToStaffRatio: { type: string }
+        staffAttending: { type: string }
+        itemsToBring: { type: string }
+        medicalAuthorisationText: { type: string }
+        status: { type: string, enum: [draft, sent, completed] }
+        recipientEmails: { type: array, items: { type: string } }
+    ExcursionRecipientsInput:
+      type: object
+      required: [recipientEmails]
+      properties:
+        recipientEmails: { type: array, items: { type: string }, minItems: 1 }
+    ExcursionVerificationInput:
+      type: object
+      required: [siteId, emails]
+      properties:
+        siteId: { type: integer }
+        emails: { type: array, items: { type: string } }
+    ExcursionRecipientVerification:
+      type: object
+      required: [email, valid, guardianName, children]
+      properties:
+        email: { type: string }
+        valid: { type: boolean }
+        guardianName: { type: ["string", "null"] }
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExcursionRecipientChild"
+    ExcursionRecipientChild:
+      type: object
+      required: [childId, childName, siteId]
+      properties:
+        childId: { type: integer }
+        childName: { type: string }
+        siteId: { type: integer }
+    ExcursionRecipient:
+      type: object
+      required: [id, excursionId, guardianEmail, guardianNameSnapshot, childId, childNameSnapshot, viewedAt, acknowledgedAt, decision, createdAt]
+      properties:
+        id: { type: integer }
+        excursionId: { type: integer }
+        guardianEmail: { type: string }
+        guardianNameSnapshot: { type: string }
+        childId: { type: integer }
+        childNameSnapshot: { type: string }
+        viewedAt: { type: ["string", "null"], format: date-time }
+        acknowledgedAt: { type: ["string", "null"], format: date-time }
+        decision: { type: ["string", "null"], enum: [granted, declined, null] }
+        createdAt: { type: string, format: date-time }
+    ExcursionDetail:
+      allOf:
+        - $ref: "#/components/schemas/Excursion"
+        - type: object
+          required: [recipients, logs]
+          properties:
+            recipients:
+              type: array
+              items: { $ref: "#/components/schemas/ExcursionRecipient" }
+            logs:
+              type: array
+              items: { $ref: "#/components/schemas/ExcursionResponseLog" }
+    ExcursionResponseLog:
+      type: object
+      required: [id, excursionId, recipientId, guardianEmail, event, metadata, createdAt]
+      properties:
+        id: { type: integer }
+        excursionId: { type: integer }
+        recipientId: { type: ["integer", "null"] }
+        guardianEmail: { type: ["string", "null"] }
+        event: { type: string }
+        metadata: { type: ["object", "null"], additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+    GuardianExcursion:
+      type: object
+      required: [id, siteId, heading, excursionDate, description, venue, riskAssessmentName, purpose, cost, departureTime, arrivalTime, transportMethod, restraintsFitted, childToStaffRatio, staffAttending, itemsToBring, medicalAuthorisationText, status, createdByStaffId, sentAt, completedAt, createdAt, updatedAt, recipientId, childId, childName, guardianViewedAt, guardianAcknowledgedAt, decision, signedAt, signedMetadata]
+      properties:
+        id: { type: integer }
+        siteId: { type: integer }
+        heading: { type: string }
+        excursionDate: { type: string, format: date }
+        description: { type: string }
+        venue: { type: string }
+        riskAssessmentName: { type: ["string", "null"] }
+        purpose: { type: string }
+        cost: { type: string }
+        departureTime: { type: string }
+        arrivalTime: { type: string }
+        transportMethod: { type: string }
+        restraintsFitted: { type: string }
+        childToStaffRatio: { type: string }
+        staffAttending: { type: string }
+        itemsToBring: { type: string }
+        medicalAuthorisationText: { type: string }
+        status: { type: string, enum: [draft, sent, completed] }
+        createdByStaffId: { type: ["integer", "null"] }
+        sentAt: { type: ["string", "null"], format: date-time }
+        completedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        recipientId: { type: integer }
+        childId: { type: integer }
+        childName: { type: string }
+        guardianViewedAt: { type: ["string", "null"], format: date-time }
+        guardianAcknowledgedAt: { type: ["string", "null"], format: date-time }
+        decision: { type: ["string", "null"], enum: [granted, declined, null] }
+        signedAt: { type: ["string", "null"], format: date-time }
+        signedMetadata:
+          $ref: "#/components/schemas/ExcursionSignedMetadata"
+    ExcursionSignedMetadata:
+      type: ["object", "null"]
+      required: [guardianName, relationship, homePhone, workPhone, mobilePhone, medicalAcknowledgement, typedSignatureName, signatureDataUrl, signedAt, decision]
+      properties:
+        guardianName: { type: string }
+        relationship: { type: string }
+        homePhone: { type: ["string", "null"] }
+        workPhone: { type: ["string", "null"] }
+        mobilePhone: { type: ["string", "null"] }
+        medicalAcknowledgement: { type: boolean }
+        typedSignatureName: { type: string }
+        signatureDataUrl: { type: string }
+        signedAt: { type: string, format: date-time }
+        decision: { type: string, enum: [granted, declined] }
+    GuardianNotification:
+      type: object
+      required: [id, guardianEmail, type, title, body, href, read, referenceId, referenceType, dedupeKey, createdAt]
+      properties:
+        id: { type: integer }
+        guardianEmail: { type: string }
+        type: { type: string }
+        title: { type: string }
+        body: { type: ["string", "null"] }
+        href: { type: string }
+        read: { type: boolean }
+        referenceId: { type: ["integer", "null"] }
+        referenceType: { type: ["string", "null"] }
+        dedupeKey: { type: string }
+        createdAt: { type: string, format: date-time }
+    ExcursionDecisionInput:
+      type: object
+      required: [decision, typedGuardianName, relationship, medicalAcknowledgement, typedSignatureName, signatureDataUrl]
+      properties:
+        decision: { type: string, enum: [granted, declined] }
+        typedGuardianName: { type: string, minLength: 1, maxLength: 200 }
+        relationship: { type: string, minLength: 1, maxLength: 100 }
+        homePhone: { type: string, maxLength: 50 }
+        workPhone: { type: string, maxLength: 50 }
+        mobilePhone: { type: string, maxLength: 50 }
+        medicalAcknowledgement: { type: boolean }
+        typedSignatureName: { type: string, minLength: 1, maxLength: 200 }
+        signatureDataUrl: { type: string, maxLength: 500000 }
+
     Guardian:
       type: object
       required: [guardianEmail, guardianName, guardianPhone, childIds, childNames, siteIds, hasPassword]
@@ -5079,6 +5639,34 @@ components:
         contentType:
           type: string
           minLength: 1
+    ExcursionRiskAssessmentUploadInput:
+      type: object
+      required: [siteId, name, size, contentType]
+      properties:
+        siteId:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 20971520
+        contentType:
+          type: string
+          enum: [application/pdf]
+    ExcursionRiskAssessmentUploadResponse:
+      type: object
+      required: [uploadURL, objectPath, metadata]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/ExcursionRiskAssessmentUploadInput'
     UploadUrlResponse:
       type: object
       required: [uploadURL, objectPath]

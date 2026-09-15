@@ -4,20 +4,54 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/auth";
 import { useListSites } from "@workspace/api-client-react";
 import {
-  Baby, Calendar, User, ExternalLink, ShieldCheck, FileText, BookOpen,
-  MessageCircle, ChevronLeft, ChevronRight, CalendarDays, Send,
-  Building2, ClipboardList, Bell, Paperclip,
+  Baby,
+  Calendar,
+  User,
+  ExternalLink,
+  ShieldCheck,
+  FileText,
+  BookOpen,
+  MessageCircle,
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
+  Send,
+  Building2,
+  ClipboardList,
+  Bell,
+  Paperclip,
+  MapPin,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
+import { Link } from "wouter";
 import { RichTextView } from "@/components/rich-text-editor";
 import { PostDetailDialog } from "@/components/post-detail-dialog";
-import { ReadOnlyPlanView, ExistingPlan } from "@/components/read-only-plan-view";
 import {
-  startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-  addMonths, subMonths, format, addDays, isAfter, parseISO,
+  ReadOnlyPlanView,
+  ExistingPlan,
+} from "@/components/read-only-plan-view";
+import { useListGuardianExcursions } from "@workspace/api-client-react";
+import {
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  addMonths,
+  subMonths,
+  format,
+  addDays,
+  isAfter,
+  parseISO,
 } from "date-fns";
 import { melbourneDateStr, fmtMelb } from "@/lib/timezone";
 
@@ -71,9 +105,9 @@ function docUrl(path: string) {
 }
 
 const NOTICE_PRIORITY_COLORS: Record<string, string> = {
-  low:    "bg-slate-100 text-slate-700",
+  low: "bg-slate-100 text-slate-700",
   normal: "bg-blue-100 text-blue-800",
-  high:   "bg-amber-100 text-amber-800",
+  high: "bg-amber-100 text-amber-800",
   urgent: "bg-red-100 text-red-800",
 };
 
@@ -99,55 +133,86 @@ const TODAY = melbourneDateStr();
 const SHORT_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
 type DayKey = "mon" | "tue" | "wed" | "thu" | "fri";
-type RowKey = "experiencesThemes" | "active" | "creative" | "wellbeing" | "imaginative" | "spontaneousChoice";
+type RowKey =
+  | "experiencesThemes"
+  | "active"
+  | "creative"
+  | "wellbeing"
+  | "imaginative"
+  | "spontaneousChoice";
 type WeeklyPlanData = Partial<Record<RowKey, Partial<Record<DayKey, string>>>>;
 
 const PLAN_ROWS: { key: RowKey; label: string; color: string }[] = [
-  { key: "experiencesThemes", label: "Theme",            color: "bg-amber-50" },
-  { key: "active",            label: "Active Play",      color: "bg-green-50" },
-  { key: "creative",          label: "Creative",         color: "bg-blue-50" },
-  { key: "wellbeing",         label: "Wellbeing",        color: "bg-rose-50" },
-  { key: "imaginative",       label: "Imaginative Play", color: "bg-purple-50" },
-  { key: "spontaneousChoice", label: "Child's Choice",   color: "bg-orange-50" },
+  { key: "experiencesThemes", label: "Theme", color: "bg-amber-50" },
+  { key: "active", label: "Active Play", color: "bg-green-50" },
+  { key: "creative", label: "Creative", color: "bg-blue-50" },
+  { key: "wellbeing", label: "Wellbeing", color: "bg-rose-50" },
+  { key: "imaginative", label: "Imaginative Play", color: "bg-purple-50" },
+  { key: "spontaneousChoice", label: "Child's Choice", color: "bg-orange-50" },
 ];
 const PLAN_DAYS: { key: DayKey; label: string }[] = [
-  { key: "mon", label: "Mon" }, { key: "tue", label: "Tue" },
-  { key: "wed", label: "Wed" }, { key: "thu", label: "Thu" },
+  { key: "mon", label: "Mon" },
+  { key: "tue", label: "Tue" },
+  { key: "wed", label: "Wed" },
+  { key: "thu", label: "Thu" },
   { key: "fri", label: "Fri" },
 ];
 
 function WeeklyActivityGrid({ data }: { data: WeeklyPlanData }) {
   const hasContent = PLAN_ROWS.some((row) =>
-    PLAN_DAYS.some((day) => (data[row.key]?.[day.key] ?? "").trim())
+    PLAN_DAYS.some((day) => (data[row.key]?.[day.key] ?? "").trim()),
   );
   if (!hasContent) {
-    return <p className="text-sm text-muted-foreground italic py-2">No activities entered for this week.</p>;
+    return (
+      <p className="text-sm text-muted-foreground italic py-2">
+        No activities entered for this week.
+      </p>
+    );
   }
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[480px] text-sm border-collapse">
         <thead>
           <tr>
-            <th className="text-left font-semibold text-muted-foreground text-xs uppercase tracking-wide py-2 px-2 w-28">Activity</th>
+            <th className="text-left font-semibold text-muted-foreground text-xs uppercase tracking-wide py-2 px-2 w-28">
+              Activity
+            </th>
             {PLAN_DAYS.map((d) => (
-              <th key={d.key} className="text-center font-semibold text-xs uppercase tracking-wide py-2 px-1 text-muted-foreground">{d.label}</th>
+              <th
+                key={d.key}
+                className="text-center font-semibold text-xs uppercase tracking-wide py-2 px-1 text-muted-foreground"
+              >
+                {d.label}
+              </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {PLAN_ROWS.map((row) => {
-            const rowHasContent = PLAN_DAYS.some((d) => (data[row.key]?.[d.key] ?? "").trim());
+            const rowHasContent = PLAN_DAYS.some((d) =>
+              (data[row.key]?.[d.key] ?? "").trim(),
+            );
             if (!rowHasContent) return null;
             return (
               <tr key={row.key} className="border-t border-border/60">
-                <td className={`py-2 px-2 font-medium text-xs text-foreground rounded-l align-top ${row.color}`}>{row.label}</td>
+                <td
+                  className={`py-2 px-2 font-medium text-xs text-foreground rounded-l align-top ${row.color}`}
+                >
+                  {row.label}
+                </td>
                 {PLAN_DAYS.map((d) => {
                   const cell = (data[row.key]?.[d.key] ?? "").trim();
                   return (
                     <td key={d.key} className="py-2 px-1 align-top text-center">
-                      {cell
-                        ? <span className="text-xs text-foreground whitespace-pre-wrap leading-snug">{cell}</span>
-                        : <span className="text-muted-foreground/30 text-xs">—</span>}
+                      {cell ? (
+                        <span className="text-xs text-foreground whitespace-pre-wrap leading-snug">
+                          {cell}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground/30 text-xs">
+                          —
+                        </span>
+                      )}
                     </td>
                   );
                 })}
@@ -160,7 +225,13 @@ function WeeklyActivityGrid({ data }: { data: WeeklyPlanData }) {
   );
 }
 
-function WeeklyProgramCard({ plan, onOpen }: { plan: GuardianPlan; onOpen: () => void }) {
+function WeeklyProgramCard({
+  plan,
+  onOpen,
+}: {
+  plan: GuardianPlan;
+  onOpen: () => void;
+}) {
   const dateLabel = plan.startDate
     ? `Week of ${format(parseISO(plan.startDate), "dd/MM/yyyy")}`
     : (plan.title ?? "Calendar");
@@ -173,18 +244,34 @@ function WeeklyProgramCard({ plan, onOpen }: { plan: GuardianPlan; onOpen: () =>
       <CardHeader className="flex flex-row items-start justify-between gap-3 p-4">
         <div className="flex-1 space-y-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-semibold text-base leading-tight">{plan.title ?? "Calendar"}</h3>
-            <Badge variant="secondary" className="text-xs font-medium bg-emerald-100 text-emerald-800">Published</Badge>
+            <h3 className="font-semibold text-base leading-tight">
+              {plan.title ?? "Calendar"}
+            </h3>
+            <Badge
+              variant="secondary"
+              className="text-xs font-medium bg-emerald-100 text-emerald-800"
+            >
+              Published
+            </Badge>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-0.5">
             {plan.startDate && (
-              <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" />{dateLabel}</span>
+              <span className="flex items-center gap-1">
+                <CalendarDays className="h-3 w-3" />
+                {dateLabel}
+              </span>
             )}
             {(plan as any).siteName && (
-              <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{(plan as any).siteName}</span>
+              <span className="flex items-center gap-1">
+                <Building2 className="h-3 w-3" />
+                {(plan as any).siteName}
+              </span>
             )}
             {(plan as any).preparedBy && (
-              <span className="flex items-center gap-1"><User className="h-3 w-3" />{(plan as any).preparedBy}</span>
+              <span className="flex items-center gap-1">
+                <User className="h-3 w-3" />
+                {(plan as any).preparedBy}
+              </span>
             )}
           </div>
         </div>
@@ -210,7 +297,9 @@ function GuardianCalendar({ childSiteIds }: { childSiteIds: number[] }) {
   });
 
   const filteredPlans = (plans ?? []).filter(
-    (p) => childSiteIds.length === 0 || (p.siteId != null && childSiteIds.includes(p.siteId))
+    (p) =>
+      childSiteIds.length === 0 ||
+      (p.siteId != null && childSiteIds.includes(p.siteId)),
   );
 
   // Cards view: only this week + next week
@@ -246,8 +335,12 @@ function GuardianCalendar({ childSiteIds }: { childSiteIds: number[] }) {
     return (plans ?? []).find((p) => {
       if (!p.startDate) return false;
       const d = p.startDate.slice(0, 10);
-      return d >= weekStart && d <= weekEnd &&
-        (childSiteIds.length === 0 || (p.siteId != null && childSiteIds.includes(p.siteId)));
+      return (
+        d >= weekStart &&
+        d <= weekEnd &&
+        (childSiteIds.length === 0 ||
+          (p.siteId != null && childSiteIds.includes(p.siteId)))
+      );
     });
   }
   const hasAnyPublished = weeks.some((w) => !!publishedPlanForWeek(w));
@@ -275,13 +368,23 @@ function GuardianCalendar({ childSiteIds }: { childSiteIds: number[] }) {
         <Card>
           <CardHeader className="pb-2 pt-4">
             <div className="flex items-center justify-between">
-              <Button variant="ghost" size="icon" className="h-8 w-8"
-                onClick={() => setCurrentMonth((m) => subMonths(m, 1))}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <CardTitle className="text-base">{format(currentMonth, "MMMM yyyy")}</CardTitle>
-              <Button variant="ghost" size="icon" className="h-8 w-8"
-                onClick={() => setCurrentMonth((m) => addMonths(m, 1))}>
+              <CardTitle className="text-base">
+                {format(currentMonth, "MMMM yyyy")}
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
+              >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -289,18 +392,27 @@ function GuardianCalendar({ childSiteIds }: { childSiteIds: number[] }) {
           <CardContent className="pt-0 pb-4">
             {isLoading ? (
               <div className="space-y-3 mt-2">
-                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="h-20 w-full" />
+                ))}
               </div>
             ) : (
               <div className="border rounded-lg overflow-hidden mt-2">
                 <div className="grid grid-cols-5 bg-muted/50 border-b">
                   {SHORT_DAYS.map((d) => (
-                    <div key={d} className="px-2 py-2 text-xs font-semibold text-muted-foreground text-center border-r last:border-r-0">{d}</div>
+                    <div
+                      key={d}
+                      className="px-2 py-2 text-xs font-semibold text-muted-foreground text-center border-r last:border-r-0"
+                    >
+                      {d}
+                    </div>
                   ))}
                 </div>
                 <div className="divide-y">
                   {weeks.map((weekDays, wi) => {
-                    const inMonth = weekDays.some((d) => d.getMonth() === currentMonth.getMonth());
+                    const inMonth = weekDays.some(
+                      (d) => d.getMonth() === currentMonth.getMonth(),
+                    );
                     const plan = publishedPlanForWeek(weekDays);
                     return (
                       <div
@@ -321,8 +433,13 @@ function GuardianCalendar({ childSiteIds }: { childSiteIds: number[] }) {
                         )}
                         <div className="grid grid-cols-5 min-h-[72px]">
                           {weekDays.map((day, di) => (
-                            <div key={di} className={`border-r last:border-r-0 px-2 py-1.5 ${day.getMonth() !== currentMonth.getMonth() ? "bg-muted/20" : ""}`}>
-                              <p className={`text-xs font-medium ${format(day, "yyyy-MM-dd") === TODAY ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                            <div
+                              key={di}
+                              className={`border-r last:border-r-0 px-2 py-1.5 ${day.getMonth() !== currentMonth.getMonth() ? "bg-muted/20" : ""}`}
+                            >
+                              <p
+                                className={`text-xs font-medium ${format(day, "yyyy-MM-dd") === TODAY ? "text-primary font-bold" : "text-muted-foreground"}`}
+                              >
                                 {format(day, "d")}
                               </p>
                             </div>
@@ -342,27 +459,34 @@ function GuardianCalendar({ childSiteIds }: { childSiteIds: number[] }) {
             )}
           </CardContent>
         </Card>
+      ) : /* ── Program cards view (default) ── */
+      isLoading ? (
+        <div className="space-y-3">
+          {[...Array(2)].map((_, i) => (
+            <Skeleton key={i} className="h-20 rounded-xl" />
+          ))}
+        </div>
+      ) : sortedPlans.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">No calendar programs published yet.</p>
+            <p className="text-xs mt-1">
+              Check back soon — your service will post the program here each
+              week.
+            </p>
+          </CardContent>
+        </Card>
       ) : (
-        /* ── Program cards view (default) ── */
-        isLoading ? (
-          <div className="space-y-3">
-            {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
-          </div>
-        ) : sortedPlans.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">No calendar programs published yet.</p>
-              <p className="text-xs mt-1">Check back soon — your service will post the program here each week.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {sortedPlans.map((plan) => (
-              <WeeklyProgramCard key={plan.id} plan={plan} onOpen={() => setSelectedPlan(plan)} />
-            ))}
-          </div>
-        )
+        <div className="space-y-3">
+          {sortedPlans.map((plan) => (
+            <WeeklyProgramCard
+              key={plan.id}
+              plan={plan}
+              onOpen={() => setSelectedPlan(plan)}
+            />
+          ))}
+        </div>
       )}
 
       {selectedPlan && (
@@ -382,7 +506,8 @@ function ageFromDob(dob: string | null): string {
   const birth = new Date(dob);
   const now = new Date();
   const totalMonths =
-    (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+    (now.getFullYear() - birth.getFullYear()) * 12 +
+    (now.getMonth() - birth.getMonth());
   if (totalMonths < 12) return `${totalMonths} months`;
   const y = Math.floor(totalMonths / 12);
   const m = totalMonths % 12;
@@ -407,7 +532,8 @@ function imageUrl(path: string) {
 
 // ── Post card ─────────────────────────────────────────────────────────────────
 function PostCard({ post, onSelect }: { post: Post; onSelect: () => void }) {
-  const summary = post.aiSummary || stripHtml(post.description) || stripHtml(post.learning);
+  const summary =
+    post.aiSummary || stripHtml(post.description) || stripHtml(post.learning);
   const hasImage = post.images && post.images.length > 0;
   const publishDate = post.publishedAt
     ? new Date(post.publishedAt).toLocaleDateString("en-AU")
@@ -424,21 +550,37 @@ function PostCard({ post, onSelect }: { post: Post; onSelect: () => void }) {
             src={imageUrl(post.images[0])}
             alt={post.title}
             className="w-full h-full object-cover"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
           />
         </div>
       )}
       {!hasImage && (
-        <div className="h-2" style={{ background: "linear-gradient(90deg, #4CAF50, #2196F3)" }} />
+        <div
+          className="h-2"
+          style={{ background: "linear-gradient(90deg, #4CAF50, #2196F3)" }}
+        />
       )}
       <CardContent className="p-4">
-        <h3 className="font-semibold text-sm leading-snug mb-1">{post.title}</h3>
-        {publishDate && <p className="text-xs text-muted-foreground mb-2">{publishDate}</p>}
-        {summary && <p className="text-sm text-muted-foreground line-clamp-3">{summary.slice(0, 200)}</p>}
+        <h3 className="font-semibold text-sm leading-snug mb-1">
+          {post.title}
+        </h3>
+        {publishDate && (
+          <p className="text-xs text-muted-foreground mb-2">{publishDate}</p>
+        )}
+        {summary && (
+          <p className="text-sm text-muted-foreground line-clamp-3">
+            {summary.slice(0, 200)}
+          </p>
+        )}
         {post.childNames.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
             {post.childNames.map((name) => (
-              <span key={name} className="text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium">
+              <span
+                key={name}
+                className="text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium"
+              >
                 {name}
               </span>
             ))}
@@ -453,13 +595,102 @@ function PostCard({ post, onSelect }: { post: Post; onSelect: () => void }) {
   );
 }
 
+function UpcomingExcursions() {
+  const { data: excursions, isLoading } = useListGuardianExcursions();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(2)].map((_, i) => (
+          <Skeleton key={i} className="h-20 rounded-xl" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!excursions || excursions.length === 0) return null;
+
+  const pending = excursions.filter((e) => !e.decision);
+  const completed = excursions.filter((e) => e.decision);
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <MapPin className="h-4 w-4 text-muted-foreground" />
+        <h2 className="text-base font-semibold">Upcoming Excursions</h2>
+        {pending.length > 0 && (
+          <span className="text-xs bg-amber-100 text-amber-800 rounded-full px-2 py-0.5 font-medium">
+            {pending.length} Action Required
+          </span>
+        )}
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {excursions.map((exc) => (
+          <Link key={exc.recipientId} href={`/excursions/${exc.id}/recipients/${exc.recipientId}`}>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow group h-full flex flex-col">
+              <CardHeader className="p-4 pb-2">
+                <div className="flex justify-between items-start gap-2 mb-1.5">
+                  <div className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    {exc.excursionDate.split("T")[0]}
+                  </div>
+                  {exc.decision === "granted" ? (
+                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px] uppercase font-semibold">
+                      Granted
+                    </Badge>
+                  ) : exc.decision === "declined" ? (
+                    <Badge
+                      variant="destructive"
+                      className="text-[10px] uppercase font-semibold"
+                    >
+                      Declined
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="secondary"
+                      className="bg-amber-100 text-amber-800 border-amber-200 text-[10px] uppercase font-semibold"
+                    >
+                      Action Required
+                    </Badge>
+                  )}
+                </div>
+                <CardTitle className="text-base leading-tight group-hover:text-primary transition-colors">
+                  {exc.heading}
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                  {exc.venue}
+                </p>
+              </CardHeader>
+              <CardContent className="p-4 pt-0 mt-auto flex items-center gap-2">
+                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                  {exc.childName.charAt(0)}
+                </div>
+                <p className="text-xs font-medium text-foreground">
+                  {exc.childName}
+                </p>
+                <div className="ml-auto text-xs text-primary font-medium flex items-center gap-1 group-hover:underline">
+                  {exc.decision ? "View form" : "Review & sign"}{" "}
+                  <ChevronRight className="h-3 w-3" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function GuardianHome() {
   const { user } = useAuth();
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
   // Only set when the user explicitly clicks a site tab; otherwise falls back to first child's site.
-  const [noticeSiteOverride, setNoticeSiteOverride] = useState<number | null>(null);
+  const [noticeSiteOverride, setNoticeSiteOverride] = useState<number | null>(
+    null,
+  );
 
   const { data: children, isLoading: childrenLoading } = useQuery<Child[]>({
     queryKey: ["/api/auth/my-children"],
@@ -494,12 +725,15 @@ export default function GuardianHome() {
 
   const childSiteIds = [
     ...new Set(
-      (children ?? []).map((c) => c.siteId).filter((id): id is number => id != null),
+      (children ?? [])
+        .map((c) => c.siteId)
+        .filter((id): id is number => id != null),
     ),
   ];
 
   // Computed: user's explicit choice, else first child's site, else null (children not loaded yet)
-  const selectedNoticeSiteId: number | null = noticeSiteOverride ?? childSiteIds[0] ?? null;
+  const selectedNoticeSiteId: number | null =
+    noticeSiteOverride ?? childSiteIds[0] ?? null;
 
   const activeNotices = (notices ?? [])
     .filter((n) => !n.expiresAt || new Date(n.expiresAt) > now)
@@ -520,7 +754,9 @@ export default function GuardianHome() {
       {/* Welcome banner */}
       <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#1b5e20] to-[#2e7d32] p-6 text-white">
         <p className="text-sm text-white/70 mb-1">Welcome back</p>
-        <h1 className="text-2xl font-bold mb-0.5">{user?.name ?? "Guardian"}</h1>
+        <h1 className="text-2xl font-bold mb-0.5">
+          {user?.name ?? "Guardian"}
+        </h1>
         <p className="text-white/70 text-sm">
           {fmtMelb(new Date(), "EEEE, dd/MM/yyyy")}
         </p>
@@ -604,29 +840,39 @@ export default function GuardianHome() {
               >
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-start">
-                    <Badge className={`${NOTICE_PRIORITY_COLORS[notice.priority] ?? NOTICE_PRIORITY_COLORS.normal} border-none capitalize`}>
+                    <Badge
+                      className={`${NOTICE_PRIORITY_COLORS[notice.priority] ?? NOTICE_PRIORITY_COLORS.normal} border-none capitalize`}
+                    >
                       {notice.priority}
                     </Badge>
                   </div>
-                  <h4 className="font-semibold text-sm text-white">{notice.title}</h4>
-                  <RichTextView html={notice.content} className="text-white/85 line-clamp-3" />
+                  <h4 className="font-semibold text-sm text-white">
+                    {notice.title}
+                  </h4>
+                  <RichTextView
+                    html={notice.content}
+                    className="text-white/85 line-clamp-3"
+                  />
                   {notice.documentPaths && notice.documentPaths.length > 0 && (
                     <div className="mt-1 flex items-center gap-1.5 text-xs text-white/80">
                       <Paperclip className="h-3 w-3 shrink-0" />
                       <span>
                         {notice.documentPaths.length === 1
-                          ? notice.documentNames?.[0] ?? "1 attachment"
+                          ? (notice.documentNames?.[0] ?? "1 attachment")
                           : `${notice.documentPaths.length} attachments`}
                       </span>
                     </div>
                   )}
                 </div>
                 <div className="mt-4 pt-2 border-t border-white/25 flex items-center justify-between gap-2">
-                  <span className="text-xs text-white/60">{new Date(notice.createdAt).toLocaleDateString("en-AU")}</span>
+                  <span className="text-xs text-white/60">
+                    {new Date(notice.createdAt).toLocaleDateString("en-AU")}
+                  </span>
                   {notice.siteId != null && (
                     <span className="flex items-center gap-1 text-[11px] text-white/70 bg-white/15 rounded px-1.5 py-0.5 shrink-0">
                       <Building2 className="h-3 w-3" />
-                      {(sites ?? []).find((s) => s.id === notice.siteId)?.name ?? "One site"}
+                      {(sites ?? []).find((s) => s.id === notice.siteId)
+                        ?.name ?? "One site"}
                     </span>
                   )}
                 </div>
@@ -652,21 +898,33 @@ export default function GuardianHome() {
 
         {childrenLoading ? (
           <div className="grid gap-3 sm:grid-cols-2">
-            {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
+            {[...Array(2)].map((_, i) => (
+              <Skeleton key={i} className="h-40 rounded-xl" />
+            ))}
           </div>
         ) : !children || children.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
               <Baby className="h-10 w-10 mx-auto mb-3 opacity-30" />
               <p className="text-sm">No children linked to your account yet.</p>
-              <p className="text-xs mt-1">Please contact the centre if this is unexpected.</p>
+              <p className="text-xs mt-1">
+                Please contact the centre if this is unexpected.
+              </p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {children.map((child) => (
-              <Card key={child.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                <div className="h-1.5" style={{ background: "linear-gradient(90deg, #4CAF50, #2196F3)" }} />
+              <Card
+                key={child.id}
+                className="overflow-hidden hover:shadow-md transition-shadow"
+              >
+                <div
+                  className="h-1.5"
+                  style={{
+                    background: "linear-gradient(90deg, #4CAF50, #2196F3)",
+                  }}
+                />
                 <CardContent className="p-5">
                   <div className="flex items-start gap-4">
                     <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -681,7 +939,8 @@ export default function GuardianHome() {
                         </h3>
                         <span
                           className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
-                            STATUS_STYLES[child.status] ?? "bg-gray-100 text-gray-600"
+                            STATUS_STYLES[child.status] ??
+                            "bg-gray-100 text-gray-600"
                           }`}
                         >
                           {child.status}
@@ -697,7 +956,9 @@ export default function GuardianHome() {
                             <Calendar className="h-3 w-3 shrink-0" />
                             <span>
                               Enrolled{" "}
-                              {new Date(child.enrollmentDate).toLocaleDateString("en-AU")}
+                              {new Date(
+                                child.enrollmentDate,
+                              ).toLocaleDateString("en-AU")}
                             </span>
                           </div>
                         )}
@@ -714,6 +975,9 @@ export default function GuardianHome() {
       {/* Weekly Learning Program — calendar view */}
       <GuardianCalendar childSiteIds={childSiteIds} />
 
+      {/* Excursions */}
+      <UpcomingExcursions />
+
       {/* Posts & Updates */}
       <div>
         <div className="flex items-center gap-2 mb-3">
@@ -728,7 +992,9 @@ export default function GuardianHome() {
 
         {postsLoading ? (
           <div className="grid gap-3 sm:grid-cols-2">
-            {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
+            {[...Array(2)].map((_, i) => (
+              <Skeleton key={i} className="h-40 rounded-xl" />
+            ))}
           </div>
         ) : !posts || posts.length === 0 ? (
           <Card>
@@ -740,7 +1006,11 @@ export default function GuardianHome() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} onSelect={() => setSelectedPostId(post.id)} />
+              <PostCard
+                key={post.id}
+                post={post}
+                onSelect={() => setSelectedPostId(post.id)}
+              />
             ))}
           </div>
         )}
@@ -754,43 +1024,62 @@ export default function GuardianHome() {
       />
 
       {/* Notice detail dialog */}
-      <Dialog open={!!selectedNotice} onOpenChange={(open) => { if (!open) setSelectedNotice(null); }}>
+      <Dialog
+        open={!!selectedNotice}
+        onOpenChange={(open) => {
+          if (!open) setSelectedNotice(null);
+        }}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <div className="flex items-center gap-2 mb-1">
-              <Badge className={`${NOTICE_PRIORITY_COLORS[selectedNotice?.priority ?? "normal"]} border-none capitalize`}>
+              <Badge
+                className={`${NOTICE_PRIORITY_COLORS[selectedNotice?.priority ?? "normal"]} border-none capitalize`}
+              >
                 {selectedNotice?.priority}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                {selectedNotice && fmtMelb(selectedNotice.createdAt, "dd/MM/yyyy 'at' h:mm a")}
+                {selectedNotice &&
+                  fmtMelb(selectedNotice.createdAt, "dd/MM/yyyy 'at' h:mm a")}
               </span>
             </div>
-            <DialogTitle className="text-lg leading-snug">{selectedNotice?.title}</DialogTitle>
+            <DialogTitle className="text-lg leading-snug">
+              {selectedNotice?.title}
+            </DialogTitle>
           </DialogHeader>
           <div className="mt-2 space-y-4">
             {selectedNotice && (
-              <RichTextView html={selectedNotice.content} className="text-foreground" />
+              <RichTextView
+                html={selectedNotice.content}
+                className="text-foreground"
+              />
             )}
-            {selectedNotice?.documentPaths && selectedNotice.documentPaths.length > 0 && (
-              <div className="pt-3 border-t space-y-1.5">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Attachments</p>
-                {selectedNotice.documentPaths.map((path, idx) => {
-                  const name = selectedNotice.documentNames?.[idx] ?? path.split("/").pop() ?? `Document ${idx + 1}`;
-                  return (
-                    <a
-                      key={idx}
-                      href={docUrl(path)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-primary hover:underline font-medium"
-                    >
-                      <FileText className="h-4 w-4 shrink-0" />
-                      {name}
-                    </a>
-                  );
-                })}
-              </div>
-            )}
+            {selectedNotice?.documentPaths &&
+              selectedNotice.documentPaths.length > 0 && (
+                <div className="pt-3 border-t space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Attachments
+                  </p>
+                  {selectedNotice.documentPaths.map((path, idx) => {
+                    const name =
+                      selectedNotice.documentNames?.[idx] ??
+                      path.split("/").pop() ??
+                      `Document ${idx + 1}`;
+                    return (
+                      <a
+                        key={idx}
+                        href={docUrl(path)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm text-primary hover:underline font-medium"
+                      >
+                        <FileText className="h-4 w-4 shrink-0" />
+                        {name}
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
           </div>
         </DialogContent>
       </Dialog>

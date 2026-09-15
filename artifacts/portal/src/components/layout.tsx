@@ -35,7 +35,8 @@ import {
   ClipboardList,
   ClipboardCheck,
   CreditCard,
-  Sparkles
+  Sparkles,
+  Map
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "./ui/button";
@@ -73,6 +74,7 @@ const NAV_GROUPS = [
     items: [
       { href: "/calendar", label: "Calendar", icon: CalendarDays },
       { href: "/planning", label: "Planning Cycle", icon: Layers },
+      { href: "/excursions", label: "Excursions", icon: Map },
     ]
   },
   {

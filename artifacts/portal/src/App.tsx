@@ -34,6 +34,7 @@ import NewObservation from "@/pages/new-observation";
 import ViewObservation from "@/pages/view-observation";
 import ProgramsList from "@/pages/programs-list";
 import NewProgram from "@/pages/new-program";
+import Excursions from "@/pages/excursions";
 import NqsCompliance from "@/pages/nqs-compliance";
 import Outcomes from "@/pages/outcomes";
 
@@ -184,6 +185,7 @@ function StaffRoutes() {
 
         <Route path="/programs" component={ProgramsList} />
         <Route path="/programs/new" component={NewProgram} />
+        <Route path="/excursions" component={Excursions} />
 
         <Route path="/nqs" component={NqsCompliance} />
         <Route path="/outcomes" component={Outcomes} />

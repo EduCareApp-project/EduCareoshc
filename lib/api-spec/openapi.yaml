@@ -3922,7 +3922,7 @@ components:
   schemas:
     Excursion:
       type: object
-      required: [id, siteId, heading, excursionDate, description, venue, riskAssessmentPath, riskAssessmentName, purpose, cost, departureTime, arrivalTime, transportMethod, restraintsFitted, childToStaffRatio, staffAttending, itemsToBring, medicalAuthorisationText, status, createdByStaffId, sentAt, completedAt, createdAt, updatedAt]
+      required: [id, siteId, heading, excursionDate, description, venue, riskAssessmentPath, riskAssessmentName, purpose, cost, departureTime, arrivalTime, arrivalAtVenue, departureFromVenue, maximumChildren, transportMethod, restraintsFitted, childToStaffRatio, staffAttending, itemsToBring, otherInformation, medicalAuthorisationText, status, createdByStaffId, sentAt, completedAt, createdAt, updatedAt]
       properties:
         id: { type: integer }
         siteId: { type: integer }
@@ -3936,11 +3936,15 @@ components:
         cost: { type: string }
         departureTime: { type: string }
         arrivalTime: { type: string }
+        arrivalAtVenue: { type: string }
+        departureFromVenue: { type: string }
+        maximumChildren: { type: string }
         transportMethod: { type: string }
         restraintsFitted: { type: string }
         childToStaffRatio: { type: string }
         staffAttending: { type: string }
         itemsToBring: { type: string }
+        otherInformation: { type: string }
         medicalAuthorisationText: { type: string }
         status: { type: string, enum: [draft, sent, completed] }
         createdByStaffId: { type: ["integer", "null"] }
@@ -3963,11 +3967,15 @@ components:
         cost: { type: string }
         departureTime: { type: string }
         arrivalTime: { type: string }
+        arrivalAtVenue: { type: string }
+        departureFromVenue: { type: string }
+        maximumChildren: { type: string }
         transportMethod: { type: string }
         restraintsFitted: { type: string }
         childToStaffRatio: { type: string }
         staffAttending: { type: string }
         itemsToBring: { type: string }
+        otherInformation: { type: string }
         medicalAuthorisationText: { type: string }
         recipientEmails: { type: array, items: { type: string } }
     ExcursionUpdate:
@@ -3984,11 +3992,15 @@ components:
         cost: { type: string }
         departureTime: { type: string }
         arrivalTime: { type: string }
+        arrivalAtVenue: { type: string }
+        departureFromVenue: { type: string }
+        maximumChildren: { type: string }
         transportMethod: { type: string }
         restraintsFitted: { type: string }
         childToStaffRatio: { type: string }
         staffAttending: { type: string }
         itemsToBring: { type: string }
+        otherInformation: { type: string }
         medicalAuthorisationText: { type: string }
         status: { type: string, enum: [draft, sent, completed] }
         recipientEmails: { type: array, items: { type: string } }
@@ -4060,7 +4072,7 @@ components:
         createdAt: { type: string, format: date-time }
     GuardianExcursion:
       type: object
-      required: [id, siteId, heading, excursionDate, description, venue, riskAssessmentName, purpose, cost, departureTime, arrivalTime, transportMethod, restraintsFitted, childToStaffRatio, staffAttending, itemsToBring, medicalAuthorisationText, status, createdByStaffId, sentAt, completedAt, createdAt, updatedAt, recipientId, childId, childName, guardianViewedAt, guardianAcknowledgedAt, decision, signedAt, signedMetadata]
+      required: [id, siteId, heading, excursionDate, description, venue, riskAssessmentName, purpose, cost, departureTime, arrivalTime, arrivalAtVenue, departureFromVenue, maximumChildren, transportMethod, restraintsFitted, childToStaffRatio, staffAttending, itemsToBring, otherInformation, medicalAuthorisationText, status, createdByStaffId, sentAt, completedAt, createdAt, updatedAt, recipientId, childId, childName, guardianViewedAt, guardianAcknowledgedAt, decision, signedAt, signedMetadata]
       properties:
         id: { type: integer }
         siteId: { type: integer }
@@ -4073,11 +4085,15 @@ components:
         cost: { type: string }
         departureTime: { type: string }
         arrivalTime: { type: string }
+        arrivalAtVenue: { type: string }
+        departureFromVenue: { type: string }
+        maximumChildren: { type: string }
         transportMethod: { type: string }
         restraintsFitted: { type: string }
         childToStaffRatio: { type: string }
         staffAttending: { type: string }
         itemsToBring: { type: string }
+        otherInformation: { type: string }
         medicalAuthorisationText: { type: string }
         status: { type: string, enum: [draft, sent, completed] }
         createdByStaffId: { type: ["integer", "null"] }

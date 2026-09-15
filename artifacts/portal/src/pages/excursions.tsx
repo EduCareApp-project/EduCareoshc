@@ -443,7 +443,144 @@ function ExcursionDetail({
 
       <div className="pt-2">
         <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-          <section className="p-5 sm:p-6 space-y-4" data-testid="section-guardian-permissions">
+          <section className="p-5 sm:p-6" data-testid="section-logistics-details">
+            <div className="border-b pb-4 mb-5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                Excursion information
+              </p>
+              <h2 className="mt-1 text-xl font-semibold">Permission Form</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                The practical information provided to families with the permission form.
+              </p>
+            </div>
+
+            <Card className="shadow-none rounded-sm border-2 overflow-hidden">
+              <div className="bg-[#4a89d6] text-white py-3 px-4">
+                <h3 className="text-center text-lg font-bold">{detail.heading}</h3>
+              </div>
+              <CardContent className="p-6 text-sm text-foreground grid gap-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
+                  <div className="font-bold">Purpose of Activity:</div>
+                  <div className="whitespace-pre-wrap">{detail.purpose}</div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
+                  <div className="font-bold">Date:</div>
+                  <div>{new Date(detail.excursionDate).toLocaleDateString("en-AU")}</div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
+                  <div className="font-bold">Cost:</div>
+                  <div>{detail.cost}</div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-8 mt-1">
+                  <div className="grid grid-cols-1 xl:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
+                    <div className="font-bold">Time of Departure from School:</div>
+                    <div className="text-[#4a89d6]">{detail.departureTime}</div>
+                  </div>
+                  <div className="grid grid-cols-1 xl:grid-cols-[200px_1fr] gap-x-4 gap-y-1">
+                    <div className="font-bold">Time of arrival at Venue:</div>
+                    <div className="text-[#4a89d6]">{detail.arrivalAtVenue}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-8">
+                  <div className="grid grid-cols-1 xl:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
+                    <div className="font-bold">Time of Departure from Venue:</div>
+                    <div className="text-[#4a89d6]">{detail.departureFromVenue}</div>
+                  </div>
+                  <div className="grid grid-cols-1 xl:grid-cols-[200px_1fr] gap-x-4 gap-y-1">
+                    <div className="font-bold">Time of arrival at School:</div>
+                    <div className="text-[#4a89d6]">{detail.arrivalTime}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1 mt-1">
+                  <div className="font-bold">Method of Transport:</div>
+                  <div className="whitespace-pre-wrap">{detail.transportMethod}</div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
+                  <div className="font-bold">Restraints fitted:</div>
+                  <div>{detail.restraintsFitted}</div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
+                  <div className="font-bold">Child to staff ratios:</div>
+                  <div className="whitespace-pre-wrap">{detail.childToStaffRatio}</div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
+                  <div className="font-bold">Maximum of Children</div>
+                  <div>{detail.maximumChildren}</div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
+                  <div className="font-bold">Staff in attendance:</div>
+                  <div className="whitespace-pre-wrap">{detail.staffAttending}</div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1 mt-1">
+                  <div className="font-bold">Other Information:</div>
+                  <div className="whitespace-pre-wrap">{detail.otherInformation}</div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1 mt-1">
+                  <div className="font-bold">Children will need to bring:</div>
+                  <div className="whitespace-pre-wrap">{detail.itemsToBring}</div>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+
+          <section className="border-t p-5 sm:p-6" data-testid="section-activity-log">
+            <div className="border-b pb-4 mb-5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                Record history
+              </p>
+              <h2 className="mt-1 text-xl font-semibold">Activity Log</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                A chronological record of sending, viewing, reminders, and guardian responses.
+              </p>
+            </div>
+            <Card className="shadow-none">
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  {detail.logs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="flex gap-4 items-start text-sm"
+                    >
+                      <div className="w-32 shrink-0 text-muted-foreground text-xs pt-0.5">
+                        {new Date(log.createdAt).toLocaleString("en-AU", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                      <div>
+                        <span className="font-medium">{log.event}</span>
+                        {log.guardianEmail && (
+                          <span className="text-muted-foreground ml-2">
+                            ({log.guardianEmail})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {detail.logs.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No activity recorded yet.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+
+          <section className="border-t p-5 sm:p-6 space-y-4" data-testid="section-guardian-permissions">
             <div className="border-b pb-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary">
                 Permission responses
@@ -588,124 +725,7 @@ function ExcursionDetail({
                 </TableBody>
               </Table>
             </Card>
-          </section>
-
-          <section className="border-t p-5 sm:p-6" data-testid="section-logistics-details">
-            <div className="border-b pb-4 mb-5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                Excursion information
-              </p>
-              <h2 className="mt-1 text-xl font-semibold">Logistics &amp; Details</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                The practical information provided to families with the permission form.
-              </p>
-            </div>
-            <Card className="shadow-none">
-              <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8 text-sm">
-                <div className="space-y-1">
-                  <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                    <Clock className="h-4 w-4" /> Departure
-                  </span>
-                  <p>{detail.departureTime}</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                    <Clock className="h-4 w-4" /> Return
-                  </span>
-                  <p>{detail.arrivalTime}</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-muted-foreground font-medium">
-                    Cost
-                  </span>
-                  <p>{detail.cost}</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-muted-foreground font-medium">
-                    Transport
-                  </span>
-                  <p>{detail.transportMethod}</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-muted-foreground font-medium">
-                    Restraints
-                  </span>
-                  <p>{detail.restraintsFitted}</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-muted-foreground font-medium">
-                    Ratio
-                  </span>
-                  <p>{detail.childToStaffRatio}</p>
-                </div>
-                <div className="space-y-1 sm:col-span-2">
-                  <span className="text-muted-foreground font-medium">
-                    Staff Attending
-                  </span>
-                  <p>{detail.staffAttending}</p>
-                </div>
-                <div className="space-y-1 sm:col-span-2">
-                  <span className="text-muted-foreground font-medium">
-                    Items to Bring
-                  </span>
-                  <p>{detail.itemsToBring}</p>
-                </div>
-                <div className="space-y-1 sm:col-span-2">
-                  <span className="text-muted-foreground font-medium">
-                    Purpose
-                  </span>
-                  <p>{detail.purpose}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </section>
-
-          <section className="border-t p-5 sm:p-6" data-testid="section-activity-log">
-            <div className="border-b pb-4 mb-5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                Record history
-              </p>
-              <h2 className="mt-1 text-xl font-semibold">Activity Log</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                A chronological record of sending, viewing, reminders, and guardian responses.
-              </p>
-            </div>
-            <Card className="shadow-none">
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  {detail.logs.map((log) => (
-                    <div
-                      key={log.id}
-                      className="flex gap-4 items-start text-sm"
-                    >
-                      <div className="w-32 shrink-0 text-muted-foreground text-xs pt-0.5">
-                        {new Date(log.createdAt).toLocaleString("en-AU", {
-                          month: "short",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </div>
-                      <div>
-                        <span className="font-medium">{log.event}</span>
-                        {log.guardianEmail && (
-                          <span className="text-muted-foreground ml-2">
-                            ({log.guardianEmail})
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  {detail.logs.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      No activity recorded yet.
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </section>
-        </div>
+          </section></div>
       </div>
     </div>
   );
@@ -899,11 +919,15 @@ function ExcursionForm({
     purpose: "",
     cost: "Free",
     departureTime: "09:00 AM",
+    arrivalAtVenue: "09:30 AM",
+    departureFromVenue: "01:30 PM",
     arrivalTime: "02:00 PM",
     transportMethod: "Walking",
     restraintsFitted: "N/A",
     childToStaffRatio: "1:8",
+    maximumChildren: "",
     staffAttending: "",
+    otherInformation: "",
     itemsToBring: "Hat, drink bottle, sensible shoes",
     medicalAuthorisationText:
       "In the event of an emergency, illness, or accident concerning my child, and if the nominated contact people cannot be reached, I authorise the educator/person in charge to consent to my child receiving medical, dental, or surgical treatment as deemed necessary by a medical practitioner or hospital.",
@@ -923,11 +947,15 @@ function ExcursionForm({
         purpose: editData.purpose,
         cost: editData.cost,
         departureTime: editData.departureTime,
+        arrivalAtVenue: editData.arrivalAtVenue,
+        departureFromVenue: editData.departureFromVenue,
         arrivalTime: editData.arrivalTime,
         transportMethod: editData.transportMethod,
         restraintsFitted: editData.restraintsFitted,
         childToStaffRatio: editData.childToStaffRatio,
+        maximumChildren: editData.maximumChildren,
         staffAttending: editData.staffAttending,
+        otherInformation: editData.otherInformation,
         itemsToBring: editData.itemsToBring,
         medicalAuthorisationText: editData.medicalAuthorisationText,
         riskAssessmentPath: editData.riskAssessmentPath || undefined,
@@ -1098,206 +1126,240 @@ function ExcursionForm({
 
       <Card>
         <CardContent className="pt-6 space-y-6 text-sm">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {isFullAccess && (
+          <div className="grid grid-cols-1 gap-4">
+            <h3 className="font-semibold text-base mb-2">General Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {isFullAccess && (
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label>
+                    Site <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={formData.siteId?.toString() ?? ""}
+                    onValueChange={(v) => {
+                      setFormData({ ...formData, siteId: parseInt(v), riskAssessmentPath: undefined, riskAssessmentName: undefined });
+                      setRiskFile(null);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select site" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(sites ?? []).map((s) => (
+                        <SelectItem key={s.id} value={s.id.toString()}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <div className="space-y-1.5 md:col-span-2">
                 <Label>
-                  Site <span className="text-destructive">*</span>
+                  Heading <span className="text-destructive">*</span>
                 </Label>
-                <Select
-                  value={formData.siteId?.toString() ?? ""}
-                  onValueChange={(v) => {
-                    setFormData({ ...formData, siteId: parseInt(v), riskAssessmentPath: undefined, riskAssessmentName: undefined });
-                    setRiskFile(null);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select site" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(sites ?? []).map((s) => (
-                      <SelectItem key={s.id} value={s.id.toString()}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div className="space-y-1.5 md:col-span-2">
-              <Label>
-                Heading <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                value={formData.heading}
-                onChange={(e) =>
-                  setFormData({ ...formData, heading: e.target.value })
-                }
-                placeholder="e.g. Local Library Storytime"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>
-                Date <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                type="date"
-                value={formData.excursionDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, excursionDate: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>
-                Venue <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                value={formData.venue}
-                onChange={(e) =>
-                  setFormData({ ...formData, venue: e.target.value })
-                }
-                placeholder="e.g. City Library"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>Departure Time</Label>
-              <Input
-                value={formData.departureTime}
-                onChange={(e) =>
-                  setFormData({ ...formData, departureTime: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>Return Time</Label>
-              <Input
-                value={formData.arrivalTime}
-                onChange={(e) =>
-                  setFormData({ ...formData, arrivalTime: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="space-y-1.5 md:col-span-2">
-              <Label>Description of Activities</Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                className="h-24"
-              />
-            </div>
-
-            <div className="space-y-1.5 md:col-span-2">
-              <Label>Educational Purpose</Label>
-              <Input
-                value={formData.purpose}
-                onChange={(e) =>
-                  setFormData({ ...formData, purpose: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="space-y-1.5 md:col-span-2">
-              <Label>Risk Assessment PDF</Label>
-              <div className="flex flex-col gap-2">
                 <Input
-                  type="file"
-                  accept=".pdf"
-                  disabled={!formData.siteId}
-                  onChange={(e) => setRiskFile(e.target.files?.[0] || null)}
+                  value={formData.heading}
+                  onChange={(e) =>
+                    setFormData({ ...formData, heading: e.target.value })
+                  }
+                  placeholder="e.g. Local Library Storytime"
                 />
-                {!formData.siteId && (
-                  <p className="text-xs text-muted-foreground">Please select a site first.</p>
-                )}
-                {formData.siteId && formData.riskAssessmentName && !riskFile && (
-                  <p className="text-xs text-muted-foreground">Current: {formData.riskAssessmentName}</p>
-                )}
+              </div>
+
+              <div className="space-y-1.5 md:col-span-2">
+                <Label>
+                  Venue <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  value={formData.venue}
+                  onChange={(e) =>
+                    setFormData({ ...formData, venue: e.target.value })
+                  }
+                  placeholder="e.g. City Library"
+                />
+              </div>
+
+              <div className="space-y-1.5 md:col-span-2">
+                <Label>Description of Activities (Internal Info)</Label>
+                <Textarea
+                  value={formData.description || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className="h-20"
+                />
+              </div>
+
+              <div className="space-y-1.5 md:col-span-2">
+                <Label>Risk Assessment PDF</Label>
+                <div className="flex flex-col gap-2">
+                  <Input
+                    type="file"
+                    accept=".pdf"
+                    disabled={!formData.siteId}
+                    onChange={(e) => setRiskFile(e.target.files?.[0] || null)}
+                  />
+                  {!formData.siteId && (
+                    <p className="text-xs text-muted-foreground">Please select a site first.</p>
+                  )}
+                  {formData.siteId && formData.riskAssessmentName && !riskFile && (
+                    <p className="text-xs text-muted-foreground">Current: {formData.riskAssessmentName}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1.5 md:col-span-2">
+                <Label>Medical Authorisation Clause</Label>
+                <Textarea
+                  value={formData.medicalAuthorisationText || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      medicalAuthorisationText: e.target.value,
+                    })
+                  }
+                  className="h-20"
+                />
               </div>
             </div>
           </div>
 
           <Separator />
-          <h3 className="font-semibold text-base">Logistics</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Cost</Label>
-              <Input
-                value={formData.cost}
-                onChange={(e) =>
-                  setFormData({ ...formData, cost: e.target.value })
-                }
-              />
+          <div className="grid grid-cols-1 gap-4">
+            <div className="flex flex-col mb-2">
+              <h3 className="font-semibold text-base">Permission Form</h3>
+              <p className="text-sm text-muted-foreground">Fill in the fields exactly as they will appear on the final permission document.</p>
             </div>
-            <div className="space-y-1.5">
-              <Label>Transport Method</Label>
-              <Input
-                value={formData.transportMethod}
-                onChange={(e) =>
-                  setFormData({ ...formData, transportMethod: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Restraints Fitted?</Label>
-              <Input
-                value={formData.restraintsFitted}
-                onChange={(e) =>
-                  setFormData({ ...formData, restraintsFitted: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Child to Staff Ratio</Label>
-              <Input
-                value={formData.childToStaffRatio}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    childToStaffRatio: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-1.5 md:col-span-2">
-              <Label>Staff Attending</Label>
-              <Input
-                value={formData.staffAttending}
-                onChange={(e) =>
-                  setFormData({ ...formData, staffAttending: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-1.5 md:col-span-2">
-              <Label>Items to Bring</Label>
-              <Input
-                value={formData.itemsToBring}
-                onChange={(e) =>
-                  setFormData({ ...formData, itemsToBring: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-1.5 md:col-span-2">
-              <Label>Medical Authorisation Clause</Label>
-              <Textarea
-                value={formData.medicalAuthorisationText}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    medicalAuthorisationText: e.target.value,
-                  })
-                }
-                className="h-20"
-              />
-            </div>
+
+            <Card className="shadow-none rounded-sm border-2 overflow-hidden">
+              <div className="bg-[#4a89d6] text-white py-3 px-4">
+                <h4 className="text-center text-lg font-bold">{formData.heading || "Excursion Heading"}</h4>
+              </div>
+              <CardContent className="p-6 grid gap-y-5">
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-2 items-start">
+                  <Label className="font-bold text-sm pt-2 text-foreground">Purpose of Activity:</Label>
+                  <Textarea
+                    value={formData.purpose || ""}
+                    onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
+                    className="min-h-[80px]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-2 items-center">
+                  <Label className="font-bold text-sm text-foreground">Date:</Label>
+                  <Input
+                    type="date"
+                    value={formData.excursionDate || ""}
+                    onChange={(e) => setFormData({ ...formData, excursionDate: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-2 items-center">
+                  <Label className="font-bold text-sm text-foreground">Cost:</Label>
+                  <Input
+                    value={formData.cost || ""}
+                    onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-8">
+                  <div className="grid grid-cols-1 xl:grid-cols-[250px_1fr] gap-x-4 gap-y-2 items-center">
+                    <Label className="font-bold text-sm text-foreground">Time of Departure from School:</Label>
+                    <Input
+                      value={formData.departureTime || ""}
+                      onChange={(e) => setFormData({ ...formData, departureTime: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 xl:grid-cols-[200px_1fr] gap-x-4 gap-y-2 items-center">
+                    <Label className="font-bold text-sm text-foreground">Time of arrival at Venue:</Label>
+                    <Input
+                      value={formData.arrivalAtVenue || ""}
+                      onChange={(e) => setFormData({ ...formData, arrivalAtVenue: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-8">
+                  <div className="grid grid-cols-1 xl:grid-cols-[250px_1fr] gap-x-4 gap-y-2 items-center">
+                    <Label className="font-bold text-sm text-foreground">Time of Departure from Venue:</Label>
+                    <Input
+                      value={formData.departureFromVenue || ""}
+                      onChange={(e) => setFormData({ ...formData, departureFromVenue: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 xl:grid-cols-[200px_1fr] gap-x-4 gap-y-2 items-center">
+                    <Label className="font-bold text-sm text-foreground">Time of arrival at School:</Label>
+                    <Input
+                      value={formData.arrivalTime || ""}
+                      onChange={(e) => setFormData({ ...formData, arrivalTime: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-2 items-center mt-2">
+                  <Label className="font-bold text-sm text-foreground">Method of Transport:</Label>
+                  <Input
+                    value={formData.transportMethod || ""}
+                    onChange={(e) => setFormData({ ...formData, transportMethod: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-2 items-center">
+                  <Label className="font-bold text-sm text-foreground">Restraints fitted:</Label>
+                  <Input
+                    value={formData.restraintsFitted || ""}
+                    onChange={(e) => setFormData({ ...formData, restraintsFitted: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-2 items-center">
+                  <Label className="font-bold text-sm text-foreground">Child to staff ratios:</Label>
+                  <Input
+                    value={formData.childToStaffRatio || ""}
+                    onChange={(e) => setFormData({ ...formData, childToStaffRatio: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-2 items-center">
+                  <Label className="font-bold text-sm text-foreground">Maximum of Children</Label>
+                  <Input
+                    value={formData.maximumChildren || ""}
+                    onChange={(e) => setFormData({ ...formData, maximumChildren: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-2 items-center">
+                  <Label className="font-bold text-sm text-foreground">Staff in attendance:</Label>
+                  <Input
+                    value={formData.staffAttending || ""}
+                    onChange={(e) => setFormData({ ...formData, staffAttending: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-2 items-start mt-2">
+                  <Label className="font-bold text-sm pt-2 text-foreground">Other Information:</Label>
+                  <Textarea
+                    value={formData.otherInformation || ""}
+                    onChange={(e) => setFormData({ ...formData, otherInformation: e.target.value })}
+                    className="min-h-[80px]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-2 items-start mt-2">
+                  <Label className="font-bold text-sm pt-2 text-foreground">Children will need to bring:</Label>
+                  <Textarea
+                    value={formData.itemsToBring || ""}
+                    onChange={(e) => setFormData({ ...formData, itemsToBring: e.target.value })}
+                    className="min-h-[80px]"
+                  />
+                </div>
+
+              </CardContent>
+            </Card>
           </div>
 
           <Separator />

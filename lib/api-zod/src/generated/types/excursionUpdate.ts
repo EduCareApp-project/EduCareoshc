@@ -20,11 +20,15 @@ export interface ExcursionUpdate {
   cost?: string;
   departureTime?: string;
   arrivalTime?: string;
+  arrivalAtVenue?: string;
+  departureFromVenue?: string;
+  maximumChildren?: string;
   transportMethod?: string;
   restraintsFitted?: string;
   childToStaffRatio?: string;
   staffAttending?: string;
   itemsToBring?: string;
+  otherInformation?: string;
   medicalAuthorisationText?: string;
   status?: ExcursionUpdateStatus;
   recipientEmails?: string[];

@@ -110,6 +110,7 @@ export * from "./listNoticesAudience";
 export * from "./listNoticesParams";
 export * from "./listNotificationSettingsParams";
 export * from "./listPostsParams";
+export * from "./listPostsPublicationStatus";
 export * from "./listQipStrengthsParams";
 export * from "./listRoutineItemCompletionsParams";
 export * from "./listWeeklyReviewsParams";

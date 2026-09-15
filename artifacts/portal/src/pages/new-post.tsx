@@ -128,8 +128,7 @@ export default function NewPost() {
     return `/api/storage/objects/${stripped}`;
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function savePost(publish: boolean) {
     if (!validate()) return;
 
     const body: Record<string, unknown> = {
@@ -149,6 +148,12 @@ export default function NewPost() {
 
     createPost.mutate({ data: body as any }, {
       onSuccess: (created) => {
+        if (!publish) {
+          queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() });
+          toast({ title: "Draft saved" });
+          setLocation("/posts");
+          return;
+        }
         updatePost.mutate(
           {
             id: created.id,
@@ -178,6 +183,11 @@ export default function NewPost() {
       },
       onError: () => toast({ title: "Failed to create post", variant: "destructive" }),
     });
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    savePost(true);
   }
 
   return (
@@ -426,6 +436,14 @@ export default function NewPost() {
 
         <div className="flex items-center justify-end gap-3 pb-8">
           <Button type="button" variant="outline" onClick={() => setLocation("/posts")}>Cancel</Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={createPost.isPending || updatePost.isPending || uploadingIndex !== null || uploadingDoc}
+            onClick={() => savePost(false)}
+          >
+            Save Draft
+          </Button>
           <Button type="submit" disabled={createPost.isPending || updatePost.isPending || uploadingIndex !== null || uploadingDoc}>
             {createPost.isPending ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving & generating summary…</>

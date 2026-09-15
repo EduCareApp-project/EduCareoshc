@@ -2507,6 +2507,12 @@ paths:
           schema:
             type: integer
             minimum: 1
+        - name: publicationStatus
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [published, draft]
         - name: offset
           in: query
           required: false
@@ -4053,6 +4059,9 @@ components:
           type: ["string", "null"]
         actionNotes:
           type: ["string", "null"]
+        publishedAt:
+          type: ["string", "null"]
+          format: date-time
         commentCount:
           type: integer
           default: 0
@@ -4085,10 +4094,15 @@ components:
           type: string
         actionNotes:
           type: string
+        publishedAt:
+          type: ["string", "null"]
+          format: date-time
 
     ObservationUpdate:
       type: object
       properties:
+        childId:
+          type: integer
         staffId:
           type: integer
         description:
@@ -4104,6 +4118,9 @@ components:
           type: string
         actionNotes:
           type: string
+        publishedAt:
+          type: string
+          format: date-time
 
     Outcome:
       type: object

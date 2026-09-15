@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, asc, inArray } from "drizzle-orm";
+import { eq, asc, inArray, and, isNotNull } from "drizzle-orm";
 import { db, childrenTable, observationsTable, staffTable, outcomesTable, programsTable, childDocumentsTable, childMedicationsTable } from "@workspace/db";
 import {
   CreateChildBody,
@@ -252,7 +252,10 @@ router.get("/children/:id/observations", async (req, res): Promise<void> => {
     const observations = await db
       .select()
       .from(observationsTable)
-      .where(eq(observationsTable.childId, params.data.id))
+      .where(and(
+        eq(observationsTable.childId, params.data.id),
+        isNotNull(observationsTable.publishedAt),
+      ))
       .orderBy(observationsTable.observationDate);
 
     const enriched = observations.map((obs) => {

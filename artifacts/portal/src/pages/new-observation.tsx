@@ -1,7 +1,14 @@
-import { useState } from "react";
-import { useCreateObservation, useListChildren, getListObservationsQueryKey } from "@workspace/api-client-react";
+import { useEffect, useState } from "react";
+import {
+  useCreateObservation,
+  useGetObservation,
+  useUpdateObservation,
+  useListChildren,
+  getGetObservationQueryKey,
+  getListObservationsQueryKey,
+} from "@workspace/api-client-react";
 import { useActiveStaff } from "@/hooks/use-active-staff";
-import { useLocation, useSearch } from "wouter";
+import { useLocation, useRoute, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +33,9 @@ const EMPTY_FORM = {
 
 export default function NewObservation() {
   const [, setLocation] = useLocation();
+  const [, editParams] = useRoute("/observations/:id/edit");
+  const observationId = editParams?.id ? parseInt(editParams.id) : 0;
+  const isEditing = observationId > 0;
   const searchString = useSearch();
   const searchParams = new URLSearchParams(searchString);
   const prefilledChildId = searchParams.get("childId");
@@ -34,6 +44,10 @@ export default function NewObservation() {
   const { toast } = useToast();
 
   const createObservation = useCreateObservation();
+  const updateObservation = useUpdateObservation();
+  const { data: existingObservation } = useGetObservation(observationId, {
+    query: { queryKey: getGetObservationQueryKey(observationId), enabled: isEditing },
+  });
   const { data: children } = useListChildren();
   const { data: staff } = useActiveStaff();
 
@@ -45,6 +59,21 @@ export default function NewObservation() {
   });
   const [outcomeIds, setOutcomeIds] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [initialised, setInitialised] = useState(false);
+
+  useEffect(() => {
+    if (!existingObservation || initialised) return;
+    setForm({
+      childId: String(existingObservation.childId),
+      staffId: String(existingObservation.staffId),
+      observationDate: existingObservation.observationDate.slice(0, 10),
+      description: existingObservation.description,
+      commentPlan: existingObservation.commentPlan ?? "",
+      actionNotes: existingObservation.actionNotes ?? "",
+    });
+    setOutcomeIds(existingObservation.outcomeIds ?? []);
+    setInitialised(true);
+  }, [existingObservation, initialised]);
 
   function validate() {
     const e: Record<string, string> = {};
@@ -56,8 +85,7 @@ export default function NewObservation() {
     return Object.keys(e).length === 0;
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function saveObservation(publish: boolean) {
     if (!validate()) return;
 
     const body: Record<string, unknown> = {
@@ -66,21 +94,37 @@ export default function NewObservation() {
       observationDate: form.observationDate,
       description: form.description.trim(),
       outcomeIds,
+      ...(publish
+        ? { publishedAt: new Date().toISOString() }
+        : isEditing
+          ? {}
+          : { publishedAt: null }),
     };
     if (form.commentPlan.trim()) body.commentPlan = form.commentPlan.trim();
     if (form.actionNotes.trim()) body.actionNotes = form.actionNotes.trim();
 
-    createObservation.mutate(
-      { data: body as any },
+    const mutation = isEditing ? updateObservation : createObservation;
+    const variables = isEditing
+      ? { id: observationId, data: body as any }
+      : { data: body as any };
+
+    mutation.mutate(
+      variables as any,
       {
         onSuccess: (obs) => {
           queryClient.invalidateQueries({ queryKey: getListObservationsQueryKey() });
-          toast({ title: "Observation recorded" });
-          setLocation(`/observations/${obs.id}`);
+          if (isEditing) queryClient.invalidateQueries({ queryKey: getGetObservationQueryKey(observationId) });
+          toast({ title: publish ? "Observation published" : "Draft saved" });
+          setLocation(publish ? `/observations/${obs.id}` : "/observations");
         },
         onError: () => toast({ title: "Failed to save observation", variant: "destructive" }),
       }
     );
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    saveObservation(true);
   }
 
   const f = (field: keyof typeof form, value: string) =>
@@ -94,7 +138,7 @@ export default function NewObservation() {
         </Button>
         <div className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-primary" />
-          <h1 className="text-2xl font-bold tracking-tight">New Observation</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{isEditing ? "Continue Observation" : "New Observation"}</h1>
         </div>
       </div>
 
@@ -195,8 +239,16 @@ export default function NewObservation() {
 
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={() => history.back()}>Cancel</Button>
-          <Button type="submit" disabled={createObservation.isPending}>
-            {createObservation.isPending ? "Saving..." : "Save Observation"}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => saveObservation(false)}
+            disabled={createObservation.isPending || updateObservation.isPending}
+          >
+            Save Draft
+          </Button>
+          <Button type="submit" disabled={createObservation.isPending || updateObservation.isPending}>
+            {createObservation.isPending || updateObservation.isPending ? "Saving..." : "Publish Observation"}
           </Button>
         </div>
       </form>

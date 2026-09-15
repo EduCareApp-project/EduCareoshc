@@ -14,6 +14,7 @@ export const observationsTable = pgTable("observations", {
   learningExtension: text("learning_extension"),
   commentPlan: text("comment_plan"),
   actionNotes: text("action_notes"),
+  publishedAt: timestamp("published_at", { withTimezone: true }).defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

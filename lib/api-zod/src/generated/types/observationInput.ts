@@ -14,4 +14,6 @@ export interface ObservationInput {
   outcomeIds?: string[];
   commentPlan?: string;
   actionNotes?: string;
+  /** @nullable */
+  publishedAt?: Date | null;
 }

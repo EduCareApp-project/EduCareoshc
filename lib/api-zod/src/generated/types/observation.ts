@@ -23,6 +23,8 @@ export interface Observation {
   commentPlan?: string | null;
   /** @nullable */
   actionNotes?: string | null;
+  /** @nullable */
+  publishedAt?: Date | null;
   commentCount?: number;
   createdAt: Date;
   updatedAt: Date;

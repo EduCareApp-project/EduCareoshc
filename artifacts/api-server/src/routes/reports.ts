@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, ne, isNotNull } from "drizzle-orm";
 import { db, childrenTable, staffTable, observationsTable, outcomesTable, evacuationsTable, incidentsTable, conditionReportsTable, qipItemsTable, checklistRoutinesTable, professionalDevelopmentTable, staffQualificationsTable, postsTable, organisationTable, sitesTable } from "@workspace/db";
 import { GetLearningStoriesReportResponse, GetServiceComplianceReportResponse, GetStaffComplianceReportResponse } from "@workspace/api-zod";
 import { buildEmergencyStatuses } from "../lib/serviceCompliance";
@@ -25,7 +25,8 @@ router.get("/reports/learning-stories", async (req, res): Promise<void> => {
     const filteredChildren = siteId ? allChildren.filter((c) => c.siteId === siteId) : allChildren;
     const filteredChildIds = new Set(filteredChildren.map((c) => c.id));
 
-    const allObservations = await db.select().from(observationsTable);
+    const allObservations = await db.select().from(observationsTable)
+      .where(isNotNull(observationsTable.publishedAt));
     const observations = siteId
       ? allObservations.filter((obs) => filteredChildIds.has(obs.childId))
       : allObservations;

@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, ImagePlus, X, Loader2, Paperclip, FileText } from "lucide-react";
 import { useUpload } from "@workspace/object-storage-web";
@@ -53,6 +54,7 @@ export default function EditPost() {
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [initialised, setInitialised] = useState(false);
+  const [notifyGuardians, setNotifyGuardians] = useState(true);
 
   const { uploadFile } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -142,8 +144,8 @@ export default function EditPost() {
     setDocuments((prev) => prev.filter((_, i) => i !== idx));
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function savePost(publish: boolean) {
+    if (!post) return;
     if (!validate()) return;
 
     const body: Record<string, unknown> = {
@@ -160,16 +162,25 @@ export default function EditPost() {
     if (form.description.trim()) body.description = form.description;
     if (form.learning.trim()) body.learning = form.learning;
     if (form.opportunities.trim()) body.opportunities = form.opportunities;
+    if (publish && !post.publishedAt) {
+      body.publishedAt = new Date().toISOString();
+      body.notifyGuardians = notifyGuardians;
+    }
 
     updatePost.mutate({ id, data: body as any }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetPostQueryKey(id) });
-        toast({ title: "Post updated" });
-        setLocation(`/posts/${id}`);
+        toast({ title: publish && !post.publishedAt ? "Post published" : post.publishedAt ? "Post updated" : "Draft saved" });
+        setLocation(publish || post.publishedAt ? `/posts/${id}` : "/posts");
       },
       onError: () => toast({ title: "Failed to update post", variant: "destructive" }),
     });
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    savePost(Boolean(post?.publishedAt));
   }
 
   if (postLoading) {
@@ -417,12 +428,42 @@ export default function EditPost() {
           </CardContent>
         </Card>
 
+        {!post.publishedAt && (
+          <Card>
+            <CardContent className="pt-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium">Notify guardians by email</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Send an email to guardians when this draft is published.
+                  </p>
+                </div>
+                <Switch checked={notifyGuardians} onCheckedChange={setNotifyGuardians} />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="flex items-center justify-end gap-3 pb-8">
-          <Button type="button" variant="outline" onClick={() => setLocation(`/posts/${id}`)}>Cancel</Button>
-          <Button type="submit" disabled={updatePost.isPending || uploadingIndex !== null || uploadingDoc}>
+          <Button type="button" variant="outline" onClick={() => setLocation(post.publishedAt ? `/posts/${id}` : "/posts")}>Cancel</Button>
+          {!post.publishedAt && (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={updatePost.isPending || uploadingIndex !== null || uploadingDoc}
+              onClick={() => savePost(false)}
+            >
+              Save Draft
+            </Button>
+          )}
+          <Button
+            type={post.publishedAt ? "submit" : "button"}
+            onClick={post.publishedAt ? undefined : () => savePost(true)}
+            disabled={updatePost.isPending || uploadingIndex !== null || uploadingDoc}
+          >
             {updatePost.isPending ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving…</>
-            ) : "Save Changes"}
+            ) : post.publishedAt ? "Save Changes" : "Publish Post"}
           </Button>
         </div>
       </form>

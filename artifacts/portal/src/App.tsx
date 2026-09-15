@@ -179,6 +179,7 @@ function StaffRoutes() {
 
         <Route path="/observations" component={ObservationsList} />
         <Route path="/observations/new" component={NewObservation} />
+        <Route path="/observations/:id/edit" component={NewObservation} />
         <Route path="/observations/:id" component={ViewObservation} />
 
         <Route path="/programs" component={ProgramsList} />

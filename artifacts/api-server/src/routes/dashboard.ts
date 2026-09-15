@@ -18,7 +18,8 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
       .from(childrenTable)
       .where(eq(childrenTable.status, "active"));
     const [totalStaffResult] = await db.select({ count: count() }).from(staffTable).where(ne(staffTable.isSuperAdmin, true));
-    const [totalObsResult] = await db.select({ count: count() }).from(observationsTable);
+    const [totalObsResult] = await db.select({ count: count() }).from(observationsTable)
+      .where(isNotNull(observationsTable.publishedAt));
 
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -26,7 +27,10 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
     const [last7ObsResult] = await db
       .select({ count: count() })
       .from(observationsTable)
-      .where(gte(observationsTable.createdAt, sevenDaysAgo));
+      .where(and(
+        gte(observationsTable.createdAt, sevenDaysAgo),
+        isNotNull(observationsTable.publishedAt),
+      ));
 
     const [totalProgramsResult] = await db.select({ count: count() }).from(programsTable);
     const [activeProgramsResult] = await db
@@ -82,7 +86,10 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
     const [last7PostsResult] = await db
       .select({ count: count() })
       .from(postsTable)
-      .where(gte(postsTable.createdAt, sevenDaysAgo));
+      .where(and(
+        gte(postsTable.createdAt, sevenDaysAgo),
+        isNotNull(postsTable.publishedAt),
+      ));
 
     const [last7JottingsResult] = await db
       .select({ count: count() })
@@ -129,6 +136,7 @@ router.get("/dashboard/recent-observations", async (req, res): Promise<void> => 
     const rows = await db
       .select()
       .from(observationsTable)
+      .where(isNotNull(observationsTable.publishedAt))
       .orderBy(desc(observationsTable.createdAt))
       .limit(10);
 
@@ -158,7 +166,8 @@ router.get("/dashboard/recent-observations", async (req, res): Promise<void> => 
 router.get("/dashboard/outcome-counts", async (req, res): Promise<void> => {
   try {
     const outcomes = await db.select().from(outcomesTable).orderBy(outcomesTable.number);
-    const observations = await db.select().from(observationsTable);
+    const observations = await db.select().from(observationsTable)
+      .where(isNotNull(observationsTable.publishedAt));
 
     const counts = outcomes.map((outcome) => {
       const cnt = observations.filter((obs) => obs.outcomeIds.includes(String(outcome.id))).length;
@@ -186,8 +195,8 @@ router.get("/dashboard/recent-activity", async (req, res): Promise<void> => {
     ]);
 
     const [recentObs, recentPosts, recentIncidents, recentConditions, recentWelfare, recentBehavioural] = await Promise.all([
-      db.select().from(observationsTable).orderBy(desc(observationsTable.createdAt)).limit(20),
-      db.select().from(postsTable).orderBy(desc(postsTable.createdAt)).limit(20),
+      db.select().from(observationsTable).where(isNotNull(observationsTable.publishedAt)).orderBy(desc(observationsTable.createdAt)).limit(20),
+      db.select().from(postsTable).where(isNotNull(postsTable.publishedAt)).orderBy(desc(postsTable.createdAt)).limit(20),
       db.select().from(incidentsTable).orderBy(desc(incidentsTable.createdAt)).limit(20),
       db.select().from(conditionReportsTable).orderBy(desc(conditionReportsTable.createdAt)).limit(20),
       db.select().from(welfareNotesTable).orderBy(desc(welfareNotesTable.createdAt)).limit(20),

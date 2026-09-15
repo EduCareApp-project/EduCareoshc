@@ -89,7 +89,7 @@ router.get("/posts", async (req, res): Promise<void> => {
       res.status(400).json({ error: "Invalid pagination parameters" });
       return;
     }
-    const { limit, offset, childId, siteId } = parsed.data;
+    const { limit, offset, childId, siteId, publicationStatus } = parsed.data;
 
     const likerId = sessionLikerId(req);
 
@@ -97,6 +97,8 @@ router.get("/posts", async (req, res): Promise<void> => {
     const conditions = [];
     if (siteId !== undefined) conditions.push(eq(postsTable.siteId, siteId));
     if (childId !== undefined) conditions.push(sql`${postsTable.childIds} @> ARRAY[${childId}]::integer[]`);
+    if (publicationStatus === "published") conditions.push(isNotNull(postsTable.publishedAt));
+    if (publicationStatus === "draft") conditions.push(isNull(postsTable.publishedAt));
 
     const baseQuery = conditions.length > 0
       ? db.select().from(postsTable).where(and(...conditions)).orderBy(desc(postsTable.createdAt))

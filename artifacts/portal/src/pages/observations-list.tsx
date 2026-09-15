@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, FileText, Calendar, User, Clock, MessageCircle } from "lucide-react";
+import { Plus, Search, FileText, Calendar, User, Clock, MessageCircle, FileEdit } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { fmtMelb } from "@/lib/timezone";
@@ -26,7 +26,7 @@ export default function ObservationsList() {
 
   const showSiteFilter = !isEducatorRole && (sites ?? []).length > 1;
 
-  const filteredObs = observations?.filter((obs) => {
+  const matchesFilters = (obs: NonNullable<typeof observations>[number]) => {
     // Educators are always scoped to their own site
     if (isEducatorRole && ownSiteId) {
       const childSite = childSiteMap.get(obs.childId);
@@ -45,7 +45,10 @@ export default function ObservationsList() {
       obs.childName?.toLowerCase().includes(q) ||
       obs.staffName?.toLowerCase().includes(q)
     );
-  });
+  };
+
+  const draftObservations = observations?.filter((obs) => !obs.publishedAt && matchesFilters(obs));
+  const filteredObs = observations?.filter((obs) => obs.publishedAt && matchesFilters(obs));
 
   return (
     <div className="space-y-6">
@@ -85,6 +88,35 @@ export default function ObservationsList() {
           </Select>
         )}
       </div>
+
+      {!isLoading && (draftObservations?.length ?? 0) > 0 && (
+        <Card className="border-amber-200 bg-amber-50/40">
+          <CardContent className="p-4 space-y-3">
+            <div>
+              <h2 className="font-semibold">Saved drafts</h2>
+              <p className="text-sm text-muted-foreground">Continue working on these observations before publishing.</p>
+            </div>
+            <div className="divide-y rounded-md border bg-card">
+              {draftObservations?.map((obs) => (
+                <div key={obs.id} className="flex items-center gap-3 px-3 py-2.5">
+                  <FileEdit className="h-4 w-4 shrink-0 text-amber-600" />
+                  <div className="min-w-0 flex-1 text-sm">
+                    <span className="font-medium">{obs.childName || "Observation draft"}</span>
+                    <span className="text-muted-foreground">
+                      {obs.staffName ? ` · ${obs.staffName}` : ""}
+                      {obs.observationDate ? ` · ${format(new Date(obs.observationDate + "T00:00:00"), "dd/MM/yyyy")}` : ""}
+                    </span>
+                    {obs.description && <span className="ml-2 text-muted-foreground">— {obs.description}</span>}
+                  </div>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href={`/observations/${obs.id}/edit`}>Continue</Link>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {isLoading ? (
         <div className="grid gap-4">

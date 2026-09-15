@@ -7,10 +7,12 @@
  */
 
 export interface ObservationUpdate {
+  childId?: number;
   staffId?: number;
   description?: string;
   observationDate?: Date;
   outcomeIds?: string[];
   commentPlan?: string;
   actionNotes?: string;
+  publishedAt?: Date;
 }

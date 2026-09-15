@@ -5,12 +5,14 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+import type { ListPostsPublicationStatus } from "./listPostsPublicationStatus";
 
 export type ListPostsParams = {
   /**
    * @minimum 1
    */
   limit?: number;
+  publicationStatus?: ListPostsPublicationStatus;
   /**
    * @minimum 0
    */

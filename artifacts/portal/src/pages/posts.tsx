@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Newspaper, Plus, Trash2, User, ArrowLeft, Heart, MessageCircle } from "lucide-react";
+import { Newspaper, Plus, Trash2, User, ArrowLeft, Heart, MessageCircle, FileEdit } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
@@ -63,6 +63,14 @@ export default function Posts() {
       offset,
       ...(filterChildId ? { childId: filterChildId } : {}),
       ...(serverSiteId !== undefined ? { siteId: serverSiteId } : {}),
+      publicationStatus: "published",
+    },
+  });
+  const { data: draftPosts, isLoading: draftsLoading } = useListPosts({
+    params: {
+      ...(filterChildId ? { childId: filterChildId } : {}),
+      ...(serverSiteId !== undefined ? { siteId: serverSiteId } : {}),
+      publicationStatus: "draft",
     },
   });
 
@@ -182,6 +190,34 @@ export default function Posts() {
           </Button>
         </div>
       </div>
+
+      {!draftsLoading && (draftPosts?.length ?? 0) > 0 && (
+        <Card className="border-amber-200 bg-amber-50/40">
+          <CardContent className="p-4 space-y-3">
+            <div>
+              <h2 className="font-semibold">Saved drafts</h2>
+              <p className="text-sm text-muted-foreground">Continue working on these posts before publishing.</p>
+            </div>
+            <div className="divide-y rounded-md border bg-card">
+              {draftPosts?.map((post) => (
+                <div key={post.id} className="flex items-center gap-3 px-3 py-2.5">
+                  <FileEdit className="h-4 w-4 shrink-0 text-amber-600" />
+                  <div className="min-w-0 flex-1 text-sm">
+                    <span className="font-medium">{post.title || "Untitled post"}</span>
+                    <span className="text-muted-foreground">
+                      {post.staffName ? ` · ${post.staffName}` : ""}
+                      {post.date ? ` · ${format(new Date(post.date.slice(0, 10) + "T00:00:00"), "dd/MM/yyyy")}` : ""}
+                    </span>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => setLocation(`/posts/${post.id}/edit`)}>
+                    Continue
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {(isLoading && accumulatedPosts.length === 0) || isSwitchingFilter ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

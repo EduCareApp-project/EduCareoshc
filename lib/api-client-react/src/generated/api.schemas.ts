@@ -405,6 +405,8 @@ export interface Observation {
   commentPlan?: string | null;
   /** @nullable */
   actionNotes?: string | null;
+  /** @nullable */
+  publishedAt?: string | null;
   commentCount?: number;
   createdAt: string;
   updatedAt: string;
@@ -418,15 +420,19 @@ export interface ObservationInput {
   outcomeIds?: string[];
   commentPlan?: string;
   actionNotes?: string;
+  /** @nullable */
+  publishedAt?: string | null;
 }
 
 export interface ObservationUpdate {
+  childId?: number;
   staffId?: number;
   description?: string;
   observationDate?: string;
   outcomeIds?: string[];
   commentPlan?: string;
   actionNotes?: string;
+  publishedAt?: string;
 }
 
 export interface Outcome {
@@ -2446,6 +2452,7 @@ export type ListPostsParams = {
    * @minimum 1
    */
   limit?: number;
+  publicationStatus?: ListPostsPublicationStatus;
   /**
    * @minimum 0
    */
@@ -2459,6 +2466,14 @@ export type ListPostsParams = {
    */
   siteId?: number;
 };
+
+export type ListPostsPublicationStatus =
+  (typeof ListPostsPublicationStatus)[keyof typeof ListPostsPublicationStatus];
+
+export const ListPostsPublicationStatus = {
+  published: "published",
+  draft: "draft",
+} as const;
 
 export type GetLearningStoriesReportParams = {
   /**

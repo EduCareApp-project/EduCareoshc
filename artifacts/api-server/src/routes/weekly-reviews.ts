@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, gte, lt, count, sql, desc } from "drizzle-orm";
+import { eq, and, gte, lt, count, sql, desc, isNotNull } from "drizzle-orm";
 import {
   db, weeklyReviewsTable, sitesTable, staffTable,
   jottingsTable, childrenTable, observationsTable, postsTable,
@@ -37,6 +37,7 @@ async function fetchStats(siteId: number, weekStart: string) {
       eq(childrenTable.siteId, siteId),
       gte(observationsTable.observationDate, weekStart as any),
       lt(observationsTable.observationDate, weekEnd as any),
+      isNotNull(observationsTable.publishedAt),
     ));
 
   const [jotRow] = await db.select({ cnt: count() })

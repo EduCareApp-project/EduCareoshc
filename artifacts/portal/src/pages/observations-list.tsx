@@ -50,6 +50,10 @@ export default function ObservationsList() {
   const draftObservations = observations?.filter((obs) => !obs.publishedAt && matchesFilters(obs));
   const filteredObs = observations?.filter((obs) => obs.publishedAt && matchesFilters(obs));
 
+  function observationDate(value: string) {
+    return new Date(value.length === 10 ? `${value}T00:00:00` : value);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -104,7 +108,7 @@ export default function ObservationsList() {
                     <span className="font-medium">{obs.childName || "Observation draft"}</span>
                     <span className="text-muted-foreground">
                       {obs.staffName ? ` · ${obs.staffName}` : ""}
-                      {obs.observationDate ? ` · ${format(new Date(obs.observationDate + "T00:00:00"), "dd/MM/yyyy")}` : ""}
+                      {obs.observationDate ? ` · ${format(observationDate(obs.observationDate), "dd/MM/yyyy")}` : ""}
                     </span>
                     {obs.description && <span className="ml-2 text-muted-foreground">— {obs.description}</span>}
                   </div>
@@ -149,7 +153,7 @@ export default function ObservationsList() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(obs.observationDate.length === 10 ? obs.observationDate + "T00:00:00" : obs.observationDate), "dd/MM/yyyy")}
+                        {format(observationDate(obs.observationDate), "dd/MM/yyyy")}
                       </span>
                     </span>
                   </div>

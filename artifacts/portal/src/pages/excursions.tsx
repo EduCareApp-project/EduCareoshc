@@ -27,7 +27,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -443,18 +442,17 @@ function ExcursionDetail({
       </div>
 
       <div className="pt-2">
-        <Tabs defaultValue="permissions" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="permissions" data-testid="tab-permissions">
-              Guardian Permissions
-            </TabsTrigger>
-            <TabsTrigger value="details" data-testid="tab-details">
-              Logistics & Details
-            </TabsTrigger>
-            <TabsTrigger value="activity">Activity Log</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="permissions" className="space-y-4">
+        <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <section className="p-5 sm:p-6 space-y-4" data-testid="section-guardian-permissions">
+            <div className="border-b pb-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                Permission responses
+              </p>
+              <h2 className="mt-1 text-xl font-semibold">Guardian Permissions</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Review each child&apos;s permission status and follow up with guardians who have not responded.
+              </p>
+            </div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex gap-2">
                 <Button
@@ -590,10 +588,19 @@ function ExcursionDetail({
                 </TableBody>
               </Table>
             </Card>
-          </TabsContent>
+          </section>
 
-          <TabsContent value="details">
-            <Card>
+          <section className="border-t p-5 sm:p-6" data-testid="section-logistics-details">
+            <div className="border-b pb-4 mb-5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                Excursion information
+              </p>
+              <h2 className="mt-1 text-xl font-semibold">Logistics &amp; Details</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                The practical information provided to families with the permission form.
+              </p>
+            </div>
+            <Card className="shadow-none">
               <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8 text-sm">
                 <div className="space-y-1">
                   <span className="text-muted-foreground font-medium flex items-center gap-1.5">
@@ -651,10 +658,19 @@ function ExcursionDetail({
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </section>
 
-          <TabsContent value="activity">
-            <Card>
+          <section className="border-t p-5 sm:p-6" data-testid="section-activity-log">
+            <div className="border-b pb-4 mb-5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                Record history
+              </p>
+              <h2 className="mt-1 text-xl font-semibold">Activity Log</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                A chronological record of sending, viewing, reminders, and guardian responses.
+              </p>
+            </div>
+            <Card className="shadow-none">
               <CardContent className="pt-6">
                 <div className="space-y-4">
                   {detail.logs.map((log) => (
@@ -688,8 +704,8 @@ function ExcursionDetail({
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </section>
+        </div>
       </div>
     </div>
   );

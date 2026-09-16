@@ -890,21 +890,21 @@ async function markGuardianEvent(req: Request, res: Response, event: "viewed" | 
   try {
     const joined = await excursionForGuardian(id, recipientId, email);
     if (!joined || joined.excursion.status !== "sent") { res.status(404).json({ error: "Excursion not found" }); return; }
-    const alreadyRecorded = event === "viewed"
-      ? joined.recipient.viewedAt
-      : joined.recipient.acknowledgedAt;
-    if (alreadyRecorded) {
-      const detail = await guardianResponse(id, recipientId, email);
-      res.json((event === "viewed" ? MarkGuardianExcursionViewedResponse : AcknowledgeGuardianExcursionResponse).parse(detail));
-      return;
-    }
     const now = new Date();
-    await db.update(excursionRecipientsTable).set(
+    const timestampColumn = event === "viewed"
+      ? excursionRecipientsTable.viewedAt
+      : excursionRecipientsTable.acknowledgedAt;
+    const claimed = await db.update(excursionRecipientsTable).set(
       event === "viewed" ? { viewedAt: now } : { acknowledgedAt: now },
-    ).where(eq(excursionRecipientsTable.id, joined.recipient.id));
-    await db.insert(excursionResponseLogsTable).values({
-      excursionId: id, recipientId: joined.recipient.id, guardianEmail: email, event,
-    });
+    ).where(and(
+      eq(excursionRecipientsTable.id, joined.recipient.id),
+      isNull(timestampColumn),
+    )).returning({ id: excursionRecipientsTable.id });
+    if (claimed.length > 0) {
+      await db.insert(excursionResponseLogsTable).values({
+        excursionId: id, recipientId: joined.recipient.id, guardianEmail: email, event,
+      });
+    }
     const detail = await guardianResponse(id, recipientId, email);
     res.json((event === "viewed" ? MarkGuardianExcursionViewedResponse : AcknowledgeGuardianExcursionResponse).parse(detail));
   } catch (err) {

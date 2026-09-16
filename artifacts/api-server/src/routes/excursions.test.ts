@@ -54,7 +54,7 @@ const { mockDb, state, tables } = vi.hoisted(() => {
     childrenTable: { name: "children", siteId: "siteId", status: "status", guardianEmail: "guardianEmail", guardian2Email: "guardian2Email" },
     parentAccountsTable: { name: "parents" },
     excursionsTable: { name: "excursions", id: "id", siteId: "siteId", status: "status", excursionDate: "excursionDate", createdAt: "createdAt" },
-    excursionRecipientsTable: { name: "recipients", id: "id", excursionId: "excursionId", guardianEmail: "guardianEmail", childNameSnapshot: "childNameSnapshot", decision: "decision", createdAt: "createdAt" },
+    excursionRecipientsTable: { name: "recipients", id: "id", excursionId: "excursionId", guardianEmail: "guardianEmail", childNameSnapshot: "childNameSnapshot", viewedAt: "viewedAt", acknowledgedAt: "acknowledgedAt", decision: "decision", createdAt: "createdAt" },
     excursionResponseLogsTable: { name: "logs", excursionId: "excursionId", recipientId: "recipientId", guardianEmail: "guardianEmail", event: "event", createdAt: "createdAt" },
     excursionRiskAssessmentUploadsTable: { name: "uploads", id: "id", objectPath: "objectPath", claimedExcursionId: "claimedExcursionId" },
     guardianNotificationsTable: { name: "notifications", guardianEmail: "guardianEmail", createdAt: "createdAt", dedupeKey: "dedupeKey" },
@@ -128,10 +128,16 @@ const { mockDb, state, tables } = vi.hoisted(() => {
 
   function update(table: any) {
     let values: any;
+    let milestoneUpdate = false;
     const chain: any = {
-      set(value: any) { values = value; return chain; },
+      set(value: any) {
+        values = value;
+        const keys = Object.keys(value);
+        milestoneUpdate = keys.length === 1 && (keys[0] === "viewedAt" || keys[0] === "acknowledgedAt");
+        return chain;
+      },
       where() {
-        if (table.name === "recipients") {
+        if (table.name === "recipients" && !milestoneUpdate) {
           state.recipient = { ...state.recipient, ...values };
         }
         return chain;
@@ -142,6 +148,10 @@ const { mockDb, state, tables } = vi.hoisted(() => {
           return Promise.resolve([state.excursion]);
         }
         if (table.name === "recipients") {
+          if (milestoneUpdate) {
+            const timestamp = Object.keys(values)[0];
+            if (state.recipient[timestamp] !== null) return Promise.resolve([]);
+          }
           state.recipient = { ...state.recipient, ...values };
           return Promise.resolve([state.recipient]);
         }
@@ -294,6 +304,22 @@ describe("guardian excursion activity idempotency", () => {
     expect(state.logs.filter((log) => log.event === "viewed")).toHaveLength(1);
     expect(state.logs.filter((log) => log.event === "acknowledged")).toHaveLength(1);
   });
+
+  it.each(["viewed", "acknowledged"] as const)(
+    "records simultaneous %s requests only once",
+    async (event) => {
+      seedSentExcursion();
+      const app = buildApp();
+
+      const responses = await Promise.all([
+        request(app).post(`/api/guardian/excursions/41/recipients/55/${event}`).set("x-user", "guardian"),
+        request(app).post(`/api/guardian/excursions/41/recipients/55/${event}`).set("x-user", "guardian"),
+      ]);
+
+      expect(responses.map((response) => response.status)).toEqual([200, 200]);
+      expect(state.logs.filter((log) => log.event === event)).toHaveLength(1);
+    },
+  );
 
   it("hides duplicate milestones while preserving reminders and each guardian history", async () => {
     seedSentExcursion();

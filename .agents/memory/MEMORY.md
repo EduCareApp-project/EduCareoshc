@@ -12,3 +12,4 @@
 - [School report carry-forward](school-report-carry-forward.md) — new reports inherit narrative from the latest finalised report, while attendance statistics always recalculate for the selected period.
 - [Attendance average denominators](attendance-average-denominators.md) — exclude a whole week from a service’s average when that service recorded zero attendance across all five days.
 - [Excursion document provenance](excursion-document-provenance.md) — risk PDFs use a permanent protected prefix plus site/uploader provenance and atomic excursion claiming.
+- [Holiday-program excursion recipients](holiday-program-excursion-recipients.md) — guardian verification may include active children from any site because holiday programs combine sites.

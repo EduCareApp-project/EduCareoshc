@@ -196,7 +196,7 @@ type VerifiedAssignment = {
   childName: string;
 };
 
-async function verifyAssignments(siteId: number, inputEmails: string[]): Promise<{
+async function verifyAssignments(_siteId: number, inputEmails: string[]): Promise<{
   results: Array<{
     email: string;
     valid: boolean;
@@ -207,7 +207,7 @@ async function verifyAssignments(siteId: number, inputEmails: string[]): Promise
 }> {
   const emails = normaliseEmails(inputEmails);
   const [children, accounts] = await Promise.all([
-    db.select().from(childrenTable).where(eq(childrenTable.siteId, siteId)),
+    db.select().from(childrenTable).where(eq(childrenTable.status, "active")),
     db.select().from(parentAccountsTable),
   ]);
   const accountMap = new Map(accounts.map((account) => [account.guardianEmail.trim().toLowerCase(), account]));
@@ -230,7 +230,7 @@ async function verifyAssignments(siteId: number, inputEmails: string[]): Promise
       children: valid ? linked.map((child) => ({
         childId: child.id,
         childName: `${child.firstName} ${child.lastName}`,
-        siteId,
+        siteId: child.siteId ?? _siteId,
       })) : [],
     };
   });
@@ -453,7 +453,7 @@ router.post("/excursions", async (req, res): Promise<void> => {
       ? await verifyAssignments(parsed.data.siteId, recipientEmails)
       : { results: [], assignments: [] as VerifiedAssignment[] };
     if (verified.results.some((result) => !result.valid)) {
-      res.status(400).json({ error: "All recipients must be verified guardians at the selected site" });
+      res.status(400).json({ error: "All recipients must be active guardians linked to an active child" });
       return;
     }
     const excursion = await db.transaction(async (tx) => {
@@ -587,7 +587,7 @@ router.post("/excursions/:id/recipients", async (req, res): Promise<void> => {
     if (excursion.status === "completed") { res.status(409).json({ error: "Recipients cannot be added to a completed excursion" }); return; }
     const verified = await verifyAssignments(excursion.siteId, body.emails);
     if (verified.results.some((result) => !result.valid)) {
-      res.status(400).json({ error: "All recipients must be verified guardians at the selected site" });
+      res.status(400).json({ error: "All recipients must be active guardians linked to an active child" });
       return;
     }
     const inserted = await addVerifiedAssignments(id, verified.assignments);
@@ -654,7 +654,7 @@ router.post("/excursions/:id/send", async (req, res): Promise<void> => {
     if (body.emails?.length) {
       const verified = await verifyAssignments(excursion.siteId, body.emails);
       if (verified.results.some((result) => !result.valid)) {
-        res.status(400).json({ error: "All recipients must be verified guardians at the selected site" });
+        res.status(400).json({ error: "All recipients must be active guardians linked to an active child" });
         return;
       }
       recipientsToNotify = await addVerifiedAssignments(id, verified.assignments);

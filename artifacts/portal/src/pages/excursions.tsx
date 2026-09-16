@@ -1398,7 +1398,7 @@ function ExcursionForm({
                         </div>
                       ) : (
                         <div className="text-xs text-red-600 mt-0.5">
-                          Not found at selected site
+                          No active guardian account or linked active child found
                         </div>
                       )}
                     </div>

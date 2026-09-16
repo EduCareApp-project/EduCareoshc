@@ -51,7 +51,7 @@ function responseFields(fields: typeof permissionFields) {
 
 const { mockDb, state, tables } = vi.hoisted(() => {
   const tables = {
-    childrenTable: { name: "children", siteId: "siteId", guardianEmail: "guardianEmail", guardian2Email: "guardian2Email" },
+    childrenTable: { name: "children", siteId: "siteId", status: "status", guardianEmail: "guardianEmail", guardian2Email: "guardian2Email" },
     parentAccountsTable: { name: "parents" },
     excursionsTable: { name: "excursions", id: "id", siteId: "siteId", status: "status", excursionDate: "excursionDate", createdAt: "createdAt" },
     excursionRecipientsTable: { name: "recipients", id: "id", excursionId: "excursionId", guardianEmail: "guardianEmail", childNameSnapshot: "childNameSnapshot", decision: "decision", createdAt: "createdAt" },

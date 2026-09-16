@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "wouter";
 import {
   useGetGuardianExcursion,
@@ -10,10 +10,6 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ChevronLeft,
-  MapPin,
-  Clock,
-  Info,
-  Bus,
   ShieldAlert,
   FileText,
   CheckCircle2,
@@ -49,6 +45,7 @@ export default function GuardianExcursionDetail() {
   const markViewed = useMarkGuardianExcursionViewed();
   const acknowledge = useAcknowledgeGuardianExcursion();
   const submitDecision = useSubmitGuardianExcursionDecision();
+  const viewedSubmittedRef = useRef(false);
 
   const [decision, setDecision] = useState<"granted" | "declined" | null>(null);
   const [typedGuardianName, setTypedGuardianName] = useState("");
@@ -62,19 +59,34 @@ export default function GuardianExcursionDetail() {
 
   // Mark viewed on load
   useEffect(() => {
-    if (excursion && !excursion.guardianViewedAt) {
-      markViewed.mutate({ id: excursionId, recipientId });
+    if (excursion && !excursion.guardianViewedAt && !viewedSubmittedRef.current) {
+      viewedSubmittedRef.current = true;
+      markViewed.mutate(
+        { id: excursionId, recipientId },
+        {
+          onSuccess: (updatedExcursion) => {
+            queryClient.setQueryData(
+              getGetGuardianExcursionQueryKey(excursionId, recipientId),
+              updatedExcursion,
+            );
+          },
+          onError: () => {
+            viewedSubmittedRef.current = false;
+          },
+        },
+      );
     }
-  }, [excursion, excursionId, recipientId, markViewed]);
+  }, [excursion, excursionId, recipientId, markViewed, queryClient]);
 
   const handleAcknowledge = () => {
     acknowledge.mutate(
       { id: excursionId, recipientId },
       {
-        onSuccess: () => {
-          queryClient.invalidateQueries({
-            queryKey: getGetGuardianExcursionQueryKey(excursionId, recipientId),
-          });
+        onSuccess: (updatedExcursion) => {
+          queryClient.setQueryData(
+            getGetGuardianExcursionQueryKey(excursionId, recipientId),
+            updatedExcursion,
+          );
         },
       },
     );
@@ -118,11 +130,12 @@ export default function GuardianExcursionDetail() {
         },
       },
       {
-        onSuccess: () => {
+        onSuccess: (updatedExcursion) => {
           toast({ title: "Excursion form submitted successfully" });
-          queryClient.invalidateQueries({
-            queryKey: getGetGuardianExcursionQueryKey(excursionId, recipientId),
-          });
+          queryClient.setQueryData(
+            getGetGuardianExcursionQueryKey(excursionId, recipientId),
+            updatedExcursion,
+          );
           queryClient.invalidateQueries({
             queryKey: ["/api/guardian/excursions"],
           }); // to update list
@@ -205,131 +218,87 @@ export default function GuardianExcursionDetail() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="bg-muted/30 pb-4">
-          <CardTitle className="text-lg">Excursion Details</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-sm">
-            <div className="space-y-1">
-              <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                <Clock className="h-4 w-4" /> Date
-              </span>
-              <p className="font-medium text-foreground">
-                {new Date(excursion.excursionDate).toLocaleDateString("en-AU", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                <MapPin className="h-4 w-4" /> Location
-              </span>
-              <p className="font-medium text-foreground">{excursion.venue}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                <Clock className="h-4 w-4" /> Departure Time
-              </span>
-              <p className="font-medium text-foreground">
-                {excursion.departureTime}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                <Clock className="h-4 w-4" /> Return Time
-              </span>
-              <p className="font-medium text-foreground">
-                {excursion.arrivalTime}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                <Info className="h-4 w-4" /> Cost
-              </span>
-              <p className="font-medium text-foreground">{excursion.cost}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                <Bus className="h-4 w-4" /> Transport
-              </span>
-              <p className="font-medium text-foreground">
-                {excursion.transportMethod}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                <ShieldAlert className="h-4 w-4" /> Restraints
-              </span>
-              <p className="font-medium text-foreground">
-                {excursion.restraintsFitted}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-muted-foreground font-medium flex items-center gap-1.5">
-                <Info className="h-4 w-4" /> Ratio
-              </span>
-              <p className="font-medium text-foreground">
-                {excursion.childToStaffRatio}
-              </p>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-semibold text-sm mb-1 text-foreground">
-                Reason for Excursion
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                {excursion.purpose}
-              </p>
-            </div>
-
-            {excursion.description && (
-              <div>
-                <h4 className="font-semibold text-sm mb-1 text-foreground">
-                  Description of Activities
-                </h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {excursion.description}
-                </p>
+      <Card className="shadow-none rounded-sm border-2 overflow-hidden" data-testid="guardian-saved-permission-form">
+        <div className="bg-[#4a89d6] text-white py-3 px-4">
+          <h2 className="text-center text-lg font-bold">{excursion.heading}</h2>
+        </div>
+        <CardContent className="p-6 text-sm text-foreground grid gap-y-5">
+          {excursion.riskAssessmentName && (
+            <div className="flex flex-col gap-3 rounded-md border-2 border-emerald-700 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
+                <div>
+                  <div className="font-bold text-emerald-800">Risk Assessment PDF</div>
+                  <div className="mt-0.5 text-sm text-emerald-950">
+                    {excursion.riskAssessmentName}
+                  </div>
+                </div>
               </div>
-            )}
-
-            <div>
-              <h4 className="font-semibold text-sm mb-1 text-foreground">
-                Items to Bring
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                {excursion.itemsToBring}
-              </p>
-            </div>
-
-            {excursion.riskAssessmentName && (
-              <div className="pt-2">
+              <Button className="bg-emerald-700 text-white hover:bg-emerald-800" asChild>
                 <a
                   href={`/api/excursions/${excursion.id}/risk-assessment`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-900 border border-amber-200 rounded-lg text-sm font-medium hover:bg-amber-100 transition-colors"
                 >
-                  <FileText className="h-4 w-4" />
-                  View Risk Assessment
+                  <FileText className="mr-2 h-4 w-4" />
+                  View Risk Assessment PDF
                 </a>
-              </div>
-            )}
+              </Button>
+            </div>
+          )}
+
+          {[
+            ["Purpose of Activity:", excursion.purpose],
+            ["Date:", new Date(excursion.excursionDate).toLocaleDateString("en-AU")],
+            ["Cost:", excursion.cost],
+          ].map(([label, value]) => (
+            <div key={label} className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
+              <div className="font-bold">{label}</div>
+              <div className="whitespace-pre-wrap text-[#4a89d6]">{value}</div>
+            </div>
+          ))}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-8 mt-1">
+            <div className="grid grid-cols-1 xl:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
+              <div className="font-bold">Time of Departure from School:</div>
+              <div className="text-[#4a89d6]">{excursion.departureTime}</div>
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-[200px_1fr] gap-x-4 gap-y-1">
+              <div className="font-bold">Time of arrival at Venue:</div>
+              <div className="text-[#4a89d6]">{excursion.arrivalAtVenue}</div>
+            </div>
           </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
+              <div className="font-bold">Time of Departure from Venue:</div>
+              <div className="text-[#4a89d6]">{excursion.departureFromVenue}</div>
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-[200px_1fr] gap-x-4 gap-y-1">
+              <div className="font-bold">Time of arrival at School:</div>
+              <div className="text-[#4a89d6]">{excursion.arrivalTime}</div>
+            </div>
+          </div>
+
+          {[
+            ["Method of Transport:", excursion.transportMethod],
+            ["Restraints fitted:", excursion.restraintsFitted],
+            ["Child to staff ratios:", excursion.childToStaffRatio],
+            ["Staff in attendance:", excursion.staffAttending],
+            ["Other Information:", excursion.otherInformation],
+            ["Children will need to bring:", excursion.itemsToBring],
+          ].map(([label, value]) => (
+            <div key={label} className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
+              <div className="font-bold">{label}</div>
+              <div className="whitespace-pre-wrap text-[#4a89d6]">{value}</div>
+            </div>
+          ))}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="bg-primary/5 pb-4 border-b">
-          <CardTitle className="text-lg">Permission Form</CardTitle>
+          <CardTitle className="text-lg">Declaration and Permission</CardTitle>
           <CardDescription>
             Please complete the details below to authorize this excursion.
           </CardDescription>

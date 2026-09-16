@@ -11,6 +11,12 @@ export interface GenerateExcursionFormRequest {
   excursionId: number;
   /** @minimum 1 */
   managerId?: number | null;
+  /** @maxLength 200 */
+  managerName?: string;
+  /** @maxLength 100 */
+  managerPhone?: string;
+  /** @maxLength 320 */
+  managerEmail?: string;
   includeManager: boolean;
   includeManagerContact: boolean;
   includeServiceContact: boolean;

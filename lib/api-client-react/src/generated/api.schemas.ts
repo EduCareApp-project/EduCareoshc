@@ -1527,9 +1527,34 @@ export interface GenerateExcursionFormRequest {
   excursionId: number;
   /** @minimum 1 */
   managerId?: number | null;
+  /** @maxLength 200 */
+  managerName?: string;
+  /** @maxLength 100 */
+  managerPhone?: string;
+  /** @maxLength 320 */
+  managerEmail?: string;
   includeManager: boolean;
   includeManagerContact: boolean;
   includeServiceContact: boolean;
+}
+
+export type ExcursionFormManagerRole =
+  (typeof ExcursionFormManagerRole)[keyof typeof ExcursionFormManagerRole];
+
+export const ExcursionFormManagerRole = {
+  admin: "admin",
+  admin_support: "admin_support",
+  educational_leader: "educational_leader",
+} as const;
+
+export interface ExcursionFormManager {
+  id: number;
+  firstName: string;
+  lastName: string;
+  role: ExcursionFormManagerRole;
+  /** @nullable */
+  phone: string | null;
+  email: string;
 }
 
 export interface DocumentMergeUploadResponse {

@@ -15,6 +15,7 @@ import {
   DeleteMergedDocumentResponse,
   DownloadMergedDocumentParams,
   GenerateExcursionFormBody,
+  ListExcursionFormManagersResponse,
   ListMergedDocumentsResponse,
   ListMergedDocumentsResponseItem,
   MergeDocumentsBody,
@@ -72,6 +73,31 @@ function canAccessExcursionSite(req: Request, siteId: number): boolean {
     );
 }
 
+router.get("/ai-tools/excursion-form/managers", async (req, res): Promise<void> => {
+  const staffId = requireStaff(req, res);
+  if (staffId == null) return;
+  try {
+    const managers = await db.select({
+      id: staffTable.id,
+      firstName: staffTable.firstName,
+      lastName: staffTable.lastName,
+      role: staffTable.role,
+      phone: staffTable.phone,
+      email: staffTable.email,
+    }).from(staffTable).where(and(
+      eq(staffTable.status, "active"),
+      inArray(staffTable.role, ["admin", "admin_support", "educational_leader"]),
+    ));
+    managers.sort((a, b) =>
+      `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`),
+    );
+    res.json(ListExcursionFormManagersResponse.parse(managers));
+  } catch (err) {
+    req.log.error({ err, staffId }, "Failed to list excursion form managers");
+    res.status(500).json({ error: "Failed to load managers" });
+  }
+});
+
 router.post("/ai-tools/excursion-form/generate", async (req, res): Promise<void> => {
   const staffId = requireStaff(req, res);
   if (staffId == null) return;
@@ -100,16 +126,23 @@ router.post("/ai-tools/excursion-form/generate", async (req, res): Promise<void>
         .where(and(
           eq(staffTable.id, parsed.data.managerId),
           eq(staffTable.status, "active"),
-          eq(staffTable.siteId, excursion.siteId),
         ))
         .limit(1);
-      if (!manager) {
-        res.status(400).json({ error: "The selected manager is not active at this excursion's site" });
+      if (!manager || !["admin", "admin_support", "educational_leader"].includes(manager.role)) {
+        res.status(400).json({ error: "Select an active Admin, Admin Support, or Educational Leader" });
         return;
       }
     }
-    if ((parsed.data.includeManager || parsed.data.includeManagerContact) && !manager) {
-      res.status(400).json({ error: "Select a manager for the manager details" });
+    const managerName = parsed.data.managerName?.trim()
+      || (manager ? `${manager.firstName} ${manager.lastName}` : "");
+    const managerPhone = parsed.data.managerPhone?.trim() || manager?.phone?.trim() || "";
+    const managerEmail = parsed.data.managerEmail?.trim() || manager?.email?.trim() || "";
+    if (parsed.data.includeManager && !managerName) {
+      res.status(400).json({ error: "Enter the manager's name" });
+      return;
+    }
+    if (parsed.data.includeManagerContact && (!managerPhone || !managerEmail)) {
+      res.status(400).json({ error: "Enter the manager's phone and email" });
       return;
     }
 
@@ -127,9 +160,9 @@ router.post("/ai-tools/excursion-form/generate", async (req, res): Promise<void>
       organisationName: organisation?.name || "OSHC Service",
       servicePhone: organisation?.servicePhone,
       serviceEmail: organisation?.serviceEmail,
-      managerName: manager ? `${manager.firstName} ${manager.lastName}` : undefined,
-      managerPhone: manager?.phone,
-      managerEmail: manager?.email,
+      managerName,
+      managerPhone,
+      managerEmail,
       includeManager: parsed.data.includeManager,
       includeManagerContact: parsed.data.includeManagerContact,
       includeServiceContact: parsed.data.includeServiceContact,

@@ -56,6 +56,7 @@ import type {
   Excursion,
   ExcursionDecisionInput,
   ExcursionDetail,
+  ExcursionFormManager,
   ExcursionInput,
   ExcursionRecipient,
   ExcursionRecipientVerification,
@@ -7941,6 +7942,85 @@ export const useGenerateExcursionForm = <
 > => {
   return useMutation(getGenerateExcursionFormMutationOptions(options));
 };
+
+/**
+ * @summary List active management staff available for excursion-form autofill
+ */
+export const getListExcursionFormManagersUrl = () => {
+  return `/api/ai-tools/excursion-form/managers`;
+};
+
+export const listExcursionFormManagers = async (
+  options?: RequestInit,
+): Promise<ExcursionFormManager[]> => {
+  return customFetch<ExcursionFormManager[]>(
+    getListExcursionFormManagersUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListExcursionFormManagersQueryKey = () => {
+  return [`/api/ai-tools/excursion-form/managers`] as const;
+};
+
+export const getListExcursionFormManagersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listExcursionFormManagers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listExcursionFormManagers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListExcursionFormManagersQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listExcursionFormManagers>>
+  > = ({ signal }) => listExcursionFormManagers({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listExcursionFormManagers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListExcursionFormManagersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listExcursionFormManagers>>
+>;
+export type ListExcursionFormManagersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List active management staff available for excursion-form autofill
+ */
+
+export function useListExcursionFormManagers<
+  TData = Awaited<ReturnType<typeof listExcursionFormManagers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listExcursionFormManagers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListExcursionFormManagersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary List merged documents created by the signed-in staff member

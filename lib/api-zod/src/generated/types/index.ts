@@ -73,6 +73,8 @@ export * from "./excursion";
 export * from "./excursionDecisionInput";
 export * from "./excursionDecisionInputDecision";
 export * from "./excursionDetail";
+export * from "./excursionFormManager";
+export * from "./excursionFormManagerRole";
 export * from "./excursionInput";
 export * from "./excursionRecipient";
 export * from "./excursionRecipientChild";

@@ -1852,6 +1852,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
 
+  /ai-tools/excursion-form/managers:
+    get:
+      operationId: listExcursionFormManagers
+      tags: [ai-tools]
+      summary: List active management staff available for excursion-form autofill
+      responses:
+        "200":
+          description: Active Admins, Admin Support staff, and Educational Leaders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExcursionFormManager"
+
   /ai-tools/document-merges:
     get:
       operationId: listMergedDocuments
@@ -5774,12 +5789,39 @@ components:
           type: integer
           minimum: 1
           nullable: true
+        managerName:
+          type: string
+          maxLength: 200
+        managerPhone:
+          type: string
+          maxLength: 100
+        managerEmail:
+          type: string
+          maxLength: 320
         includeManager:
           type: boolean
         includeManagerContact:
           type: boolean
         includeServiceContact:
           type: boolean
+
+    ExcursionFormManager:
+      type: object
+      required: [id, firstName, lastName, role, phone, email]
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+          enum: [admin, admin_support, educational_leader]
+        phone:
+          type: ["string", "null"]
+        email:
+          type: string
 
     DocumentMergeUploadResponse:
       type: object

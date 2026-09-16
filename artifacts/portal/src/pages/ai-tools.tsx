@@ -6,6 +6,7 @@ import {
   Eye, Download, Trash2, FileStack, CheckCircle2, ClipboardPenLine
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -21,7 +22,8 @@ import {
   getViewMergedDocumentUrl,
   getDownloadMergedDocumentUrl,
   useListExcursions,
-  useListStaff,
+  useListExcursionFormManagers,
+  useListSites,
 } from "@workspace/api-client-react";
 
 function timeAgo(iso: string): string {
@@ -52,6 +54,9 @@ export default function AiTools() {
   const [activeTool, setActiveTool] = useState<"document-merge" | "excursion-form">("document-merge");
   const [selectedExcursionId, setSelectedExcursionId] = useState("");
   const [selectedManagerId, setSelectedManagerId] = useState("");
+  const [managerName, setManagerName] = useState("");
+  const [managerPhone, setManagerPhone] = useState("");
+  const [managerEmail, setManagerEmail] = useState("");
   const [includeManager, setIncludeManager] = useState(true);
   const [includeManagerContact, setIncludeManagerContact] = useState(true);
   const [includeServiceContact, setIncludeServiceContact] = useState(true);
@@ -64,7 +69,8 @@ export default function AiTools() {
 
   const { data: documents, isLoading: isLoadingDocs } = useListMergedDocuments();
   const { data: excursions } = useListExcursions();
-  const { data: staff } = useListStaff();
+  const { data: excursionFormManagers } = useListExcursionFormManagers();
+  const { data: sites } = useListSites();
   const { mutateAsync: requestUploadUrl } = useRequestDocumentMergeUploadUrl();
   const { mutateAsync: mergeDocs } = useMergeDocuments();
   const { mutate: deleteDoc } = useDeleteMergedDocument({
@@ -250,19 +256,24 @@ export default function AiTools() {
   const historyFiles = documents || [];
   const publishedExcursions = (excursions || []).filter((excursion) => excursion.status === "sent");
   const selectedExcursion = publishedExcursions.find((excursion) => String(excursion.id) === selectedExcursionId);
-  const managerOptions = (staff || []).filter((member) =>
-    member.status === "active" && member.siteId === selectedExcursion?.siteId,
-  );
+  const siteNames = new Map((sites || []).map((site) => [site.id, site.name]));
+  const managerOptions = excursionFormManagers || [];
 
   const handleGenerateExcursionForm = async () => {
     if (!selectedExcursionId) {
       toast({ title: "Choose a published excursion", variant: "destructive" });
       return;
     }
-    if ((includeManager || includeManagerContact) && !selectedManagerId) {
+    if (includeManager && !managerName.trim()) {
       toast({
-        title: "Choose a manager",
-        description: "A manager is required while manager details are selected.",
+        title: "Enter the manager's name",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (includeManagerContact && (!managerPhone.trim() || !managerEmail.trim())) {
+      toast({
+        title: "Enter the manager's phone and email",
         variant: "destructive",
       });
       return;
@@ -275,6 +286,9 @@ export default function AiTools() {
         body: JSON.stringify({
           excursionId: Number(selectedExcursionId),
           managerId: selectedManagerId ? Number(selectedManagerId) : null,
+          managerName: managerName.trim(),
+          managerPhone: managerPhone.trim(),
+          managerEmail: managerEmail.trim(),
           includeManager,
           includeManagerContact,
           includeServiceContact,
@@ -374,6 +388,9 @@ export default function AiTools() {
               onValueChange={(value) => {
                 setSelectedExcursionId(value);
                 setSelectedManagerId("");
+                setManagerName("");
+                setManagerPhone("");
+                setManagerEmail("");
               }}
             >
               <SelectTrigger data-testid="select-published-excursion">
@@ -382,7 +399,8 @@ export default function AiTools() {
               <SelectContent>
                 {publishedExcursions.map((excursion) => (
                   <SelectItem key={excursion.id} value={String(excursion.id)}>
-                    {excursion.heading} — {new Date(excursion.excursionDate).toLocaleDateString("en-AU")}
+                    {excursion.heading} — {siteNames.get(excursion.siteId) || "Unknown site"} —{" "}
+                    {new Date(excursion.excursionDate).toLocaleDateString("en-AU")}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -394,23 +412,71 @@ export default function AiTools() {
 
           {selectedExcursion && (
             <>
-              <div className="space-y-2">
-                <Label>Manager</Label>
-                <Select value={selectedManagerId} onValueChange={setSelectedManagerId}>
+              <div className="space-y-4 rounded-lg border p-4">
+                <div className="space-y-2">
+                  <Label>Autofill from manager</Label>
+                  <Select
+                    value={selectedManagerId}
+                    onValueChange={(value) => {
+                      setSelectedManagerId(value);
+                      const member = managerOptions.find((option) => String(option.id) === value);
+                      if (!member) return;
+                      setManagerName(`${member.firstName} ${member.lastName}`.trim());
+                      setManagerPhone(member.phone || "");
+                      setManagerEmail(member.email || "");
+                    }}
+                  >
                   <SelectTrigger data-testid="select-excursion-form-manager">
-                    <SelectValue placeholder="Select the manager shown on the form" />
+                    <SelectValue placeholder="Optional — select to autofill" />
                   </SelectTrigger>
                   <SelectContent>
                     {managerOptions.map((member) => (
                       <SelectItem key={member.id} value={String(member.id)}>
-                        {member.firstName} {member.lastName}
+                        {member.firstName} {member.lastName} — {
+                          member.role === "admin_support"
+                            ? "Admin Support"
+                            : member.role === "educational_leader"
+                              ? "Educational Leader"
+                              : "Admin"
+                        }
                       </SelectItem>
                     ))}
                   </SelectContent>
-                </Select>
+                  </Select>
+                </div>
                 {managerOptions.length === 0 && (
-                  <p className="text-sm text-amber-700">No active staff are assigned to this excursion&apos;s site.</p>
+                  <p className="text-sm text-amber-700">No active managers are available for autofill.</p>
                 )}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="excursion-manager-name">Manager name</Label>
+                    <Input
+                      id="excursion-manager-name"
+                      value={managerName}
+                      onChange={(event) => setManagerName(event.target.value)}
+                      placeholder="Enter manager name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="excursion-manager-phone">Manager phone</Label>
+                    <Input
+                      id="excursion-manager-phone"
+                      value={managerPhone}
+                      onChange={(event) => setManagerPhone(event.target.value)}
+                      placeholder="Enter manager phone"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="excursion-manager-email">Manager email</Label>
+                    <Input
+                      id="excursion-manager-email"
+                      type="email"
+                      value={managerEmail}
+                      onChange={(event) => setManagerEmail(event.target.value)}
+                      placeholder="Enter manager email"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="rounded-lg border bg-muted/20 p-4 space-y-3">

@@ -1943,13 +1943,46 @@ export const RequestDocumentMergeUploadUrlResponse = zod.object({
  * @summary Generate a branded permission-form PDF for a sent excursion
  */
 
+export const generateExcursionFormBodyManagerNameMax = 200;
+
+export const generateExcursionFormBodyManagerPhoneMax = 100;
+
+export const generateExcursionFormBodyManagerEmailMax = 320;
+
 export const GenerateExcursionFormBody = zod.object({
   excursionId: zod.number().min(1),
   managerId: zod.number().min(1).nullish(),
+  managerName: zod
+    .string()
+    .max(generateExcursionFormBodyManagerNameMax)
+    .optional(),
+  managerPhone: zod
+    .string()
+    .max(generateExcursionFormBodyManagerPhoneMax)
+    .optional(),
+  managerEmail: zod
+    .string()
+    .max(generateExcursionFormBodyManagerEmailMax)
+    .optional(),
   includeManager: zod.boolean(),
   includeManagerContact: zod.boolean(),
   includeServiceContact: zod.boolean(),
 });
+
+/**
+ * @summary List active management staff available for excursion-form autofill
+ */
+export const ListExcursionFormManagersResponseItem = zod.object({
+  id: zod.number(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  role: zod.enum(["admin", "admin_support", "educational_leader"]),
+  phone: zod.string().nullable(),
+  email: zod.string(),
+});
+export const ListExcursionFormManagersResponse = zod.array(
+  ListExcursionFormManagersResponseItem,
+);
 
 /**
  * @summary List merged documents created by the signed-in staff member

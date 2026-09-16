@@ -1188,7 +1188,7 @@ function ExcursionForm({
               </div>
 
               <div className="space-y-1.5 md:col-span-2">
-                <Label>Risk Assessment PDF</Label>
+                <Label className="text-red-900">Risk Assessment PDF</Label>
                 <div className="flex flex-col gap-2">
                   <Input
                     type="file"

@@ -55,11 +55,11 @@ const { mockDb, state, tables } = vi.hoisted(() => {
     parentAccountsTable: { name: "parents" },
     excursionsTable: { name: "excursions", id: "id", siteId: "siteId", status: "status", excursionDate: "excursionDate", createdAt: "createdAt" },
     excursionRecipientsTable: { name: "recipients", id: "id", excursionId: "excursionId", guardianEmail: "guardianEmail", childNameSnapshot: "childNameSnapshot", decision: "decision", createdAt: "createdAt" },
-    excursionResponseLogsTable: { name: "logs", excursionId: "excursionId", recipientId: "recipientId", guardianEmail: "guardianEmail", createdAt: "createdAt" },
+    excursionResponseLogsTable: { name: "logs", excursionId: "excursionId", recipientId: "recipientId", guardianEmail: "guardianEmail", event: "event", createdAt: "createdAt" },
     excursionRiskAssessmentUploadsTable: { name: "uploads", id: "id", objectPath: "objectPath", claimedExcursionId: "claimedExcursionId" },
     guardianNotificationsTable: { name: "notifications", guardianEmail: "guardianEmail", createdAt: "createdAt", dedupeKey: "dedupeKey" },
   };
-  const state = { excursion: null as any, recipient: null as any };
+  const state = { excursion: null as any, recipient: null as any, logs: [] as any[] };
 
   function rowsFor(table: any, selection?: any) {
     if (selection?.excursion && selection?.recipient && state.excursion && state.recipient) {
@@ -68,7 +68,7 @@ const { mockDb, state, tables } = vi.hoisted(() => {
     switch (table?.name) {
       case "excursions": return state.excursion ? [state.excursion] : [];
       case "recipients": return state.recipient ? [state.recipient] : [];
-      case "logs": return [];
+      case "logs": return state.logs;
       case "children": return [];
       case "parents": return [];
       default: return [];
@@ -105,6 +105,15 @@ const { mockDb, state, tables } = vi.hoisted(() => {
             ...value,
           };
         }
+        if (table.name === "logs") {
+          const rows = Array.isArray(value) ? value : [value];
+          state.logs.push(...rows.map((row, index) => ({
+            id: state.logs.length + index + 1,
+            metadata: null,
+            createdAt: new Date(`2026-09-15T0${state.logs.length + index + 2}:00:00.000Z`),
+            ...row,
+          })));
+        }
         return chain;
       },
       onConflictDoNothing() { return chain; },
@@ -121,11 +130,20 @@ const { mockDb, state, tables } = vi.hoisted(() => {
     let values: any;
     const chain: any = {
       set(value: any) { values = value; return chain; },
-      where() { return chain; },
+      where() {
+        if (table.name === "recipients") {
+          state.recipient = { ...state.recipient, ...values };
+        }
+        return chain;
+      },
       returning() {
         if (table.name === "excursions") {
           state.excursion = { ...state.excursion, ...values };
           return Promise.resolve([state.excursion]);
+        }
+        if (table.name === "recipients") {
+          state.recipient = { ...state.recipient, ...values };
+          return Promise.resolve([state.recipient]);
         }
         return Promise.resolve([]);
       },
@@ -171,6 +189,7 @@ function buildApp() {
 beforeEach(() => {
   state.excursion = null;
   state.recipient = null;
+  state.logs = [];
   vi.clearAllMocks();
 });
 
@@ -211,5 +230,91 @@ describe("excursion permission-form field round trip", () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject(responseFields(updatedPermissionFields));
+  });
+});
+
+describe("guardian excursion activity idempotency", () => {
+  function seedSentExcursion() {
+    state.excursion = {
+      id: 41,
+      siteId: 3,
+      heading: "Science Centre Visit",
+      excursionDate: "2026-10-20",
+      description: "Hands-on exhibits",
+      venue: "Melbourne Science Centre",
+      purpose: "Science program",
+      cost: "$18.50",
+      departureTime: "08:15 AM",
+      arrivalAtVenue: "09:05 AM",
+      departureFromVenue: "01:40 PM",
+      arrivalTime: "02:35 PM",
+      maximumChildren: "32",
+      transportMethod: "Chartered bus",
+      restraintsFitted: "Lap-sash belts",
+      childToStaffRatio: "1:6",
+      staffAttending: "A. Educator",
+      itemsToBring: "Hat and lunch",
+      otherInformation: "Wear the service polo",
+      medicalAuthorisationText: "I authorise emergency treatment.",
+      riskAssessmentPath: null,
+      riskAssessmentName: null,
+      status: "sent",
+      createdByStaffId: 7,
+      sentAt: new Date("2026-09-15T01:00:00.000Z"),
+      completedAt: null,
+      createdAt: new Date("2026-09-15T00:00:00.000Z"),
+      updatedAt: new Date("2026-09-15T01:00:00.000Z"),
+    };
+    state.recipient = {
+      id: 55,
+      excursionId: 41,
+      guardianEmail: "guardian@example.com",
+      guardianId: 9,
+      guardianNameSnapshot: "Guardian",
+      childId: 12,
+      childNameSnapshot: "Sam Student",
+      viewedAt: null,
+      acknowledgedAt: null,
+      decision: null,
+      createdAt: new Date("2026-09-15T01:00:00.000Z"),
+    };
+  }
+
+  it("records repeated viewed and acknowledged requests only once", async () => {
+    seedSentExcursion();
+    const app = buildApp();
+
+    for (const event of ["viewed", "viewed", "acknowledged", "acknowledged"]) {
+      const response = await request(app)
+        .post(`/api/guardian/excursions/41/recipients/55/${event}`)
+        .set("x-user", "guardian");
+      expect(response.status).toBe(200);
+    }
+
+    expect(state.logs.filter((log) => log.event === "viewed")).toHaveLength(1);
+    expect(state.logs.filter((log) => log.event === "acknowledged")).toHaveLength(1);
+  });
+
+  it("hides duplicate milestones while preserving reminders and each guardian history", async () => {
+    seedSentExcursion();
+    state.logs = [
+      { id: 1, excursionId: 41, recipientId: 55, guardianEmail: "guardian@example.com", event: "viewed", metadata: null, createdAt: new Date("2026-09-15T08:00:00.000Z") },
+      { id: 2, excursionId: 41, recipientId: 55, guardianEmail: "guardian@example.com", event: "viewed", metadata: null, createdAt: new Date("2026-09-15T07:00:00.000Z") },
+      { id: 3, excursionId: 41, recipientId: 55, guardianEmail: "guardian@example.com", event: "acknowledged", metadata: null, createdAt: new Date("2026-09-15T09:00:00.000Z") },
+      { id: 4, excursionId: 41, recipientId: 55, guardianEmail: "guardian@example.com", event: "acknowledged", metadata: null, createdAt: new Date("2026-09-15T08:30:00.000Z") },
+      { id: 5, excursionId: 41, recipientId: 55, guardianEmail: "guardian@example.com", event: "reminder", metadata: null, createdAt: new Date("2026-09-15T10:00:00.000Z") },
+      { id: 6, excursionId: 41, recipientId: 55, guardianEmail: "guardian@example.com", event: "reminder", metadata: null, createdAt: new Date("2026-09-15T11:00:00.000Z") },
+      { id: 7, excursionId: 41, recipientId: 56, guardianEmail: "other@example.com", event: "viewed", metadata: null, createdAt: new Date("2026-09-15T12:00:00.000Z") },
+      { id: 8, excursionId: 41, recipientId: 56, guardianEmail: "other@example.com", event: "acknowledged", metadata: null, createdAt: new Date("2026-09-15T12:30:00.000Z") },
+    ];
+
+    const response = await request(buildApp()).get("/api/excursions/41");
+
+    expect(response.status).toBe(200);
+    expect(response.body.logs.filter((log: any) => log.event === "viewed")).toHaveLength(2);
+    expect(response.body.logs.filter((log: any) => log.event === "acknowledged")).toHaveLength(2);
+    expect(response.body.logs.filter((log: any) => log.event === "reminder")).toHaveLength(2);
+    expect(response.body.logs.filter((log: any) => log.guardianEmail === "guardian@example.com")).toHaveLength(4);
+    expect(response.body.logs.filter((log: any) => log.guardianEmail === "other@example.com")).toHaveLength(2);
   });
 });

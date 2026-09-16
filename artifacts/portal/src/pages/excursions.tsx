@@ -461,20 +461,20 @@ function ExcursionDetail({
               <CardContent className="p-6 text-sm text-foreground grid gap-y-5">
                 {detail.riskAssessmentPath && (
                   <div
-                    className="flex flex-col gap-3 rounded-md border-2 border-red-900 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 rounded-md border-2 border-emerald-700 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between"
                     data-testid="saved-form-risk-assessment"
                   >
                     <div className="flex items-start gap-3">
-                      <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-900" />
+                      <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
                       <div>
-                        <div className="font-bold text-red-900">Risk Assessment PDF</div>
-                        <div className="mt-0.5 text-sm text-red-950">
+                        <div className="font-bold text-emerald-800">Risk Assessment PDF</div>
+                        <div className="mt-0.5 text-sm text-emerald-950">
                           {detail.riskAssessmentName || "Risk assessment attached"}
                         </div>
                       </div>
                     </div>
                     <Button
-                      className="bg-red-900 text-white hover:bg-red-800"
+                      className="bg-emerald-700 text-white hover:bg-emerald-800"
                       asChild
                       data-testid="button-view-saved-form-risk-assessment"
                     >

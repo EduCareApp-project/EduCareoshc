@@ -249,6 +249,7 @@ export default function GuardianExcursionDetail() {
 
           {[
             ["Purpose of Activity:", excursion.purpose],
+            ["Description of Activities:", excursion.description],
             ["Date:", new Date(excursion.excursionDate).toLocaleDateString("en-AU")],
             ["Cost:", excursion.cost],
           ].map(([label, value]) => (

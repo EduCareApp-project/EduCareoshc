@@ -46,7 +46,6 @@ const expectedFields = {
   arrivalAtVenue: "09:05 AM",
   departureFromVenue: "01:35 PM",
   arrivalTime: "02:30 PM",
-  maximumChildren: "28",
   transportMethod: "Chartered coach",
   restraintsFitted: "Lap-sash belts",
   childToStaffRatio: "1:7",
@@ -93,7 +92,6 @@ const labelByField = {
   transportMethod: "Method of Transport",
   restraintsFitted: "Restraints fitted",
   childToStaffRatio: "Child to staff ratios",
-  maximumChildren: "Maximum of Children",
   staffAttending: "Staff in attendance",
   otherInformation: "Other Information",
   itemsToBring: "Children will need to bring",
@@ -133,7 +131,6 @@ function fillEveryPermissionField() {
   fireEvent.change(inputForLabel("Method of Transport"), { target: { value: expectedFields.transportMethod } });
   fireEvent.change(inputForLabel("Restraints fitted"), { target: { value: expectedFields.restraintsFitted } });
   fireEvent.change(inputForLabel("Child to staff ratios"), { target: { value: expectedFields.childToStaffRatio } });
-  fireEvent.change(inputForLabel("Maximum of Children"), { target: { value: expectedFields.maximumChildren } });
   fireEvent.change(inputForLabel("Staff in attendance"), { target: { value: expectedFields.staffAttending } });
   fireEvent.change(inputForLabel("Other Information"), { target: { value: expectedFields.otherInformation } });
   fireEvent.change(inputForLabel("Children will need to bring"), { target: { value: expectedFields.itemsToBring } });

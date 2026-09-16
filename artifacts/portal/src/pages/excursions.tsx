@@ -461,17 +461,17 @@ function ExcursionDetail({
               <CardContent className="p-6 text-sm text-foreground grid gap-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
                   <div className="font-bold">Purpose of Activity:</div>
-                  <div className="whitespace-pre-wrap">{detail.purpose}</div>
+                  <div className="whitespace-pre-wrap text-[#4a89d6]">{detail.purpose}</div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
                   <div className="font-bold">Date:</div>
-                  <div>{new Date(detail.excursionDate).toLocaleDateString("en-AU")}</div>
+                  <div className="text-[#4a89d6]">{new Date(detail.excursionDate).toLocaleDateString("en-AU")}</div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
                   <div className="font-bold">Cost:</div>
-                  <div>{detail.cost}</div>
+                  <div className="text-[#4a89d6]">{detail.cost}</div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-8 mt-1">
@@ -498,37 +498,32 @@ function ExcursionDetail({
 
                 <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1 mt-1">
                   <div className="font-bold">Method of Transport:</div>
-                  <div className="whitespace-pre-wrap">{detail.transportMethod}</div>
+                  <div className="whitespace-pre-wrap text-[#4a89d6]">{detail.transportMethod}</div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
                   <div className="font-bold">Restraints fitted:</div>
-                  <div>{detail.restraintsFitted}</div>
+                  <div className="text-[#4a89d6]">{detail.restraintsFitted}</div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
                   <div className="font-bold">Child to staff ratios:</div>
-                  <div className="whitespace-pre-wrap">{detail.childToStaffRatio}</div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
-                  <div className="font-bold">Maximum of Children</div>
-                  <div>{detail.maximumChildren}</div>
+                  <div className="whitespace-pre-wrap text-[#4a89d6]">{detail.childToStaffRatio}</div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
                   <div className="font-bold">Staff in attendance:</div>
-                  <div className="whitespace-pre-wrap">{detail.staffAttending}</div>
+                  <div className="whitespace-pre-wrap text-[#4a89d6]">{detail.staffAttending}</div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1 mt-1">
                   <div className="font-bold">Other Information:</div>
-                  <div className="whitespace-pre-wrap">{detail.otherInformation}</div>
+                  <div className="whitespace-pre-wrap text-[#4a89d6]">{detail.otherInformation}</div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1 mt-1">
                   <div className="font-bold">Children will need to bring:</div>
-                  <div className="whitespace-pre-wrap">{detail.itemsToBring}</div>
+                  <div className="whitespace-pre-wrap text-[#4a89d6]">{detail.itemsToBring}</div>
                 </div>
               </CardContent>
             </Card>
@@ -1238,7 +1233,7 @@ function ExcursionForm({
               <div className="bg-[#4a89d6] text-white py-3 px-4">
                 <h4 className="text-center text-lg font-bold">{formData.heading || "Excursion Heading"}</h4>
               </div>
-              <CardContent className="p-6 grid gap-y-5">
+              <CardContent className="p-6 grid gap-y-5 [&_input]:text-[#4a89d6] [&_textarea]:text-[#4a89d6]">
 
                 <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-2 items-start">
                   <Label className="font-bold text-sm pt-2 text-foreground">Purpose of Activity:</Label>
@@ -1321,14 +1316,6 @@ function ExcursionForm({
                   <Input
                     value={formData.childToStaffRatio || ""}
                     onChange={(e) => setFormData({ ...formData, childToStaffRatio: e.target.value })}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-2 items-center">
-                  <Label className="font-bold text-sm text-foreground">Maximum of Children</Label>
-                  <Input
-                    value={formData.maximumChildren || ""}
-                    onChange={(e) => setFormData({ ...formData, maximumChildren: e.target.value })}
                   />
                 </div>
 

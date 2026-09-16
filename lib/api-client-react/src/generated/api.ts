@@ -16339,6 +16339,84 @@ export const useSendExcursion = <
   return useMutation(getSendExcursionMutationOptions(options));
 };
 
+export const getArchiveExcursionUrl = (id: number) => {
+  return `/api/excursions/${id}/archive`;
+};
+
+export const archiveExcursion = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Excursion> => {
+  return customFetch<Excursion>(getArchiveExcursionUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getArchiveExcursionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof archiveExcursion>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof archiveExcursion>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["archiveExcursion"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof archiveExcursion>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return archiveExcursion(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ArchiveExcursionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof archiveExcursion>>
+>;
+
+export type ArchiveExcursionMutationError = ErrorType<unknown>;
+
+export const useArchiveExcursion = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof archiveExcursion>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof archiveExcursion>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getArchiveExcursionMutationOptions(options));
+};
+
 export const getSendExcursionReminderUrl = (id: number) => {
   return `/api/excursions/${id}/reminder`;
 };

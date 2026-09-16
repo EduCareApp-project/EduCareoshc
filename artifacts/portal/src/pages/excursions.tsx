@@ -16,6 +16,8 @@ import {
   Building2,
   Trash2,
   Calendar,
+  Archive,
+  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +67,7 @@ import {
   useSendExcursion,
   useSendExcursionReminder,
   useRemoveExcursionRecipient,
+  useArchiveExcursion,
   useListSites,
   getListExcursionsQueryKey,
   getGetExcursionQueryKey,
@@ -79,6 +82,7 @@ export default function Excursions() {
   const [selectedExcursionId, setSelectedExcursionId] = useState<number | null>(null);
   const [editExcursionId, setEditExcursionId] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [duplicateSource, setDuplicateSource] = useState<Excursion | null>(null);
 
   if (editExcursionId !== null) {
     return (
@@ -106,12 +110,17 @@ export default function Excursions() {
     );
   }
 
-  if (isCreating) {
+  if (isCreating || duplicateSource) {
     return (
       <ExcursionForm
-        onBack={() => setIsCreating(false)}
+        duplicateFrom={duplicateSource ?? undefined}
+        onBack={() => {
+          setIsCreating(false);
+          setDuplicateSource(null);
+        }}
         onSuccess={(id) => {
           setIsCreating(false);
+          setDuplicateSource(null);
           setSelectedExcursionId(id);
         }}
       />
@@ -122,6 +131,7 @@ export default function Excursions() {
     <ExcursionsList
       onSelect={setSelectedExcursionId}
       onCreate={() => setIsCreating(true)}
+      onDuplicate={setDuplicateSource}
     />
   );
 }
@@ -130,22 +140,30 @@ export default function Excursions() {
 function ExcursionsList({
   onSelect,
   onCreate,
+  onDuplicate,
 }: {
   onSelect: (id: number) => void;
   onCreate: () => void;
+  onDuplicate: (excursion: Excursion) => void;
 }) {
   const { data: excursions, isLoading } = useListExcursions();
   const { data: sites } = useListSites();
   const { isFullAccess, ownSiteId } = usePermissions();
+  const archiveMut = useArchiveExcursion();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const [siteFilter, setSiteFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"active" | "archived">("active");
 
   const filteredExcursions = (excursions ?? [])
     .filter((e) => {
       if (!isFullAccess && ownSiteId && e.siteId !== ownSiteId) return false;
       if (siteFilter !== "all" && e.siteId !== parseInt(siteFilter))
         return false;
-      return true;
+      return statusFilter === "archived"
+        ? e.status === "archived"
+        : e.status !== "archived";
     })
     .sort(
       (a, b) =>
@@ -172,6 +190,18 @@ function ExcursionsList({
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
+          <Select
+            value={statusFilter}
+            onValueChange={(value: "active" | "archived") => setStatusFilter(value)}
+          >
+            <SelectTrigger className="w-[140px]" data-testid="select-excursion-status-filter">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
+            </SelectContent>
+          </Select>
           {isFullAccess && sites && sites.length > 0 && (
             <Select value={siteFilter} onValueChange={setSiteFilter}>
               <SelectTrigger className="w-[180px]">
@@ -221,7 +251,7 @@ function ExcursionsList({
               data-testid={`card-excursion-${exc.id}`}
             >
               <CardHeader className="pb-3 bg-muted/10 border-b">
-                <div className="flex justify-between items-start mb-2">
+                <div className="flex justify-between items-start gap-4 mb-2">
                   <div className="flex items-center gap-3">
                     {exc.status === "sent" && (
                       <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white">
@@ -234,6 +264,9 @@ function ExcursionsList({
                     {exc.status === "draft" && (
                       <Badge variant="outline">Draft</Badge>
                     )}
+                    {exc.status === "archived" && (
+                      <Badge variant="secondary">Archived</Badge>
+                    )}
 
                     <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                       <Clock className="h-3.5 w-3.5" />
@@ -244,6 +277,54 @@ function ExcursionsList({
                         <Building2 className="h-3.5 w-3.5" />
                         {(sites ?? []).find((s) => s.id === exc.siteId)?.name}
                       </span>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDuplicate(exc);
+                      }}
+                      data-testid={`button-duplicate-excursion-${exc.id}`}
+                    >
+                      <Copy className="mr-1.5 h-4 w-4" />
+                      Duplicate
+                    </Button>
+                    {exc.status !== "archived" && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-destructive"
+                        disabled={archiveMut.isPending}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (!confirm(`Archive "${exc.heading}"?`)) return;
+                          archiveMut.mutate(
+                            { id: exc.id },
+                            {
+                              onSuccess: () => {
+                                toast({ title: "Excursion archived" });
+                                queryClient.invalidateQueries({
+                                  queryKey: getListExcursionsQueryKey(),
+                                });
+                              },
+                              onError: (error) => toast({
+                                title: "Failed to archive excursion",
+                                description: error.message,
+                                variant: "destructive",
+                              }),
+                            },
+                          );
+                        }}
+                        data-testid={`button-archive-excursion-${exc.id}`}
+                      >
+                        <Archive className="mr-1.5 h-4 w-4" />
+                        Archive
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -931,10 +1012,12 @@ function AddRecipientsDialog({
 // ── Create Form ────────────────────────────────────────────────────────────
 function ExcursionForm({
   editId,
+  duplicateFrom,
   onBack,
   onSuccess,
 }: {
   editId?: number;
+  duplicateFrom?: Excursion;
   onBack: () => void;
   onSuccess: (id: number) => void;
 }) {
@@ -1005,6 +1088,33 @@ function ExcursionForm({
       });
     }
   }, [editData]);
+
+  useEffect(() => {
+    if (duplicateFrom && !initialized.current) {
+      initialized.current = true;
+      setFormData({
+        siteId: duplicateFrom.siteId,
+        excursionDate: new Date(duplicateFrom.excursionDate).toISOString().split("T")[0],
+        heading: duplicateFrom.heading,
+        description: duplicateFrom.description,
+        venue: duplicateFrom.venue,
+        purpose: duplicateFrom.purpose,
+        cost: duplicateFrom.cost,
+        departureTime: duplicateFrom.departureTime,
+        arrivalAtVenue: duplicateFrom.arrivalAtVenue,
+        departureFromVenue: duplicateFrom.departureFromVenue,
+        arrivalTime: duplicateFrom.arrivalTime,
+        transportMethod: duplicateFrom.transportMethod,
+        restraintsFitted: duplicateFrom.restraintsFitted,
+        childToStaffRatio: duplicateFrom.childToStaffRatio,
+        maximumChildren: duplicateFrom.maximumChildren,
+        staffAttending: duplicateFrom.staffAttending,
+        otherInformation: duplicateFrom.otherInformation,
+        itemsToBring: duplicateFrom.itemsToBring,
+        medicalAuthorisationText: duplicateFrom.medicalAuthorisationText,
+      });
+    }
+  }, [duplicateFrom]);
 
   const [riskFile, setRiskFile] = useState<File | null>(null);
   const [emailsRaw, setEmailsRaw] = useState("");
@@ -1183,7 +1293,9 @@ function ExcursionForm({
         >
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold text-foreground">{editId ? "Edit Excursion" : "Plan Excursion"}</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          {editId ? "Edit Excursion" : duplicateFrom ? "Duplicate Excursion" : "Plan Excursion"}
+        </h1>
       </div>
 
       <Card>

@@ -22,6 +22,7 @@ vi.mock("@workspace/api-client-react", () => ({
   useSendExcursion: () => ({ mutate: sendMutate, isPending: false }),
   useSendExcursionReminder: () => ({ mutate: vi.fn(), isPending: false }),
   useRemoveExcursionRecipient: () => ({ mutate: vi.fn(), isPending: false }),
+  useArchiveExcursion: () => ({ mutate: vi.fn(), isPending: false }),
   useListSites: () => ({ data: [{ id: 3, name: "Test Site" }] }),
   useRequestExcursionRiskAssessmentUploadUrl: () => ({ mutateAsync: vi.fn() }),
   getListExcursionsQueryKey: () => ["/api/excursions"],

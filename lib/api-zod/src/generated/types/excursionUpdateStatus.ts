@@ -13,4 +13,5 @@ export const ExcursionUpdateStatus = {
   draft: "draft",
   sent: "sent",
   completed: "completed",
+  archived: "archived",
 } as const;

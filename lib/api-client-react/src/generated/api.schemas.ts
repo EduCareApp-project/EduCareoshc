@@ -12,6 +12,7 @@ export const ExcursionStatus = {
   draft: "draft",
   sent: "sent",
   completed: "completed",
+  archived: "archived",
 } as const;
 
 export interface Excursion {
@@ -83,6 +84,7 @@ export const ExcursionUpdateStatus = {
   draft: "draft",
   sent: "sent",
   completed: "completed",
+  archived: "archived",
 } as const;
 
 export interface ExcursionUpdate {

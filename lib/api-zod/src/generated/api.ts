@@ -4471,7 +4471,7 @@ export const ListExcursionsResponseItem = zod.object({
   itemsToBring: zod.string(),
   otherInformation: zod.string(),
   medicalAuthorisationText: zod.string(),
-  status: zod.enum(["draft", "sent", "completed"]),
+  status: zod.enum(["draft", "sent", "completed", "archived"]),
   createdByStaffId: zod.number().nullable(),
   sentAt: zod.coerce.date().nullable(),
   completedAt: zod.coerce.date().nullable(),
@@ -4554,7 +4554,7 @@ export const GetExcursionResponse = zod
     itemsToBring: zod.string(),
     otherInformation: zod.string(),
     medicalAuthorisationText: zod.string(),
-    status: zod.enum(["draft", "sent", "completed"]),
+    status: zod.enum(["draft", "sent", "completed", "archived"]),
     createdByStaffId: zod.number().nullable(),
     sentAt: zod.coerce.date().nullable(),
     completedAt: zod.coerce.date().nullable(),
@@ -4623,7 +4623,7 @@ export const UpdateExcursionBody = zod.object({
   itemsToBring: zod.string().optional(),
   otherInformation: zod.string().optional(),
   medicalAuthorisationText: zod.string().optional(),
-  status: zod.enum(["draft", "sent", "completed"]).optional(),
+  status: zod.enum(["draft", "sent", "completed", "archived"]).optional(),
   recipientEmails: zod.array(zod.string()).optional(),
 });
 
@@ -4650,7 +4650,7 @@ export const UpdateExcursionResponse = zod.object({
   itemsToBring: zod.string(),
   otherInformation: zod.string(),
   medicalAuthorisationText: zod.string(),
-  status: zod.enum(["draft", "sent", "completed"]),
+  status: zod.enum(["draft", "sent", "completed", "archived"]),
   createdByStaffId: zod.number().nullable(),
   sentAt: zod.coerce.date().nullable(),
   completedAt: zod.coerce.date().nullable(),
@@ -4716,7 +4716,7 @@ export const SendExcursionResponse = zod
     itemsToBring: zod.string(),
     otherInformation: zod.string(),
     medicalAuthorisationText: zod.string(),
-    status: zod.enum(["draft", "sent", "completed"]),
+    status: zod.enum(["draft", "sent", "completed", "archived"]),
     createdByStaffId: zod.number().nullable(),
     sentAt: zod.coerce.date().nullable(),
     completedAt: zod.coerce.date().nullable(),
@@ -4759,6 +4759,41 @@ export const SendExcursionResponse = zod
     }),
   );
 
+export const ArchiveExcursionParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ArchiveExcursionResponse = zod.object({
+  id: zod.number(),
+  siteId: zod.number(),
+  heading: zod.string(),
+  excursionDate: zod.coerce.date(),
+  description: zod.string(),
+  venue: zod.string(),
+  riskAssessmentPath: zod.string().nullable(),
+  riskAssessmentName: zod.string().nullable(),
+  purpose: zod.string(),
+  cost: zod.string(),
+  departureTime: zod.string(),
+  arrivalTime: zod.string(),
+  arrivalAtVenue: zod.string(),
+  departureFromVenue: zod.string(),
+  maximumChildren: zod.string(),
+  transportMethod: zod.string(),
+  restraintsFitted: zod.string(),
+  childToStaffRatio: zod.string(),
+  staffAttending: zod.string(),
+  itemsToBring: zod.string(),
+  otherInformation: zod.string(),
+  medicalAuthorisationText: zod.string(),
+  status: zod.enum(["draft", "sent", "completed", "archived"]),
+  createdByStaffId: zod.number().nullable(),
+  sentAt: zod.coerce.date().nullable(),
+  completedAt: zod.coerce.date().nullable(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
 export const SendExcursionReminderParams = zod.object({
   id: zod.coerce.number(),
 });
@@ -4787,7 +4822,7 @@ export const SendExcursionReminderResponse = zod
     itemsToBring: zod.string(),
     otherInformation: zod.string(),
     medicalAuthorisationText: zod.string(),
-    status: zod.enum(["draft", "sent", "completed"]),
+    status: zod.enum(["draft", "sent", "completed", "archived"]),
     createdByStaffId: zod.number().nullable(),
     sentAt: zod.coerce.date().nullable(),
     completedAt: zod.coerce.date().nullable(),

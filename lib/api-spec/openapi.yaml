@@ -3780,6 +3780,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExcursionDetail"
 
+  /excursions/{id}/archive:
+    post:
+      operationId: archiveExcursion
+      tags: [excursions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Archived
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Excursion"
+
   /excursions/{id}/reminder:
     post:
       operationId: sendExcursionReminder
@@ -3978,7 +3995,7 @@ components:
         itemsToBring: { type: string }
         otherInformation: { type: string }
         medicalAuthorisationText: { type: string }
-        status: { type: string, enum: [draft, sent, completed] }
+        status: { type: string, enum: [draft, sent, completed, archived] }
         createdByStaffId: { type: ["integer", "null"] }
         sentAt: { type: ["string", "null"], format: date-time }
         completedAt: { type: ["string", "null"], format: date-time }
@@ -4034,7 +4051,7 @@ components:
         itemsToBring: { type: string }
         otherInformation: { type: string }
         medicalAuthorisationText: { type: string }
-        status: { type: string, enum: [draft, sent, completed] }
+        status: { type: string, enum: [draft, sent, completed, archived] }
         recipientEmails: { type: array, items: { type: string } }
     ExcursionRecipientsInput:
       type: object

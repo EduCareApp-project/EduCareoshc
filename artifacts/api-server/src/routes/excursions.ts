@@ -595,6 +595,32 @@ router.patch("/excursions/:id", async (req, res): Promise<void> => {
   }
 });
 
+router.post("/excursions/:id/archive", async (req, res): Promise<void> => {
+  if (!requireStaff(req, res)) return;
+  const id = idParam(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid excursion id" }); return; }
+  try {
+    const [existing] = await db.select().from(excursionsTable).where(eq(excursionsTable.id, id));
+    if (!existing) { res.status(404).json({ error: "Excursion not found" }); return; }
+    if (!canStaffAccessSite(req, existing.siteId)) {
+      res.status(403).json({ error: "You do not have access to this site" });
+      return;
+    }
+    if (existing.status === "archived") {
+      res.json(ListExcursionsResponseItem.parse(excursionResponse(existing)));
+      return;
+    }
+    const [archived] = await db.update(excursionsTable)
+      .set({ status: "archived", updatedAt: new Date() })
+      .where(eq(excursionsTable.id, id))
+      .returning();
+    res.json(ListExcursionsResponseItem.parse(excursionResponse(archived)));
+  } catch (err) {
+    req.log.error({ err, excursionId: id }, "Failed to archive excursion");
+    res.status(500).json({ error: "Failed to archive excursion" });
+  }
+});
+
 async function parseRecipientBody(req: Request, res: Response): Promise<{ emails: string[] } | null> {
   const parsed = AddExcursionRecipientsBody.safeParse(req.body ?? {});
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return null; }

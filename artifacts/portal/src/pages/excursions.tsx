@@ -459,6 +459,37 @@ function ExcursionDetail({
                 <h3 className="text-center text-lg font-bold">{detail.heading}</h3>
               </div>
               <CardContent className="p-6 text-sm text-foreground grid gap-y-5">
+                {detail.riskAssessmentPath && (
+                  <div
+                    className="flex flex-col gap-3 rounded-md border-2 border-red-900 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    data-testid="saved-form-risk-assessment"
+                  >
+                    <div className="flex items-start gap-3">
+                      <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-900" />
+                      <div>
+                        <div className="font-bold text-red-900">Risk Assessment PDF</div>
+                        <div className="mt-0.5 text-sm text-red-950">
+                          {detail.riskAssessmentName || "Risk assessment attached"}
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      className="bg-red-900 text-white hover:bg-red-800"
+                      asChild
+                      data-testid="button-view-saved-form-risk-assessment"
+                    >
+                      <a
+                        href={`/api/excursions/${detail.id}/risk-assessment`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <FileText className="mr-2 h-4 w-4" />
+                        View Risk Assessment PDF
+                      </a>
+                    </Button>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-x-4 gap-y-1">
                   <div className="font-bold">Purpose of Activity:</div>
                   <div className="whitespace-pre-wrap text-[#4a89d6]">{detail.purpose}</div>
@@ -1188,7 +1219,9 @@ function ExcursionForm({
               </div>
 
               <div className="space-y-1.5 md:col-span-2">
-                <Label className="text-red-900">Risk Assessment PDF</Label>
+                <Label className="inline-flex w-fit rounded-md border-2 border-red-900 bg-red-900 px-3 py-1.5 text-white">
+                  Risk Assessment PDF
+                </Label>
                 <div className="flex flex-col gap-2">
                   <Input
                     type="file"

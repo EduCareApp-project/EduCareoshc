@@ -259,6 +259,19 @@ function recipientResponse(row: typeof excursionRecipientsTable.$inferSelect) {
   return row;
 }
 
+function withoutDuplicateGuardianMilestones(
+  logs: (typeof excursionResponseLogsTable.$inferSelect)[],
+) {
+  const seen = new Set<string>();
+  return logs.filter((log) => {
+    if (log.event !== "viewed" && log.event !== "acknowledged") return true;
+    const key = `${log.recipientId}:${log.event}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 async function getDetail(id: number) {
   const [excursion] = await db.select().from(excursionsTable).where(eq(excursionsTable.id, id));
   if (!excursion) return null;
@@ -270,7 +283,11 @@ async function getDetail(id: number) {
       .where(eq(excursionResponseLogsTable.excursionId, id))
       .orderBy(desc(excursionResponseLogsTable.createdAt)),
   ]);
-  return { ...excursionResponse(excursion), recipients: recipients.map(recipientResponse), logs };
+  return {
+    ...excursionResponse(excursion),
+    recipients: recipients.map(recipientResponse),
+    logs: withoutDuplicateGuardianMilestones(logs),
+  };
 }
 
 async function addVerifiedAssignments(excursionId: number, assignments: VerifiedAssignment[]) {
@@ -847,6 +864,14 @@ async function markGuardianEvent(req: Request, res: Response, event: "viewed" | 
   try {
     const joined = await excursionForGuardian(id, recipientId, email);
     if (!joined || joined.excursion.status !== "sent") { res.status(404).json({ error: "Excursion not found" }); return; }
+    const alreadyRecorded = event === "viewed"
+      ? joined.recipient.viewedAt
+      : joined.recipient.acknowledgedAt;
+    if (alreadyRecorded) {
+      const detail = await guardianResponse(id, recipientId, email);
+      res.json((event === "viewed" ? MarkGuardianExcursionViewedResponse : AcknowledgeGuardianExcursionResponse).parse(detail));
+      return;
+    }
     const now = new Date();
     await db.update(excursionRecipientsTable).set(
       event === "viewed" ? { viewedAt: now } : { acknowledgedAt: now },

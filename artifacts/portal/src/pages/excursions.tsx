@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  ChevronDown,
   ChevronLeft,
   Mail,
   ShieldAlert,
@@ -278,6 +279,7 @@ function ExcursionDetail({
     },
   });
   const [filter, setFilter] = useState("all");
+  const [activityLogOpen, setActivityLogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const sendReminder = useSendExcursionReminder();
@@ -560,50 +562,64 @@ function ExcursionDetail({
             </Card>
           </section>
 
-          <section className="border-t p-5 sm:p-6" data-testid="section-activity-log">
-            <div className="border-b pb-4 mb-5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                Record history
-              </p>
-              <h2 className="mt-1 text-xl font-semibold">Activity Log</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                A chronological record of sending, viewing, reminders, and guardian responses.
-              </p>
-            </div>
-            <Card className="shadow-none">
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  {detail.logs.map((log) => (
-                    <div
-                      key={log.id}
-                      className="flex gap-4 items-start text-sm"
-                    >
-                      <div className="w-32 shrink-0 text-muted-foreground text-xs pt-0.5">
-                        {new Date(log.createdAt).toLocaleString("en-AU", {
-                          month: "short",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </div>
-                      <div>
-                        <span className="font-medium">{log.event}</span>
-                        {log.guardianEmail && (
-                          <span className="text-muted-foreground ml-2">
-                            ({log.guardianEmail})
-                          </span>
-                        )}
-                      </div>
+          <section className="border-t" data-testid="section-activity-log">
+            <button
+              type="button"
+              onClick={() => setActivityLogOpen((open) => !open)}
+              className="flex w-full items-center justify-between gap-4 p-5 text-left transition-colors hover:bg-muted/30 sm:p-6"
+              aria-expanded={activityLogOpen}
+              data-testid="button-toggle-activity-log"
+            >
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                  Record history
+                </p>
+                <h2 className="mt-1 text-xl font-semibold">Activity Log</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {detail.logs.length} {detail.logs.length === 1 ? "entry" : "entries"} recorded
+                </p>
+              </div>
+              <ChevronDown
+                className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${
+                  activityLogOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+            {activityLogOpen && (
+              <div className="border-t p-5 sm:p-6">
+                <Card className="shadow-none">
+                  <CardContent className="pt-6">
+                    <div className="space-y-4">
+                      {detail.logs.map((log) => (
+                        <div key={log.id} className="flex gap-4 items-start text-sm">
+                          <div className="w-32 shrink-0 text-muted-foreground text-xs pt-0.5">
+                            {new Date(log.createdAt).toLocaleString("en-AU", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
+                          </div>
+                          <div>
+                            <span className="font-medium">{log.event}</span>
+                            {log.guardianEmail && (
+                              <span className="text-muted-foreground ml-2">
+                                ({log.guardianEmail})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {detail.logs.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          No activity recorded yet.
+                        </p>
+                      )}
                     </div>
-                  ))}
-                  {detail.logs.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      No activity recorded yet.
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </section>
 
           <section className="border-t p-5 sm:p-6 space-y-4" data-testid="section-guardian-permissions">

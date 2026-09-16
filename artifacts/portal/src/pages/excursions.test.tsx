@@ -6,6 +6,7 @@ import Excursions from "./excursions";
 const createMutate = vi.fn();
 const updateMutate = vi.fn();
 const sendMutate = vi.fn();
+const verifyMutate = vi.fn();
 const mockApi = vi.hoisted(() => ({
   excursions: [] as any[],
   detail: undefined as any,
@@ -16,7 +17,7 @@ vi.mock("@workspace/api-client-react", () => ({
   useCreateExcursion: () => ({ mutate: createMutate, isPending: false }),
   useUpdateExcursion: () => ({ mutate: updateMutate, isPending: false }),
   useGetExcursion: () => ({ data: mockApi.detail, isLoading: false }),
-  useVerifyExcursionRecipients: () => ({ mutate: vi.fn(), isPending: false }),
+  useVerifyExcursionRecipients: () => ({ mutate: verifyMutate, isPending: false }),
   useAddExcursionRecipients: () => ({ mutate: vi.fn(), isPending: false }),
   useSendExcursion: () => ({ mutate: sendMutate, isPending: false }),
   useSendExcursionReminder: () => ({ mutate: vi.fn(), isPending: false }),
@@ -141,6 +142,16 @@ beforeEach(() => {
   mockApi.excursions = [];
   mockApi.detail = undefined;
   createMutate.mockImplementation((_variables, options) => options?.onSuccess?.({ id: 41 }));
+  verifyMutate.mockImplementation((_variables, options) =>
+    options?.onSuccess?.([
+      {
+        email: "guardian@example.com",
+        valid: true,
+        guardianName: "Test Guardian",
+        children: [{ childId: 5, childName: "Test Child", siteId: 3 }],
+      },
+    ]),
+  );
 });
 
 describe("excursion permission-form submission", () => {
@@ -161,6 +172,10 @@ describe("excursion permission-form submission", () => {
     renderPage();
     fireEvent.click(screen.getByTestId("button-add-excursion"));
     fillEveryPermissionField();
+    fireEvent.change(inputForLabel("Paste guardian emails (one per line)"), {
+      target: { value: "guardian@example.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Verify Emails" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Save & Send Now" }));
 

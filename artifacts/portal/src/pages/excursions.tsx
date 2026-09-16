@@ -1044,6 +1044,17 @@ function ExcursionForm({
       return;
     }
 
+    const hasExistingRecipients = Boolean(editData?.recipients?.length);
+    const hasVerifiedRecipients = verifiedList.some((recipient) => recipient.valid);
+    if (sendNow && !hasExistingRecipients && !hasVerifiedRecipients) {
+      toast({
+        title: "Add a recipient before sending",
+        description: "Enter and verify at least one guardian email, then select Save & Send Now again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     let riskPath = formData.riskAssessmentPath;
     let riskName = formData.riskAssessmentName;
 
@@ -1095,6 +1106,15 @@ function ExcursionForm({
           {
             onSuccess: () => {
               toast({ title: "Excursion sent successfully" });
+              queryClient.invalidateQueries({ queryKey: getGetExcursionQueryKey(targetId) });
+              onSuccess(targetId);
+            },
+            onError: (error) => {
+              toast({
+                title: "Excursion saved, but could not be sent",
+                description: error.message,
+                variant: "destructive",
+              });
               queryClient.invalidateQueries({ queryKey: getGetExcursionQueryKey(targetId) });
               onSuccess(targetId);
             },
@@ -1465,10 +1485,12 @@ function ExcursionForm({
             <Button
               type="button"
               onClick={() => handleSave(true)}
-              disabled={createMut.isPending || updateMut.isPending || isUploadingRiskAssessment}
+              disabled={createMut.isPending || updateMut.isPending || sendMut.isPending || isUploadingRiskAssessment}
             >
-              {createMut.isPending || updateMut.isPending || isUploadingRiskAssessment
-                ? "Saving..."
+              {sendMut.isPending
+                ? "Sending..."
+                : createMut.isPending || updateMut.isPending || isUploadingRiskAssessment
+                  ? "Saving..."
                 : "Save & Send Now"}
             </Button>
           </div>

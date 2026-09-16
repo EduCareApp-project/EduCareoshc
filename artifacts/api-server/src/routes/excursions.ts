@@ -536,7 +536,14 @@ router.patch("/excursions/:id", async (req, res): Promise<void> => {
       return;
     }
     if (parsed.data.status === "sent") { res.status(409).json({ error: "Use the send endpoint to send an excursion" }); return; }
-    const { recipientEmails: _recipientEmails, ...values } = parsed.data;
+    const { recipientEmails, ...values } = parsed.data;
+    const verified = recipientEmails?.length
+      ? await verifyAssignments(targetSiteId, recipientEmails)
+      : { results: [], assignments: [] as VerifiedAssignment[] };
+    if (verified.results.some((result) => !result.valid)) {
+      res.status(400).json({ error: "All recipients must be active guardians linked to an active child" });
+      return;
+    }
     const updated = await db.transaction(async (tx) => {
       const riskUpload = values.riskAssessmentPath != null
         ? await validateRiskAssessmentUpload(
@@ -555,6 +562,9 @@ router.patch("/excursions/:id", async (req, res): Promise<void> => {
       } as any)
         .where(eq(excursionsTable.id, params.data.id)).returning();
       if (riskUpload) await claimRiskAssessmentUpload(tx as any, riskUpload.id, params.data.id);
+      if (verified.assignments.length > 0) {
+        await addVerifiedAssignmentsWithExecutor(tx as any, params.data.id, verified.assignments);
+      }
       return row;
     });
     res.json(UpdateExcursionResponse.parse(excursionResponse(updated)));

@@ -1520,6 +1520,16 @@ export interface DocumentMergeUploadRequest {
   contentType: DocumentMergeUploadRequestContentType;
 }
 
+export interface GenerateExcursionFormRequest {
+  /** @minimum 1 */
+  excursionId: number;
+  /** @minimum 1 */
+  managerId?: number | null;
+  includeManager: boolean;
+  includeManagerContact: boolean;
+  includeServiceContact: boolean;
+}
+
 export interface DocumentMergeUploadResponse {
   uploadURL: string;
   objectPath: string;

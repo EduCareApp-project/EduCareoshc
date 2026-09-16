@@ -1940,6 +1940,18 @@ export const RequestDocumentMergeUploadUrlResponse = zod.object({
 });
 
 /**
+ * @summary Generate a branded permission-form PDF for a sent excursion
+ */
+
+export const GenerateExcursionFormBody = zod.object({
+  excursionId: zod.number().min(1),
+  managerId: zod.number().min(1).nullish(),
+  includeManager: zod.boolean(),
+  includeManagerContact: zod.boolean(),
+  includeServiceContact: zod.boolean(),
+});
+
+/**
  * @summary List merged documents created by the signed-in staff member
  */
 export const ListMergedDocumentsResponseItem = zod.object({

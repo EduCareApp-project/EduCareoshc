@@ -72,6 +72,7 @@ import type {
   FileLibraryInput,
   FileLibraryItem,
   FileLibraryUpdate,
+  GenerateExcursionFormRequest,
   GetChecklistPeriodOverrideParams,
   GetExpiringMedicationsParams,
   GetLearningStoriesReportParams,
@@ -7852,6 +7853,93 @@ export const useRequestDocumentMergeUploadUrl = <
   TContext
 > => {
   return useMutation(getRequestDocumentMergeUploadUrlMutationOptions(options));
+};
+
+/**
+ * @summary Generate a branded permission-form PDF for a sent excursion
+ */
+export const getGenerateExcursionFormUrl = () => {
+  return `/api/ai-tools/excursion-form/generate`;
+};
+
+export const generateExcursionForm = async (
+  generateExcursionFormRequest: GenerateExcursionFormRequest,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getGenerateExcursionFormUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(generateExcursionFormRequest),
+  });
+};
+
+export const getGenerateExcursionFormMutationOptions = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateExcursionForm>>,
+    TError,
+    { data: BodyType<GenerateExcursionFormRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateExcursionForm>>,
+  TError,
+  { data: BodyType<GenerateExcursionFormRequest> },
+  TContext
+> => {
+  const mutationKey = ["generateExcursionForm"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateExcursionForm>>,
+    { data: BodyType<GenerateExcursionFormRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return generateExcursionForm(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateExcursionFormMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateExcursionForm>>
+>;
+export type GenerateExcursionFormMutationBody =
+  BodyType<GenerateExcursionFormRequest>;
+export type GenerateExcursionFormMutationError = ErrorType<ErrorEnvelope>;
+
+/**
+ * @summary Generate a branded permission-form PDF for a sent excursion
+ */
+export const useGenerateExcursionForm = <
+  TError = ErrorType<ErrorEnvelope>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateExcursionForm>>,
+    TError,
+    { data: BodyType<GenerateExcursionFormRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateExcursionForm>>,
+  TError,
+  { data: BodyType<GenerateExcursionFormRequest> },
+  TContext
+> => {
+  return useMutation(getGenerateExcursionFormMutationOptions(options));
 };
 
 /**

@@ -3,10 +3,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { 
   FilePlus2, Sparkles, UploadCloud, GripVertical, FileText, 
   Image as ImageIcon, ArrowUp, ArrowDown, X, Wand2, Loader2, 
-  Eye, Download, Trash2, FileStack, CheckCircle2
+  Eye, Download, Trash2, FileStack, CheckCircle2, ClipboardPenLine
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -17,6 +20,8 @@ import {
   useDeleteMergedDocument,
   getViewMergedDocumentUrl,
   getDownloadMergedDocumentUrl,
+  useListExcursions,
+  useListStaff,
 } from "@workspace/api-client-react";
 
 function timeAgo(iso: string): string {
@@ -44,6 +49,13 @@ export default function AiTools() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [files, setFiles] = useState<FileItem[]>([]);
+  const [activeTool, setActiveTool] = useState<"document-merge" | "excursion-form">("document-merge");
+  const [selectedExcursionId, setSelectedExcursionId] = useState("");
+  const [selectedManagerId, setSelectedManagerId] = useState("");
+  const [includeManager, setIncludeManager] = useState(true);
+  const [includeManagerContact, setIncludeManagerContact] = useState(true);
+  const [includeServiceContact, setIncludeServiceContact] = useState(true);
+  const [isGeneratingExcursionForm, setIsGeneratingExcursionForm] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   
   const [isMerging, setIsMerging] = useState(false);
@@ -51,6 +63,8 @@ export default function AiTools() {
   const [mergeProgress, setMergeProgress] = useState(0);
 
   const { data: documents, isLoading: isLoadingDocs } = useListMergedDocuments();
+  const { data: excursions } = useListExcursions();
+  const { data: staff } = useListStaff();
   const { mutateAsync: requestUploadUrl } = useRequestDocumentMergeUploadUrl();
   const { mutateAsync: mergeDocs } = useMergeDocuments();
   const { mutate: deleteDoc } = useDeleteMergedDocument({
@@ -234,6 +248,62 @@ export default function AiTools() {
   };
 
   const historyFiles = documents || [];
+  const publishedExcursions = (excursions || []).filter((excursion) => excursion.status === "sent");
+  const selectedExcursion = publishedExcursions.find((excursion) => String(excursion.id) === selectedExcursionId);
+  const managerOptions = (staff || []).filter((member) =>
+    member.status === "active" && member.siteId === selectedExcursion?.siteId,
+  );
+
+  const handleGenerateExcursionForm = async () => {
+    if (!selectedExcursionId) {
+      toast({ title: "Choose a published excursion", variant: "destructive" });
+      return;
+    }
+    if ((includeManager || includeManagerContact) && !selectedManagerId) {
+      toast({
+        title: "Choose a manager",
+        description: "A manager is required while manager details are selected.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsGeneratingExcursionForm(true);
+    try {
+      const response = await fetch("/api/ai-tools/excursion-form/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          excursionId: Number(selectedExcursionId),
+          managerId: selectedManagerId ? Number(selectedManagerId) : null,
+          includeManager,
+          includeManagerContact,
+          includeServiceContact,
+        }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error || "The excursion form could not be generated");
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${selectedExcursion?.heading || "Excursion"} Permission Form.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: "Excursion form generated" });
+    } catch (error) {
+      toast({
+        title: "Failed to generate excursion form",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingExcursionForm(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto">
@@ -243,7 +313,13 @@ export default function AiTools() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="relative p-5 rounded-xl border-2 border-primary bg-primary/5 cursor-pointer flex flex-col items-center text-center shadow-sm">
+        <button
+          type="button"
+          onClick={() => setActiveTool("document-merge")}
+          className={`relative p-5 rounded-xl border-2 cursor-pointer flex flex-col items-center text-center shadow-sm ${
+            activeTool === "document-merge" ? "border-primary bg-primary/5" : "border-border bg-card"
+          }`}
+        >
           <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center mb-3">
             <FilePlus2 className="h-6 w-6 text-primary" />
           </div>
@@ -252,7 +328,26 @@ export default function AiTools() {
           <div className="absolute top-3 right-3">
              <span className="flex h-2.5 w-2.5 rounded-full bg-primary" title="Active tool"></span>
           </div>
-        </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTool("excursion-form")}
+          className={`relative p-5 rounded-xl border-2 cursor-pointer flex flex-col items-center text-center shadow-sm ${
+            activeTool === "excursion-form" ? "border-primary bg-primary/5" : "border-border bg-card"
+          }`}
+        >
+          <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center mb-3">
+            <ClipboardPenLine className="h-6 w-6 text-primary" />
+          </div>
+          <h3 className="font-semibold text-foreground text-lg">Create Excursion Form</h3>
+          <p className="text-sm text-muted-foreground mt-1">Generate a branded permission form</p>
+          {activeTool === "excursion-form" && (
+            <div className="absolute top-3 right-3">
+              <span className="flex h-2.5 w-2.5 rounded-full bg-primary" title="Active tool" />
+            </div>
+          )}
+        </button>
         
         <div className="relative p-5 rounded-xl border border-dashed border-muted bg-muted/10 opacity-60 cursor-not-allowed flex flex-col items-center text-center">
           <div className="h-12 w-12 rounded-full bg-muted-foreground/10 flex items-center justify-center mb-3">
@@ -263,6 +358,94 @@ export default function AiTools() {
         </div>
       </div>
 
+      {activeTool === "excursion-form" ? (
+        <div className="max-w-3xl rounded-xl border bg-card p-6 shadow-sm space-y-6">
+          <div>
+            <h2 className="text-xl font-semibold">Create Excursion Form</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Choose a published excursion, select the optional contact details, then generate the completed branded PDF.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Published excursion</Label>
+            <Select
+              value={selectedExcursionId}
+              onValueChange={(value) => {
+                setSelectedExcursionId(value);
+                setSelectedManagerId("");
+              }}
+            >
+              <SelectTrigger data-testid="select-published-excursion">
+                <SelectValue placeholder="Select a published excursion" />
+              </SelectTrigger>
+              <SelectContent>
+                {publishedExcursions.map((excursion) => (
+                  <SelectItem key={excursion.id} value={String(excursion.id)}>
+                    {excursion.heading} — {new Date(excursion.excursionDate).toLocaleDateString("en-AU")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {publishedExcursions.length === 0 && (
+              <p className="text-sm text-muted-foreground">No published excursions are available yet.</p>
+            )}
+          </div>
+
+          {selectedExcursion && (
+            <>
+              <div className="space-y-2">
+                <Label>Manager</Label>
+                <Select value={selectedManagerId} onValueChange={setSelectedManagerId}>
+                  <SelectTrigger data-testid="select-excursion-form-manager">
+                    <SelectValue placeholder="Select the manager shown on the form" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {managerOptions.map((member) => (
+                      <SelectItem key={member.id} value={String(member.id)}>
+                        {member.firstName} {member.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {managerOptions.length === 0 && (
+                  <p className="text-sm text-amber-700">No active staff are assigned to this excursion&apos;s site.</p>
+                )}
+              </div>
+
+              <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                <p className="font-medium">Details to include</p>
+                <div className="flex items-center gap-2">
+                  <Checkbox id="include-manager" checked={includeManager} onCheckedChange={(value) => setIncludeManager(value === true)} />
+                  <Label htmlFor="include-manager">Manager name</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox id="include-manager-contact" checked={includeManagerContact} onCheckedChange={(value) => setIncludeManagerContact(value === true)} />
+                  <Label htmlFor="include-manager-contact">Manager phone and email</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox id="include-service-contact" checked={includeServiceContact} onCheckedChange={(value) => setIncludeServiceContact(value === true)} />
+                  <Label htmlFor="include-service-contact">Organisation/service phone and email</Label>
+                </div>
+              </div>
+
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={handleGenerateExcursionForm}
+                disabled={isGeneratingExcursionForm}
+                data-testid="button-generate-excursion-form"
+              >
+                {isGeneratingExcursionForm ? (
+                  <><Loader2 className="h-5 w-5 animate-spin" /> Generating...</>
+                ) : (
+                  <><Wand2 className="h-5 w-5" /> Generate</>
+                )}
+              </Button>
+            </>
+          )}
+        </div>
+      ) : (
       <div className="space-y-6">
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Workspace Column */}
@@ -442,6 +625,7 @@ export default function AiTools() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

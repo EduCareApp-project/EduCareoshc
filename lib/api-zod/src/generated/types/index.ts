@@ -105,6 +105,7 @@ export * from "./fileCategoryUpdate";
 export * from "./fileLibraryInput";
 export * from "./fileLibraryItem";
 export * from "./fileLibraryUpdate";
+export * from "./generateExcursionFormRequest";
 export * from "./getChecklistPeriodOverrideParams";
 export * from "./getExpiringMedicationsParams";
 export * from "./getLearningStoriesReportParams";

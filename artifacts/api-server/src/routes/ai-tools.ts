@@ -4,12 +4,17 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import {
   db,
   documentMergeUploadsTable,
+  emailSettingsTable,
+  excursionsTable,
   mergedDocumentsTable,
+  organisationTable,
+  staffTable,
 } from "@workspace/db";
 import {
   DeleteMergedDocumentParams,
   DeleteMergedDocumentResponse,
   DownloadMergedDocumentParams,
+  GenerateExcursionFormBody,
   ListMergedDocumentsResponse,
   ListMergedDocumentsResponseItem,
   MergeDocumentsBody,
@@ -23,6 +28,7 @@ import {
   mergeDocumentSources,
   type DocumentMergeContentType,
 } from "../lib/documentMerge";
+import { generateExcursionFormPdf } from "../lib/excursionFormPdf";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -55,6 +61,94 @@ function mergedDocumentName(sourceNames: string[]): string {
 function fileNameForHeader(name: string): string {
   return name.replace(/["\r\n]/g, "").slice(0, 160) || "merged-document.pdf";
 }
+
+function canAccessExcursionSite(req: Request, siteId: number): boolean {
+  const user = req.session.user;
+  return user?.type === "staff"
+    && (
+      user.role === "admin"
+      || user.role === "admin_support"
+      || (user.role === "educational_leader" && user.siteId === siteId)
+    );
+}
+
+router.post("/ai-tools/excursion-form/generate", async (req, res): Promise<void> => {
+  const staffId = requireStaff(req, res);
+  if (staffId == null) return;
+  const parsed = GenerateExcursionFormBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Choose a published excursion and valid form options" });
+    return;
+  }
+
+  try {
+    const [excursion] = await db.select().from(excursionsTable)
+      .where(eq(excursionsTable.id, parsed.data.excursionId))
+      .limit(1);
+    if (!excursion || excursion.status !== "sent") {
+      res.status(400).json({ error: "Only published excursions can be used to generate a form" });
+      return;
+    }
+    if (!canAccessExcursionSite(req, excursion.siteId)) {
+      res.status(403).json({ error: "You do not have access to this excursion" });
+      return;
+    }
+
+    let manager: typeof staffTable.$inferSelect | undefined;
+    if (parsed.data.managerId != null) {
+      [manager] = await db.select().from(staffTable)
+        .where(and(
+          eq(staffTable.id, parsed.data.managerId),
+          eq(staffTable.status, "active"),
+          eq(staffTable.siteId, excursion.siteId),
+        ))
+        .limit(1);
+      if (!manager) {
+        res.status(400).json({ error: "The selected manager is not active at this excursion's site" });
+        return;
+      }
+    }
+    if ((parsed.data.includeManager || parsed.data.includeManagerContact) && !manager) {
+      res.status(400).json({ error: "Select a manager for the manager details" });
+      return;
+    }
+
+    const [[organisation], [settings]] = await Promise.all([
+      db.select().from(organisationTable).limit(1),
+      db.select({ companyLogoPath: emailSettingsTable.companyLogoPath }).from(emailSettingsTable).limit(1),
+    ]);
+    if (!settings?.companyLogoPath) {
+      res.status(400).json({ error: "Upload a company logo in Brand Kit before generating the form" });
+      return;
+    }
+    const logoFile = await objectStorageService.getObjectEntityFile(settings.companyLogoPath);
+    const [companyLogoBytes] = await logoFile.download();
+    const pdf = await generateExcursionFormPdf({
+      organisationName: organisation?.name || "OSHC Service",
+      servicePhone: organisation?.servicePhone,
+      serviceEmail: organisation?.serviceEmail,
+      managerName: manager ? `${manager.firstName} ${manager.lastName}` : undefined,
+      managerPhone: manager?.phone,
+      managerEmail: manager?.email,
+      includeManager: parsed.data.includeManager,
+      includeManagerContact: parsed.data.includeManagerContact,
+      includeServiceContact: parsed.data.includeServiceContact,
+      companyLogoBytes,
+      excursion,
+    });
+    const safeHeading = excursion.heading.replace(/[\\/:*?"<>|]/g, "-").slice(0, 80) || "Excursion";
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileNameForHeader(`${safeHeading} Permission Form.pdf`)}"`);
+    res.send(Buffer.from(pdf));
+  } catch (err) {
+    if (err instanceof ObjectNotFoundError) {
+      res.status(400).json({ error: "The uploaded company logo could not be found. Upload it again in Brand Kit." });
+      return;
+    }
+    req.log.error({ err, staffId, excursionId: parsed.data.excursionId }, "Failed to generate excursion permission form");
+    res.status(500).json({ error: "Failed to generate excursion permission form" });
+  }
+});
 
 router.post("/ai-tools/document-merge/upload-url", async (req, res): Promise<void> => {
   const staffId = requireStaff(req, res);

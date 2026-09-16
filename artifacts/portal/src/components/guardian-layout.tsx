@@ -323,9 +323,9 @@ export function GuardianLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth();
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="min-h-dvh bg-background overflow-hidden">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-56 shrink-0 flex-col">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden h-dvh w-56 flex-col overflow-hidden md:flex">
         <GuardianSidebar />
       </aside>
 
@@ -347,7 +347,7 @@ export function GuardianLayout({ children }: { children: ReactNode }) {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="h-dvh min-w-0 overflow-y-auto md:ml-56">
         <div className="md:hidden h-14" />
         {/* Desktop top bar with bell */}
         <div className="hidden md:flex items-center justify-end px-6 py-3 border-b bg-background/95 sticky top-0 z-20">

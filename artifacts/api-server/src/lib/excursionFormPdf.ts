@@ -205,7 +205,7 @@ export async function generateExcursionFormPdf(input: ExcursionFormPdfInput): Pr
   row("Date:", formatDate(input.excursion.excursionDate), y); y -= 15;
   row("Cost:", input.excursion.cost, y); y -= 19;
 
-  const rightLabelX = leftX + 175;
+  const rightLabelX = leftX + 155;
   const drawCenteredTime = (heading: string, value: string, headingY: number) => {
     const headingWidth = bold.widthOfTextAtSize(heading, 7.2);
     const safeValue = safeText(value);
@@ -239,6 +239,7 @@ export async function generateExcursionFormPdf(input: ExcursionFormPdfInput): Pr
 
   const rx = rightX + 7;
   const rw = rightWidth - 14;
+  const sectionRightX = rx + rw - 14;
   drawSectionTitle(page, "M e d i c a l   D e c l a r a t i o n   &   A u t h o r i s a t i o n", rx, 485, rw - 14, bold);
   let ry = 464;
   ry = drawWrapped(page, input.excursion.medicalAuthorisationText, rx, ry, rw - 20, regular, 7.1, BLACK, 7) - 10;
@@ -246,24 +247,24 @@ export async function generateExcursionFormPdf(input: ExcursionFormPdfInput): Pr
   drawSectionTitle(page, "C h i l d   D e t a i l s", rx, ry, rw - 14, bold);
   ry -= 24;
   drawLineField(page, "Name(s):", rx, ry, 180, bold);
-  drawLineField(page, "Age:", rx + 195, ry, 75, bold);
+  drawLineField(page, "Age:", rx + 195, ry, sectionRightX - (rx + 195), bold);
   ry -= 26;
   drawSectionTitle(page, "E m e r g e n c y   C o n t a c t   D e t a i l s", rx, ry, rw - 14, bold);
   ry -= 25;
   drawLineField(page, "Parent/Guardian Name:", rx, ry, 200, bold);
-  drawLineField(page, "Relationship:", rx + 205, ry, 65, bold);
+  drawLineField(page, "Relationship:", rx + 205, ry, sectionRightX - (rx + 205), bold);
   ry -= 28;
   drawLineField(page, "Home Number:", rx, ry, 130, bold);
-  drawLineField(page, "Work Number:", rx + 140, ry, 130, bold);
+  drawLineField(page, "Work Number:", rx + 140, ry, sectionRightX - (rx + 140), bold);
   ry -= 28;
-  drawLineField(page, "Mobile Number:", rx, ry, 130, bold);
+  drawLineField(page, "Mobile Number:", rx, ry, sectionRightX - rx, bold);
   ry -= 27;
   drawSectionTitle(page, "C o n s e n t", rx, ry, rw - 14, bold);
   ry -= 27;
-  drawLineField(page, "Parent/Guardian Name:", rx, ry, 270, bold);
+  drawLineField(page, "Parent/Guardian Name:", rx, ry, sectionRightX - rx, bold);
   ry -= 30;
   drawLineField(page, "Signature:", rx, ry, 190, bold);
-  drawLineField(page, "Date:", rx + 200, ry, 70, bold);
+  drawLineField(page, "Date:", rx + 200, ry, sectionRightX - (rx + 200), bold);
   ry -= 35;
   drawWrapped(page, `PLEASE RETURN THE PERMISSION SLIP (THIS SIDE) TO THE MANAGER OF ${safeText(input.organisationName).toUpperCase()}.`, rx, ry, rw - 20, bold, 7.2, BLACK, 3);
 

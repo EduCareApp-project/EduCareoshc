@@ -140,14 +140,22 @@ export async function generateExcursionFormPdf(input: ExcursionFormPdfInput): Pr
   const logo = await embedLogo(document, input.companyLogoBytes);
 
   const title = "EXCURSION PERMISSION FORM";
+  const titleSize = 20;
+  const titleWidth = bold.widthOfTextAtSize(title, titleSize);
+  const titleX = (PAGE_WIDTH - titleWidth) / 2;
   page.drawText(title, {
-    x: (PAGE_WIDTH - bold.widthOfTextAtSize(title, 20)) / 2,
+    x: titleX,
     y: 548,
-    size: 20,
+    size: titleSize,
     font: bold,
     color: BLACK,
   });
-  page.drawLine({ start: { x: 338, y: 545 }, end: { x: 655, y: 545 }, thickness: 1.2, color: BLACK });
+  page.drawLine({
+    start: { x: titleX, y: 544 },
+    end: { x: titleX + titleWidth, y: 544 },
+    thickness: 1.2,
+    color: BLACK,
+  });
 
   let contactY = 566;
   page.drawText(safeText(input.organisationName), { x: 25, y: contactY, size: 8.5, font: bold, color: BLACK });
@@ -177,10 +185,9 @@ export async function generateExcursionFormPdf(input: ExcursionFormPdfInput): Pr
   const leftWidth = 390;
   const rightX = 451;
   const rightWidth = 356;
-  const contentTop = 515;
+  const contentTop = 500;
   const contentBottom = 42;
   page.drawRectangle({ x: leftX, y: contentBottom, width: leftWidth, height: contentTop - contentBottom, borderColor: GREY, borderWidth: 0.8 });
-  page.drawRectangle({ x: 433, y: contentBottom, width: 1, height: contentTop - contentBottom, color: GREY });
   page.drawRectangle({ x: rightX, y: contentBottom, width: rightWidth, height: contentTop - contentBottom, borderColor: GREY, borderWidth: 0.8 });
 
   drawSectionTitle(page, safeText(input.excursion.heading), leftX + 7, 474, leftWidth - 14, bold);
@@ -199,16 +206,26 @@ export async function generateExcursionFormPdf(input: ExcursionFormPdfInput): Pr
   row("Cost:", input.excursion.cost, y); y -= 19;
 
   const rightLabelX = leftX + 175;
-  const rightValueX = leftX + 305;
+  const drawCenteredTime = (heading: string, value: string, headingY: number) => {
+    const headingWidth = bold.widthOfTextAtSize(heading, 7.2);
+    const safeValue = safeText(value);
+    const timeWidth = regular.widthOfTextAtSize(safeValue, 7.4);
+    page.drawText(heading, { x: rightLabelX, y: headingY, size: 7.2, font: bold, color: BLACK });
+    page.drawText(safeValue, {
+      x: rightLabelX + Math.max(0, (headingWidth - timeWidth) / 2),
+      y: headingY - 11,
+      size: 7.4,
+      font: regular,
+      color: RESPONSE_BLUE,
+    });
+  };
   page.drawText("Time of Departure from School:", { x: labelX, y, size: 7.2, font: bold, color: BLACK });
   page.drawText(safeText(input.excursion.departureTime), { x: labelX, y: y - 11, size: 7.4, font: regular, color: RESPONSE_BLUE });
-  page.drawText("Time of arrival at Venue:", { x: rightLabelX, y, size: 7.2, font: bold, color: BLACK });
-  page.drawText(safeText(input.excursion.arrivalAtVenue), { x: rightValueX, y: y - 11, size: 7.4, font: regular, color: RESPONSE_BLUE });
+  drawCenteredTime("Time of arrival at Venue:", input.excursion.arrivalAtVenue, y);
   y -= 32;
   page.drawText("Time of Departure from Venue:", { x: labelX, y, size: 7.2, font: bold, color: BLACK });
   page.drawText(safeText(input.excursion.departureFromVenue), { x: labelX, y: y - 11, size: 7.4, font: regular, color: RESPONSE_BLUE });
-  page.drawText("Time of arrival at School:", { x: rightLabelX, y, size: 7.2, font: bold, color: BLACK });
-  page.drawText(safeText(input.excursion.arrivalTime), { x: rightValueX, y: y - 11, size: 7.4, font: regular, color: RESPONSE_BLUE });
+  drawCenteredTime("Time of arrival at School:", input.excursion.arrivalTime, y);
   y -= 39;
   row("Method of Transport:", input.excursion.transportMethod, y); y -= 16;
   row("Restraints fitted:", input.excursion.restraintsFitted, y); y -= 16;
@@ -224,7 +241,7 @@ export async function generateExcursionFormPdf(input: ExcursionFormPdfInput): Pr
   const rw = rightWidth - 14;
   drawSectionTitle(page, "M e d i c a l   D e c l a r a t i o n   &   A u t h o r i s a t i o n", rx, 485, rw - 14, bold);
   let ry = 464;
-  ry = drawWrapped(page, input.excursion.medicalAuthorisationText, rx, ry, rw - 20, regular, 7.1, BLACK, 7) - 3;
+  ry = drawWrapped(page, input.excursion.medicalAuthorisationText, rx, ry, rw - 20, regular, 7.1, BLACK, 7) - 10;
   ry = drawWrapped(page, "If your child will require medication during the excursion please complete a medication form prior to the excursion date.", rx, ry, rw - 20, bold, 7.2, BLACK, 3) - 16;
   drawSectionTitle(page, "C h i l d   D e t a i l s", rx, ry, rw - 14, bold);
   ry -= 24;

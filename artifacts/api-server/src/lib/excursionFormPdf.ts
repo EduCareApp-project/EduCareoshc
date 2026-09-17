@@ -240,8 +240,8 @@ export async function generateExcursionFormPdf(input: ExcursionFormPdfInput): Pr
   const rx = rightX + 7;
   const rw = rightWidth - 14;
   const sectionRightX = rx + rw - 14;
-  drawSectionTitle(page, "M e d i c a l   D e c l a r a t i o n   &   A u t h o r i s a t i o n", rx, 485, rw - 14, bold);
-  let ry = 464;
+  drawSectionTitle(page, "M e d i c a l   D e c l a r a t i o n   &   A u t h o r i s a t i o n", rx, 480, rw - 14, bold);
+  let ry = 459;
   ry = drawWrapped(page, input.excursion.medicalAuthorisationText, rx, ry, rw - 20, regular, 7.1, BLACK, 7) - 10;
   ry = drawWrapped(page, "If your child will require medication during the excursion please complete a medication form prior to the excursion date.", rx, ry, rw - 20, bold, 7.2, BLACK, 3) - 16;
   drawSectionTitle(page, "C h i l d   D e t a i l s", rx, ry, rw - 14, bold);

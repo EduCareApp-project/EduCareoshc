@@ -1940,6 +1940,122 @@ export const RequestDocumentMergeUploadUrlResponse = zod.object({
 });
 
 /**
+ * @summary Scan child and guardian records for likely duplicates
+ */
+export const scanDuplicateRecordsBodyThresholdDefault = 0.8;
+export const scanDuplicateRecordsBodyThresholdMin = 0.8;
+export const scanDuplicateRecordsBodyThresholdMax = 1;
+
+export const ScanDuplicateRecordsBody = zod.object({
+  siteId: zod.number().nullish(),
+  threshold: zod
+    .number()
+    .min(scanDuplicateRecordsBodyThresholdMin)
+    .max(scanDuplicateRecordsBodyThresholdMax)
+    .default(scanDuplicateRecordsBodyThresholdDefault),
+});
+
+export const scanDuplicateRecordsResponseThresholdMin = 0.8;
+export const scanDuplicateRecordsResponseThresholdMax = 1;
+
+export const scanDuplicateRecordsResponseChildCandidatesItemScoreMin = 0;
+export const scanDuplicateRecordsResponseChildCandidatesItemScoreMax = 1;
+
+export const scanDuplicateRecordsResponseChildCandidatesItemReasonsItemSimilarityMin = 0;
+export const scanDuplicateRecordsResponseChildCandidatesItemReasonsItemSimilarityMax = 1;
+
+export const scanDuplicateRecordsResponseGuardianCandidatesItemScoreMin = 0;
+export const scanDuplicateRecordsResponseGuardianCandidatesItemScoreMax = 1;
+
+export const scanDuplicateRecordsResponseGuardianCandidatesItemReasonsItemSimilarityMin = 0;
+export const scanDuplicateRecordsResponseGuardianCandidatesItemReasonsItemSimilarityMax = 1;
+
+export const ScanDuplicateRecordsResponse = zod.object({
+  threshold: zod
+    .number()
+    .min(scanDuplicateRecordsResponseThresholdMin)
+    .max(scanDuplicateRecordsResponseThresholdMax),
+  scannedChildCount: zod.number(),
+  scannedGuardianCount: zod.number(),
+  childCandidates: zod.array(
+    zod.object({
+      score: zod
+        .number()
+        .min(scanDuplicateRecordsResponseChildCandidatesItemScoreMin)
+        .max(scanDuplicateRecordsResponseChildCandidatesItemScoreMax),
+      reasons: zod.array(
+        zod.object({
+          field: zod.string(),
+          similarity: zod
+            .number()
+            .min(
+              scanDuplicateRecordsResponseChildCandidatesItemReasonsItemSimilarityMin,
+            )
+            .max(
+              scanDuplicateRecordsResponseChildCandidatesItemReasonsItemSimilarityMax,
+            ),
+        }),
+      ),
+      first: zod.object({
+        id: zod.number(),
+        name: zod.string(),
+        siteId: zod.number().nullable(),
+        siteName: zod.string().nullable(),
+        status: zod.string(),
+        dateOfBirth: zod.string(),
+        contactSummary: zod.string(),
+      }),
+      second: zod.object({
+        id: zod.number(),
+        name: zod.string(),
+        siteId: zod.number().nullable(),
+        siteName: zod.string().nullable(),
+        status: zod.string(),
+        dateOfBirth: zod.string(),
+        contactSummary: zod.string(),
+      }),
+    }),
+  ),
+  guardianCandidates: zod.array(
+    zod.object({
+      score: zod
+        .number()
+        .min(scanDuplicateRecordsResponseGuardianCandidatesItemScoreMin)
+        .max(scanDuplicateRecordsResponseGuardianCandidatesItemScoreMax),
+      reasons: zod.array(
+        zod.object({
+          field: zod.string(),
+          similarity: zod
+            .number()
+            .min(
+              scanDuplicateRecordsResponseGuardianCandidatesItemReasonsItemSimilarityMin,
+            )
+            .max(
+              scanDuplicateRecordsResponseGuardianCandidatesItemReasonsItemSimilarityMax,
+            ),
+        }),
+      ),
+      first: zod.object({
+        name: zod.string(),
+        siteIds: zod.array(zod.number()),
+        siteNames: zod.array(zod.string()),
+        associatedChildIds: zod.array(zod.number()),
+        associatedChildCount: zod.number(),
+        contactSummary: zod.string(),
+      }),
+      second: zod.object({
+        name: zod.string(),
+        siteIds: zod.array(zod.number()),
+        siteNames: zod.array(zod.string()),
+        associatedChildIds: zod.array(zod.number()),
+        associatedChildCount: zod.number(),
+        contactSummary: zod.string(),
+      }),
+    }),
+  ),
+});
+
+/**
  * @summary Generate a branded permission-form PDF for a sent excursion
  */
 

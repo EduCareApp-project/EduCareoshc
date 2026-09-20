@@ -1813,12 +1813,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentMergeUploadResponse"
+
         "400":
           description: Unsupported or invalid file
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+
+  /ai-tools/duplicate-records/scan:
+    post:
+      operationId: scanDuplicateRecords
+      tags: [ai-tools]
+      summary: Scan child and guardian records for likely duplicates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DuplicateRecordsScanInput"
+      responses:
+        "200":
+          description: Duplicate scan results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DuplicateRecordsScanResult"
+        "400": { description: Invalid scan options }
+        "403": { description: Staff role or site access denied }
 
   /ai-tools/excursion-form/generate:
     post:
@@ -4711,6 +4733,83 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+    DuplicateRecordsScanInput:
+      type: object
+      properties:
+        siteId:
+          type: ["integer", "null"]
+        threshold:
+          type: number
+          minimum: 0.8
+          maximum: 1
+          default: 0.8
+    DuplicateRecordReason:
+      type: object
+      required: [field, similarity]
+      properties:
+        field: { type: string }
+        similarity: { type: number, minimum: 0, maximum: 1 }
+    DuplicateChildSummary:
+      type: object
+      required: [id, name, siteId, siteName, status, dateOfBirth, contactSummary]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        siteId: { type: ["integer", "null"] }
+        siteName: { type: ["string", "null"] }
+        status: { type: string }
+        dateOfBirth: { type: string }
+        contactSummary: { type: string }
+    DuplicateGuardianSummary:
+      type: object
+      required: [name, siteIds, siteNames, associatedChildIds, associatedChildCount, contactSummary]
+      properties:
+        name: { type: string }
+        siteIds:
+          type: array
+          items: { type: integer }
+        siteNames:
+          type: array
+          items: { type: string }
+        associatedChildIds:
+          type: array
+          items: { type: integer }
+        associatedChildCount: { type: integer }
+        contactSummary: { type: string }
+    DuplicateChildCandidate:
+      type: object
+      required: [score, reasons, first, second]
+      properties:
+        score: { type: number, minimum: 0, maximum: 1 }
+        reasons:
+          type: array
+          items: { $ref: "#/components/schemas/DuplicateRecordReason" }
+        first: { $ref: "#/components/schemas/DuplicateChildSummary" }
+        second: { $ref: "#/components/schemas/DuplicateChildSummary" }
+    DuplicateGuardianCandidate:
+      type: object
+      required: [score, reasons, first, second]
+      properties:
+        score: { type: number, minimum: 0, maximum: 1 }
+        reasons:
+          type: array
+          items: { $ref: "#/components/schemas/DuplicateRecordReason" }
+        first: { $ref: "#/components/schemas/DuplicateGuardianSummary" }
+        second: { $ref: "#/components/schemas/DuplicateGuardianSummary" }
+    DuplicateRecordsScanResult:
+      type: object
+      required: [threshold, scannedChildCount, scannedGuardianCount, childCandidates, guardianCandidates]
+      properties:
+        threshold: { type: number, minimum: 0.8, maximum: 1 }
+        scannedChildCount: { type: integer }
+        scannedGuardianCount: { type: integer }
+        childCandidates:
+          type: array
+          items: { $ref: "#/components/schemas/DuplicateChildCandidate" }
+        guardianCandidates:
+          type: array
+          items: { $ref: "#/components/schemas/DuplicateGuardianCandidate" }
 
     ObservationInput:
       type: object

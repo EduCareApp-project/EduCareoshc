@@ -735,6 +735,80 @@ export interface Observation {
   updatedAt: string;
 }
 
+export interface DuplicateRecordsScanInput {
+  /** @nullable */
+  siteId?: number | null;
+  /**
+   * @minimum 0.8
+   * @maximum 1
+   */
+  threshold?: number;
+}
+
+export interface DuplicateRecordReason {
+  field: string;
+  /**
+   * @minimum 0
+   * @maximum 1
+   */
+  similarity: number;
+}
+
+export interface DuplicateChildSummary {
+  id: number;
+  name: string;
+  /** @nullable */
+  siteId: number | null;
+  /** @nullable */
+  siteName: string | null;
+  status: string;
+  dateOfBirth: string;
+  contactSummary: string;
+}
+
+export interface DuplicateGuardianSummary {
+  name: string;
+  siteIds: number[];
+  siteNames: string[];
+  associatedChildIds: number[];
+  associatedChildCount: number;
+  contactSummary: string;
+}
+
+export interface DuplicateChildCandidate {
+  /**
+   * @minimum 0
+   * @maximum 1
+   */
+  score: number;
+  reasons: DuplicateRecordReason[];
+  first: DuplicateChildSummary;
+  second: DuplicateChildSummary;
+}
+
+export interface DuplicateGuardianCandidate {
+  /**
+   * @minimum 0
+   * @maximum 1
+   */
+  score: number;
+  reasons: DuplicateRecordReason[];
+  first: DuplicateGuardianSummary;
+  second: DuplicateGuardianSummary;
+}
+
+export interface DuplicateRecordsScanResult {
+  /**
+   * @minimum 0.8
+   * @maximum 1
+   */
+  threshold: number;
+  scannedChildCount: number;
+  scannedGuardianCount: number;
+  childCandidates: DuplicateChildCandidate[];
+  guardianCandidates: DuplicateGuardianCandidate[];
+}
+
 export interface ObservationInput {
   childId: number;
   staffId: number;

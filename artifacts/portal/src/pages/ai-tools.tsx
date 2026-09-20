@@ -3,7 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { 
   FilePlus2, Sparkles, UploadCloud, GripVertical, FileText, 
   Image as ImageIcon, ArrowUp, ArrowDown, X, Wand2, Loader2, 
-  Eye, Download, Trash2, FileStack, CheckCircle2, ClipboardPenLine
+  Eye, Download, Trash2, FileStack, CheckCircle2, ClipboardPenLine,
+  Copy, Search, AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -24,6 +26,12 @@ import {
   useListExcursions,
   useListExcursionFormManagers,
   useListSites,
+  useScanDuplicateRecords,
+  DuplicateRecordsScanResult,
+  DuplicateChildSummary,
+  DuplicateGuardianSummary,
+  DuplicateChildCandidate,
+  DuplicateGuardianCandidate
 } from "@workspace/api-client-react";
 
 function timeAgo(iso: string): string {
@@ -51,7 +59,7 @@ export default function AiTools() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [files, setFiles] = useState<FileItem[]>([]);
-  const [activeTool, setActiveTool] = useState<"document-merge" | "excursion-form">("document-merge");
+  const [activeTool, setActiveTool] = useState<"document-merge" | "excursion-form" | "duplicate-records">("document-merge");
   const [selectedExcursionId, setSelectedExcursionId] = useState("");
   const [selectedManagerId, setSelectedManagerId] = useState("");
   const [managerName, setManagerName] = useState("");
@@ -67,12 +75,16 @@ export default function AiTools() {
   const [mergeStatus, setMergeStatus] = useState("");
   const [mergeProgress, setMergeProgress] = useState(0);
 
+  const [duplicateSiteId, setDuplicateSiteId] = useState<string>("all");
+  const [scanResult, setScanResult] = useState<DuplicateRecordsScanResult | null>(null);
+
   const { data: documents, isLoading: isLoadingDocs } = useListMergedDocuments();
   const { data: excursions } = useListExcursions();
   const { data: excursionFormManagers } = useListExcursionFormManagers();
   const { data: sites } = useListSites();
   const { mutateAsync: requestUploadUrl } = useRequestDocumentMergeUploadUrl();
   const { mutateAsync: mergeDocs } = useMergeDocuments();
+  const { mutateAsync: scanDuplicates, isPending: isScanningDuplicates } = useScanDuplicateRecords();
   const { mutate: deleteDoc } = useDeleteMergedDocument({
     mutation: {
       onSuccess: () => {
@@ -319,6 +331,31 @@ export default function AiTools() {
     }
   };
 
+  const handleScanDuplicates = async () => {
+    try {
+      const result = await scanDuplicates({
+        data: {
+          siteId: duplicateSiteId === "all" ? null : Number(duplicateSiteId),
+          threshold: 0.8
+        }
+      });
+      setScanResult(result);
+
+      const matchCount = result.childCandidates.length + result.guardianCandidates.length;
+      if (matchCount > 0) {
+        toast({ title: "Scan complete", description: `Found ${matchCount} potential matches.` });
+      } else {
+        toast({ title: "Scan complete", description: "No duplicates found based on the 80% threshold." });
+      }
+    } catch (err) {
+      toast({
+        title: "Scan failed",
+        description: err instanceof Error ? err.message : "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto">
       <div>
@@ -362,6 +399,26 @@ export default function AiTools() {
             </div>
           )}
         </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTool("duplicate-records")}
+          className={`relative p-5 rounded-xl border-2 cursor-pointer flex flex-col items-center text-center shadow-sm ${
+            activeTool === "duplicate-records" ? "border-primary bg-primary/5" : "border-border bg-card"
+          }`}
+          data-testid="tool-card-duplicate-records"
+        >
+          <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center mb-3">
+            <Copy className="h-6 w-6 text-primary" />
+          </div>
+          <h3 className="font-semibold text-foreground text-lg">Duplicate Records</h3>
+          <p className="text-sm text-muted-foreground mt-1">Scan for potential duplicates</p>
+          {activeTool === "duplicate-records" && (
+            <div className="absolute top-3 right-3">
+              <span className="flex h-2.5 w-2.5 rounded-full bg-primary" title="Active tool" />
+            </div>
+          )}
+        </button>
         
         <div className="relative p-5 rounded-xl border border-dashed border-muted bg-muted/10 opacity-60 cursor-not-allowed flex flex-col items-center text-center">
           <div className="h-12 w-12 rounded-full bg-muted-foreground/10 flex items-center justify-center mb-3">
@@ -372,7 +429,103 @@ export default function AiTools() {
         </div>
       </div>
 
-      {activeTool === "excursion-form" ? (
+      {activeTool === "duplicate-records" ? (
+        <div className="max-w-4xl rounded-xl border bg-card p-6 shadow-sm space-y-6">
+          <div>
+            <h2 className="text-xl font-semibold">Duplicate Records Scan</h2>
+            <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+              Scan your database for potential duplicate child or guardian records.
+              This tool uses an 80% similarity threshold to flag candidates for manual review;
+              it does not merge or delete records automatically.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 items-end">
+            <div className="space-y-2 flex-1 w-full">
+              <Label>Site to scan</Label>
+              <Select value={duplicateSiteId} onValueChange={(val) => {
+                setDuplicateSiteId(val);
+                setScanResult(null);
+              }}>
+                <SelectTrigger data-testid="select-duplicate-site">
+                  <SelectValue placeholder="Select a site" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All accessible sites</SelectItem>
+                  {(sites || []).map(site => (
+                    <SelectItem key={site.id} value={String(site.id)}>{site.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={handleScanDuplicates}
+              disabled={isScanningDuplicates}
+              className="w-full sm:w-auto"
+              data-testid="button-start-scan"
+            >
+              {isScanningDuplicates ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin"/> Scanning...</>
+              ) : (
+                <><Search className="h-4 w-4 mr-2"/> Scan for Duplicates</>
+              )}
+            </Button>
+          </div>
+
+          {scanResult && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300" data-testid="scan-results">
+              <div className="rounded-lg border bg-muted/20 p-4">
+                <h3 className="font-semibold text-lg">Scan Results</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Scanned {scanResult.scannedChildCount} children and {scanResult.scannedGuardianCount} guardians.
+                  Found {scanResult.childCandidates.length} child {scanResult.childCandidates.length === 1 ? 'match' : 'matches'} and {scanResult.guardianCandidates.length} guardian {scanResult.guardianCandidates.length === 1 ? 'match' : 'matches'}.
+                </p>
+              </div>
+
+              {scanResult.childCandidates.length === 0 && scanResult.guardianCandidates.length === 0 ? (
+                <div className="text-center py-10 border rounded-lg bg-card" data-testid="no-matches-found">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                    <CheckCircle2 className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-medium text-foreground">No duplicates found</h3>
+                  <p className="text-muted-foreground text-sm mt-1">Your records look clean based on the 80% threshold.</p>
+                </div>
+              ) : (
+                <Tabs defaultValue={scanResult.childCandidates.length > 0 ? "children" : "guardians"} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="children" data-testid="tab-children">
+                      Children ({scanResult.childCandidates.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="guardians" data-testid="tab-guardians">
+                      Guardians ({scanResult.guardianCandidates.length})
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="children" className="space-y-4">
+                    {scanResult.childCandidates.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8 border rounded-lg bg-muted/10">No child duplicates found.</p>
+                    ) : (
+                      scanResult.childCandidates.map((candidate, idx) => (
+                        <DuplicateCandidateCard key={idx} type="child" candidate={candidate} />
+                      ))
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="guardians" className="space-y-4">
+                    {scanResult.guardianCandidates.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8 border rounded-lg bg-muted/10">No guardian duplicates found.</p>
+                    ) : (
+                      scanResult.guardianCandidates.map((candidate, idx) => (
+                        <DuplicateCandidateCard key={idx} type="guardian" candidate={candidate} />
+                      ))
+                    )}
+                  </TabsContent>
+                </Tabs>
+              )}
+            </div>
+          )}
+        </div>
+      ) : activeTool === "excursion-form" ? (
         <div className="max-w-3xl rounded-xl border bg-card p-6 shadow-sm space-y-6">
           <div>
             <h2 className="text-xl font-semibold">Create Excursion Form</h2>
@@ -692,6 +845,102 @@ export default function AiTools() {
         </div>
       </div>
       )}
+    </div>
+  );
+}
+
+function formatPercentage(val: number) {
+  return Math.round(val * 100) + "%";
+}
+
+function DuplicateCandidateCard({ type, candidate }: { type: 'child' | 'guardian', candidate: DuplicateChildCandidate | DuplicateGuardianCandidate }) {
+  const isChild = type === 'child';
+  const c = candidate;
+
+  return (
+    <div className="border rounded-xl bg-card shadow-sm overflow-hidden" data-testid={`duplicate-${type}-candidate`}>
+      <div className="bg-muted/30 px-4 py-3 border-b flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+        <div className="flex items-center gap-2">
+          <div className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 px-2 py-0.5 rounded text-sm font-semibold flex items-center gap-1.5">
+            <AlertTriangle className="h-4 w-4" />
+            {formatPercentage(c.score)} Match
+          </div>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          Reasons: {c.reasons.map(r => `${r.field} (${formatPercentage(r.similarity)})`).join(', ')}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
+        <div className="p-4 space-y-3">
+          <div className="flex justify-between items-start">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Record A</span>
+          </div>
+          {isChild ? (
+            <ChildRecordSummary record={(c as DuplicateChildCandidate).first} />
+          ) : (
+            <GuardianRecordSummary record={(c as DuplicateGuardianCandidate).first} />
+          )}
+        </div>
+        <div className="p-4 space-y-3">
+          <div className="flex justify-between items-start">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Record B</span>
+          </div>
+          {isChild ? (
+            <ChildRecordSummary record={(c as DuplicateChildCandidate).second} />
+          ) : (
+            <GuardianRecordSummary record={(c as DuplicateGuardianCandidate).second} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChildRecordSummary({ record }: { record: DuplicateChildSummary }) {
+  return (
+    <div>
+      <h4 className="font-semibold text-lg text-foreground">{record.name}</h4>
+      <div className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+        <div className="flex justify-between">
+          <span className="text-foreground/70">Status</span>
+          <span className="font-medium text-foreground capitalize">{record.status}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-foreground/70">DOB</span>
+          <span className="font-medium text-foreground">{new Date(record.dateOfBirth).toLocaleDateString('en-AU')}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-foreground/70">Site</span>
+          <span className="font-medium text-foreground truncate max-w-[150px]" title={record.siteName || 'None'}>{record.siteName || 'None'}</span>
+        </div>
+        <div className="flex flex-col mt-2 pt-2 border-t">
+          <span className="text-xs text-foreground/70 mb-1">Contact Details</span>
+          <span className="font-medium text-foreground text-xs leading-relaxed">{record.contactSummary}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GuardianRecordSummary({ record }: { record: DuplicateGuardianSummary }) {
+  return (
+    <div>
+      <h4 className="font-semibold text-lg text-foreground">{record.name}</h4>
+      <div className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+        <div className="flex justify-between">
+          <span className="text-foreground/70">Assoc. Children</span>
+          <span className="font-medium text-foreground">{record.associatedChildCount}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-foreground/70">Sites</span>
+          <span className="font-medium text-foreground truncate max-w-[150px]" title={record.siteNames.join(', ') || 'None'}>{record.siteNames.join(', ') || 'None'}</span>
+        </div>
+        <div className="flex flex-col mt-2 pt-2 border-t">
+          <span className="text-xs text-foreground/70 mb-1">Contact Details</span>
+          <span className="font-medium text-foreground text-xs leading-relaxed">{record.contactSummary}</span>
+        </div>
+      </div>
     </div>
   );
 }

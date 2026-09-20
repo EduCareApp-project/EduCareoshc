@@ -9,6 +9,8 @@ import {
   mergedDocumentsTable,
   organisationTable,
   staffTable,
+  childrenTable,
+  sitesTable,
 } from "@workspace/db";
 import {
   DeleteMergedDocumentParams,
@@ -22,6 +24,8 @@ import {
   RequestDocumentMergeUploadUrlBody,
   RequestDocumentMergeUploadUrlResponse,
   ViewMergedDocumentParams,
+  ScanDuplicateRecordsBody,
+  ScanDuplicateRecordsResponse,
 } from "@workspace/api-zod";
 import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage";
 import {
@@ -30,10 +34,89 @@ import {
   type DocumentMergeContentType,
 } from "../lib/documentMerge";
 import { generateExcursionFormPdf } from "../lib/excursionFormPdf";
+import {
+  scanDuplicateChildren,
+  scanDuplicateGuardians,
+  type DuplicateChildRow,
+} from "../lib/duplicateRecords";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
 const MAX_TOTAL_SOURCE_BYTES = 100 * 1024 * 1024;
+
+function maskContact(email: string, phone: string): string {
+  const safeEmail = email ? `${email.slice(0, 1)}***@${email.split("@").at(-1) ?? "***"}` : "";
+  const digits = phone.replace(/\D/g, "");
+  const safePhone = digits ? `***${digits.slice(-4)}` : "";
+  return [safeEmail, safePhone].filter(Boolean).join(" · ") || "No contact details";
+}
+
+router.post("/ai-tools/duplicate-records/scan", async (req, res): Promise<void> => {
+  const staffId = requireStaff(req, res);
+  if (staffId == null) return;
+  const parsed = ScanDuplicateRecordsBody.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ error: "Choose a valid threshold between 0.8 and 1" });
+    return;
+  }
+  const user = req.session.user;
+  if (!user || !["admin", "admin_support", "educational_leader"].includes(user.role)) {
+    res.status(403).json({ error: "This staff role cannot scan duplicate records" });
+    return;
+  }
+  const requestedSite = parsed.data.siteId ?? null;
+  if (
+    user.role === "educational_leader"
+    && requestedSite != null
+    && requestedSite !== (user.siteId ?? null)
+  ) {
+    res.status(403).json({ error: "Educational leaders can only scan their own site" });
+    return;
+  }
+  const siteId = user.role === "educational_leader" ? user.siteId : requestedSite;
+  try {
+    const [children, sites] = await Promise.all([
+      db.select({
+        id: childrenTable.id, firstName: childrenTable.firstName, lastName: childrenTable.lastName,
+        dateOfBirth: childrenTable.dateOfBirth, guardianName: childrenTable.guardianName,
+        guardianEmail: childrenTable.guardianEmail, guardianPhone: childrenTable.guardianPhone,
+        guardian2Name: childrenTable.guardian2Name, guardian2Email: childrenTable.guardian2Email,
+        guardian2Phone: childrenTable.guardian2Phone, siteId: childrenTable.siteId, status: childrenTable.status,
+      }).from(childrenTable),
+      db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable),
+    ]);
+    const siteNames = new Map(sites.map((site) => [site.id, site.name]));
+    const rows = (siteId == null ? children : children.filter((child) => child.siteId === siteId))
+      .map((child) => ({ ...child, siteName: child.siteId == null ? null : siteNames.get(child.siteId) ?? null })) as DuplicateChildRow[];
+    const threshold = parsed.data.threshold ?? 0.8;
+    const childMatches = scanDuplicateChildren(rows, threshold);
+    const guardianMatches = scanDuplicateGuardians(rows, threshold);
+    const childSummary = (child: DuplicateChildRow) => ({
+      id: child.id, name: `${child.firstName} ${child.lastName}`.trim(), siteId: child.siteId ?? null,
+      siteName: child.siteName ?? null, status: child.status, dateOfBirth: child.dateOfBirth,
+      contactSummary: maskContact(child.guardianEmail, child.guardianPhone),
+    });
+    const guardianSummary = (guardian: { name: string; email: string; phone: string; childIds: number[]; siteIds: number[]; siteNames: string[] }) => ({
+      name: guardian.name, siteIds: guardian.siteIds, siteNames: guardian.siteNames,
+      associatedChildIds: guardian.childIds, associatedChildCount: guardian.childIds.length,
+      contactSummary: maskContact(guardian.email, guardian.phone),
+    });
+    res.json(ScanDuplicateRecordsResponse.parse({
+      threshold, scannedChildCount: rows.length, scannedGuardianCount: new Set(
+        rows.flatMap((row) => [row.guardianEmail, row.guardian2Email].filter(Boolean)),
+      ).size,
+      childCandidates: childMatches.map((match) => ({
+        score: match.score, reasons: match.reasons, first: childSummary(match.first), second: childSummary(match.second),
+      })),
+      guardianCandidates: guardianMatches.map((match) => ({
+        score: match.score, reasons: match.reasons, first: guardianSummary(match.first), second: guardianSummary(match.second),
+      })),
+    }));
+  } catch (err) {
+    req.log.error({ err, staffId }, "Failed to scan duplicate records");
+    res.status(500).json({ error: "Failed to scan duplicate records" });
+  }
+});
 
 function requireStaff(req: Request, res: Response): number | null {
   const user = req.session.user;

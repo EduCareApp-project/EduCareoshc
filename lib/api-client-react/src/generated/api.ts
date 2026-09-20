@@ -50,6 +50,8 @@ import type {
   DeleteMergedDocument200,
   DocumentMergeUploadRequest,
   DocumentMergeUploadResponse,
+  DuplicateRecordsScanInput,
+  DuplicateRecordsScanResult,
   ErrorEnvelope,
   Evacuation,
   EvacuationInput,
@@ -7854,6 +7856,93 @@ export const useRequestDocumentMergeUploadUrl = <
   TContext
 > => {
   return useMutation(getRequestDocumentMergeUploadUrlMutationOptions(options));
+};
+
+/**
+ * @summary Scan child and guardian records for likely duplicates
+ */
+export const getScanDuplicateRecordsUrl = () => {
+  return `/api/ai-tools/duplicate-records/scan`;
+};
+
+export const scanDuplicateRecords = async (
+  duplicateRecordsScanInput: DuplicateRecordsScanInput,
+  options?: RequestInit,
+): Promise<DuplicateRecordsScanResult> => {
+  return customFetch<DuplicateRecordsScanResult>(getScanDuplicateRecordsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(duplicateRecordsScanInput),
+  });
+};
+
+export const getScanDuplicateRecordsMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof scanDuplicateRecords>>,
+    TError,
+    { data: BodyType<DuplicateRecordsScanInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof scanDuplicateRecords>>,
+  TError,
+  { data: BodyType<DuplicateRecordsScanInput> },
+  TContext
+> => {
+  const mutationKey = ["scanDuplicateRecords"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof scanDuplicateRecords>>,
+    { data: BodyType<DuplicateRecordsScanInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return scanDuplicateRecords(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ScanDuplicateRecordsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof scanDuplicateRecords>>
+>;
+export type ScanDuplicateRecordsMutationBody =
+  BodyType<DuplicateRecordsScanInput>;
+export type ScanDuplicateRecordsMutationError = ErrorType<void>;
+
+/**
+ * @summary Scan child and guardian records for likely duplicates
+ */
+export const useScanDuplicateRecords = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof scanDuplicateRecords>>,
+    TError,
+    { data: BodyType<DuplicateRecordsScanInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof scanDuplicateRecords>>,
+  TError,
+  { data: BodyType<DuplicateRecordsScanInput> },
+  TContext
+> => {
+  return useMutation(getScanDuplicateRecordsMutationOptions(options));
 };
 
 /**

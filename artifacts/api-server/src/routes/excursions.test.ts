@@ -59,7 +59,13 @@ const { mockDb, state, tables } = vi.hoisted(() => {
     excursionRiskAssessmentUploadsTable: { name: "uploads", id: "id", objectPath: "objectPath", claimedExcursionId: "claimedExcursionId" },
     guardianNotificationsTable: { name: "notifications", guardianEmail: "guardianEmail", createdAt: "createdAt", dedupeKey: "dedupeKey" },
   };
-  const state = { excursion: null as any, recipient: null as any, logs: [] as any[] };
+  const state = {
+    excursion: null as any,
+    recipient: null as any,
+    logs: [] as any[],
+    children: [] as any[],
+    parentAccounts: [] as any[],
+  };
 
   function rowsFor(table: any, selection?: any) {
     if (selection?.excursion && selection?.recipient && state.excursion && state.recipient) {
@@ -69,8 +75,8 @@ const { mockDb, state, tables } = vi.hoisted(() => {
       case "excursions": return state.excursion ? [state.excursion] : [];
       case "recipients": return state.recipient ? [state.recipient] : [];
       case "logs": return state.logs;
-      case "children": return [];
-      case "parents": return [];
+      case "children": return state.children;
+      case "parents": return state.parentAccounts;
       default: return [];
     }
   }
@@ -209,7 +215,42 @@ beforeEach(() => {
   state.excursion = null;
   state.recipient = null;
   state.logs = [];
+  state.children = [];
+  state.parentAccounts = [];
   vi.clearAllMocks();
+});
+
+describe("holiday-program excursion recipients", () => {
+  it("accepts an active guardian whose child belongs to a different site", async () => {
+    state.children = [{
+      id: 12,
+      firstName: "Sam",
+      lastName: "Student",
+      siteId: 1,
+      status: "active",
+      guardianName: "Guardian Example",
+      guardianEmail: "guardian@example.com",
+      guardian2Name: null,
+      guardian2Email: null,
+    }];
+    state.parentAccounts = [{
+      id: 9,
+      guardianEmail: "guardian@example.com",
+      blockedAt: null,
+    }];
+
+    const response = await request(buildApp())
+      .post("/api/excursions/recipients/verify")
+      .send({ siteId: 6, emails: ["guardian@example.com"] });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([{
+      email: "guardian@example.com",
+      valid: true,
+      guardianName: "Guardian Example",
+      children: [{ childId: 12, childName: "Sam Student", siteId: 1 }],
+    }]);
+  });
 });
 
 describe("excursion permission-form field round trip", () => {

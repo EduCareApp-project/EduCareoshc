@@ -978,7 +978,7 @@ function AddRecipientsDialog({
                       </div>
                     ) : (
                       <div className="text-xs text-red-600 mt-1">
-                        Email not found for this site
+                        No active guardian portal account or linked active child found
                       </div>
                     )}
                   </div>

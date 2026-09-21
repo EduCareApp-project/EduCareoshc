@@ -158,6 +158,8 @@ export interface ExcursionRecipient {
   childId: number;
   childNameSnapshot: string;
   /** @nullable */
+  hiddenFromGuardianAt: string | null;
+  /** @nullable */
   viewedAt: string | null;
   /** @nullable */
   acknowledgedAt: string | null;

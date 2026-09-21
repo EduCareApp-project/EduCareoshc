@@ -256,7 +256,10 @@ function excursionResponse(row: typeof excursionsTable.$inferSelect) {
 }
 
 function recipientResponse(row: typeof excursionRecipientsTable.$inferSelect) {
-  return row;
+  return {
+    ...row,
+    hiddenFromGuardianAt: row.hiddenFromGuardianAt ?? null,
+  };
 }
 
 function withoutDuplicateGuardianMilestones(

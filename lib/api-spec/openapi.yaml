@@ -4140,7 +4140,7 @@ components:
         siteId: { type: integer }
     ExcursionRecipient:
       type: object
-      required: [id, excursionId, guardianEmail, guardianNameSnapshot, childId, childNameSnapshot, viewedAt, acknowledgedAt, decision, createdAt]
+      required: [id, excursionId, guardianEmail, guardianNameSnapshot, childId, childNameSnapshot, hiddenFromGuardianAt, viewedAt, acknowledgedAt, decision, createdAt]
       properties:
         id: { type: integer }
         excursionId: { type: integer }
@@ -4148,6 +4148,7 @@ components:
         guardianNameSnapshot: { type: string }
         childId: { type: integer }
         childNameSnapshot: { type: string }
+        hiddenFromGuardianAt: { type: ["string", "null"], format: date-time }
         viewedAt: { type: ["string", "null"], format: date-time }
         acknowledgedAt: { type: ["string", "null"], format: date-time }
         decision: { type: ["string", "null"], enum: [granted, declined, null] }

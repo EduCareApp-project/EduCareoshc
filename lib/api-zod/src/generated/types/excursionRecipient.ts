@@ -15,6 +15,8 @@ export interface ExcursionRecipient {
   childId: number;
   childNameSnapshot: string;
   /** @nullable */
+  hiddenFromGuardianAt: Date | null;
+  /** @nullable */
   viewedAt: Date | null;
   /** @nullable */
   acknowledgedAt: Date | null;

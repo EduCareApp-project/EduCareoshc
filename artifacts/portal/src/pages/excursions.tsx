@@ -845,15 +845,18 @@ function ExcursionDetail({
                           </div>
                         </TableCell>
                         <TableCell>
-                          {g.decision === "granted" && (
+                          {g.hiddenFromGuardianAt && (
+                            <Badge variant="secondary">N/A</Badge>
+                          )}
+                          {!g.hiddenFromGuardianAt && g.decision === "granted" && (
                             <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white">
                               Granted
                             </Badge>
                           )}
-                          {g.decision === "declined" && (
+                          {!g.hiddenFromGuardianAt && g.decision === "declined" && (
                             <Badge variant="destructive">Declined</Badge>
                           )}
-                          {!g.decision && (
+                          {!g.hiddenFromGuardianAt && !g.decision && (
                             <Badge
                               variant="secondary"
                               className="text-muted-foreground font-normal"

@@ -4720,6 +4720,7 @@ export const GetExcursionResponse = zod
           guardianNameSnapshot: zod.string(),
           childId: zod.number(),
           childNameSnapshot: zod.string(),
+          hiddenFromGuardianAt: zod.coerce.date().nullable(),
           viewedAt: zod.coerce.date().nullable(),
           acknowledgedAt: zod.coerce.date().nullable(),
           decision: zod
@@ -4826,6 +4827,7 @@ export const AddExcursionRecipientsResponseItem = zod.object({
   guardianNameSnapshot: zod.string(),
   childId: zod.number(),
   childNameSnapshot: zod.string(),
+  hiddenFromGuardianAt: zod.coerce.date().nullable(),
   viewedAt: zod.coerce.date().nullable(),
   acknowledgedAt: zod.coerce.date().nullable(),
   decision: zod
@@ -4886,6 +4888,7 @@ export const SendExcursionResponse = zod
           guardianNameSnapshot: zod.string(),
           childId: zod.number(),
           childNameSnapshot: zod.string(),
+          hiddenFromGuardianAt: zod.coerce.date().nullable(),
           viewedAt: zod.coerce.date().nullable(),
           acknowledgedAt: zod.coerce.date().nullable(),
           decision: zod
@@ -4992,6 +4995,7 @@ export const SendExcursionReminderResponse = zod
           guardianNameSnapshot: zod.string(),
           childId: zod.number(),
           childNameSnapshot: zod.string(),
+          hiddenFromGuardianAt: zod.coerce.date().nullable(),
           viewedAt: zod.coerce.date().nullable(),
           acknowledgedAt: zod.coerce.date().nullable(),
           decision: zod

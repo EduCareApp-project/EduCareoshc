@@ -47,6 +47,7 @@ export const excursionRecipientsTable = pgTable("excursion_recipients", {
   guardianNameSnapshot: text("guardian_name_snapshot").notNull(),
   childId: integer("child_id").notNull().references(() => childrenTable.id, { onDelete: "restrict" }),
   childNameSnapshot: text("child_name_snapshot").notNull(),
+  hiddenFromGuardianAt: timestamp("hidden_from_guardian_at", { withTimezone: true }),
   viewedAt: timestamp("viewed_at", { withTimezone: true }),
   acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
   decision: text("decision"),

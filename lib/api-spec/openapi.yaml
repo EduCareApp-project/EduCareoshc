@@ -3870,6 +3870,23 @@ paths:
         "204":
           description: Removed
 
+  /excursions/{id}/recipients/{recipientId}/notification:
+    delete:
+      operationId: removeExcursionRecipientNotification
+      tags: [excursions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: recipientId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Guardian notification removed
+
   /excursions/{id}/risk-assessment:
     get:
       operationId: getExcursionRiskAssessment

@@ -54,7 +54,7 @@ const { mockDb, state, tables } = vi.hoisted(() => {
     childrenTable: { name: "children", siteId: "siteId", status: "status", guardianEmail: "guardianEmail", guardian2Email: "guardian2Email" },
     parentAccountsTable: { name: "parents" },
     excursionsTable: { name: "excursions", id: "id", siteId: "siteId", status: "status", excursionDate: "excursionDate", createdAt: "createdAt" },
-    excursionRecipientsTable: { name: "recipients", id: "id", excursionId: "excursionId", guardianEmail: "guardianEmail", childNameSnapshot: "childNameSnapshot", viewedAt: "viewedAt", acknowledgedAt: "acknowledgedAt", decision: "decision", createdAt: "createdAt" },
+    excursionRecipientsTable: { name: "recipients", id: "id", excursionId: "excursionId", guardianEmail: "guardianEmail", childNameSnapshot: "childNameSnapshot", hiddenFromGuardianAt: "hiddenFromGuardianAt", viewedAt: "viewedAt", acknowledgedAt: "acknowledgedAt", decision: "decision", createdAt: "createdAt" },
     excursionResponseLogsTable: { name: "logs", excursionId: "excursionId", recipientId: "recipientId", guardianEmail: "guardianEmail", event: "event", createdAt: "createdAt" },
     excursionRiskAssessmentUploadsTable: { name: "uploads", id: "id", objectPath: "objectPath", claimedExcursionId: "claimedExcursionId" },
     guardianNotificationsTable: { name: "notifications", guardianEmail: "guardianEmail", createdAt: "createdAt", dedupeKey: "dedupeKey" },
@@ -65,6 +65,7 @@ const { mockDb, state, tables } = vi.hoisted(() => {
     logs: [] as any[],
     children: [] as any[],
     parentAccounts: [] as any[],
+    notifications: [] as any[],
   };
 
   function rowsFor(table: any, selection?: any) {
@@ -77,6 +78,7 @@ const { mockDb, state, tables } = vi.hoisted(() => {
       case "logs": return state.logs;
       case "children": return state.children;
       case "parents": return state.parentAccounts;
+      case "notifications": return state.notifications;
       default: return [];
     }
   }
@@ -167,10 +169,22 @@ const { mockDb, state, tables } = vi.hoisted(() => {
     return chain;
   }
 
+  function deleteRows(table: any) {
+    const chain: any = {
+      where() {
+        if (table.name === "notifications") state.notifications = [];
+        if (table.name === "recipients") state.recipient = null;
+        return Promise.resolve();
+      },
+    };
+    return chain;
+  }
+
   const mockDb: any = {
     select: vi.fn(select),
     insert: vi.fn(insert),
     update: vi.fn(update),
+    delete: vi.fn(deleteRows),
     transaction: vi.fn(async (callback: any) => callback(mockDb)),
   };
   return { mockDb, state, tables };
@@ -217,6 +231,7 @@ beforeEach(() => {
   state.logs = [];
   state.children = [];
   state.parentAccounts = [];
+  state.notifications = [];
   vi.clearAllMocks();
 });
 
@@ -250,6 +265,56 @@ describe("holiday-program excursion recipients", () => {
       guardianName: "Guardian Example",
       children: [{ childId: 12, childName: "Sam Student", siteId: 1 }],
     }]);
+  });
+
+  it("removes a sent recipient's in-app notification without removing the recipient", async () => {
+    state.excursion = {
+      id: 41,
+      siteId: 3,
+      status: "sent",
+    };
+    state.recipient = {
+      id: 55,
+      excursionId: 41,
+      guardianEmail: "guardian@example.com",
+    };
+    state.notifications = [{
+      id: 81,
+      guardianEmail: "guardian@example.com",
+      dedupeKey: "excursion:41:recipient:55:sent",
+    }];
+
+    const response = await request(buildApp())
+      .delete("/api/excursions/41/recipients/55/notification");
+
+    expect(response.status).toBe(204);
+    expect(state.notifications).toEqual([]);
+    expect(state.recipient).toMatchObject({
+      id: 55,
+      excursionId: 41,
+      hiddenFromGuardianAt: expect.any(Date),
+    });
+  });
+
+  it("does not list a past excursion in the guardian's upcoming excursions", async () => {
+    state.excursion = {
+      id: 41,
+      siteId: 3,
+      status: "sent",
+      excursionDate: "2000-01-01",
+    };
+    state.recipient = {
+      id: 55,
+      excursionId: 41,
+      guardianEmail: "guardian@example.com",
+    };
+
+    const response = await request(buildApp())
+      .get("/api/guardian/excursions")
+      .set("x-user", "guardian");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([]);
   });
 });
 

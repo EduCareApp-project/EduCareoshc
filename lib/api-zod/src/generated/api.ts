@@ -5023,6 +5023,11 @@ export const RemoveExcursionRecipientParams = zod.object({
   recipientId: zod.coerce.number(),
 });
 
+export const RemoveExcursionRecipientNotificationParams = zod.object({
+  id: zod.coerce.number(),
+  recipientId: zod.coerce.number(),
+});
+
 export const GetExcursionRiskAssessmentParams = zod.object({
   id: zod.coerce.number(),
 });

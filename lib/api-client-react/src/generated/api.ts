@@ -16753,6 +16753,98 @@ export const useRemoveExcursionRecipient = <
   return useMutation(getRemoveExcursionRecipientMutationOptions(options));
 };
 
+export const getRemoveExcursionRecipientNotificationUrl = (
+  id: number,
+  recipientId: number,
+) => {
+  return `/api/excursions/${id}/recipients/${recipientId}/notification`;
+};
+
+export const removeExcursionRecipientNotification = async (
+  id: number,
+  recipientId: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(
+    getRemoveExcursionRecipientNotificationUrl(id, recipientId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export const getRemoveExcursionRecipientNotificationMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeExcursionRecipientNotification>>,
+    TError,
+    { id: number; recipientId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof removeExcursionRecipientNotification>>,
+  TError,
+  { id: number; recipientId: number },
+  TContext
+> => {
+  const mutationKey = ["removeExcursionRecipientNotification"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof removeExcursionRecipientNotification>>,
+    { id: number; recipientId: number }
+  > = (props) => {
+    const { id, recipientId } = props ?? {};
+
+    return removeExcursionRecipientNotification(
+      id,
+      recipientId,
+      requestOptions,
+    );
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RemoveExcursionRecipientNotificationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof removeExcursionRecipientNotification>>
+>;
+
+export type RemoveExcursionRecipientNotificationMutationError =
+  ErrorType<unknown>;
+
+export const useRemoveExcursionRecipientNotification = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeExcursionRecipientNotification>>,
+    TError,
+    { id: number; recipientId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof removeExcursionRecipientNotification>>,
+  TError,
+  { id: number; recipientId: number },
+  TContext
+> => {
+  return useMutation(
+    getRemoveExcursionRecipientNotificationMutationOptions(options),
+  );
+};
+
 export const getGetExcursionRiskAssessmentUrl = (id: number) => {
   return `/api/excursions/${id}/risk-assessment`;
 };

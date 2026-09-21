@@ -373,7 +373,7 @@ async function excursionForGuardian(id: number, recipientId: number, email: stri
 
 async function guardianResponse(id: number, recipientId: number, email: string) {
   const joined = await excursionForGuardian(id, recipientId, email);
-  if (!joined || joined.excursion.status !== "sent") return null;
+  if (!joined || joined.excursion.status !== "sent" || joined.recipient.hiddenFromGuardianAt) return null;
   const logs = await db.select().from(excursionResponseLogsTable)
     .where(and(
       eq(excursionResponseLogsTable.excursionId, id),
@@ -709,6 +709,39 @@ router.delete("/excursions/:id/recipients/:recipientId", async (req, res): Promi
   }
 });
 
+router.delete("/excursions/:id/recipients/:recipientId/notification", async (req, res): Promise<void> => {
+  if (!requireStaff(req, res)) return;
+  const id = idParam(req.params.id);
+  const recipientId = idParam(req.params.recipientId);
+  if (!id || !recipientId) { res.status(400).json({ error: "Invalid excursion or recipient id" }); return; }
+  try {
+    const [excursion] = await db.select().from(excursionsTable).where(eq(excursionsTable.id, id));
+    if (!excursion) { res.status(404).json({ error: "Excursion not found" }); return; }
+    if (!canStaffAccessSite(req, excursion.siteId)) { res.status(403).json({ error: "You do not have access to this site" }); return; }
+    const [recipient] = await db.select().from(excursionRecipientsTable).where(and(
+      eq(excursionRecipientsTable.id, recipientId),
+      eq(excursionRecipientsTable.excursionId, id),
+    ));
+    if (!recipient) { res.status(404).json({ error: "Excursion recipient not found" }); return; }
+    await db.transaction(async (tx) => {
+      await tx.update(excursionRecipientsTable)
+        .set({ hiddenFromGuardianAt: new Date() })
+        .where(and(
+          eq(excursionRecipientsTable.id, recipientId),
+          eq(excursionRecipientsTable.excursionId, id),
+        ));
+      await tx.delete(guardianNotificationsTable).where(and(
+        eq(guardianNotificationsTable.guardianEmail, recipient.guardianEmail),
+        eq(guardianNotificationsTable.dedupeKey, `excursion:${id}:recipient:${recipientId}:sent`),
+      ));
+    });
+    res.status(204).send();
+  } catch (err) {
+    req.log.error({ err, excursionId: id, recipientId }, "Failed to remove excursion guardian notification");
+    res.status(500).json({ error: "Failed to remove guardian notification" });
+  }
+});
+
 router.post("/excursions/:id/send", async (req, res): Promise<void> => {
   if (!requireStaff(req, res)) return;
   const id = idParam(req.params.id);
@@ -776,7 +809,11 @@ router.post("/excursions/:id/reminder", async (req, res): Promise<void> => {
     if (!canStaffAccessSite(req, excursion.siteId)) { res.status(403).json({ error: "You do not have access to this site" }); return; }
     if (excursion.status !== "sent") { res.status(409).json({ error: "Only sent excursions can have reminders" }); return; }
     const recipients = await db.select().from(excursionRecipientsTable)
-      .where(and(eq(excursionRecipientsTable.excursionId, id), isNull(excursionRecipientsTable.decision)));
+      .where(and(
+        eq(excursionRecipientsTable.excursionId, id),
+        isNull(excursionRecipientsTable.decision),
+        isNull(excursionRecipientsTable.hiddenFromGuardianAt),
+      ));
     if (recipients.length === 0) { res.status(400).json({ error: "No recipients assigned" }); return; }
     await db.insert(excursionResponseLogsTable).values(recipients.map((recipient) => ({
       excursionId: id,
@@ -874,9 +911,23 @@ router.get("/guardian/excursions", async (req, res): Promise<void> => {
       .where(and(
         eq(excursionRecipientsTable.guardianEmail, req.session.user!.email.toLowerCase()),
         eq(excursionsTable.status, "sent"),
+        isNull(excursionRecipientsTable.hiddenFromGuardianAt),
       )).orderBy(desc(excursionsTable.excursionDate));
+    const dateParts = new Intl.DateTimeFormat("en-AU", {
+      timeZone: "Australia/Melbourne",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+    const part = (type: Intl.DateTimeFormatPartTypes) =>
+      dateParts.find((item) => item.type === type)?.value ?? "";
+    const todayInMelbourne = `${part("year")}-${part("month")}-${part("day")}`;
+    const upcomingRows = rows.filter((row) => {
+      const excursionDate = String(row.excursion.excursionDate).slice(0, 10);
+      return excursionDate >= todayInMelbourne;
+    });
     const result = [];
-    for (const row of rows) {
+    for (const row of upcomingRows) {
       const detail = await guardianResponse(row.excursion.id, row.recipient.id, req.session.user!.email.toLowerCase());
       if (detail) result.push(detail);
     }

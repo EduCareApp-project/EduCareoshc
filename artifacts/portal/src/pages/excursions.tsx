@@ -67,6 +67,7 @@ import {
   useSendExcursion,
   useSendExcursionReminder,
   useRemoveExcursionRecipient,
+  useRemoveExcursionRecipientNotification,
   useArchiveExcursion,
   useListSites,
   getListExcursionsQueryKey,
@@ -367,6 +368,7 @@ function ExcursionDetail({
   const sendReminder = useSendExcursionReminder();
   const sendMut = useSendExcursion();
   const removeMut = useRemoveExcursionRecipient();
+  const removeNotification = useRemoveExcursionRecipientNotification();
 
   if (isLoading) {
     return (
@@ -449,6 +451,25 @@ function ExcursionDetail({
           });
         },
       }
+    );
+  };
+
+  const handleRemoveReminder = (recipientId: number) => {
+    removeNotification.mutate(
+      { id: excursionId, recipientId },
+      {
+        onSuccess: () =>
+          toast({
+            title: "Reminder removed",
+            description: "This excursion is no longer visible in the parent's app and no further reminders will be sent.",
+          }),
+        onError: (e) =>
+          toast({
+            title: "Could not remove reminder",
+            description: e.message,
+            variant: "destructive",
+          }),
+      },
     );
   };
 
@@ -845,6 +866,17 @@ function ExcursionDetail({
                           {detail.status === "draft" && (
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" title="Remove Recipient" onClick={() => handleRemoveRecipient(g.id)}>
                               <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {detail.status !== "draft" && (
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="h-auto px-0 text-destructive"
+                              disabled={removeNotification.isPending}
+                              onClick={() => handleRemoveReminder(g.id)}
+                            >
+                              Remove reminder
                             </Button>
                           )}
                         </TableCell>

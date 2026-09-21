@@ -544,12 +544,33 @@ router.patch("/excursions/:id", async (req, res): Promise<void> => {
     if (!canStaffAccessSite(req, existing.siteId)) { res.status(403).json({ error: "You do not have access to this site" }); return; }
     const targetSiteId = parsed.data.siteId ?? existing.siteId;
     if (!canStaffAccessSite(req, targetSiteId)) { res.status(403).json({ error: "You do not have access to this site" }); return; }
-    if (existing.status !== "draft" && !(existing.status === "sent" && parsed.data.status === "completed")) {
-      res.status(409).json({ error: "Only draft excursions can be edited, or a sent excursion can be completed" });
-      return;
-    }
-    if (existing.status === "sent" && Object.keys(parsed.data).some((key) => key !== "status")) {
-      res.status(409).json({ error: "Only status can be changed after sending" });
+    if (existing.status === "sent") {
+      const userRole = req.session.user?.role;
+      const isAdmin = userRole === "admin" || userRole === "admin_support";
+      const isCompleting = parsed.data.status === "completed";
+      const changesBeyondStatus = Object.keys(parsed.data).some((key) => key !== "status");
+      if (isCompleting && changesBeyondStatus) {
+        res.status(409).json({ error: "Complete the excursion separately from editing it" });
+        return;
+      }
+      if (!isCompleting && !isAdmin) {
+        res.status(403).json({ error: "Only administrators can edit a published excursion" });
+        return;
+      }
+      if (parsed.data.status != null && !isCompleting) {
+        res.status(409).json({ error: "A published excursion's status cannot be changed while editing" });
+        return;
+      }
+      if (parsed.data.siteId != null && parsed.data.siteId !== existing.siteId) {
+        res.status(409).json({ error: "A published excursion cannot be moved to another site" });
+        return;
+      }
+      if ((parsed.data.recipientEmails?.length ?? 0) > 0) {
+        res.status(409).json({ error: "Add published excursion recipients from the recipient list" });
+        return;
+      }
+    } else if (existing.status !== "draft") {
+      res.status(409).json({ error: "Only draft or published excursions can be edited" });
       return;
     }
     if (parsed.data.status === "sent") { res.status(409).json({ error: "Use the send endpoint to send an excursion" }); return; }

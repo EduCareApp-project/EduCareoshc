@@ -16264,6 +16264,10 @@ export function useGetExcursion<
   return { ...query, queryKey: queryOptions.queryKey };
 }
 
+/**
+ * Published excursion edits preserve the existing site, recipients, acknowledgements, and guardian decisions.
+ * @summary Update a draft excursion or allow an administrator to edit a published excursion
+ */
 export const getUpdateExcursionUrl = (id: number) => {
   return `/api/excursions/${id}`;
 };
@@ -16325,6 +16329,9 @@ export type UpdateExcursionMutationResult = NonNullable<
 export type UpdateExcursionMutationBody = BodyType<ExcursionUpdate>;
 export type UpdateExcursionMutationError = ErrorType<unknown>;
 
+/**
+ * @summary Update a draft excursion or allow an administrator to edit a published excursion
+ */
 export const useUpdateExcursion = <
   TError = ErrorType<unknown>,
   TContext = unknown,

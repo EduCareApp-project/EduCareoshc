@@ -215,6 +215,14 @@ export default function GuardianExcursionDetail() {
             {excursion.heading}
           </h1>
           <p className="text-muted-foreground mt-2">{excursion.venue}</p>
+          {excursion.description && (
+            <div className="mt-4 max-w-3xl">
+              <h2 className="text-sm font-semibold text-foreground">Description</h2>
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                {excursion.description}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -249,7 +257,6 @@ export default function GuardianExcursionDetail() {
 
           {[
             ["Purpose of Activity:", excursion.purpose],
-            ["Description of Activities:", excursion.description],
             ["Date:", new Date(excursion.excursionDate).toLocaleDateString("en-AU")],
             ["Cost:", excursion.cost],
           ].map(([label, value]) => (

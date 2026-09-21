@@ -4746,6 +4746,10 @@ export const GetExcursionResponse = zod
     }),
   );
 
+/**
+ * Published excursion edits preserve the existing site, recipients, acknowledgements, and guardian decisions.
+ * @summary Update a draft excursion or allow an administrator to edit a published excursion
+ */
 export const UpdateExcursionParams = zod.object({
   id: zod.coerce.number(),
 });

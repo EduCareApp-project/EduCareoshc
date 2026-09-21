@@ -3750,6 +3750,8 @@ paths:
     patch:
       operationId: updateExcursion
       tags: [excursions]
+      summary: Update a draft excursion or allow an administrator to edit a published excursion
+      description: Published excursion edits preserve the existing site, recipients, acknowledgements, and guardian decisions.
       parameters:
         - name: id
           in: path

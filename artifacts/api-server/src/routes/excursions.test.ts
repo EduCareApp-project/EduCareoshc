@@ -189,7 +189,16 @@ function buildApp() {
     req.log = { error: vi.fn(), warn: vi.fn() };
     req.session = req.header("x-user") === "guardian"
       ? { user: { id: 9, type: "guardian", role: "guardian", email: "guardian@example.com", name: "Guardian" } }
-      : { user: { id: 7, type: "staff", role: "admin", email: "admin@example.com", name: "Admin", siteId: null } };
+      : {
+          user: {
+            id: 7,
+            type: "staff",
+            role: req.header("x-role") ?? "admin",
+            email: "admin@example.com",
+            name: "Admin",
+            siteId: req.header("x-role") === "educational_leader" ? 3 : null,
+          },
+        };
     next();
   });
   app.use("/api", excursionsRouter);
@@ -240,6 +249,57 @@ describe("excursion permission-form field round trip", () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject(responseFields(updatedPermissionFields));
+  });
+
+  it("lets an administrator edit a published excursion without changing guardian responses", async () => {
+    const app = buildApp();
+    await request(app).post("/api/excursions").send({ siteId: 3, ...permissionFields });
+    state.excursion = { ...state.excursion, status: "sent", sentAt: new Date("2026-09-15T01:00:00.000Z") };
+    state.recipient = {
+      id: 55, excursionId: 41, guardianEmail: "guardian@example.com", guardianId: 9,
+      guardianNameSnapshot: "Guardian", childId: 12, childNameSnapshot: "Sam Student",
+      viewedAt: new Date("2026-09-15T02:00:00.000Z"),
+      acknowledgedAt: new Date("2026-09-15T03:00:00.000Z"),
+      decision: "granted",
+      createdAt: new Date("2026-09-15T01:00:00.000Z"),
+    };
+    const originalRecipient = { ...state.recipient };
+
+    const response = await request(app)
+      .patch("/api/excursions/41")
+      .send({ ...updatedPermissionFields, siteId: 3, recipientEmails: [] });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject(responseFields(updatedPermissionFields));
+    expect(response.body.status).toBe("sent");
+    expect(state.recipient).toEqual(originalRecipient);
+  });
+
+  it("does not let a published excursion move to another site", async () => {
+    const app = buildApp();
+    await request(app).post("/api/excursions").send({ siteId: 3, ...permissionFields });
+    state.excursion = { ...state.excursion, status: "sent", sentAt: new Date("2026-09-15T01:00:00.000Z") };
+
+    const response = await request(app)
+      .patch("/api/excursions/41")
+      .send({ heading: "Changed", siteId: 4 });
+
+    expect(response.status).toBe(409);
+    expect(state.excursion.heading).toBe(permissionFields.heading);
+  });
+
+  it("does not let non-administrators edit a published excursion", async () => {
+    const app = buildApp();
+    await request(app).post("/api/excursions").send({ siteId: 3, ...permissionFields });
+    state.excursion = { ...state.excursion, status: "sent", sentAt: new Date("2026-09-15T01:00:00.000Z") };
+
+    const response = await request(app)
+      .patch("/api/excursions/41")
+      .set("x-role", "educational_leader")
+      .send({ heading: "Changed" });
+
+    expect(response.status).toBe(403);
+    expect(state.excursion.heading).toBe(permissionFields.heading);
   });
 });
 

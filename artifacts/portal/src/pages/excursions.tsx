@@ -363,6 +363,7 @@ function ExcursionDetail({
   const [activityLogOpen, setActivityLogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isAdmin } = usePermissions();
   const sendReminder = useSendExcursionReminder();
   const sendMut = useSendExcursion();
   const removeMut = useRemoveExcursionRecipient();
@@ -495,6 +496,11 @@ function ExcursionDetail({
                 {sendMut.isPending ? "Sending..." : "Send Excursion"}
               </Button>
             </>
+          )}
+          {detail.status === "sent" && isAdmin && (
+            <Button variant="outline" onClick={onEdit} data-testid="button-edit-published-excursion">
+              Edit Excursion
+            </Button>
           )}
           {detail.riskAssessmentPath && (
             <Button
@@ -1120,6 +1126,7 @@ function ExcursionForm({
   const [emailsRaw, setEmailsRaw] = useState("");
   const [verifiedList, setVerifiedList] = useState<any[]>([]);
   const [isVerifying, setIsVerifying] = useState(false);
+  const isPublishedEdit = editData?.status === "sent";
 
   const handleVerify = () => {
     if (!formData.siteId) {
@@ -1247,7 +1254,7 @@ function ExcursionForm({
           },
         );
       } else {
-        toast({ title: "Excursion draft saved" });
+        toast({ title: isPublishedEdit ? "Published excursion updated" : "Excursion draft saved" });
         queryClient.invalidateQueries({ queryKey: getGetExcursionQueryKey(targetId) });
         onSuccess(targetId);
       }
@@ -1294,12 +1301,20 @@ function ExcursionForm({
           <ChevronLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-2xl font-bold text-foreground">
-          {editId ? "Edit Excursion" : duplicateFrom ? "Duplicate Excursion" : "Plan Excursion"}
+          {isPublishedEdit ? "Edit Published Excursion" : editId ? "Edit Excursion" : duplicateFrom ? "Duplicate Excursion" : "Plan Excursion"}
         </h1>
       </div>
 
       <Card>
         <CardContent className="pt-6 space-y-6 text-sm">
+          {isPublishedEdit && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+              <p className="font-semibold">This excursion has already been published.</p>
+              <p className="mt-1 text-sm">
+                Saved changes appear immediately for guardians. Existing recipients, acknowledgements, and decisions will be preserved.
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-4">
             <h3 className="font-semibold text-base mb-2">General Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1310,6 +1325,7 @@ function ExcursionForm({
                   </Label>
                   <Select
                     value={formData.siteId?.toString() ?? ""}
+                    disabled={isPublishedEdit}
                     onValueChange={(v) => {
                       setFormData({ ...formData, siteId: parseInt(v), riskAssessmentPath: undefined, riskAssessmentName: undefined });
                       setRiskFile(null);
@@ -1356,7 +1372,7 @@ function ExcursionForm({
               </div>
 
               <div className="space-y-1.5 md:col-span-2">
-                <Label>Description of Activities (Internal Info)</Label>
+                <Label>Description of Activities</Label>
                 <Textarea
                   value={formData.description || ""}
                   onChange={(e) =>
@@ -1530,10 +1546,12 @@ function ExcursionForm({
             </Card>
           </div>
 
-          <Separator />
-          <h3 className="font-semibold text-base">Recipients (Optional)</h3>
+          {!isPublishedEdit && (
+            <>
+              <Separator />
+              <h3 className="font-semibold text-base">Recipients (Optional)</h3>
 
-          {verifiedList.length === 0 ? (
+              {verifiedList.length === 0 ? (
             <div className="space-y-3">
               <Label>Paste guardian emails (one per line)</Label>
               <Textarea
@@ -1551,7 +1569,7 @@ function ExcursionForm({
                 {isVerifying ? "Verifying..." : "Verify Emails"}
               </Button>
             </div>
-          ) : (
+              ) : (
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <Label>Verified Recipients</Label>
@@ -1596,31 +1614,46 @@ function ExcursionForm({
                 ))}
               </div>
             </div>
+              )}
+            </>
           )}
 
           <div className="flex gap-3 justify-end pt-6">
             <Button type="button" variant="outline" onClick={onBack}>
               Cancel
             </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => handleSave(false)}
-              disabled={createMut.isPending || updateMut.isPending || isUploadingRiskAssessment}
-            >
-              Save Draft
-            </Button>
-            <Button
-              type="button"
-              onClick={() => handleSave(true)}
-              disabled={createMut.isPending || updateMut.isPending || sendMut.isPending || isUploadingRiskAssessment}
-            >
-              {sendMut.isPending
-                ? "Sending..."
-                : createMut.isPending || updateMut.isPending || isUploadingRiskAssessment
-                  ? "Saving..."
-                : "Save & Send Now"}
-            </Button>
+            {isPublishedEdit ? (
+              <Button
+                type="button"
+                onClick={() => handleSave(false)}
+                disabled={updateMut.isPending || isUploadingRiskAssessment}
+                data-testid="button-save-published-excursion"
+              >
+                {updateMut.isPending || isUploadingRiskAssessment ? "Saving..." : "Save Changes"}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => handleSave(false)}
+                  disabled={createMut.isPending || updateMut.isPending || isUploadingRiskAssessment}
+                >
+                  Save Draft
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => handleSave(true)}
+                  disabled={createMut.isPending || updateMut.isPending || sendMut.isPending || isUploadingRiskAssessment}
+                >
+                  {sendMut.isPending
+                    ? "Sending..."
+                    : createMut.isPending || updateMut.isPending || isUploadingRiskAssessment
+                      ? "Saving..."
+                    : "Save & Send Now"}
+                </Button>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

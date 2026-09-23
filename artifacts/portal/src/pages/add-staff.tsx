@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useCreateStaff, useListSites, getListStaffQueryKey } from "@workspace/api-client-react";
+import { useCreateStaff, useListSites, getListStaffQueryKey, type StaffInput } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -57,17 +57,16 @@ export default function AddStaff() {
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     const { siteId, ...rest } = data;
     const isProfileOnly = data.role === "admin_support" || data.role === "onboarding";
-    const payload = {
+    const payload: StaffInput = {
       ...rest,
+      role: data.role as StaffInput["role"],
       associatedSiteIds: isProfileOnly ? [] : rest.associatedSiteIds,
-      siteId: isProfileOnly
-        ? null
-        : siteId && siteId !== "none"
-          ? parseInt(siteId, 10)
-          : null,
+      ...(isProfileOnly || !siteId || siteId === "none"
+        ? {}
+        : { siteId: parseInt(siteId, 10) }),
     };
     createStaff.mutate(
-      { data: payload as any },
+      { data: payload },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListStaffQueryKey() });

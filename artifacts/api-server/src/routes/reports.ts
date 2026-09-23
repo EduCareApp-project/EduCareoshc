@@ -173,6 +173,7 @@ router.get("/reports/staff-compliance", async (req, res): Promise<void> => {
         eq(staffTable.status, "active"),
         ne(staffTable.isSuperAdmin, true),
         ne(staffTable.role, "admin_support"),
+        ne(staffTable.role, "onboarding"),
       )),
       db.select().from(professionalDevelopmentTable),
       db.select().from(staffQualificationsTable),
@@ -281,6 +282,7 @@ router.get("/reports/qualification-check", async (req, res): Promise<void> => {
         eq(staffTable.status, "active"),
         ne(staffTable.isSuperAdmin, true),
         ne(staffTable.role, "admin_support"),
+        ne(staffTable.role, "onboarding"),
       )),
       db.select().from(staffQualificationsTable),
     ]);

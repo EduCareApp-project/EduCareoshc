@@ -151,6 +151,7 @@ const ROLE_LABELS: Record<string, string> = {
   admin_support: "Admin Support",
   coordinator: "Coordinator",
   educational_leader: "Educational Leader",
+  onboarding: "Onboarding",
   room_leader: "Room Leader",
 };
 
@@ -465,6 +466,18 @@ function NavLinks({
     }));
   }
 
+  const isOnboarding = user?.role === "onboarding";
+  if (isOnboarding && user?.id) {
+    finalGroups = [{
+      label: null,
+      items: [{
+        href: `/staff/${user.id}`,
+        label: "My Profile",
+        icon: User,
+      }],
+    }];
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div
@@ -511,7 +524,7 @@ function NavLinks({
               )}
             </div>
           ))}
-          {!isEducatorRole && (
+          {!isEducatorRole && !isOnboarding && (
             <div className="space-y-1">
               <a
                 href="https://educareoshc.com.au"
@@ -525,7 +538,7 @@ function NavLinks({
               </a>
             </div>
           )}
-          {(featureSettings as any)?.webmailEnabled &&
+          {!isOnboarding && (featureSettings as any)?.webmailEnabled &&
             (featureSettings as any)?.webmailUrl && (
               <div className="space-y-1">
                 <a
@@ -549,7 +562,7 @@ function NavLinks({
           className="px-3 py-3 shrink-0"
           style={{ borderTop: "1px solid rgba(255,255,255,0.2)" }}
         >
-          <Link href="/my-profile" onClick={onNavigate}>
+          <Link href={isOnboarding ? `/staff/${user.id}` : "/my-profile"} onClick={onNavigate}>
             <div className="flex items-center gap-2 px-2 mb-2 rounded-lg py-1.5 hover:bg-white/10 transition-colors cursor-pointer">
               <div className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                 <span className="text-xs font-bold text-white">
@@ -627,7 +640,7 @@ export function Layout({ children }: { children: ReactNode }) {
           className="h-8 w-8 object-contain"
         />
         <span className="text-xl font-bold text-white flex-1">EduCare</span>
-        {user && <NotificationBell dark />}
+        {user && user.role !== "onboarding" && <NotificationBell dark />}
       </div>
 
       {/* Page content */}
@@ -635,7 +648,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="md:hidden h-14" />
         {/* Desktop top bar with bell */}
         <div className="hidden md:flex items-center justify-end px-6 py-3 border-b bg-background/95 sticky top-0 z-20">
-          {user && <NotificationBell />}
+          {user && user.role !== "onboarding" && <NotificationBell />}
         </div>
         <div className="p-4 md:p-6 lg:p-8">{children}</div>
       </main>

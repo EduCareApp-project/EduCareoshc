@@ -14,4 +14,5 @@ export const StaffRole = {
   educational_leader: "educational_leader",
   coordinator: "coordinator",
   educator: "educator",
+  onboarding: "onboarding",
 } as const;

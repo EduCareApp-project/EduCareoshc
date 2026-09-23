@@ -18,6 +18,14 @@ function isEducatorRole(role: string | undefined | null): role is EducatorRole {
   return EDUCATOR_ROLES.includes(role as EducatorRole);
 }
 
+function isOnboarding(role: string | undefined | null): boolean {
+  return role === "onboarding";
+}
+
+function isProfileOnlyRole(role: string | undefined | null): boolean {
+  return role === "admin_support" || role === "onboarding";
+}
+
 const router: IRouter = Router();
 
 async function addAssociatedSites<T extends { id: number; siteId?: number | null }>(members: T[]) {
@@ -62,7 +70,9 @@ router.get("/staff", async (req, res): Promise<void> => {
       .from(staffTable)
       .where(ne(staffTable.isSuperAdmin, true))
       .orderBy(staffTable.lastName);
-    const visibleStaff = isEducatorRole(req.session.user?.role)
+    const visibleStaff = isOnboarding(req.session.user?.role)
+      ? staff.filter((member) => member.id === req.session.user?.id)
+      : isEducatorRole(req.session.user?.role)
       ? staff.filter((member) => member.role !== "admin_support")
       : staff;
     res.json(ListStaffResponse.parse(await addAssociatedSites(visibleStaff)));
@@ -73,6 +83,10 @@ router.get("/staff", async (req, res): Promise<void> => {
 });
 
 router.post("/staff", async (req, res): Promise<void> => {
+  if (isOnboarding(req.session.user?.role)) {
+    res.status(403).json({ error: "Not permitted" });
+    return;
+  }
   const parsed = CreateStaffBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -80,11 +94,11 @@ router.post("/staff", async (req, res): Promise<void> => {
   }
   try {
     const { associatedSiteIds, ...parsedStaffData } = parsed.data;
-    const staffData = parsedStaffData.role === "admin_support"
+    const staffData = isProfileOnlyRole(parsedStaffData.role)
       ? { ...parsedStaffData, siteId: null }
       : parsedStaffData;
     const [member] = await db.insert(staffTable).values(staffData).returning();
-    if (staffData.role === "admin_support") {
+    if (isProfileOnlyRole(staffData.role)) {
       await replaceAssociatedSites(member.id, []);
     } else if (associatedSiteIds !== undefined) {
       await replaceAssociatedSites(member.id, associatedSiteIds.filter((siteId) => siteId !== member.siteId));
@@ -106,6 +120,10 @@ router.get("/staff/:id", async (req, res): Promise<void> => {
   try {
     const [member] = await db.select().from(staffTable).where(eq(staffTable.id, params.data.id));
     if (!member) {
+      res.status(404).json({ error: "Staff member not found" });
+      return;
+    }
+    if (isOnboarding(req.session.user?.role) && member.id !== req.session.user?.id) {
       res.status(404).json({ error: "Staff member not found" });
       return;
     }
@@ -142,9 +160,18 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
     const { associatedSiteIds, ...staffFields } = parsed.data;
     const updateData = { ...staffFields };
     const targetRole = staffFields.role ?? existing?.role;
-    if (isEducatorRole(user?.role)) {
+    if (isOnboarding(user?.role)) {
+      if (params.data.id !== user?.id) {
+        res.status(403).json({ error: "Not permitted" });
+        return;
+      }
+      delete (updateData as any).role;
+      delete (updateData as any).status;
       delete (updateData as any).siteId;
-    } else if (targetRole === "admin_support") {
+      delete (updateData as any).associatedSiteIds;
+    } else if (isEducatorRole(user?.role)) {
+      delete (updateData as any).siteId;
+    } else if (isProfileOnlyRole(targetRole)) {
       updateData.siteId = null;
     }
     const [member] = await db
@@ -156,9 +183,9 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Staff member not found" });
       return;
     }
-    if (targetRole === "admin_support") {
+    if (isProfileOnlyRole(targetRole)) {
       await replaceAssociatedSites(member.id, []);
-    } else if (associatedSiteIds !== undefined && !isEducatorRole(user?.role)) {
+    } else if (associatedSiteIds !== undefined && !isEducatorRole(user?.role) && !isOnboarding(user?.role)) {
       await replaceAssociatedSites(member.id, associatedSiteIds.filter((siteId) => siteId !== member.siteId));
     }
     const [withSites] = await addAssociatedSites([member]);
@@ -171,7 +198,7 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
 
 router.patch("/staff/:id/archive", async (req, res): Promise<void> => {
   const user = req.session?.user;
-  if (isEducatorRole(user?.role)) {
+  if (isEducatorRole(user?.role) || isOnboarding(user?.role)) {
     res.status(403).json({ error: "Not permitted" });
     return;
   }
@@ -204,7 +231,7 @@ router.patch("/staff/:id/archive", async (req, res): Promise<void> => {
 
 router.delete("/staff/:id", async (req, res): Promise<void> => {
   const user = req.session?.user;
-  if (isEducatorRole(user?.role)) {
+  if (isEducatorRole(user?.role) || isOnboarding(user?.role)) {
     res.status(403).json({ error: "Not permitted" });
     return;
   }

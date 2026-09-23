@@ -13,6 +13,18 @@ import {
 
 const router: IRouter = Router();
 
+function isOnboarding(req: { session?: { user?: { role?: string; id?: number } } }): boolean {
+  return req.session?.user?.role === "onboarding";
+}
+
+router.use((req, res, next) => {
+  if (isOnboarding(req) && req.method !== "GET") {
+    res.status(403).json({ error: "Not permitted" });
+    return;
+  }
+  next();
+});
+
 async function attachDocuments(quals: (typeof staffQualificationsTable.$inferSelect)[]) {
   if (quals.length === 0) return quals.map((q) => ({ ...q, documents: [] }));
   const ids = quals.map((q) => q.id);
@@ -32,6 +44,10 @@ async function attachDocuments(quals: (typeof staffQualificationsTable.$inferSel
 router.get("/staff/:id/qualifications", async (req, res): Promise<void> => {
   const params = GetStaffQualificationsParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  if (isOnboarding(req) && params.data.id !== req.session.user?.id) {
+    res.status(403).json({ error: "Not permitted" });
+    return;
+  }
   try {
     const rows = await db
       .select()

@@ -6,6 +6,7 @@ export const SYSTEM_ROLES: { value: string; label: string }[] = [
   { value: "educational_leader", label: "Educational Leader" },
   { value: "coordinator", label: "Coordinator" },
   { value: "educator", label: "Educator" },
+  { value: "onboarding", label: "Onboarding" },
 ];
 
 export function useStaffRoles() {

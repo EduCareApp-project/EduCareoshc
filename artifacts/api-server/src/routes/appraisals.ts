@@ -8,6 +8,14 @@ const EDUCATOR_ROLES = ["educator", "coordinator"] as const;
 
 const router: IRouter = Router();
 
+router.use((req, res, next) => {
+  if (req.session?.user?.role === "onboarding" && req.method !== "GET") {
+    res.status(403).json({ error: "Not permitted" });
+    return;
+  }
+  next();
+});
+
 async function buildStaffMap() {
   const rows = await db
     .select({ id: staffTable.id, firstName: staffTable.firstName, lastName: staffTable.lastName, role: staffTable.role })
@@ -31,11 +39,14 @@ router.get("/appraisals", async (req, res): Promise<void> => {
   const staffIdParam = req.query.staffId ? Number(req.query.staffId) : undefined;
   const user = req.session?.user;
   const isEduRole = user && EDUCATOR_ROLES.includes(user.role as (typeof EDUCATOR_ROLES)[number]);
+  const isOnboarding = user?.role === "onboarding";
 
   try {
     let rows = await db.select().from(staffAppraisalsTable).orderBy(desc(staffAppraisalsTable.createdAt));
 
-    if (isEduRole && user) {
+    if (isOnboarding && user) {
+      rows = rows.filter((r) => r.staffId === user.id);
+    } else if (isEduRole && user) {
       // Educators and coordinators can see their own appraisals, plus any they are reviewing
       rows = rows.filter((r) => r.staffId === user.id || r.reviewerId === user.id);
     } else if (staffIdParam) {
@@ -86,9 +97,13 @@ router.get("/appraisals/:id", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
   const user = req.session?.user;
   const isEduRole = user && EDUCATOR_ROLES.includes(user.role as (typeof EDUCATOR_ROLES)[number]);
+  const isOnboarding = user?.role === "onboarding";
   try {
     const [row] = await db.select().from(staffAppraisalsTable).where(eq(staffAppraisalsTable.id, id));
     if (!row) { res.status(404).json({ error: "Appraisal not found" }); return; }
+    if (isOnboarding && user && row.staffId !== user.id) {
+      res.status(403).json({ error: "Not permitted" }); return;
+    }
     if (isEduRole && user && row.staffId !== user.id && row.reviewerId !== user.id) {
       res.status(403).json({ error: "Not permitted" }); return;
     }

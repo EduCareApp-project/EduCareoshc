@@ -508,7 +508,7 @@ function WeeklyReviewSection({ siteId, sites, pastPublishedWeeks }: WeeklyReview
   });
 
   const siteStaff = (staff ?? [])
-    .filter((s) => s.status === "active")
+    .filter((s) => s.status === "active" && s.role !== "onboarding")
     .sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`));
 
   function reviewForPlan(plan: PlanningExperience): WeeklyReviewItem | undefined {

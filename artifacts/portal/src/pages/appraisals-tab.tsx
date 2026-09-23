@@ -157,7 +157,7 @@ export default function AppraisalsTab({ staffId }: { staffId?: number }) {
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const [createOpen, setCreateOpen] = useState(false);
-  const { isEducatorRole } = usePermissions();
+  const { isEducatorRole, isOnboarding } = usePermissions();
 
   const { data: staffList } = useActiveStaff();
   const activeStaff = (staffList ?? []).filter((s) => s.status === "active");
@@ -193,7 +193,7 @@ export default function AppraisalsTab({ staffId }: { staffId?: number }) {
         <p className="text-sm text-muted-foreground">
           {appraisals.length === 0 ? "No appraisals yet" : `${appraisals.length} appraisal${appraisals.length !== 1 ? "s" : ""}`}
         </p>
-        {!isEducatorRole && (
+        {!isEducatorRole && !isOnboarding && (
           <Button size="sm" onClick={() => setCreateOpen(true)}>
             <Plus className="h-3.5 w-3.5 mr-1.5" /> New Appraisal
           </Button>
@@ -204,7 +204,7 @@ export default function AppraisalsTab({ staffId }: { staffId?: number }) {
         <div className="flex flex-col items-center justify-center py-16 border border-dashed rounded-lg">
           <ClipboardList className="h-10 w-10 text-muted-foreground/30 mb-3" />
           <p className="text-sm font-medium text-muted-foreground">No appraisals yet</p>
-          {!isEducatorRole && (
+          {!isEducatorRole && !isOnboarding && (
             <Button className="mt-4" size="sm" onClick={() => setCreateOpen(true)}>
               <Plus className="h-3.5 w-3.5 mr-1" /> New Appraisal
             </Button>
@@ -217,8 +217,10 @@ export default function AppraisalsTab({ staffId }: { staffId?: number }) {
             return (
               <div
                 key={a.id}
-                className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/30 cursor-pointer group"
-                onClick={() => navigate(`/appraisals/${a.id}`)}
+                className={`flex items-center justify-between gap-3 px-4 py-3 group ${isOnboarding ? "" : "hover:bg-muted/30 cursor-pointer"}`}
+                onClick={() => {
+                  if (!isOnboarding) navigate(`/appraisals/${a.id}`);
+                }}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -238,7 +240,7 @@ export default function AppraisalsTab({ staffId }: { staffId?: number }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                  {!isEducatorRole && (
+                  {!isEducatorRole && !isOnboarding && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100">
@@ -265,12 +267,14 @@ export default function AppraisalsTab({ staffId }: { staffId?: number }) {
         </div>
       )}
 
-      <CreateDialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        staffList={activeStaff}
-        fixedStaffId={staffId}
-      />
+      {!isOnboarding && (
+        <CreateDialog
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          staffList={activeStaff}
+          fixedStaffId={staffId}
+        />
+      )}
     </div>
   );
 }

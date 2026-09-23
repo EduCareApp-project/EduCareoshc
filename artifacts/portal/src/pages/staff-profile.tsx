@@ -52,7 +52,7 @@ import {
   CANNOT_WORK_QUALS,
 } from "@/lib/qual-level";
 
-const ROLE_LABELS: Record<string, string> = { admin: "Admin", admin_support: "Admin Support", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
+const ROLE_LABELS: Record<string, string> = { admin: "Admin", admin_support: "Admin Support", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator", onboarding: "Onboarding" };
 
 function safePdDate(completedAt: string | null | undefined): string {
   if (!completedAt) return "—";
@@ -108,7 +108,7 @@ export default function StaffProfile() {
   const staffId = parseInt(id ?? "0");
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { isEducatorRole, canManageQualifications, isAdminOrEL, ownId } = usePermissions();
+  const { isEducatorRole, isOnboarding, canManageQualifications, isAdminOrEL, ownId } = usePermissions();
   const staffRoles = useStaffRoles();
 
   const { data: staff, isLoading: loadingStaff } = useGetStaff(staffId, { query: { queryKey: getGetStaffQueryKey(staffId), enabled: !!staffId } });
@@ -185,16 +185,16 @@ export default function StaffProfile() {
           lastName: profileEditForm.lastName,
           email: profileEditForm.email,
           phone: profileEditForm.phone || undefined,
-          role: profileEditForm.role as "admin" | "admin_support" | "educational_leader" | "coordinator" | "educator",
+          role: profileEditForm.role as "admin" | "admin_support" | "educational_leader" | "coordinator" | "educator" | "onboarding",
           status: profileEditForm.status as "active" | "inactive",
           qualifications: profileEditForm.qualifications,
           wwccNumber: profileEditForm.wwccNumber || undefined,
-          siteId: profileEditForm.role === "admin_support"
+           siteId: ["admin_support", "onboarding"].includes(profileEditForm.role)
             ? null
             : profileEditForm.siteId
               ? parseInt(profileEditForm.siteId)
               : null,
-          associatedSiteIds: profileEditForm.role === "admin_support" ? [] : profileEditForm.associatedSiteIds,
+          associatedSiteIds: ["admin_support", "onboarding"].includes(profileEditForm.role) ? [] : profileEditForm.associatedSiteIds,
         },
       });
       await queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}`] });
@@ -212,7 +212,7 @@ export default function StaffProfile() {
     onError: () => toast({ title: "Photo upload failed", variant: "destructive" }),
   });
 
-  if (isEducatorRole && ownId && staffId !== ownId) {
+  if ((isEducatorRole || isOnboarding) && ownId && staffId !== ownId) {
     return <Redirect to={`/staff/${ownId}`} />;
   }
 
@@ -595,9 +595,11 @@ export default function StaffProfile() {
               <Card>
                 <CardHeader className="pb-3 flex flex-row items-center justify-between">
                   <CardTitle className="text-base">Details</CardTitle>
-                  <Button variant="outline" size="sm" onClick={openProfileEdit}>
-                    <Pencil className="h-3.5 w-3.5 mr-1" />Edit Profile
-                  </Button>
+                  {!isOnboarding && (
+                    <Button variant="outline" size="sm" onClick={openProfileEdit}>
+                      <Pencil className="h-3.5 w-3.5 mr-1" />Edit Profile
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Row 1: 3-column contact details */}
@@ -1131,9 +1133,11 @@ export default function StaffProfile() {
                 <p className="text-xs text-muted-foreground">PD hours in {currentYear}</p>
               </div>
             </div>
-            <Button size="sm" onClick={() => setPdOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />Add PD
-            </Button>
+            {!isOnboarding && (
+              <Button size="sm" onClick={() => setPdOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" />Add PD
+              </Button>
+            )}
           </div>
 
           {loadingPd ? (
@@ -1157,9 +1161,11 @@ export default function StaffProfile() {
                       </div>
                       {p.notes && <p className="text-xs text-muted-foreground italic mt-1">{p.notes}</p>}
                     </div>
-                    <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeletePd(p.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {!isOnboarding && (
+                      <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeletePd(p.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -1231,7 +1237,7 @@ export default function StaffProfile() {
               <Label>WWCC Number</Label>
               <Input value={profileEditForm.wwccNumber} onChange={(e) => setProfileEditForm((f) => ({ ...f, wwccNumber: e.target.value }))} placeholder="e.g. WWC1234567A" />
             </div>
-            {!isEducatorRole && profileEditForm.role !== "admin_support" && (
+            {!isEducatorRole && !["admin_support", "onboarding"].includes(profileEditForm.role) && (
               <>
                 <div className="space-y-1.5">
                   <Label>Home Site / Location</Label>

@@ -4608,7 +4608,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, admin_support, educational_leader, coordinator, educator]
+          enum: [admin, admin_support, educational_leader, coordinator, educator, onboarding]
         qualifications:
           type: string
         status:
@@ -4659,7 +4659,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, admin_support, educational_leader, coordinator, educator]
+          enum: [admin, admin_support, educational_leader, coordinator, educator, onboarding]
         qualifications:
           type: string
         status:
@@ -4688,7 +4688,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, admin_support, educational_leader, coordinator, educator]
+          enum: [admin, admin_support, educational_leader, coordinator, educator, onboarding]
         qualifications:
           type: string
         status:

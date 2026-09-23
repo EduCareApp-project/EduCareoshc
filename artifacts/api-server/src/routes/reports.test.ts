@@ -106,7 +106,7 @@ describe("GET /api/reports/staff-compliance Admin Support boundary", () => {
     expect(response.body.expiringQualifications.map((qualification: { staffId: number }) => qualification.staffId))
       .toEqual([educator.id]);
     expect(whereCalls.map(String)).toContain(
-      "and(eq(staff.status,active),ne(staff.is_super_admin,true),ne(staff.role,admin_support))",
+      "and(eq(staff.status,active),ne(staff.is_super_admin,true),ne(staff.role,admin_support),ne(staff.role,onboarding))",
     );
   });
 });
@@ -176,7 +176,7 @@ describe("GET /api/reports/qualification-check Admin Support boundary", () => {
       expect.objectContaining({ staffId: adminSupport.id }),
     );
     expect(whereCalls.map(String)).toContain(
-      "and(eq(staff.status,active),ne(staff.is_super_admin,true),ne(staff.role,admin_support))",
+      "and(eq(staff.status,active),ne(staff.is_super_admin,true),ne(staff.role,admin_support),ne(staff.role,onboarding))",
     );
   });
 });

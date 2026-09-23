@@ -163,6 +163,20 @@ function SchoolRoutes() {
 
 function StaffRoutes() {
   const [location] = useLocation();
+  const { user } = useAuth();
+  if (user?.role === "onboarding") {
+    const ownProfilePath = `/staff/${user.id}`;
+    return (
+      <Layout>
+        <ErrorBoundary key={location}>
+          <Switch>
+            <Route path={ownProfilePath} component={StaffProfile} />
+            <Route><Redirect to={ownProfilePath} /></Route>
+          </Switch>
+        </ErrorBoundary>
+      </Layout>
+    );
+  }
   return (
     <Layout>
       <ErrorBoundary key={location}>

@@ -9,9 +9,17 @@ import {
 
 const router: IRouter = Router();
 
+function isOnboarding(req: { session?: { user?: { role?: string; id?: number } } }): boolean {
+  return req.session?.user?.role === "onboarding";
+}
+
 router.get("/staff/:id/professional-development", async (req, res): Promise<void> => {
   const params = GetStaffProfessionalDevelopmentParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  if (isOnboarding(req) && params.data.id !== req.session.user?.id) {
+    res.status(403).json({ error: "Not permitted" });
+    return;
+  }
   try {
     const rows = await db.select().from(professionalDevelopmentTable)
       .where(eq(professionalDevelopmentTable.staffId, params.data.id))
@@ -24,6 +32,7 @@ router.get("/staff/:id/professional-development", async (req, res): Promise<void
 });
 
 router.post("/professional-development", async (req, res): Promise<void> => {
+  if (isOnboarding(req)) { res.status(403).json({ error: "Not permitted" }); return; }
   const parsed = CreateProfessionalDevelopmentBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
   try {
@@ -36,6 +45,7 @@ router.post("/professional-development", async (req, res): Promise<void> => {
 });
 
 router.delete("/professional-development/:id", async (req, res): Promise<void> => {
+  if (isOnboarding(req)) { res.status(403).json({ error: "Not permitted" }); return; }
   const params = DeleteProfessionalDevelopmentParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   try {

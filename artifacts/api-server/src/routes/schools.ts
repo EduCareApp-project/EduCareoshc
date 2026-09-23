@@ -30,6 +30,7 @@ async function isStaffAssignedToSite(staffId: number, siteId: number): Promise<b
     eq(staffTable.status, "active"),
     eq(staffTable.isSuperAdmin, false),
     ne(staffTable.role, "admin_support"),
+    ne(staffTable.role, "onboarding"),
   )).limit(1);
   if (!member) return false;
   if (member.siteId === siteId) return true;
@@ -94,6 +95,7 @@ async function portalForSite(siteId: number, schoolView = false) {
       eq(staffTable.status, "active"),
       eq(staffTable.isSuperAdmin, false),
       ne(staffTable.role, "admin_support"),
+      ne(staffTable.role, "onboarding"),
     ))
       .orderBy(asc(staffTable.lastName), asc(staffTable.firstName)),
     db.select().from(schoolVitalRecordsTable).where(eq(schoolVitalRecordsTable.siteId, siteId))
@@ -119,7 +121,7 @@ async function portalForSite(siteId: number, schoolView = false) {
     associatedSitesByStaff.set(association.staffId, current);
   }
   const staffWithAssociations = staff
-    .filter((member) => member.role !== "admin_support")
+    .filter((member) => member.role !== "admin_support" && member.role !== "onboarding")
     .map((member) => ({
       ...member,
       associatedSites: (associatedSitesByStaff.get(member.id) ?? []).filter((associatedSite) => associatedSite.id !== member.siteId),
@@ -200,6 +202,7 @@ router.get("/schools/:siteId/staff/:staffId", async (req, res): Promise<void> =>
       eq(staffTable.status, "active"),
       eq(staffTable.isSuperAdmin, false),
       ne(staffTable.role, "admin_support"),
+      ne(staffTable.role, "onboarding"),
     )).limit(1);
 
     if (!staffMember) {

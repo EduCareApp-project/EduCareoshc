@@ -128,6 +128,41 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
   res.status(403).json({ error: "School accounts can only access their own school portal" });
 });
 
+// Onboarding staff are profile-only accounts. Keep the boundary central so new
+// routes cannot accidentally grant access before a manager assigns another role.
+router.use((req: Request, res: Response, next: NextFunction): void => {
+  const user = req.session.user;
+  if (user?.role !== "onboarding") {
+    next();
+    return;
+  }
+  const ownStaffPath = `/staff/${user.id}`;
+  const allowedGetPaths = [
+    "/staff",
+    ownStaffPath,
+    `${ownStaffPath}/qualifications`,
+    `${ownStaffPath}/professional-development`,
+    "/appraisals",
+    "/settings/features",
+    "/settings/access",
+    "/sites",
+  ];
+  const allowedAppraisalDetail = /^\/appraisals\/\d+$/.test(req.path);
+  const allowedStoredDocument = req.path.startsWith("/storage/objects/");
+  if (
+    req.method === "GET"
+    && (
+      allowedGetPaths.includes(req.path)
+      || allowedAppraisalDetail
+      || allowedStoredDocument
+    )
+  ) {
+    next();
+    return;
+  }
+  res.status(403).json({ error: "Onboarding staff can only access their own profile" });
+});
+
 // ── Protected routes ──────────────────────────────────────────────────────────
 router.use(childrenRouter);
 router.use(guardianFinancialRouter); // must precede guardiansRouter to avoid /:email wildcard conflicts

@@ -148,7 +148,7 @@ router.post("/import/staff", async (req, res): Promise<void> => {
     return;
   }
 
-  const VALID_ROLES = new Set(["educator", "coordinator", "educational_leader", "admin", "admin_support"]);
+  const VALID_ROLES = new Set(["educator", "coordinator", "educational_leader", "admin", "admin_support", "onboarding"]);
 
   const result: ImportResult = { inserted: 0, skipped: 0, errors: [] };
 

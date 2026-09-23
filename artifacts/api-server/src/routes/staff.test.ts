@@ -100,7 +100,7 @@ function staffMember(id: number, role: string, siteId: number | null = 1) {
   };
 }
 
-function buildApp(role: "admin" | "educator" | "coordinator" = "admin") {
+function buildApp(role: "admin" | "educator" | "coordinator" | "onboarding" = "admin") {
   const app = express();
   app.use(express.json());
   app.use(pinoHttp({
@@ -177,5 +177,52 @@ describe("Admin Support staff boundaries", () => {
     expect(setCalls[0]).toMatchObject({ role: "admin_support", siteId: null });
     expect(deletedStaffIds).toHaveLength(1);
     expect(response.body).toMatchObject({ siteId: null, associatedSiteIds: [], associatedSites: [] });
+  });
+});
+
+describe("Onboarding staff boundaries", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    valuesCalls.length = 0;
+    setCalls.length = 0;
+    deletedStaffIds.length = 0;
+  });
+
+  it("returns only the signed-in staff member from the staff list", async () => {
+    const ownProfile = staffMember(1, "onboarding", null);
+    const educator = staffMember(10, "educator");
+    queueResults([[educator, ownProfile], []]);
+
+    const response = await request(buildApp("onboarding")).get("/api/staff");
+
+    expect(response.status).toBe(200);
+    expect(response.body.map((member: { id: number }) => member.id)).toEqual([1]);
+  });
+
+  it("does not let onboarding staff open another profile", async () => {
+    queueResults([[staffMember(10, "educator")]]);
+
+    const response = await request(buildApp("onboarding")).get("/api/staff/10");
+
+    expect(response.status).toBe(404);
+  });
+
+  it("creates onboarding profiles without site assignments", async () => {
+    const created = staffMember(11, "onboarding", null);
+    queueResults([[created], [], []]);
+
+    const response = await request(buildApp()).post("/api/staff").send({
+      firstName: "New",
+      lastName: "Starter",
+      email: "starter@example.com",
+      role: "onboarding",
+      qualifications: "",
+      siteId: 7,
+      associatedSiteIds: [8, 9],
+    });
+
+    expect(response.status).toBe(201);
+    expect(valuesCalls[0]).toMatchObject({ role: "onboarding", siteId: null });
+    expect(deletedStaffIds).toHaveLength(1);
   });
 });

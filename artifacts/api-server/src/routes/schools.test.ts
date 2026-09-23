@@ -249,7 +249,7 @@ describe("GET /api/schools/:siteId/portal staff scope", () => {
       visibleQualificationNames: ["First Aid"],
     });
     expect(whereCalls.map(String)).toContain(
-      "and(or(eq(staff.site_id,1),inArray(staff.id,101,102,104,106)),eq(staff.status,active),eq(staff.is_super_admin,false),ne(staff.role,admin_support))",
+      "and(or(eq(staff.site_id,1),inArray(staff.id,101,102,104,106)),eq(staff.status,active),eq(staff.is_super_admin,false),ne(staff.role,admin_support),ne(staff.role,onboarding))",
     );
   });
 

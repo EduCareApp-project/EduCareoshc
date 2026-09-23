@@ -606,6 +606,7 @@ export const StaffRole = {
   educational_leader: "educational_leader",
   coordinator: "coordinator",
   educator: "educator",
+  onboarding: "onboarding",
 } as const;
 
 export type StaffStatus = (typeof StaffStatus)[keyof typeof StaffStatus];
@@ -654,6 +655,7 @@ export const StaffInputRole = {
   educational_leader: "educational_leader",
   coordinator: "coordinator",
   educator: "educator",
+  onboarding: "onboarding",
 } as const;
 
 export type StaffInputStatus =
@@ -686,6 +688,7 @@ export const StaffUpdateRole = {
   educational_leader: "educational_leader",
   coordinator: "coordinator",
   educator: "educator",
+  onboarding: "onboarding",
 } as const;
 
 export type StaffUpdateStatus =

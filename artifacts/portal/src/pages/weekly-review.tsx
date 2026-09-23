@@ -231,7 +231,7 @@ export default function WeeklyReview() {
   const { data: allStaff } = useListStaff();
   const { data: reviews, isLoading } = useListWeeklyReviews({});
 
-  const activeStaff = allStaff?.filter((s) => s.status === "active") ?? [];
+  const activeStaff = allStaff?.filter((s) => s.status === "active" && s.role !== "onboarding") ?? [];
 
   // Determine current user's staff record
   const currentStaffId = allStaff?.find(

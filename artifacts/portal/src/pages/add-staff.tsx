@@ -56,11 +56,11 @@ export default function AddStaff() {
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     const { siteId, ...rest } = data;
-    const isAdminSupport = data.role === "admin_support";
+    const isProfileOnly = data.role === "admin_support" || data.role === "onboarding";
     const payload = {
       ...rest,
-      associatedSiteIds: isAdminSupport ? [] : rest.associatedSiteIds,
-      siteId: isAdminSupport
+      associatedSiteIds: isProfileOnly ? [] : rest.associatedSiteIds,
+      siteId: isProfileOnly
         ? null
         : siteId && siteId !== "none"
           ? parseInt(siteId, 10)
@@ -134,7 +134,7 @@ export default function AddStaff() {
                   </Select>
                 <FormMessage /></FormItem>
               )} />
-              {selectedRole !== "admin_support" && <FormField control={form.control} name="siteId" render={({ field }) => (
+              {!["admin_support", "onboarding"].includes(selectedRole) && <FormField control={form.control} name="siteId" render={({ field }) => (
                 <FormItem><FormLabel>Home Site (Optional)</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value ?? "none"}>
                     <FormControl><SelectTrigger><SelectValue placeholder="No site assigned" /></SelectTrigger></FormControl>
@@ -147,7 +147,7 @@ export default function AddStaff() {
                   </Select>
                 <FormMessage /></FormItem>
               )} />}
-              {selectedRole !== "admin_support" && <FormField control={form.control} name="associatedSiteIds" render={({ field }) => (
+              {!["admin_support", "onboarding"].includes(selectedRole) && <FormField control={form.control} name="associatedSiteIds" render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Associated Sites (Optional)</FormLabel>
                   <div className="border rounded-md bg-background">

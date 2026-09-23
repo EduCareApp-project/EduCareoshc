@@ -6,23 +6,26 @@ export function usePermissions() {
   const { user } = useAuth();
   const role = user?.role ?? "";
   const isEducatorRole = EDUCATOR_ROLES.includes(role);
+  const isOnboarding = role === "onboarding";
+  const isRestrictedRole = isEducatorRole || isOnboarding;
 
   const isAdmin = role === "admin" || role === "admin_support";
   const isAdminOrEL = isAdmin || role === "educational_leader";
 
   return {
     isEducatorRole,
-    isFullAccess: !isEducatorRole,
+    isOnboarding,
+    isFullAccess: !isRestrictedRole,
     isAdmin,
     isAdminOrEL,
-    canDelete: !isEducatorRole,
-    canEditPost: !isEducatorRole,
-    canEditAfterSubmit: !isEducatorRole,
-    canViewSettings: !isEducatorRole,
-    canViewAllReports: !isEducatorRole,
-    canViewLeadershipDash: !isEducatorRole,
-    canManageQualifications: !isEducatorRole,
-    canManageStaff: !isEducatorRole,
+    canDelete: !isRestrictedRole,
+    canEditPost: !isRestrictedRole,
+    canEditAfterSubmit: !isRestrictedRole,
+    canViewSettings: !isRestrictedRole,
+    canViewAllReports: !isRestrictedRole,
+    canViewLeadershipDash: !isRestrictedRole,
+    canManageQualifications: !isRestrictedRole,
+    canManageStaff: !isRestrictedRole,
     ownId: user?.id ?? null,
     ownSiteId: user?.siteId ?? null,
     isOwnEntry: (authorId?: number | null) =>

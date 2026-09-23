@@ -13,3 +13,4 @@
 - [Attendance average denominators](attendance-average-denominators.md) — exclude a whole week from a service’s average when that service recorded zero attendance across all five days.
 - [Excursion document provenance](excursion-document-provenance.md) — risk PDFs use a permanent protected prefix plus site/uploader provenance and atomic excursion claiming.
 - [Holiday-program excursion recipients](holiday-program-excursion-recipients.md) — guardian verification may include active children from any site because holiday programs combine sites.
+- [Onboarding staff boundary](onboarding-staff-boundary.md) — Onboarding accounts are profile-only and must stay outside educator, assignment, report, school, and general navigation surfaces.

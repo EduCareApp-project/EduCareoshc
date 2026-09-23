@@ -10,7 +10,7 @@ import { Plus, UserCog, Mail, Phone, Award, Building2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { computeQualLevel, QUAL_LEVEL_LABELS, QUAL_LEVEL_STYLES, type QualItem, type QualLevelConfig } from "@/lib/qual-level";
 
-const ROLE_LABELS: Record<string, string> = { admin: "Admin", admin_support: "Admin Support", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator" };
+const ROLE_LABELS: Record<string, string> = { admin: "Admin", admin_support: "Admin Support", educational_leader: "Educational Leader", coordinator: "Coordinator", educator: "Educator", onboarding: "Onboarding" };
 
 export function QualLevelBadge({ staffId, config }: { staffId: number; config?: QualLevelConfig }) {
   const { data: qualifications, isLoading } = useGetStaffQualifications(staffId, {
@@ -141,7 +141,11 @@ export default function StaffList() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((member) => (
             <Link key={member.id} href={`/staff/${member.id}`}>
-              <Card className="hover:border-primary/50 hover:shadow-md transition-all cursor-pointer h-full">
+              <Card className={`hover:shadow-md transition-all cursor-pointer h-full ${
+                member.role === "onboarding"
+                  ? "bg-[#0B2A4A] border-[#0B2A4A] text-white hover:border-blue-300 [&_.text-muted-foreground]:text-blue-100 [&_.text-primary]:text-blue-200 [&_.text-foreground]:text-white"
+                  : "hover:border-primary/50"
+              }`}>
                 <CardHeader className="pb-3 flex flex-row items-start justify-between space-y-0">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-accent text-accent-foreground flex items-center justify-center font-bold">

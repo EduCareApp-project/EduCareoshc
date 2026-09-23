@@ -471,11 +471,13 @@ export default function StaffProfile() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
-          <ArrowLeft className="h-4 w-4 mr-1" />Back to Staff
-        </Button>
+        {!isOnboarding ? (
+          <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
+            <ArrowLeft className="h-4 w-4 mr-1" />Back to Staff
+          </Button>
+        ) : <span />}
         <div className="flex items-center gap-2">
-        {!isEducatorRole && staff.status === "active" && (
+        {!isEducatorRole && !isOnboarding && staff.status === "active" && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="sm" className="text-amber-600 border-amber-400/50 hover:bg-amber-50">
@@ -510,7 +512,7 @@ export default function StaffProfile() {
             </AlertDialogContent>
           </AlertDialog>
         )}
-        {!isEducatorRole && (
+        {!isEducatorRole && !isOnboarding && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/10">
@@ -674,23 +676,25 @@ export default function StaffProfile() {
                     ) : (
                       <span className="text-3xl font-bold text-primary">{staff.firstName[0]}{staff.lastName[0]}</span>
                     )}
-                    <label className={`absolute inset-0 flex flex-col items-center justify-center bg-black/50 text-white cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity ${isUploadingPic ? "opacity-100" : ""}`}>
-                      {isUploadingPic ? (
-                        <span className="text-xs">Uploading…</span>
-                      ) : (
-                        <>
-                          <Camera className="h-5 w-5 mb-1" />
-                          <span className="text-xs">Change photo</span>
-                        </>
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="sr-only"
-                        disabled={isUploadingPic}
-                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleProfilePicUpload(f); e.target.value = ""; }}
-                      />
-                    </label>
+                    {!isOnboarding && (
+                      <label className={`absolute inset-0 flex flex-col items-center justify-center bg-black/50 text-white cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity ${isUploadingPic ? "opacity-100" : ""}`}>
+                        {isUploadingPic ? (
+                          <span className="text-xs">Uploading…</span>
+                        ) : (
+                          <>
+                            <Camera className="h-5 w-5 mb-1" />
+                            <span className="text-xs">Change photo</span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          disabled={isUploadingPic}
+                          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleProfilePicUpload(f); e.target.value = ""; }}
+                        />
+                      </label>
+                    )}
                   </div>
                   {isAdminOrEL && staff.profilePicturePath && (
                     <a
@@ -710,7 +714,7 @@ export default function StaffProfile() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-sm font-medium">About</Label>
-                    {!bioEditing && (
+                    {!isOnboarding && !bioEditing && (
                       <Button variant="ghost" size="sm" onClick={startEditBio}>
                         <Pencil className="h-3.5 w-3.5 mr-1" />Edit
                       </Button>
@@ -743,7 +747,7 @@ export default function StaffProfile() {
           </Card>
 
           {/* Employment Notes — hidden for educator/coordinator roles */}
-          {!isEducatorRole && <Card>
+          {!isEducatorRole && !isOnboarding && <Card>
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-base">Employment Notes</CardTitle>

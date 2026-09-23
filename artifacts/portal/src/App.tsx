@@ -170,7 +170,7 @@ function StaffRoutes() {
       <Layout>
         <ErrorBoundary key={location}>
           <Switch>
-            <Route path={ownProfilePath} component={StaffProfile} />
+            <Route path="/staff/:id" component={StaffProfile} />
             <Route><Redirect to={ownProfilePath} /></Route>
           </Switch>
         </ErrorBoundary>

@@ -227,6 +227,14 @@ describe("Onboarding staff boundaries", () => {
     expect(mockDb.update).not.toHaveBeenCalled();
   });
 
+  it("rejects onboarding edits to qualification details through the profile form", async () => {
+    queueResults([[staffMember(1, "onboarding", null)]]);
+    const response = await request(buildApp("onboarding"))
+      .patch("/api/staff/1").send({ qualifications: "First Aid", wwccNumber: "WWC123" });
+    expect(response.status).toBe(403);
+    expect(mockDb.update).not.toHaveBeenCalled();
+  });
+
   it("rejects onboarding edits to someone else's profile", async () => {
     queueResults([[staffMember(10, "educator")]]);
     const response = await request(buildApp("onboarding"))

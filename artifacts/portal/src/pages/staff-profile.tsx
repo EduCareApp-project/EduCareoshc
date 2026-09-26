@@ -190,8 +190,10 @@ export default function StaffProfile() {
             role: profileEditForm.role as "admin" | "admin_support" | "educational_leader" | "coordinator" | "educator" | "onboarding",
             status: profileEditForm.status as "active" | "inactive",
           } : {}),
-          qualifications: profileEditForm.qualifications,
-          wwccNumber: profileEditForm.wwccNumber || undefined,
+          ...(!isOnboarding ? {
+            qualifications: profileEditForm.qualifications,
+            wwccNumber: profileEditForm.wwccNumber || undefined,
+          } : {}),
           ...(!isOnboarding ? {
             siteId: ["admin_support", "onboarding"].includes(profileEditForm.role)
               ? null
@@ -865,7 +867,7 @@ export default function StaffProfile() {
                   <FolderDown className="h-4 w-4 mr-1" />Download All
                 </Button>
               )}
-              {(canManageQualifications || canEditOwnProfile && isOnboarding) && (
+              {canManageQualifications && !isOnboarding && (
                 <Button size="sm" onClick={openAddQual}>
                   <Plus className="h-4 w-4 mr-1" />Add Qualification
                 </Button>
@@ -956,7 +958,7 @@ export default function StaffProfile() {
                                           <FileText className="h-3 w-3 shrink-0" />
                                           <span className="truncate">{d.documentName ?? d.documentPath.split("/").pop() ?? "Document"}</span>
                                         </a>
-                                        {!isArchived && (canManageQualifications || isOnboarding) && (
+                                        {!isArchived && canManageQualifications && !isOnboarding && (
                                           <button type="button"
                                             className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-muted-foreground hover:text-destructive shrink-0"
                                             title="Delete archived document"
@@ -976,7 +978,7 @@ export default function StaffProfile() {
                         })()}
                       </div>
                     </div>
-                    {(canManageQualifications || canEditOwnProfile && isOnboarding) && !isArchived && (
+                    {canManageQualifications && !isOnboarding && !isArchived && (
                       <div className="flex gap-1 shrink-0">
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Edit" onClick={() => openEditQual(q)}>
                           <Pencil className="h-3.5 w-3.5" />
@@ -1040,7 +1042,7 @@ export default function StaffProfile() {
                     <CardContent className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
                       <Award className="h-10 w-10 mb-2 opacity-20" />
                       <p>No active qualifications recorded yet.</p>
-                      {(canManageQualifications || canEditOwnProfile && isOnboarding) && (
+                      {canManageQualifications && !isOnboarding && (
                         <Button variant="outline" size="sm" onClick={openAddQual} className="mt-2">
                           <Plus className="h-4 w-4 mr-1" />Add first qualification
                         </Button>
@@ -1236,14 +1238,16 @@ export default function StaffProfile() {
                 </Select>
               </div>
             </div>}
-            <div className="space-y-1.5">
-              <Label>Education Qualifications</Label>
-              <Input value={profileEditForm.qualifications} onChange={(e) => setProfileEditForm((f) => ({ ...f, qualifications: e.target.value }))} placeholder="e.g. Bachelor of Education (Early Childhood)" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>WWCC Number</Label>
-              <Input value={profileEditForm.wwccNumber} onChange={(e) => setProfileEditForm((f) => ({ ...f, wwccNumber: e.target.value }))} placeholder="e.g. WWC1234567A" />
-            </div>
+            {!isOnboarding && <>
+              <div className="space-y-1.5">
+                <Label>Education Qualifications</Label>
+                <Input value={profileEditForm.qualifications} onChange={(e) => setProfileEditForm((f) => ({ ...f, qualifications: e.target.value }))} placeholder="e.g. Bachelor of Education (Early Childhood)" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>WWCC Number</Label>
+                <Input value={profileEditForm.wwccNumber} onChange={(e) => setProfileEditForm((f) => ({ ...f, wwccNumber: e.target.value }))} placeholder="e.g. WWC1234567A" />
+              </div>
+            </>}
             {!isEducatorRole && !["admin_support", "onboarding"].includes(profileEditForm.role) && (
               <>
                 <div className="space-y-1.5">

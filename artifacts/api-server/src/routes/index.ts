@@ -150,9 +150,6 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
   const allowedAppraisalDetail = /^\/appraisals\/\d+$/.test(req.path);
   const allowedStoredDocument = req.path.startsWith("/storage/objects/");
   const ownProfileMutation = req.method === "PATCH" && req.path === ownStaffPath;
-  const ownQualificationCreate = req.method === "POST" && req.path === `${ownStaffPath}/qualifications`;
-  const qualificationMutation = /^(?:\/qualifications\/\d+(?:\/archive)?|\/qualification-documents\/\d+)$/.test(req.path)
-    && ["PATCH", "DELETE"].includes(req.method);
   const ownPdCreate = req.method === "POST" && req.path === "/professional-development";
   const pdDelete = req.method === "DELETE" && /^\/professional-development\/\d+$/.test(req.path);
   const uploadRequest = req.method === "POST" && req.path === "/storage/uploads/request-url";
@@ -161,8 +158,7 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
       allowedGetPaths.includes(req.path)
       || allowedAppraisalDetail
       || allowedStoredDocument
-    )) || ownProfileMutation || ownQualificationCreate || qualificationMutation
-    || ownPdCreate || pdDelete || uploadRequest
+    )) || ownProfileMutation || ownPdCreate || pdDelete || uploadRequest
   ) {
     next();
     return;

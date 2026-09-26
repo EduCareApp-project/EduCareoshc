@@ -25,6 +25,10 @@ router.post("/storage/uploads/request-url", async (req: Request, res: Response) 
     res.status(400).json({ error: "Missing or invalid required fields" });
     return;
   }
+  if (req.session.user?.role === "onboarding" && !parsed.data.contentType.startsWith("image/")) {
+    res.status(403).json({ error: "Onboarding staff can only upload profile photos" });
+    return;
+  }
 
   try {
     const { name, size, contentType } = parsed.data;

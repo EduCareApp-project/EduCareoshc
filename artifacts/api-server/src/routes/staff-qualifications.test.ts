@@ -200,20 +200,23 @@ describe("Onboarding qualification ownership", () => {
     mockDb.update.mockReturnValue(chain);
   });
 
-  it("does not let onboarding staff add qualifications to another profile", async () => {
+  it("does not let onboarding staff add qualifications to their own profile", async () => {
     const { app } = buildTestApp("onboarding");
-    const res = await request(app).post("/api/staff/2/qualifications")
-      .send({ name: "First Aid", status: "current", staffId: 2 });
+    const res = await request(app).post("/api/staff/1/qualifications")
+      .send({ name: "First Aid", status: "current", staffId: 1 });
     expect(res.status).toBe(403);
     expect(mockDb.insert).not.toHaveBeenCalled();
   });
 
-  it("rejects onboarding changes to another staff member's qualification", async () => {
-    chain.where.mockResolvedValue([{ id: 42, staffId: 2 }]);
+  it("rejects onboarding edits, archives and deletes even to their own qualifications", async () => {
     const { app } = buildTestApp("onboarding");
-    const res = await request(app).patch("/api/qualifications/42")
-      .send({ staffId: 2, name: "First Aid", status: "current" });
-    expect(res.status).toBe(403);
+    const edit = await request(app).patch("/api/qualifications/42")
+      .send({ staffId: 1, name: "First Aid", status: "current" });
+    const archive = await request(app).patch("/api/qualifications/42/archive");
+    const remove = await request(app).delete("/api/qualifications/42");
+    const removeDocument = await request(app).delete("/api/qualification-documents/99");
+    expect([edit.status, archive.status, remove.status, removeDocument.status]).toEqual([403, 403, 403, 403]);
     expect(mockDb.update).not.toHaveBeenCalled();
+    expect(mockDb.select).not.toHaveBeenCalled();
   });
 });

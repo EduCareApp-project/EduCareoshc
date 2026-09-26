@@ -109,6 +109,7 @@ export default function StaffProfile() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { isEducatorRole, isOnboarding, canManageQualifications, isAdminOrEL, ownId } = usePermissions();
+  const canEditOwnProfile = !isOnboarding || staffId === ownId;
   const staffRoles = useStaffRoles();
 
   const { data: staff, isLoading: loadingStaff } = useGetStaff(staffId, { query: { queryKey: getGetStaffQueryKey(staffId), enabled: !!staffId } });
@@ -185,16 +186,18 @@ export default function StaffProfile() {
           lastName: profileEditForm.lastName,
           email: profileEditForm.email,
           phone: profileEditForm.phone || undefined,
-          role: profileEditForm.role as "admin" | "admin_support" | "educational_leader" | "coordinator" | "educator" | "onboarding",
-          status: profileEditForm.status as "active" | "inactive",
+          ...(!isOnboarding ? {
+            role: profileEditForm.role as "admin" | "admin_support" | "educational_leader" | "coordinator" | "educator" | "onboarding",
+            status: profileEditForm.status as "active" | "inactive",
+          } : {}),
           qualifications: profileEditForm.qualifications,
           wwccNumber: profileEditForm.wwccNumber || undefined,
-           siteId: ["admin_support", "onboarding"].includes(profileEditForm.role)
-            ? null
-            : profileEditForm.siteId
-              ? parseInt(profileEditForm.siteId)
-              : null,
-          associatedSiteIds: ["admin_support", "onboarding"].includes(profileEditForm.role) ? [] : profileEditForm.associatedSiteIds,
+          ...(!isOnboarding ? {
+            siteId: ["admin_support", "onboarding"].includes(profileEditForm.role)
+              ? null
+              : profileEditForm.siteId ? parseInt(profileEditForm.siteId) : null,
+            associatedSiteIds: ["admin_support", "onboarding"].includes(profileEditForm.role) ? [] : profileEditForm.associatedSiteIds,
+          } : {}),
         },
       });
       await queryClient.invalidateQueries({ queryKey: [`/api/staff/${staffId}`] });
@@ -228,7 +231,7 @@ export default function StaffProfile() {
     const response = await uploadProfilePic(file);
     if (!response) return;
     await updateStaffMutation.mutateAsync({ id: staffId, data: { profilePicturePath: response.objectPath } });
-    await queryClient.invalidateQueries({ queryKey: ["getStaff", staffId] });
+    await queryClient.invalidateQueries({ queryKey: getGetStaffQueryKey(staffId) });
     toast({ title: "Profile photo updated" });
   }
 
@@ -597,7 +600,7 @@ export default function StaffProfile() {
               <Card>
                 <CardHeader className="pb-3 flex flex-row items-center justify-between">
                   <CardTitle className="text-base">Details</CardTitle>
-                  {!isOnboarding && (
+                  {canEditOwnProfile && (
                     <Button variant="outline" size="sm" onClick={openProfileEdit}>
                       <Pencil className="h-3.5 w-3.5 mr-1" />Edit Profile
                     </Button>
@@ -676,7 +679,7 @@ export default function StaffProfile() {
                     ) : (
                       <span className="text-3xl font-bold text-primary">{staff.firstName[0]}{staff.lastName[0]}</span>
                     )}
-                    {!isOnboarding && (
+                    {canEditOwnProfile && (
                       <label className={`absolute inset-0 flex flex-col items-center justify-center bg-black/50 text-white cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity ${isUploadingPic ? "opacity-100" : ""}`}>
                         {isUploadingPic ? (
                           <span className="text-xs">Uploading…</span>
@@ -714,7 +717,7 @@ export default function StaffProfile() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-sm font-medium">About</Label>
-                    {!isOnboarding && !bioEditing && (
+                    {canEditOwnProfile && !bioEditing && (
                       <Button variant="ghost" size="sm" onClick={startEditBio}>
                         <Pencil className="h-3.5 w-3.5 mr-1" />Edit
                       </Button>
@@ -862,7 +865,7 @@ export default function StaffProfile() {
                   <FolderDown className="h-4 w-4 mr-1" />Download All
                 </Button>
               )}
-              {canManageQualifications && (
+              {(canManageQualifications || canEditOwnProfile && isOnboarding) && (
                 <Button size="sm" onClick={openAddQual}>
                   <Plus className="h-4 w-4 mr-1" />Add Qualification
                 </Button>
@@ -953,7 +956,7 @@ export default function StaffProfile() {
                                           <FileText className="h-3 w-3 shrink-0" />
                                           <span className="truncate">{d.documentName ?? d.documentPath.split("/").pop() ?? "Document"}</span>
                                         </a>
-                                        {!isArchived && (
+                                        {!isArchived && (canManageQualifications || isOnboarding) && (
                                           <button type="button"
                                             className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-muted-foreground hover:text-destructive shrink-0"
                                             title="Delete archived document"
@@ -973,7 +976,7 @@ export default function StaffProfile() {
                         })()}
                       </div>
                     </div>
-                    {canManageQualifications && !isArchived && (
+                    {(canManageQualifications || canEditOwnProfile && isOnboarding) && !isArchived && (
                       <div className="flex gap-1 shrink-0">
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Edit" onClick={() => openEditQual(q)}>
                           <Pencil className="h-3.5 w-3.5" />
@@ -1037,7 +1040,7 @@ export default function StaffProfile() {
                     <CardContent className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
                       <Award className="h-10 w-10 mb-2 opacity-20" />
                       <p>No active qualifications recorded yet.</p>
-                      {canManageQualifications && (
+                      {(canManageQualifications || canEditOwnProfile && isOnboarding) && (
                         <Button variant="outline" size="sm" onClick={openAddQual} className="mt-2">
                           <Plus className="h-4 w-4 mr-1" />Add first qualification
                         </Button>
@@ -1137,7 +1140,7 @@ export default function StaffProfile() {
                 <p className="text-xs text-muted-foreground">PD hours in {currentYear}</p>
               </div>
             </div>
-            {!isOnboarding && (
+            {canEditOwnProfile && (
               <Button size="sm" onClick={() => setPdOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" />Add PD
               </Button>
@@ -1165,7 +1168,7 @@ export default function StaffProfile() {
                       </div>
                       {p.notes && <p className="text-xs text-muted-foreground italic mt-1">{p.notes}</p>}
                     </div>
-                    {!isOnboarding && (
+                    {canEditOwnProfile && (
                       <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-destructive" onClick={() => handleDeletePd(p.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -1210,7 +1213,7 @@ export default function StaffProfile() {
               <Label>Phone</Label>
               <Input type="text" autoComplete="tel" value={profileEditForm.phone} onChange={(e) => setProfileEditForm((f) => ({ ...f, phone: e.target.value }))} placeholder="e.g. 0412 345 678" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            {!isOnboarding && <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Role</Label>
                 <Select value={profileEditForm.role} onValueChange={(v) => setProfileEditForm((f) => ({ ...f, role: v }))}>
@@ -1232,7 +1235,7 @@ export default function StaffProfile() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
+            </div>}
             <div className="space-y-1.5">
               <Label>Education Qualifications</Label>
               <Input value={profileEditForm.qualifications} onChange={(e) => setProfileEditForm((f) => ({ ...f, qualifications: e.target.value }))} placeholder="e.g. Bachelor of Education (Early Childhood)" />

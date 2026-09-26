@@ -32,9 +32,11 @@ router.get("/staff/:id/professional-development", async (req, res): Promise<void
 });
 
 router.post("/professional-development", async (req, res): Promise<void> => {
-  if (isOnboarding(req)) { res.status(403).json({ error: "Not permitted" }); return; }
   const parsed = CreateProfessionalDevelopmentBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  if (isOnboarding(req) && parsed.data.staffId !== req.session.user?.id) {
+    res.status(403).json({ error: "Not permitted" }); return;
+  }
   try {
     const [pd] = await db.insert(professionalDevelopmentTable).values(parsed.data as any).returning();
     res.status(201).json(GetStaffProfessionalDevelopmentResponseItem.parse(pd));
@@ -45,10 +47,15 @@ router.post("/professional-development", async (req, res): Promise<void> => {
 });
 
 router.delete("/professional-development/:id", async (req, res): Promise<void> => {
-  if (isOnboarding(req)) { res.status(403).json({ error: "Not permitted" }); return; }
   const params = DeleteProfessionalDevelopmentParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   try {
+    if (isOnboarding(req)) {
+      const [existing] = await db.select().from(professionalDevelopmentTable).where(eq(professionalDevelopmentTable.id, params.data.id));
+      if (existing?.staffId !== req.session.user?.id) {
+        res.status(403).json({ error: "Not permitted" }); return;
+      }
+    }
     const [pd] = await db.delete(professionalDevelopmentTable).where(eq(professionalDevelopmentTable.id, params.data.id)).returning();
     if (!pd) { res.status(404).json({ error: "Record not found" }); return; }
     res.sendStatus(204);

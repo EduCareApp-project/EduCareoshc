@@ -17,12 +17,33 @@ function isOnboarding(req: { session?: { user?: { role?: string; id?: number } }
   return req.session?.user?.role === "onboarding";
 }
 
-router.use((req, res, next) => {
-  if (isOnboarding(req) && req.method !== "GET") {
-    res.status(403).json({ error: "Not permitted" });
-    return;
+router.use(async (req, res, next) => {
+  if (!isOnboarding(req) || req.method === "GET") { next(); return; }
+  const ownId = req.session.user!.id;
+  if (req.method === "POST" && /^\/staff\/\d+\/qualifications$/.test(req.path)) {
+    if (Number(req.path.split("/")[2]) === ownId && (req.body.staffId === undefined || req.body.staffId === ownId)) {
+      next(); return;
+    }
+  } else if (/^\/qualifications\/\d+(?:\/archive)?$/.test(req.path)) {
+    try {
+      const [qual] = await db.select().from(staffQualificationsTable)
+        .where(eq(staffQualificationsTable.id, Number(req.path.split("/")[2])));
+      if (qual?.staffId === ownId && (req.body?.staffId === undefined || req.body.staffId === ownId)) {
+        next(); return;
+      }
+    } catch (err) { next(err); return; }
+  } else if (req.method === "DELETE" && /^\/qualification-documents\/\d+$/.test(req.path)) {
+    try {
+      const [doc] = await db.select().from(qualificationDocumentsTable)
+        .where(eq(qualificationDocumentsTable.id, Number(req.path.split("/")[2])));
+      if (doc) {
+        const [qual] = await db.select().from(staffQualificationsTable)
+          .where(eq(staffQualificationsTable.id, doc.qualificationId));
+        if (qual?.staffId === ownId) { next(); return; }
+      }
+    } catch (err) { next(err); return; }
   }
-  next();
+  res.status(403).json({ error: "Not permitted" });
 });
 
 async function attachDocuments(quals: (typeof staffQualificationsTable.$inferSelect)[]) {

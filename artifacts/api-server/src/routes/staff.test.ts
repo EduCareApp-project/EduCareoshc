@@ -207,6 +207,34 @@ describe("Onboarding staff boundaries", () => {
     expect(response.status).toBe(404);
   });
 
+  it("lets onboarding staff update their own bio without changing their role", async () => {
+    const ownProfile = staffMember(1, "onboarding", null);
+    queueResults([[ownProfile], [{ ...ownProfile, bio: "My introduction" }], []]);
+
+    const response = await request(buildApp("onboarding"))
+      .patch("/api/staff/1").send({ bio: "My introduction" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.bio).toBe("My introduction");
+    expect(setCalls[0]).toEqual({ bio: "My introduction" });
+  });
+
+  it("rejects onboarding self-promotion and site changes", async () => {
+    queueResults([[staffMember(1, "onboarding", null)]]);
+    const response = await request(buildApp("onboarding"))
+      .patch("/api/staff/1").send({ role: "admin", siteId: 7 });
+    expect(response.status).toBe(403);
+    expect(mockDb.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects onboarding edits to someone else's profile", async () => {
+    queueResults([[staffMember(10, "educator")]]);
+    const response = await request(buildApp("onboarding"))
+      .patch("/api/staff/10").send({ bio: "Changed" });
+    expect(response.status).toBe(403);
+    expect(mockDb.update).not.toHaveBeenCalled();
+  });
+
   it("creates onboarding profiles without site assignments", async () => {
     const created = staffMember(11, "onboarding", null);
     queueResults([[created], [], []]);

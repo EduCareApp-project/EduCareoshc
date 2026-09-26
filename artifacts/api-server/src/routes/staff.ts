@@ -165,10 +165,11 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
         res.status(403).json({ error: "Not permitted" });
         return;
       }
-      delete (updateData as any).role;
-      delete (updateData as any).status;
-      delete (updateData as any).siteId;
-      delete (updateData as any).associatedSiteIds;
+      const allowedFields = new Set(["firstName", "lastName", "email", "phone", "qualifications", "wwccNumber", "bio", "profilePicturePath"]);
+      if (associatedSiteIds !== undefined || Object.keys(updateData).some((field) => !allowedFields.has(field))) {
+        res.status(403).json({ error: "Onboarding staff can only edit their own personal details" });
+        return;
+      }
     } else if (isEducatorRole(user?.role)) {
       delete (updateData as any).siteId;
     } else if (isProfileOnlyRole(targetRole)) {

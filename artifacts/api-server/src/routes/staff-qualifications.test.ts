@@ -73,7 +73,7 @@ import qualificationsRouter from "./staff-qualifications";
  * captured during the request, so tests can assert on structured log fields
  * without relying on spy internals.
  */
-function buildTestApp() {
+function buildTestApp(role?: string, staffId = 1) {
   const logLines: string[] = [];
   const dest = new Writable({
     write(chunk: Buffer, _enc: string, cb: () => void) {
@@ -86,6 +86,10 @@ function buildTestApp() {
   const app = express();
   app.use(pinoHttp({ logger }));
   app.use(express.json());
+  if (role) app.use((req, _res, next) => {
+    (req as any).session = { user: { id: staffId, role } };
+    next();
+  });
   app.use("/api", qualificationsRouter);
 
   function getLogs(): Record<string, unknown>[] {
@@ -180,5 +184,36 @@ describe("PATCH /api/qualifications/:id/archive – DB error handling", () => {
 
     expect(res.status).toBe(500);
     expect(res.body).toHaveProperty("error");
+  });
+});
+
+describe("Onboarding qualification ownership", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    chain.from.mockReturnValue(chain);
+    chain.where.mockResolvedValue([]);
+    chain.returning.mockResolvedValue([]);
+    chain.orderBy.mockReturnValue(chain);
+    chain.values.mockReturnValue(chain);
+    mockDb.select.mockReturnValue(chain);
+    mockDb.insert.mockReturnValue(chain);
+    mockDb.update.mockReturnValue(chain);
+  });
+
+  it("does not let onboarding staff add qualifications to another profile", async () => {
+    const { app } = buildTestApp("onboarding");
+    const res = await request(app).post("/api/staff/2/qualifications")
+      .send({ name: "First Aid", status: "current", staffId: 2 });
+    expect(res.status).toBe(403);
+    expect(mockDb.insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects onboarding changes to another staff member's qualification", async () => {
+    chain.where.mockResolvedValue([{ id: 42, staffId: 2 }]);
+    const { app } = buildTestApp("onboarding");
+    const res = await request(app).patch("/api/qualifications/42")
+      .send({ staffId: 2, name: "First Aid", status: "current" });
+    expect(res.status).toBe(403);
+    expect(mockDb.update).not.toHaveBeenCalled();
   });
 });

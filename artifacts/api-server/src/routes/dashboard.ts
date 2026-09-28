@@ -259,7 +259,7 @@ router.get("/dashboard/recent-activity", async (req, res): Promise<void> => {
         actor: respondent ? `${respondent.firstName} ${respondent.lastName}` : null,
         siteName: site ? site.name : null,
         timestamp: inc.createdAt.toISOString(),
-        href: `/incidents/${inc.id}`,
+        href: `/incidents?highlight=${inc.id}`,
       });
     }
 

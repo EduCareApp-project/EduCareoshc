@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -48,6 +48,11 @@ vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
 
+beforeEach(() => {
+  incident.archived = false;
+  window.history.replaceState(null, "", "/incidents");
+});
+
 describe("incident attachments", () => {
   it("opens stored attachments through the API storage route", async () => {
     const queryClient = new QueryClient({
@@ -62,6 +67,29 @@ describe("incident attachments", () => {
 
     await userEvent.click(screen.getByText("Alex Taylor"));
 
+    expect(screen.getByRole("link", { name: /view file/i })).toHaveAttribute(
+      "href",
+      "/api/storage/objects/incidents/42/report.pdf",
+    );
+  });
+});
+
+describe("incident deep links", () => {
+  it("opens an archived incident from Recent Activity and shows it in the list", async () => {
+    incident.archived = true;
+    window.history.replaceState(null, "", "/incidents?highlight=42");
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Incidents />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByRole("dialog")).toHaveTextContent("Alex Taylor");
+    expect(screen.getAllByText("Archived")).toHaveLength(2);
     expect(screen.getByRole("link", { name: /view file/i })).toHaveAttribute(
       "href",
       "/api/storage/objects/incidents/42/report.pdf",

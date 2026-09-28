@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation, useSearch } from "wouter";
 import {
   useListIncidents, useCreateIncident, useUpdateIncident, useDeleteIncident,
   useListChildren, useListSites,
@@ -686,16 +687,28 @@ function IncidentDetail({ incident, onDelete }: { incident: any; onDelete: () =>
 
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function Incidents() {
+  const search = useSearch();
+  const [, navigate] = useLocation();
   const { data: incidents, isLoading } = useListIncidents();
   const [createOpen, setCreateOpen] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
 
-  const selectedIncident = (incidents ?? []).find((i) => i.id === selected);
+  const highlight = new URLSearchParams(search).get("highlight");
+  const highlightedId = highlight && /^[1-9]\d*$/.test(highlight) ? Number(highlight) : null;
+  const selectedIncident = (incidents ?? []).find((i) => i.id === (selected ?? highlightedId));
   const active = (incidents ?? []).filter((i) => !i.archived);
   const archived = (incidents ?? []).filter((i) => i.archived);
   const [showArchived, setShowArchived] = useState(false);
 
+  useEffect(() => {
+    if (selectedIncident?.archived) setShowArchived(true);
+  }, [selectedIncident?.id, selectedIncident?.archived]);
+
   const displayed = showArchived ? [...active, ...archived] : active;
+  const closeIncident = () => {
+    setSelected(null);
+    if (highlightedId) navigate("/incidents");
+  };
 
   return (
     <div className="space-y-6">
@@ -776,7 +789,7 @@ export default function Incidents() {
 
       <LogIncidentDialog open={createOpen} onOpenChange={setCreateOpen} />
 
-      <Sheet open={selected !== null} onOpenChange={(o) => !o && setSelected(null)}>
+      <Sheet open={!!selectedIncident} onOpenChange={(o) => !o && closeIncident()}>
         <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
           {selectedIncident && (
             <>
@@ -786,7 +799,7 @@ export default function Incidents() {
                   Logged {format(toMelbourneDate(selectedIncident.createdAt), "dd/MM/yyyy 'at' h:mm a")}
                 </p>
               </SheetHeader>
-              <IncidentDetail key={selectedIncident.id} incident={selectedIncident} onDelete={() => setSelected(null)} />
+              <IncidentDetail key={selectedIncident.id} incident={selectedIncident} onDelete={closeIncident} />
             </>
           )}
         </SheetContent>

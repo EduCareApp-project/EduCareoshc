@@ -745,6 +745,48 @@ router.delete("/excursions/:id/recipients/:recipientId/notification", async (req
   }
 });
 
+router.put("/excursions/:id/recipients/:recipientId/notification", async (req, res): Promise<void> => {
+  if (!requireStaff(req, res)) return;
+  const id = idParam(req.params.id);
+  const recipientId = idParam(req.params.recipientId);
+  if (!id || !recipientId) { res.status(400).json({ error: "Invalid excursion or recipient id" }); return; }
+  try {
+    const [excursion] = await db.select().from(excursionsTable).where(eq(excursionsTable.id, id));
+    if (!excursion) { res.status(404).json({ error: "Excursion not found" }); return; }
+    if (!canStaffAccessSite(req, excursion.siteId)) { res.status(403).json({ error: "You do not have access to this site" }); return; }
+    if (excursion.status === "draft") { res.status(409).json({ error: "Draft excursions have not been sent to guardians" }); return; }
+    const [recipient] = await db.select().from(excursionRecipientsTable).where(and(
+      eq(excursionRecipientsTable.id, recipientId),
+      eq(excursionRecipientsTable.excursionId, id),
+    ));
+    if (!recipient) { res.status(404).json({ error: "Excursion recipient not found" }); return; }
+    await db.transaction(async (tx) => {
+      await tx.update(excursionRecipientsTable)
+        .set({ hiddenFromGuardianAt: null })
+        .where(and(
+          eq(excursionRecipientsTable.id, recipientId),
+          eq(excursionRecipientsTable.excursionId, id),
+        ));
+      if (excursion.status === "sent") {
+        await tx.insert(guardianNotificationsTable).values({
+          guardianEmail: recipient.guardianEmail,
+          type: "guardian_excursion",
+          title: `Permission required: ${excursion.heading}`,
+          body: `Please review the excursion for ${recipient.childNameSnapshot} on ${excursion.excursionDate}.`,
+          href: `/excursions/${id}/recipients/${recipientId}`,
+          referenceId: id,
+          referenceType: "excursion",
+          dedupeKey: `excursion:${id}:recipient:${recipientId}:sent`,
+        }).onConflictDoNothing({ target: guardianNotificationsTable.dedupeKey });
+      }
+    });
+    res.status(204).send();
+  } catch (err) {
+    req.log.error({ err, excursionId: id, recipientId }, "Failed to restore excursion guardian notification");
+    res.status(500).json({ error: "Failed to restore guardian notification" });
+  }
+});
+
 router.post("/excursions/:id/send", async (req, res): Promise<void> => {
   if (!requireStaff(req, res)) return;
   const id = idParam(req.params.id);

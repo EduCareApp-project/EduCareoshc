@@ -122,6 +122,9 @@ const { mockDb, state, tables } = vi.hoisted(() => {
             ...row,
           })));
         }
+        if (table.name === "notifications" && !state.notifications.some((row) => row.dedupeKey === value.dedupeKey)) {
+          state.notifications.push({ id: state.notifications.length + 1, ...value });
+        }
         return chain;
       },
       onConflictDoNothing() { return chain; },
@@ -294,6 +297,61 @@ describe("holiday-program excursion recipients", () => {
       excursionId: 41,
       hiddenFromGuardianAt: expect.any(Date),
     });
+  });
+
+  it("undoes reminder removal by restoring guardian visibility and notification without sending email", async () => {
+    state.excursion = {
+      id: 41, siteId: 3, status: "sent", heading: "Science Centre Visit", excursionDate: "2026-10-20",
+    };
+    state.recipient = {
+      id: 55, excursionId: 41, guardianEmail: "guardian@example.com",
+      childNameSnapshot: "Sam Student", hiddenFromGuardianAt: null,
+    };
+    state.notifications = [{
+      id: 81, guardianEmail: "guardian@example.com", dedupeKey: "excursion:41:recipient:55:sent",
+    }];
+    const app = buildApp();
+
+    expect((await request(app).delete("/api/excursions/41/recipients/55/notification")).status).toBe(204);
+    expect(state.recipient.hiddenFromGuardianAt).toBeInstanceOf(Date);
+    expect(state.notifications).toHaveLength(0);
+
+    const restored = await request(app).put("/api/excursions/41/recipients/55/notification");
+    expect(restored.status).toBe(204);
+    expect(state.recipient.hiddenFromGuardianAt).toBeNull();
+    expect(state.notifications).toMatchObject([{
+      guardianEmail: "guardian@example.com",
+      type: "guardian_excursion",
+      href: "/excursions/41/recipients/55",
+      dedupeKey: "excursion:41:recipient:55:sent",
+    }]);
+    expect((await request(app).put("/api/excursions/41/recipients/55/notification")).status).toBe(204);
+    expect(state.notifications).toHaveLength(1);
+    expect((await request(app).delete("/api/excursions/41/recipients/55/notification")).status).toBe(204);
+    expect(state.notifications).toHaveLength(0);
+  });
+
+  it("rejects undo from guardians and staff outside the excursion site", async () => {
+    state.excursion = { id: 41, siteId: 4, status: "sent" };
+    state.recipient = { id: 55, excursionId: 41, guardianEmail: "guardian@example.com", hiddenFromGuardianAt: new Date() };
+    const app = buildApp();
+
+    expect((await request(app).put("/api/excursions/41/recipients/55/notification").set("x-user", "guardian")).status).toBe(403);
+    expect((await request(app).put("/api/excursions/41/recipients/55/notification").set("x-role", "educational_leader")).status).toBe(403);
+    expect(state.recipient.hiddenFromGuardianAt).toBeInstanceOf(Date);
+    expect(state.notifications).toHaveLength(0);
+  });
+
+  it("undoes removal on a completed excursion without sending a new permission notification", async () => {
+    state.excursion = { id: 41, siteId: 3, status: "completed" };
+    state.recipient = {
+      id: 55, excursionId: 41, guardianEmail: "guardian@example.com",
+      hiddenFromGuardianAt: new Date(),
+    };
+    const response = await request(buildApp()).put("/api/excursions/41/recipients/55/notification");
+    expect(response.status).toBe(204);
+    expect(state.recipient.hiddenFromGuardianAt).toBeNull();
+    expect(state.notifications).toHaveLength(0);
   });
 
   it("does not list a past excursion in the guardian's upcoming excursions", async () => {

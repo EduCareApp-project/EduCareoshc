@@ -3886,6 +3886,21 @@ paths:
       responses:
         "204":
           description: Guardian notification removed
+    put:
+      operationId: restoreExcursionRecipientNotification
+      tags: [excursions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: recipientId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Guardian access and in-app notification restored
 
   /excursions/{id}/risk-assessment:
     get:

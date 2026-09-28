@@ -68,6 +68,7 @@ import {
   useSendExcursionReminder,
   useRemoveExcursionRecipient,
   useRemoveExcursionRecipientNotification,
+  useRestoreExcursionRecipientNotification,
   useArchiveExcursion,
   useListSites,
   getListExcursionsQueryKey,
@@ -78,6 +79,7 @@ import {
 } from "@workspace/api-client-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
+import ExcursionResponseDialog from "./excursion-response-dialog";
 
 export default function Excursions() {
   const [selectedExcursionId, setSelectedExcursionId] = useState<number | null>(null);
@@ -369,6 +371,19 @@ function ExcursionDetail({
   const sendMut = useSendExcursion();
   const removeMut = useRemoveExcursionRecipient();
   const removeNotification = useRemoveExcursionRecipientNotification();
+  const restoreNotification = useRestoreExcursionRecipientNotification();
+
+  const updateReminderVisibility = (recipientId: number, hiddenFromGuardianAt: string | null) => {
+    queryClient.setQueryData(getGetExcursionQueryKey(excursionId), (current: typeof detail) =>
+      current ? {
+        ...current,
+        recipients: current.recipients.map((recipient) =>
+          recipient.id === recipientId ? { ...recipient, hiddenFromGuardianAt } : recipient,
+        ),
+      } : current,
+    );
+    void queryClient.invalidateQueries({ queryKey: getGetExcursionQueryKey(excursionId) });
+  };
 
   if (isLoading) {
     return (
@@ -458,14 +473,39 @@ function ExcursionDetail({
     removeNotification.mutate(
       { id: excursionId, recipientId },
       {
-        onSuccess: () =>
+        onSuccess: () => {
+          updateReminderVisibility(recipientId, new Date().toISOString());
           toast({
             title: "Reminder removed",
             description: "This excursion is no longer visible in the parent's app and no further reminders will be sent.",
-          }),
+          });
+        },
         onError: (e) =>
           toast({
             title: "Could not remove reminder",
+            description: e.message,
+            variant: "destructive",
+          }),
+      },
+    );
+  };
+
+  const handleUndoRemoveReminder = (recipientId: number) => {
+    restoreNotification.mutate(
+      { id: excursionId, recipientId },
+      {
+        onSuccess: () => {
+          updateReminderVisibility(recipientId, null);
+          toast({
+            title: "Reminder restored",
+            description: detail.status === "sent"
+              ? "The excursion is visible in the parent's app again and future reminders are enabled."
+              : "The removal was undone. Completed excursions remain closed to guardians.",
+          });
+        },
+        onError: (e) =>
+          toast({
+            title: "Could not restore reminder",
             description: e.message,
             variant: "destructive",
           }),
@@ -866,22 +906,34 @@ function ExcursionDetail({
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          {detail.status === "draft" && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" title="Remove Recipient" onClick={() => handleRemoveRecipient(g.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {detail.status !== "draft" && (
-                            <Button
-                              variant="link"
-                              size="sm"
-                              className="h-auto px-0 text-destructive"
-                              disabled={removeNotification.isPending}
-                              onClick={() => handleRemoveReminder(g.id)}
-                            >
-                              Remove reminder
-                            </Button>
-                          )}
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            {g.decision && (
+                              <ExcursionResponseDialog
+                                childName={g.childNameSnapshot}
+                                guardianEmail={g.guardianEmail}
+                                decision={g.decision}
+                                response={detail.logs.find((log) =>
+                                  log.recipientId === g.id && (log.event === "granted" || log.event === "declined")
+                                )}
+                              />
+                            )}
+                            {detail.status === "draft" && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" title="Remove Recipient" onClick={() => handleRemoveRecipient(g.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {detail.status !== "draft" && (
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className={`h-auto px-0 ${g.hiddenFromGuardianAt ? "" : "text-destructive"}`}
+                                disabled={removeNotification.isPending || restoreNotification.isPending}
+                                onClick={() => g.hiddenFromGuardianAt ? handleUndoRemoveReminder(g.id) : handleRemoveReminder(g.id)}
+                              >
+                                {g.hiddenFromGuardianAt ? "Undo" : "Remove reminder"}
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))

@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import Excursions from "./excursions";
 
 const createMutate = vi.fn();
 const updateMutate = vi.fn();
 const sendMutate = vi.fn();
 const verifyMutate = vi.fn();
+const removeNotificationMutate = vi.fn();
+const restoreNotificationMutate = vi.fn();
 const mockApi = vi.hoisted(() => ({
   excursions: [] as any[],
   detail: undefined as any,
@@ -16,12 +18,19 @@ vi.mock("@workspace/api-client-react", () => ({
   useListExcursions: () => ({ data: mockApi.excursions, isLoading: false }),
   useCreateExcursion: () => ({ mutate: createMutate, isPending: false }),
   useUpdateExcursion: () => ({ mutate: updateMutate, isPending: false }),
-  useGetExcursion: () => ({ data: mockApi.detail, isLoading: false }),
+  useGetExcursion: (id: number) => useQuery({
+    queryKey: ["/api/excursions", id],
+    queryFn: async () => mockApi.detail,
+    initialData: mockApi.detail,
+    enabled: false,
+  }),
   useVerifyExcursionRecipients: () => ({ mutate: verifyMutate, isPending: false }),
   useAddExcursionRecipients: () => ({ mutate: vi.fn(), isPending: false }),
   useSendExcursion: () => ({ mutate: sendMutate, isPending: false }),
   useSendExcursionReminder: () => ({ mutate: vi.fn(), isPending: false }),
   useRemoveExcursionRecipient: () => ({ mutate: vi.fn(), isPending: false }),
+  useRemoveExcursionRecipientNotification: () => ({ mutate: removeNotificationMutate, isPending: false }),
+  useRestoreExcursionRecipientNotification: () => ({ mutate: restoreNotificationMutate, isPending: false }),
   useArchiveExcursion: () => ({ mutate: vi.fn(), isPending: false }),
   useListSites: () => ({ data: [{ id: 3, name: "Test Site" }] }),
   useRequestExcursionRiskAssessmentUploadUrl: () => ({ mutateAsync: vi.fn() }),
@@ -82,7 +91,7 @@ const existingFields = {
 const labelByField = {
   heading: "Heading",
   venue: "Venue",
-  description: "Description of Activities (Internal Info)",
+  description: "Description of Activities",
   medicalAuthorisationText: "Medical Authorisation Clause",
   purpose: "Purpose of Activity",
   excursionDate: "Date:",
@@ -121,7 +130,7 @@ function inputForLabel(labelText: string): HTMLInputElement | HTMLTextAreaElemen
 function fillEveryPermissionField() {
   fireEvent.change(inputForLabel("Heading"), { target: { value: expectedFields.heading } });
   fireEvent.change(inputForLabel("Venue"), { target: { value: expectedFields.venue } });
-  fireEvent.change(inputForLabel("Description of Activities (Internal Info)"), { target: { value: expectedFields.description } });
+  fireEvent.change(inputForLabel("Description of Activities"), { target: { value: expectedFields.description } });
   fireEvent.change(inputForLabel("Medical Authorisation Clause"), { target: { value: expectedFields.medicalAuthorisationText } });
   fireEvent.change(inputForLabel("Purpose of Activity"), { target: { value: expectedFields.purpose } });
   fireEvent.change(inputForLabel("Date:"), { target: { value: expectedFields.excursionDate } });
@@ -153,6 +162,109 @@ beforeEach(() => {
       },
     ]),
   );
+  removeNotificationMutate.mockImplementation((_variables, options) => options?.onSuccess?.());
+  restoreNotificationMutate.mockImplementation((_variables, options) => options?.onSuccess?.());
+});
+
+describe("excursion reminder removal and undo", () => {
+  it("switches the action to Undo and back after both successful server mutations", async () => {
+    mockApi.detail = {
+      id: 52,
+      ...existingFields,
+      riskAssessmentPath: null,
+      riskAssessmentName: null,
+      status: "sent",
+      createdByStaffId: 7,
+      sentAt: "2026-09-01T00:00:00.000Z",
+      completedAt: null,
+      createdAt: "2026-09-01T00:00:00.000Z",
+      updatedAt: "2026-09-01T00:00:00.000Z",
+      recipients: [{
+        id: 55, excursionId: 52, guardianEmail: "guardian@example.com",
+        guardianNameSnapshot: "Test Guardian", childNameSnapshot: "Test Child",
+        hiddenFromGuardianAt: null, decision: null, viewedAt: null, acknowledgedAt: null,
+      }],
+      logs: [],
+    };
+    mockApi.excursions = [mockApi.detail];
+    renderPage();
+    fireEvent.click(screen.getByTestId("card-excursion-52"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove reminder" }));
+    expect(removeNotificationMutate).toHaveBeenCalledWith(
+      { id: 52, recipientId: 55 }, expect.any(Object),
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Undo" }));
+    expect(restoreNotificationMutate).toHaveBeenCalledWith(
+      { id: 52, recipientId: 55 }, expect.any(Object),
+    );
+    expect(await screen.findByRole("button", { name: "Remove reminder" })).toBeInTheDocument();
+  });
+});
+
+describe("staff view of guardian permission responses", () => {
+  it("shows the saved answers and signature for the selected child only", async () => {
+    mockApi.detail = {
+      id: 52,
+      ...existingFields,
+      riskAssessmentPath: null,
+      riskAssessmentName: null,
+      status: "sent",
+      createdByStaffId: 7,
+      sentAt: "2026-09-01T00:00:00.000Z",
+      completedAt: null,
+      createdAt: "2026-09-01T00:00:00.000Z",
+      updatedAt: "2026-09-01T00:00:00.000Z",
+      recipients: [
+        {
+          id: 55, excursionId: 52, guardianEmail: "guardian@example.com",
+          guardianNameSnapshot: "First Guardian", childNameSnapshot: "First Child",
+          hiddenFromGuardianAt: null, decision: "granted", viewedAt: null, acknowledgedAt: null,
+        },
+        {
+          id: 56, excursionId: 52, guardianEmail: "another@example.com",
+          guardianNameSnapshot: "Second Guardian", childNameSnapshot: "Second Child",
+          hiddenFromGuardianAt: null, decision: "declined", viewedAt: null, acknowledgedAt: null,
+        },
+      ],
+      logs: [
+        {
+          id: 1, excursionId: 52, recipientId: 56, guardianEmail: "another@example.com",
+          event: "declined", createdAt: "2026-09-02T09:00:00.000Z",
+          metadata: { guardianName: "Second Guardian", typedSignatureName: "Other Signer" },
+        },
+        {
+          id: 2, excursionId: 52, recipientId: 55, guardianEmail: "guardian@example.com",
+          event: "granted", createdAt: "2026-09-02T10:00:00.000Z",
+          metadata: {
+            guardianName: "First Guardian", relationship: "Mother", homePhone: "03 1234 5678",
+            workPhone: null, mobilePhone: "0400 123 456", medicalAcknowledgement: true,
+            typedSignatureName: "First Guardian",
+            signatureDataUrl: "data:image/png;base64,aGVsbG8=",
+            signedAt: "2026-09-02T10:00:00.000Z",
+          },
+        },
+      ],
+    };
+    mockApi.excursions = [mockApi.detail];
+    renderPage();
+    fireEvent.click(screen.getByTestId("card-excursion-52"));
+
+    const row = screen.getByText("First Child").closest("tr");
+    expect(row).not.toBeNull();
+    fireEvent.click(within(row!).getByRole("button", { name: "View response" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Permission response for First Child")).toBeInTheDocument();
+    expect(within(dialog).getByText("Permission granted")).toBeInTheDocument();
+    expect(within(dialog).getByText("Mother")).toBeInTheDocument();
+    expect(within(dialog).getByText("03 1234 5678")).toBeInTheDocument();
+    expect(within(dialog).getByText("0400 123 456")).toBeInTheDocument();
+    expect(within(dialog).getByText("Acknowledged")).toBeInTheDocument();
+    expect(within(dialog).getByRole("img", { name: "Signature of First Guardian" }))
+      .toHaveAttribute("src", "data:image/png;base64,aGVsbG8=");
+    expect(within(dialog).queryByText("Other Signer")).not.toBeInTheDocument();
+  });
 });
 
 describe("excursion permission-form submission", () => {

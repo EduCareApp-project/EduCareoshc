@@ -4,8 +4,9 @@ import {
   FilePlus2, Sparkles, UploadCloud, GripVertical, FileText, 
   Image as ImageIcon, ArrowUp, ArrowDown, X, Wand2, Loader2, 
   Eye, Download, Trash2, FileStack, CheckCircle2, ClipboardPenLine,
-  Copy, Search, AlertTriangle
+  Copy, Search, AlertTriangle, Scissors
 } from "lucide-react";
+import { SplitPdfTool } from "@/components/split-pdf-tool";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -59,7 +60,7 @@ export default function AiTools() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [files, setFiles] = useState<FileItem[]>([]);
-  const [activeTool, setActiveTool] = useState<"document-merge" | "excursion-form" | "duplicate-records">("document-merge");
+  const [activeTool, setActiveTool] = useState<"document-merge" | "document-split" | "excursion-form" | "duplicate-records">("document-merge");
   const [selectedExcursionId, setSelectedExcursionId] = useState("");
   const [selectedManagerId, setSelectedManagerId] = useState("");
   const [managerName, setManagerName] = useState("");
@@ -383,6 +384,26 @@ export default function AiTools() {
 
         <button
           type="button"
+          onClick={() => setActiveTool("document-split")}
+          className={`relative p-5 rounded-xl border-2 cursor-pointer flex flex-col items-center text-center shadow-sm ${
+            activeTool === "document-split" ? "border-primary bg-primary/5" : "border-border bg-card"
+          }`}
+          data-testid="tool-card-document-split"
+        >
+          <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center mb-3">
+            <Scissors className="h-6 w-6 text-primary" />
+          </div>
+          <h3 className="font-semibold text-foreground text-lg">Split PDF</h3>
+          <p className="text-sm text-muted-foreground mt-1">Separate a PDF into parts</p>
+          {activeTool === "document-split" && (
+            <div className="absolute top-3 right-3">
+              <span className="flex h-2.5 w-2.5 rounded-full bg-primary" title="Active tool" />
+            </div>
+          )}
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTool("excursion-form")}
           className={`relative p-5 rounded-xl border-2 cursor-pointer flex flex-col items-center text-center shadow-sm ${
             activeTool === "excursion-form" ? "border-primary bg-primary/5" : "border-border bg-card"
@@ -429,7 +450,9 @@ export default function AiTools() {
         </div>
       </div>
 
-      {activeTool === "duplicate-records" ? (
+      {activeTool === "document-split" ? (
+        <SplitPdfTool />
+      ) : activeTool === "duplicate-records" ? (
         <div className="max-w-4xl rounded-xl border bg-card p-6 shadow-sm space-y-6">
           <div>
             <h2 className="text-xl font-semibold">Duplicate Records Scan</h2>

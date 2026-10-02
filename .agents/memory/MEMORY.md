@@ -15,3 +15,5 @@
 - [Excursion reminder undo](excursion-reminder-undo.md) — removing a reminder hides the guardian assignment and deletes its in-app notification; undo restores both without resending email.
 - [Holiday-program excursion recipients](holiday-program-excursion-recipients.md) — guardian verification may include active children from any site because holiday programs combine sites.
 - [Onboarding staff boundary](onboarding-staff-boundary.md) — Onboarding accounts are profile-only and must stay outside educator, assignment, report, school, and general navigation surfaces.
+- [PDF splitting scope](pdf-split-scope.md) — visual page-boundary selection, no arbitrary split cap, and browser-local downloads unless persistent history is requested.
+- [PDF.js browser compatibility](pdfjs-browser-compatibility.md) — modern builds may parse files but fail when rendering; use the matching bundled compatibility renderer and worker.

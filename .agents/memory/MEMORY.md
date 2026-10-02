@@ -18,3 +18,4 @@
 - [PDF splitting scope](pdf-split-scope.md) — visual page-boundary selection, no arbitrary split cap, and browser-local downloads unless persistent history is requested.
 - [PDF.js browser compatibility](pdfjs-browser-compatibility.md) — modern builds may parse files but fail when rendering; use the matching bundled compatibility renderer and worker.
 - [Policy lifecycle](policy-lifecycle.md) — saved staff distributions; show all active policies and a staff-specific foldaway history of signed inactive policies.
+- [Browser-cache diagnosis](browser-cache-diagnosis.md) — fresh-browser success does not rule out stale assets in an existing browser after publishing.

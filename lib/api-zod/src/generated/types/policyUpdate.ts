@@ -18,4 +18,5 @@ export interface PolicyUpdate {
   lastReviewedAt?: Date;
   notifyRoles?: string;
   bumpVersion?: boolean;
+  isActive?: boolean;
 }

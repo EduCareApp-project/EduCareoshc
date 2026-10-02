@@ -19,4 +19,5 @@ export interface PolicyInput {
   lastReviewedAt?: Date;
   requiresAcknowledgment?: string;
   notifyRoles?: string;
+  isActive?: boolean;
 }

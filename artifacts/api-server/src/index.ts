@@ -71,6 +71,63 @@ async function migrateSitesColumns(): Promise<void> {
   }
 }
 
+async function migratePolicyDistribution(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(`
+      ALTER TABLE policies
+        ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT true,
+        ADD COLUMN IF NOT EXISTS distribution_initialized boolean NOT NULL DEFAULT false
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS policy_distributions (
+        id serial PRIMARY KEY,
+        policy_id integer NOT NULL REFERENCES policies(id) ON DELETE CASCADE,
+        staff_id integer NOT NULL REFERENCES staff(id) ON DELETE CASCADE,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        CONSTRAINT policy_distributions_policy_staff_unique UNIQUE (policy_id, staff_id)
+      )
+    `);
+
+    // Backfill only policies that existed before their distribution was initialized.
+    // Existing acknowledgers are retained as recipients even if no longer active.
+    await client.query(`
+      INSERT INTO policy_distributions (policy_id, staff_id)
+      SELECT p.id, s.id
+      FROM policies p
+      JOIN staff s ON s.status = 'active'
+      WHERE NOT p.distribution_initialized
+        AND EXISTS (
+          SELECT 1
+          FROM regexp_split_to_table(COALESCE(p.notify_roles, ''), ',') AS split_role(role_name)
+          WHERE btrim(split_role.role_name) = s.role
+        )
+      ON CONFLICT (policy_id, staff_id) DO NOTHING
+    `);
+    await client.query(`
+      INSERT INTO policy_distributions (policy_id, staff_id)
+      SELECT DISTINCT a.policy_id, a.staff_id
+      FROM policy_acknowledgments a
+      JOIN staff s ON s.id = a.staff_id
+      JOIN policies p ON p.id = a.policy_id
+      WHERE NOT p.distribution_initialized
+      ON CONFLICT (policy_id, staff_id) DO NOTHING
+    `);
+    await client.query(`
+      UPDATE policies
+      SET distribution_initialized = true
+      WHERE NOT distribution_initialized
+    `);
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 async function fixRollSubmissionWeekStarts(): Promise<void> {
   // One-time repair: rows stored with Sunday dates instead of Monday due to a
   // client timezone bug (toISOString() converting local Monday to UTC Sunday).
@@ -147,42 +204,54 @@ function startDocumentMergeUploadCleanup(): void {
   cleanupInterval.unref();
 }
 
-app.listen(port, async (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
+async function startServer(): Promise<void> {
+  try {
+    await migratePolicyDistribution();
+    logger.info("Policy distribution migration applied");
+  } catch (migrationError) {
+    logger.error({ err: migrationError }, "Failed to apply policy distribution migration");
     process.exit(1);
   }
 
-  logger.info({ port }, "Server listening");
-  logEmailConfig();
+  app.listen(port, async (err) => {
+    if (err) {
+      logger.error({ err }, "Error listening on port");
+      process.exit(1);
+    }
 
-  try {
-    await migrateSitesColumns();
-    logger.info("Sites columns migration applied");
-  } catch (migrateErr) {
-    logger.warn({ err: migrateErr }, "Failed to apply sites columns migration");
-  }
+    logger.info({ port }, "Server listening");
+    logEmailConfig();
 
-  try {
-    await fixRollSubmissionWeekStarts();
-    logger.info("Roll submission week starts verified");
-  } catch (fixErr) {
-    logger.warn({ err: fixErr }, "Failed to fix roll submission week starts");
-  }
+    try {
+      await migrateSitesColumns();
+      logger.info("Sites columns migration applied");
+    } catch (migrateErr) {
+      logger.warn({ err: migrateErr }, "Failed to apply sites columns migration");
+    }
 
-  try {
-    await seedNotificationSettings();
-    logger.info("Notification settings seeded");
-  } catch (seedErr) {
-    logger.warn({ err: seedErr }, "Failed to seed notification settings");
-  }
+    try {
+      await fixRollSubmissionWeekStarts();
+      logger.info("Roll submission week starts verified");
+    } catch (fixErr) {
+      logger.warn({ err: fixErr }, "Failed to fix roll submission week starts");
+    }
 
-  try {
-    await seedSuperAdminStaff();
-    logger.info("Super admin staff account ensured");
-  } catch (seedErr) {
-    logger.warn({ err: seedErr }, "Failed to seed super admin staff account");
-  }
+    try {
+      await seedNotificationSettings();
+      logger.info("Notification settings seeded");
+    } catch (seedErr) {
+      logger.warn({ err: seedErr }, "Failed to seed notification settings");
+    }
 
-  startDocumentMergeUploadCleanup();
-});
+    try {
+      await seedSuperAdminStaff();
+      logger.info("Super admin staff account ensured");
+    } catch (seedErr) {
+      logger.warn({ err: seedErr }, "Failed to seed super admin staff account");
+    }
+
+    startDocumentMergeUploadCleanup();
+  });
+}
+
+void startServer();

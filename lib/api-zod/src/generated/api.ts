@@ -2220,10 +2220,27 @@ export const ListPoliciesResponseItem = zod.object({
   lastReviewedAt: zod.coerce.date().nullish(),
   requiresAcknowledgment: zod.string(),
   notifyRoles: zod.string().nullish(),
+  isActive: zod
+    .boolean()
+    .describe(
+      "Inactive policies retain their history but cannot receive new acknowledgements",
+    ),
+  distributedStaffIds: zod
+    .array(zod.number())
+    .describe(
+      "Saved recipients, independent of subsequent staff additions or role changes",
+    ),
+  acknowledgedStaffIds: zod
+    .array(zod.number())
+    .describe(
+      "Staff who acknowledged any version, including historical versions",
+    ),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date().optional(),
 });
 export const ListPoliciesResponse = zod.array(ListPoliciesResponseItem);
+
+export const createPolicyBodyIsActiveDefault = true;
 
 export const CreatePolicyBody = zod.object({
   policyNumber: zod.number().optional(),
@@ -2238,6 +2255,7 @@ export const CreatePolicyBody = zod.object({
   lastReviewedAt: zod.coerce.date().optional(),
   requiresAcknowledgment: zod.string().optional(),
   notifyRoles: zod.string().optional(),
+  isActive: zod.boolean().default(createPolicyBodyIsActiveDefault),
 });
 
 export const UpdatePolicyParams = zod.object({
@@ -2256,6 +2274,7 @@ export const UpdatePolicyBody = zod.object({
   lastReviewedAt: zod.coerce.date().optional(),
   notifyRoles: zod.string().optional(),
   bumpVersion: zod.boolean().optional(),
+  isActive: zod.boolean().optional(),
 });
 
 export const UpdatePolicyResponse = zod.object({
@@ -2273,6 +2292,21 @@ export const UpdatePolicyResponse = zod.object({
   lastReviewedAt: zod.coerce.date().nullish(),
   requiresAcknowledgment: zod.string(),
   notifyRoles: zod.string().nullish(),
+  isActive: zod
+    .boolean()
+    .describe(
+      "Inactive policies retain their history but cannot receive new acknowledgements",
+    ),
+  distributedStaffIds: zod
+    .array(zod.number())
+    .describe(
+      "Saved recipients, independent of subsequent staff additions or role changes",
+    ),
+  acknowledgedStaffIds: zod
+    .array(zod.number())
+    .describe(
+      "Staff who acknowledged any version, including historical versions",
+    ),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date().optional(),
 });
@@ -2281,12 +2315,68 @@ export const DeletePolicyParams = zod.object({
   id: zod.coerce.number(),
 });
 
+/**
+ * @summary Add one active staff member to an active policy's saved distribution list
+ */
+
+export const AddPolicyDistributionParams = zod.object({
+  id: zod.coerce.number().min(1),
+});
+
+export const AddPolicyDistributionBody = zod.object({
+  staffId: zod.number().min(1),
+});
+
+export const AddPolicyDistributionResponse = zod.object({
+  id: zod.number(),
+  policyNumber: zod.number().nullish(),
+  title: zod.string(),
+  category: zod.string(),
+  description: zod.string().nullish(),
+  content: zod.string().nullish(),
+  documentPath: zod.string().nullish(),
+  documentName: zod.string().nullish(),
+  fileUrl: zod.string().nullish(),
+  version: zod.string().nullish(),
+  versionNumber: zod.number(),
+  lastReviewedAt: zod.coerce.date().nullish(),
+  requiresAcknowledgment: zod.string(),
+  notifyRoles: zod.string().nullish(),
+  isActive: zod
+    .boolean()
+    .describe(
+      "Inactive policies retain their history but cannot receive new acknowledgements",
+    ),
+  distributedStaffIds: zod
+    .array(zod.number())
+    .describe(
+      "Saved recipients, independent of subsequent staff additions or role changes",
+    ),
+  acknowledgedStaffIds: zod
+    .array(zod.number())
+    .describe(
+      "Staff who acknowledged any version, including historical versions",
+    ),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date().optional(),
+});
+
 export const AcknowledgePolicyParams = zod.object({
   id: zod.coerce.number(),
 });
 
 export const AcknowledgePolicyBody = zod.object({
   staffId: zod.number(),
+});
+
+export const AcknowledgePolicyResponse = zod.object({
+  id: zod.number(),
+  policyId: zod.number(),
+  staffId: zod.number(),
+  policyVersion: zod.number(),
+  staffName: zod.string().nullish(),
+  staffRole: zod.string().nullish(),
+  acknowledgedAt: zod.coerce.date(),
 });
 
 export const GetPolicyAcknowledgmentsParams = zod.object({

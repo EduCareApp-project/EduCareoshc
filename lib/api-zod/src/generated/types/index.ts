@@ -194,6 +194,7 @@ export * from "./planningExperienceUpdateStage";
 export * from "./policy";
 export * from "./policyAcknowledgeInput";
 export * from "./policyAcknowledgment";
+export * from "./policyDistributionInput";
 export * from "./policyInput";
 export * from "./policyUpdate";
 export * from "./post";

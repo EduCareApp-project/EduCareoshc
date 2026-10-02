@@ -1,45 +1,27 @@
 import { useRef, useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
-  useListPolicies, useCreatePolicy, useUpdatePolicy, useDeletePolicy,
-  useAcknowledgePolicy, useGetPolicyAcknowledgments, getGetPolicyAcknowledgmentsQueryKey,
+  useListPolicies, useCreatePolicy, useUpdatePolicy, useDeletePolicy, getListPoliciesQueryKey,
 } from "@workspace/api-client-react";
-import type { Policy } from "@workspace/api-client-react";
+import type { Policy, PolicyInput, PolicyUpdate } from "@workspace/api-client-react";
+import { PolicyRow, NOTIFY_ROLE_OPTIONS } from "@/components/policies/policy-row";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useQueryClient } from "@tanstack/react-query";
 import { useActiveStaff } from "@/hooks/use-active-staff";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  ShieldCheck, Plus, FileText, Paperclip, Upload, X, ChevronDown, ChevronUp,
-  CheckCircle2, Clock, Pencil, Trash2, Users, ArrowLeft, RefreshCw, UserCircle2,
+  ShieldCheck, Plus, FileText, Paperclip, Upload, X, ChevronDown, ChevronUp, ArrowLeft, RefreshCw, UserCircle2, AlertCircle,
 } from "lucide-react";
-import { format } from "date-fns";
-import { fmtMelb } from "@/lib/timezone";
 import { useToast } from "@/hooks/use-toast";
 import { useUpload } from "@workspace/object-storage-web";
-
-const NOTIFY_ROLE_OPTIONS = [
-  { value: "educational_leader", label: "Educational Leader" },
-  { value: "coordinator", label: "Coordinator" },
-  { value: "educator", label: "Educator" },
-];
-
-function roleLabel(role: string) {
-  return NOTIFY_ROLE_OPTIONS.find((r) => r.value === role)?.label ?? role;
-}
 
 const EMPTY_FORM = {
   policyNumber: "",
@@ -51,223 +33,8 @@ const EMPTY_FORM = {
   contentMode: "text" as "text" | "pdf",
   content: "",
   notifyRoles: [] as string[],
+  isActive: true,
 };
-
-// ── Per-policy row with its own ack fetch ─────────────────────────────────────
-function PolicyRow({
-  policy,
-  selectedStaffId,
-  allStaff,
-  onEdit,
-  onDelete,
-}: {
-  policy: {
-    id: number; title: string; policyNumber?: number | null; category: string;
-    versionNumber: number; version?: string | null; content?: string | null;
-    documentPath?: string | null; documentName?: string | null;
-    description?: string | null; lastReviewedAt?: string | null;
-    notifyRoles?: string | null;
-  };
-  selectedStaffId: number | null;
-  allStaff: Array<{ id: number; firstName: string; lastName: string; role: string }>;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const acknowledgeMutation = useAcknowledgePolicy();
-  const [expanded, setExpanded] = useState(false);
-
-  const { data: acks } = useGetPolicyAcknowledgments(policy.id, {
-    query: { queryKey: getGetPolicyAcknowledgmentsQueryKey(policy.id), enabled: expanded || !!selectedStaffId },
-  });
-
-  const notifyRoles = policy.notifyRoles ? policy.notifyRoles.split(",").map((r) => r.trim()).filter(Boolean) : [];
-  const selectedStaff = selectedStaffId ? allStaff.find((s) => s.id === selectedStaffId) : null;
-  const isRequired = !!selectedStaff && notifyRoles.length > 0 && notifyRoles.includes(selectedStaff.role);
-  const myAck = selectedStaffId ? (acks ?? []).find(
-    (a) => a.staffId === selectedStaffId && a.policyVersion === policy.versionNumber
-  ) : null;
-
-  function handleAcknowledge(staffId: number) {
-    acknowledgeMutation.mutate({ id: policy.id, data: { staffId } }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: [`/api/policies/${policy.id}/acknowledgments`] });
-        toast({ title: "Acknowledgement recorded" });
-      },
-      onError: () => toast({ title: "Failed to record acknowledgement", variant: "destructive" }),
-    });
-  }
-
-  const currentAcks = (acks ?? []).filter((a) => a.policyVersion === policy.versionNumber);
-  const relevantStaff = notifyRoles.length > 0 ? allStaff.filter((s) => notifyRoles.includes(s.role)) : [];
-  const ackedCount = relevantStaff.filter((s) => currentAcks.some((a) => a.staffId === s.id)).length;
-
-  return (
-    <div className="border-b last:border-b-0">
-      {/* ── Compact single-line row ── */}
-      <div
-        className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-muted/20 transition-colors"
-        onClick={() => setExpanded((v) => !v)}
-      >
-        {/* Policy number */}
-        {policy.policyNumber != null && (
-          <span className="text-xs font-bold text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0 tabular-nums min-w-[2.2rem] text-center">
-            {String(policy.policyNumber).padStart(2, "0")}
-          </span>
-        )}
-
-        {/* Title */}
-        <span className="flex-1 text-sm font-medium truncate">{policy.title}</span>
-
-        {/* Version */}
-        <Badge variant="outline" className="text-[10px] px-1.5 shrink-0">v{policy.versionNumber}</Badge>
-
-        {/* PDF indicator */}
-        {policy.documentPath && <Paperclip className="h-3 w-3 text-muted-foreground shrink-0" />}
-
-        {/* Personal ack status */}
-        {selectedStaffId && isRequired && (
-          myAck ? (
-            <span className="flex items-center gap-1 text-[11px] font-medium text-green-700 bg-green-50 border border-green-200 rounded-full px-2.5 py-0.5 shrink-0">
-              <CheckCircle2 className="h-3 w-3" />Acknowledged
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5 shrink-0">
-              <Clock className="h-3 w-3" />Pending
-            </span>
-          )
-        )}
-
-        {/* Admin actions */}
-        <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={onEdit}>
-            <Pencil className="h-3 w-3" />
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete policy?</AlertDialogTitle>
-                <AlertDialogDescription>This will permanently delete "{policy.title}" and all acknowledgement records.</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={onDelete}>Delete</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          <button onClick={() => setExpanded((v) => !v)} className="text-muted-foreground hover:text-foreground p-1 ml-0.5">
-            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </button>
-        </div>
-      </div>
-
-      {/* ── Expanded content ── */}
-      {expanded && (
-        <div className="border-t bg-muted/10 px-5 py-5 space-y-5">
-          {/* Description */}
-          {policy.description && (
-            <p className="text-sm text-muted-foreground">{policy.description}</p>
-          )}
-
-          {/* Meta */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            {policy.version && <span>Version label: {policy.version}</span>}
-            {policy.lastReviewedAt && <span>Last reviewed: {(policy.lastReviewedAt as string).slice(0, 10)}</span>}
-            {notifyRoles.length > 0 && <span>Required for: {notifyRoles.map(roleLabel).join(", ")}</span>}
-          </div>
-
-          {/* Personal acknowledgement CTA */}
-          {selectedStaffId && isRequired && !myAck && (
-            <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-amber-600 shrink-0" />
-                <span className="text-amber-800 font-medium">You haven't acknowledged this policy yet.</span>
-              </div>
-              <Button
-                size="sm"
-                className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
-                onClick={() => handleAcknowledge(selectedStaffId)}
-                disabled={acknowledgeMutation.isPending}
-              >
-                Acknowledge
-              </Button>
-            </div>
-          )}
-
-          {selectedStaffId && isRequired && myAck && (
-            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              <span>You acknowledged this policy on {fmtMelb(myAck.acknowledgedAt, "dd/MM/yyyy")}.</span>
-            </div>
-          )}
-
-          {/* Policy content */}
-          {policy.content ? (
-            <div
-              className="prose prose-sm max-w-none text-sm leading-relaxed border rounded-lg p-4 bg-background"
-              dangerouslySetInnerHTML={{ __html: policy.content }}
-            />
-          ) : policy.documentPath ? (
-            <a
-              href={`/api/storage${policy.documentPath}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-primary hover:underline underline-offset-4 bg-primary/5 border border-primary/20 rounded-md px-3 py-2"
-            >
-              <Paperclip className="h-4 w-4" />
-              {policy.documentName ?? "Open document"}
-            </a>
-          ) : (
-            <p className="text-sm text-muted-foreground italic">No content added yet.</p>
-          )}
-
-          {/* Admin acknowledgement panel */}
-          {relevantStaff.length > 0 && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <Users className="h-4 w-4" />
-                  Staff acknowledgements — {ackedCount} of {relevantStaff.length} for v{policy.versionNumber}
-                </div>
-                <div className="grid gap-1">
-                  {relevantStaff.map((s) => {
-                    const ack = currentAcks.find((a) => a.staffId === s.id);
-                    return (
-                      <div key={s.id} className="flex items-center justify-between gap-2 py-1.5 px-3 rounded-md bg-muted/30 text-sm">
-                        <div className="flex items-center gap-2 min-w-0">
-                          {ack ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" /> : <Clock className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
-                          <span className="truncate">{s.firstName} {s.lastName}</span>
-                          <span className="text-[10px] text-muted-foreground shrink-0">{roleLabel(s.role)}</span>
-                        </div>
-                        {ack ? (
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">{fmtMelb(ack.acknowledgedAt, "dd/MM/yyyy")}</span>
-                        ) : (
-                          <Button size="sm" variant="outline" className="h-6 text-xs px-2"
-                            onClick={() => handleAcknowledge(s.id)}
-                            disabled={acknowledgeMutation.isPending}
-                          >
-                            Record
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function PoliciesList() {
@@ -277,7 +44,11 @@ export default function PoliciesList() {
   const { uploadFile, isUploading } = useUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: policies, isLoading } = useListPolicies();
+  const { isAdminOrEL: canManage, ownId } = usePermissions();
+  const { data: policies, isLoading, isError, refetch } = useListPolicies({
+    query: { queryKey: getListPoliciesQueryKey(), staleTime: 30_000, refetchInterval: 60_000 },
+  });
+  const [showInactive, setShowInactive] = useState(false);
   const { data: staff } = useActiveStaff();
   const createMutation = useCreatePolicy();
   const updateMutation = useUpdatePolicy();
@@ -293,19 +64,22 @@ export default function PoliciesList() {
 
   // Staff "who are you?" picker — persisted to localStorage
   const [selectedStaffId, setSelectedStaffId] = useState<number | null>(() => {
+    if (!canManage) return null;
     const stored = localStorage.getItem("edu_selected_staff_id");
     return stored ? parseInt(stored, 10) : null;
   });
 
   function selectStaff(id: number | null) {
     setSelectedStaffId(id);
+    setShowInactive(false);
+    if (!canManage) return;
     if (id != null) localStorage.setItem("edu_selected_staff_id", String(id));
     else localStorage.removeItem("edu_selected_staff_id");
   }
 
   // Validate that stored staffId still exists in the staff list
   useEffect(() => {
-    if (staff && selectedStaffId) {
+    if (canManage && staff && selectedStaffId) {
       const exists = staff.some((s) => s.id === selectedStaffId);
       if (!exists) selectStaff(null);
     }
@@ -336,11 +110,12 @@ export default function PoliciesList() {
       title: p.title,
       category: p.category,
       version: p.version ?? "",
-      lastReviewedAt: p.lastReviewedAt ? (p.lastReviewedAt as string).slice(0, 10) : "",
+      lastReviewedAt: p.lastReviewedAt ? p.lastReviewedAt.slice(0, 10) : "",
       description: p.description ?? "",
       contentMode: p.documentPath ? "pdf" : "text",
       content: p.content ?? "",
       notifyRoles: p.notifyRoles ? p.notifyRoles.split(",").map((r) => r.trim()).filter(Boolean) : [],
+      isActive: p.isActive,
     });
     setExistingDocPath(p.documentPath ?? "");
     setExistingDocName(p.documentName ?? "");
@@ -376,7 +151,7 @@ export default function PoliciesList() {
       docName = selectedFile.name;
     }
 
-    const payload: Record<string, unknown> = {
+    const payload: PolicyInput & Pick<PolicyUpdate, "bumpVersion"> = {
       title: form.title,
       category: form.category,
       ...(form.policyNumber ? { policyNumber: parseInt(form.policyNumber) } : {}),
@@ -384,6 +159,7 @@ export default function PoliciesList() {
       ...(form.lastReviewedAt ? { lastReviewedAt: form.lastReviewedAt } : {}),
       ...(form.description ? { description: form.description } : {}),
       notifyRoles: form.notifyRoles.join(","),
+      isActive: form.isActive,
     };
 
     if (form.contentMode === "text") {
@@ -397,19 +173,19 @@ export default function PoliciesList() {
 
     if (editingId !== null) {
       if (bumpVersion) payload.bumpVersion = true;
-      updateMutation.mutate({ id: editingId, data: payload as any }, {
+      updateMutation.mutate({ id: editingId, data: payload }, {
         onSuccess: () => {
           setShowForm(false);
-          queryClient.invalidateQueries({ queryKey: ["/api/policies"] });
+          queryClient.invalidateQueries({ queryKey: getListPoliciesQueryKey() });
           toast({ title: bumpVersion ? "Policy updated — staff will need to re-acknowledge" : "Policy saved" });
         },
         onError: () => toast({ title: "Failed to save policy", variant: "destructive" }),
       });
     } else {
-      createMutation.mutate({ data: payload as any }, {
+      createMutation.mutate({ data: payload }, {
         onSuccess: () => {
           setShowForm(false);
-          queryClient.invalidateQueries({ queryKey: ["/api/policies"] });
+          queryClient.invalidateQueries({ queryKey: getListPoliciesQueryKey() });
           toast({ title: "Policy added" });
         },
         onError: () => toast({ title: "Failed to add policy", variant: "destructive" }),
@@ -516,6 +292,7 @@ export default function PoliciesList() {
           <Card>
             <CardContent className="pt-5 space-y-3">
               <Label>Notify Roles (staff who must acknowledge this policy)</Label>
+              <p className="text-xs text-muted-foreground">Selected current staff in these roles are added to this policy's saved distribution list. New hires are added later, individually.</p>
               <div className="flex flex-wrap gap-2">
                 {NOTIFY_ROLE_OPTIONS.map((role) => (
                   <button key={role.value} type="button" onClick={() => toggleRole(role.value)}
@@ -525,10 +302,22 @@ export default function PoliciesList() {
                 ))}
               </div>
               {form.notifyRoles.length === 0 && (
-                <p className="text-xs text-muted-foreground">No roles selected — acknowledgement tracking is disabled for this policy.</p>
+                <p className="text-xs text-muted-foreground">
+                  No roles selected — {editingId !== null
+                    ? "existing recipients are retained. Add new staff individually from the policy list."
+                    : "the distribution starts empty. You can add staff individually from the policy list."}
+                </p>
               )}
             </CardContent>
           </Card>
+
+          <label className="flex items-start gap-3 p-4 rounded-lg border cursor-pointer">
+            <input type="checkbox" data-testid="input-is-active" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="mt-0.5" />
+            <div>
+              <p className="text-sm font-medium">Active policy</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Inactive policies keep their history but cannot receive new acknowledgements or distribution.</p>
+            </div>
+          </label>
 
           {editingId !== null && (
             <label className="flex items-start gap-3 p-4 rounded-lg border border-dashed cursor-pointer hover:bg-muted/30 transition-colors">
@@ -537,7 +326,7 @@ export default function PoliciesList() {
                 <p className="text-sm font-medium flex items-center gap-2">
                   <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />This is a version update
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">Incrementing the version will require all staff with matching roles to re-acknowledge this policy.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Incrementing the version will require everyone on the saved distribution to re-acknowledge this policy.</p>
               </div>
             </label>
           )}
@@ -561,100 +350,99 @@ export default function PoliciesList() {
     return a.title.localeCompare(b.title);
   });
 
-  const grouped: Record<string, typeof sortedPolicies> = {};
-  for (const p of sortedPolicies) {
-    const cat = p.category || "Uncategorised";
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(p);
+  const viewerId = canManage ? selectedStaffId : ownId;
+  const selectedStaffMember = staff?.find((s) => s.id === selectedStaffId);
+  const activePolicies = sortedPolicies.filter((p) => p.isActive);
+  const inactivePolicies = sortedPolicies.filter((p) =>
+    !p.isActive && (canManage && selectedStaffId == null ? true : viewerId != null && p.acknowledgedStaffIds.includes(viewerId)));
+  const allStaff = staff ?? [];
+
+  function renderRow(p: Policy) {
+    return (
+      <PolicyRow key={p.id} policy={p} viewerId={viewerId} allStaff={allStaff} canManage={canManage}
+        onEdit={() => openEdit(p)}
+        onDelete={() => deleteMutation.mutate({ id: p.id }, {
+          onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListPoliciesQueryKey() }); toast({ title: "Policy deleted" }); },
+          onError: () => toast({ title: "Failed to delete policy", variant: "destructive" }),
+        })} />
+    );
   }
 
-  const selectedStaffMember = staff?.find((s) => s.id === selectedStaffId);
+  const groupedActive: Record<string, Policy[]> = {};
+  for (const p of activePolicies) (groupedActive[p.category || "Uncategorised"] ??= []).push(p);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/policies")}>
-            <ArrowLeft className="h-4 w-4 mr-1" />Back
-          </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/policies")}><ArrowLeft className="h-4 w-4 mr-1" />Back</Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Policies</h1>
             <p className="text-muted-foreground mt-0.5 text-sm">Service policies and procedures.</p>
           </div>
         </div>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Add Policy</Button>
+        {canManage && <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Add Policy</Button>}
       </div>
 
-      {/* Staff "who are you?" picker */}
-      <div className="flex items-center gap-3 p-3 rounded-xl border bg-card">
-        <UserCircle2 className="h-5 w-5 text-muted-foreground shrink-0" />
-        <span className="text-sm font-medium whitespace-nowrap">Viewing as</span>
-        <Select
-          value={selectedStaffId ? String(selectedStaffId) : "__none__"}
-          onValueChange={(v) => selectStaff(v === "__none__" ? null : parseInt(v, 10))}
-        >
-          <SelectTrigger className="flex-1 max-w-xs h-8 text-sm">
-            <SelectValue placeholder="Select your name…" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__none__">— Not selected —</SelectItem>
-            {(staff ?? []).map((s) => (
-              <SelectItem key={s.id} value={String(s.id)}>
-                {s.firstName} {s.lastName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {selectedStaffMember && (
-          <span className="text-xs text-muted-foreground whitespace-nowrap">
-            Showing your acknowledgement status below.
+      {canManage ? (
+        <div className="flex flex-wrap items-center gap-3 p-3 rounded-xl border bg-card">
+          <UserCircle2 className="h-5 w-5 text-muted-foreground shrink-0" />
+          <span className="text-sm font-medium whitespace-nowrap">Viewing as</span>
+          <Select value={selectedStaffId ? String(selectedStaffId) : "__none__"} onValueChange={(v) => selectStaff(v === "__none__" ? null : parseInt(v, 10))}>
+            <SelectTrigger className="flex-1 max-w-xs h-8 text-sm" data-testid="select-viewing-as"><SelectValue placeholder="Select staff member…" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">— Not selected —</SelectItem>
+              {allStaff.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.firstName} {s.lastName}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <span className="text-xs text-muted-foreground">
+            {selectedStaffMember ? "All active policies shown; add this person to a policy's distribution where needed." : "Select a staff member to see their status."}
           </span>
-        )}
-        {!selectedStaffMember && (
-          <span className="text-xs text-muted-foreground whitespace-nowrap">
-            Select your name to see your acknowledgement status.
-          </span>
-        )}
-      </div>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">Showing your own acknowledgement status.</p>
+      )}
 
-      {/* Policy list */}
       {isLoading ? (
         <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+      ) : isError ? (
+        <Card><CardContent className="py-12 text-center flex flex-col items-center gap-3">
+          <AlertCircle className="h-8 w-8 text-destructive" />
+          <p className="font-medium">Policies could not be loaded</p>
+          <Button variant="outline" onClick={() => refetch()}>Retry</Button>
+        </CardContent></Card>
       ) : sortedPolicies.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 text-center text-muted-foreground flex flex-col items-center gap-2">
-            <ShieldCheck className="h-10 w-10 mb-2 text-muted-foreground/50" />
-            <p className="font-medium">No policies added yet</p>
-            <p className="text-sm">Use the button above to add your first service policy.</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="py-16 text-center text-muted-foreground flex flex-col items-center gap-2">
+          <ShieldCheck className="h-10 w-10 mb-2 text-muted-foreground/50" />
+          <p className="font-medium">No policies added yet</p>
+          {canManage && <p className="text-sm">Use the button above to add your first service policy.</p>}
+        </CardContent></Card>
       ) : (
         <div className="space-y-6">
-          {Object.entries(grouped).map(([category, catPolicies]) => (
+          {activePolicies.length === 0 && <p className="text-sm text-muted-foreground" data-testid="text-no-active">No active policies.</p>}
+          {Object.entries(groupedActive).map(([category, list]) => (
             <div key={category} className="space-y-1">
               <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">{category}</h2>
-              <Card className="overflow-hidden divide-y divide-border p-0">
-                {catPolicies.map((p) => (
-                  <PolicyRow
-                    key={p.id}
-                    policy={p as any}
-                    selectedStaffId={selectedStaffId}
-                    allStaff={(staff ?? []) as any}
-                    onEdit={() => openEdit(p)}
-                    onDelete={() => {
-                      deleteMutation.mutate({ id: p.id }, {
-                        onSuccess: () => {
-                          queryClient.invalidateQueries({ queryKey: ["/api/policies"] });
-                          toast({ title: "Policy deleted" });
-                        },
-                      });
-                    }}
-                  />
-                ))}
-              </Card>
+              <Card className="overflow-hidden divide-y divide-border p-0">{list.map(renderRow)}</Card>
             </div>
           ))}
+
+          {inactivePolicies.length > 0 && (
+            <div className="space-y-2" data-testid="section-inactive">
+              <button type="button" data-testid="button-toggle-inactive" aria-expanded={showInactive}
+                onClick={() => setShowInactive((v) => !v)}
+                className="w-full flex items-center justify-between rounded-lg border border-dashed px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/40">
+                <span>
+                  Inactive policies ({inactivePolicies.length})
+                  {canManage && selectedStaffMember
+                    ? ` signed by ${selectedStaffMember.firstName} ${selectedStaffMember.lastName}`
+                    : !canManage ? " you have signed" : ""}
+                </span>
+                {showInactive ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+              {showInactive && <Card className="overflow-hidden p-0">{inactivePolicies.map(renderRow)}</Card>}
+            </div>
+          )}
         </div>
       )}
     </div>

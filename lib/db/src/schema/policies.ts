@@ -1,6 +1,7 @@
-import { pgTable, serial, text, timestamp, integer, date, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, date, boolean, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { staffTable } from "./staff";
 
 export const policiesTable = pgTable("policies", {
   id: serial("id").primaryKey(),
@@ -17,9 +18,20 @@ export const policiesTable = pgTable("policies", {
   lastReviewedAt: date("last_reviewed_at"),
   requiresAcknowledgment: text("requires_acknowledgment").notNull().default("yes"),
   notifyRoles: text("notify_roles"),    // comma-separated: educational_leader,coordinator,educator
+  isActive: boolean("is_active").notNull().default(true),
+  distributionInitialized: boolean("distribution_initialized").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const policyDistributionsTable = pgTable("policy_distributions", {
+  id: serial("id").primaryKey(),
+  policyId: integer("policy_id").notNull().references(() => policiesTable.id, { onDelete: "cascade" }),
+  staffId: integer("staff_id").notNull().references(() => staffTable.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  unique("policy_distributions_policy_staff_unique").on(table.policyId, table.staffId),
+]);
 
 export const policyAcknowledgmentsTable = pgTable("policy_acknowledgments", {
   id: serial("id").primaryKey(),
@@ -29,7 +41,12 @@ export const policyAcknowledgmentsTable = pgTable("policy_acknowledgments", {
   acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const insertPolicySchema = createInsertSchema(policiesTable).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPolicySchema = createInsertSchema(policiesTable).omit({
+  id: true,
+  distributionInitialized: true,
+  createdAt: true,
+  updatedAt: true,
+});
 export type InsertPolicy = z.infer<typeof insertPolicySchema>;
 export type Policy = typeof policiesTable.$inferSelect;
 

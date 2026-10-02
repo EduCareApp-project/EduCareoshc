@@ -135,6 +135,7 @@ import type {
   Policy,
   PolicyAcknowledgeInput,
   PolicyAcknowledgment,
+  PolicyDistributionInput,
   PolicyInput,
   PolicyUpdate,
   Post,
@@ -9066,6 +9067,94 @@ export const useDeletePolicy = <
   return useMutation(getDeletePolicyMutationOptions(options));
 };
 
+/**
+ * @summary Add one active staff member to an active policy's saved distribution list
+ */
+export const getAddPolicyDistributionUrl = (id: number) => {
+  return `/api/policies/${id}/distribution`;
+};
+
+export const addPolicyDistribution = async (
+  id: number,
+  policyDistributionInput: PolicyDistributionInput,
+  options?: RequestInit,
+): Promise<Policy> => {
+  return customFetch<Policy>(getAddPolicyDistributionUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(policyDistributionInput),
+  });
+};
+
+export const getAddPolicyDistributionMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addPolicyDistribution>>,
+    TError,
+    { id: number; data: BodyType<PolicyDistributionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof addPolicyDistribution>>,
+  TError,
+  { id: number; data: BodyType<PolicyDistributionInput> },
+  TContext
+> => {
+  const mutationKey = ["addPolicyDistribution"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof addPolicyDistribution>>,
+    { id: number; data: BodyType<PolicyDistributionInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return addPolicyDistribution(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AddPolicyDistributionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof addPolicyDistribution>>
+>;
+export type AddPolicyDistributionMutationBody =
+  BodyType<PolicyDistributionInput>;
+export type AddPolicyDistributionMutationError = ErrorType<void>;
+
+/**
+ * @summary Add one active staff member to an active policy's saved distribution list
+ */
+export const useAddPolicyDistribution = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addPolicyDistribution>>,
+    TError,
+    { id: number; data: BodyType<PolicyDistributionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof addPolicyDistribution>>,
+  TError,
+  { id: number; data: BodyType<PolicyDistributionInput> },
+  TContext
+> => {
+  return useMutation(getAddPolicyDistributionMutationOptions(options));
+};
+
 export const getAcknowledgePolicyUrl = (id: number) => {
   return `/api/policies/${id}/acknowledge`;
 };
@@ -9084,7 +9173,7 @@ export const acknowledgePolicy = async (
 };
 
 export const getAcknowledgePolicyMutationOptions = <
-  TError = ErrorType<unknown>,
+  TError = ErrorType<void>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -9125,10 +9214,10 @@ export type AcknowledgePolicyMutationResult = NonNullable<
   Awaited<ReturnType<typeof acknowledgePolicy>>
 >;
 export type AcknowledgePolicyMutationBody = BodyType<PolicyAcknowledgeInput>;
-export type AcknowledgePolicyMutationError = ErrorType<unknown>;
+export type AcknowledgePolicyMutationError = ErrorType<void>;
 
 export const useAcknowledgePolicy = <
-  TError = ErrorType<unknown>,
+  TError = ErrorType<void>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<

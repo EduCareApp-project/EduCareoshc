@@ -2124,6 +2124,40 @@ paths:
         "204":
           description: Deleted
 
+  /policies/{id}/distribution:
+    post:
+      operationId: addPolicyDistribution
+      tags: [policies]
+      summary: Add one active staff member to an active policy's saved distribution list
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyDistributionInput"
+      responses:
+        "200":
+          description: Staff member included in the distribution list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        "400":
+          description: Invalid request
+        "409":
+          description: Inactive policies cannot be distributed
+        "403":
+          description: Policy management permission required
+        "404":
+          description: Policy or staff member not found
+
   /policies/{id}/acknowledge:
     post:
       operationId: acknowledgePolicy
@@ -2141,12 +2175,22 @@ paths:
             schema:
               $ref: "#/components/schemas/PolicyAcknowledgeInput"
       responses:
+        "200":
+          description: Already acknowledged for this version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyAcknowledgment"
         "201":
           description: Acknowledged
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PolicyAcknowledgment"
+        "403":
+          description: Only managers may record acknowledgement for another staff member
+        "409":
+          description: Policy is inactive or staff member is not in its distribution
 
   /policies/{id}/acknowledgments:
     get:
@@ -6064,7 +6108,7 @@ components:
 
     Policy:
       type: object
-      required: [id, title, category, versionNumber, requiresAcknowledgment, createdAt]
+      required: [id, title, category, versionNumber, requiresAcknowledgment, createdAt, isActive, distributedStaffIds, acknowledgedStaffIds]
       properties:
         id:
           type: integer
@@ -6095,6 +6139,19 @@ components:
           type: string
         notifyRoles:
           type: ["string", "null"]
+        isActive:
+          type: boolean
+          description: Inactive policies retain their history but cannot receive new acknowledgements
+        distributedStaffIds:
+          type: array
+          items:
+            type: integer
+          description: Saved recipients, independent of subsequent staff additions or role changes
+        acknowledgedStaffIds:
+          type: array
+          items:
+            type: integer
+          description: Staff who acknowledged any version, including historical versions
         createdAt:
           type: string
           format: date-time
@@ -6131,6 +6188,9 @@ components:
           type: string
         notifyRoles:
           type: string
+        isActive:
+          type: boolean
+          default: true
 
     PolicyUpdate:
       type: object
@@ -6158,6 +6218,16 @@ components:
           type: string
         bumpVersion:
           type: boolean
+        isActive:
+          type: boolean
+
+    PolicyDistributionInput:
+      type: object
+      required: [staffId]
+      properties:
+        staffId:
+          type: integer
+          minimum: 1
 
     PolicyAcknowledgment:
       type: object

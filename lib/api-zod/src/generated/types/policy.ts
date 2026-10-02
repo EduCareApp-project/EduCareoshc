@@ -30,6 +30,12 @@ export interface Policy {
   requiresAcknowledgment: string;
   /** @nullable */
   notifyRoles?: string | null;
+  /** Inactive policies retain their history but cannot receive new acknowledgements */
+  isActive: boolean;
+  /** Saved recipients, independent of subsequent staff additions or role changes */
+  distributedStaffIds: number[];
+  /** Staff who acknowledged any version, including historical versions */
+  acknowledgedStaffIds: number[];
   createdAt: Date;
   updatedAt?: Date;
 }

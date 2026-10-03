@@ -160,6 +160,10 @@ router.patch("/children/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  if (Object.keys(parsed.data).length === 0) {
+    res.status(400).json({ error: "No supported child fields were provided." });
+    return;
+  }
   req.log.info({ id: params.data.id, body: req.body, parsedKeys: Object.keys(parsed.data) }, "PATCH /children/:id");
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

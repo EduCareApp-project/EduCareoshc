@@ -593,6 +593,9 @@ export interface ChildUpdate {
   /** Child has a photo restriction — do not include in published photos */
   photoRestriction?: boolean;
   hasMedicalCondition?: boolean;
+  hasMealConsideration?: boolean;
+  /** @nullable */
+  mealConsiderationDetails?: string | null;
   medicalRiskPlan?: ChildUpdateMedicalRiskPlan;
   communicationPlan?: ChildUpdateCommunicationPlan;
   approvedPickups?: ApprovedPickup[];

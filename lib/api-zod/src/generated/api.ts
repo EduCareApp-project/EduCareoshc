@@ -209,6 +209,8 @@ export const UpdateChildBody = zod.object({
       "Child has a photo restriction — do not include in published photos",
     ),
   hasMedicalCondition: zod.boolean().optional(),
+  hasMealConsideration: zod.boolean().optional(),
+  mealConsiderationDetails: zod.string().nullish(),
   medicalRiskPlan: zod.record(zod.string(), zod.unknown()).optional(),
   communicationPlan: zod.record(zod.string(), zod.unknown()).optional(),
   approvedPickups: zod

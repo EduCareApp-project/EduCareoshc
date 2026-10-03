@@ -4625,6 +4625,10 @@ components:
           description: Child has a photo restriction — do not include in published photos
         hasMedicalCondition:
           type: boolean
+        hasMealConsideration:
+          type: boolean
+        mealConsiderationDetails:
+          type: ["string", "null"]
         medicalRiskPlan:
           type: object
           additionalProperties: true

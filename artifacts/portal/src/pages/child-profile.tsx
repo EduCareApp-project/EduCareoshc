@@ -514,7 +514,7 @@ export function MedicalTab({ childId, child, staffList, currentUserId }: { child
       setMealDialogOpen(true);
     } else {
       setHasMeal(false);
-      updateChildMutation.mutate({ id: childId, data: { hasMealConsideration: false, mealConsiderationDetails: null } as any }, {
+      updateChildMutation.mutate({ id: childId, data: { hasMealConsideration: false, mealConsiderationDetails: null } }, {
         onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetChildQueryKey(childId) }); queryClient.invalidateQueries({ queryKey: getListChildrenQueryKey() }); toast({ title: "Meal consideration removed" }); },
         onError: () => { setHasMeal(true); toast({ title: "Failed to update", variant: "destructive" }); },
       });
@@ -522,7 +522,7 @@ export function MedicalTab({ childId, child, staffList, currentUserId }: { child
   }
 
   function saveMealDetails() {
-    updateChildMutation.mutate({ id: childId, data: { hasMealConsideration: true, mealConsiderationDetails: mealDraft } as any }, {
+    updateChildMutation.mutate({ id: childId, data: { hasMealConsideration: true, mealConsiderationDetails: mealDraft } }, {
       onSuccess: () => {
         setHasMeal(true);
         setMealDetails(mealDraft);

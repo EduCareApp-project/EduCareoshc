@@ -14,8 +14,8 @@ import { Plus, MapPin, Pencil, Trash2, Building2, ChevronRight, FileText, Layers
 import { usePermissions } from "@/hooks/use-permissions";
 
 type SiteStatus = "active" | "pending" | "closed";
-type SiteForm = { name: string; address: string; grouping: string; status: SiteStatus; isDoscel: boolean };
-const EMPTY: SiteForm = { name: "", address: "", grouping: "", status: "active", isDoscel: false };
+type SiteForm = { name: string; identifier: string; address: string; grouping: string; status: SiteStatus; isDoscel: boolean };
+const EMPTY: SiteForm = { name: "", identifier: "", address: "", grouping: "", status: "active", isDoscel: false };
 
 function LatinCross({ className }: { className?: string }) {
   return (
@@ -40,7 +40,7 @@ export default function Sites() {
     queryFn: async () => {
       const res = await fetch("/api/sites?all=true");
       if (!res.ok) throw new Error("Failed to fetch sites");
-      return res.json() as Promise<Array<{ id: number; name: string; status: string; address: string | null; grouping: string | null; isDoscel: boolean; createdAt: string }>>;
+      return res.json() as Promise<Array<{ id: number; name: string; identifier: string; status: string; address: string | null; grouping: string | null; isDoscel: boolean; createdAt: string }>>;
     },
   });
   const queryClient = useQueryClient();
@@ -67,11 +67,12 @@ export default function Sites() {
     setOpen(true);
   }
 
-  function openEdit(e: React.MouseEvent, site: { id: number; name: string; address?: string | null; grouping?: string | null; status?: string; isDoscel?: boolean }) {
+  function openEdit(e: React.MouseEvent, site: { id: number; name: string; identifier: string; address?: string | null; grouping?: string | null; status?: string; isDoscel?: boolean }) {
     e.stopPropagation();
     setEditing(site.id);
     setForm({
       name: site.name,
+      identifier: site.identifier,
       address: site.address ?? "",
       grouping: site.grouping ?? "",
       status: (site.status ?? "active") as SiteStatus,
@@ -86,8 +87,14 @@ export default function Sites() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const identifier = form.identifier.trim().toUpperCase();
+    if ((editing !== null || identifier) && !/^[A-Z0-9]{5}$/.test(identifier)) {
+      toast({ title: "Use exactly 5 letters or numbers for the identifier", variant: "destructive" });
+      return;
+    }
     const data = {
       name: form.name.trim(),
+      ...(identifier ? { identifier } : {}),
       address: form.address.trim() || undefined,
       grouping: form.grouping.trim() || undefined,
       status: form.status,
@@ -98,7 +105,7 @@ export default function Sites() {
         { id: editing, data: { ...data, grouping: data.grouping ?? null } },
         {
           onSuccess: () => { invalidate(); setOpen(false); toast({ title: "Site updated" }); },
-          onError: () => toast({ title: "Failed to update site", variant: "destructive" }),
+          onError: (error) => toast({ title: "Failed to update site", description: (error as { data?: { error?: string } }).data?.error, variant: "destructive" }),
         }
       );
     } else {
@@ -106,7 +113,7 @@ export default function Sites() {
         { data },
         {
           onSuccess: () => { invalidate(); setOpen(false); toast({ title: "Site created" }); },
-          onError: () => toast({ title: "Failed to create site", variant: "destructive" }),
+          onError: (error) => toast({ title: "Failed to create site", description: (error as { data?: { error?: string } }).data?.error, variant: "destructive" }),
         }
       );
     }
@@ -205,6 +212,13 @@ export default function Sites() {
                   </Button>
                 </div>
               )}
+              <span
+                className="ml-2 rounded-md border bg-muted/50 px-2 py-1 font-mono text-xs font-semibold tracking-wider text-muted-foreground"
+                title="Site identifier"
+                aria-label={`Site identifier ${site.identifier}`}
+              >
+                {site.identifier}
+              </span>
             </div>
           </div>
 
@@ -313,6 +327,24 @@ export default function Sites() {
             <DialogTitle>{editing !== null ? "Edit Site" : "Add Site"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label htmlFor="site-identifier">Site identifier</Label>
+            <Input
+              id="site-identifier"
+              value={form.identifier}
+              onChange={(e) => setForm({ ...form, identifier: e.target.value.toUpperCase() })}
+              maxLength={5}
+              minLength={5}
+              pattern="[A-Za-z0-9]{5}"
+              required={editing !== null}
+              placeholder="ABC12"
+              className="font-mono uppercase"
+              aria-describedby="site-identifier-help"
+            />
+            <p id="site-identifier-help" className="text-xs text-muted-foreground">
+              Exactly 5 letters or numbers.{editing === null ? " Leave blank to generate a code." : ""}
+            </p>
+          </div>
             <div className="space-y-1">
               <Label>Site Name *</Label>
               <Input

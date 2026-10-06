@@ -10,6 +10,12 @@ import type { SiteStatus } from "./siteStatus";
 export interface Site {
   id: number;
   name: string;
+  /**
+   * @minLength 5
+   * @maxLength 5
+   * @pattern ^[A-Z0-9]{5}$
+   */
+  identifier: string;
   /** @nullable */
   address?: string | null;
   /** @nullable */

@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, sitesTable } from "@workspace/db";
 import { ensureSchoolAccount } from "../lib/schoolAccounts";
+import { generateSiteIdentifier, normalizeSiteIdentifierBody, isDuplicateSiteIdentifier } from "../lib/siteIdentifiers";
 import {
   ListSitesResponse,
   CreateSiteBody,
@@ -30,16 +31,32 @@ router.get("/sites", async (req, res): Promise<void> => {
 });
 
 router.post("/sites", async (req, res): Promise<void> => {
-  const parsed = CreateSiteBody.safeParse(req.body);
+  const parsed = CreateSiteBody.safeParse(normalizeSiteIdentifierBody(req.body));
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
   try {
-    const [site] = await db.insert(sitesTable).values(parsed.data).returning();
+    let site: typeof sitesTable.$inferSelect | undefined;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        [site] = await db.insert(sitesTable).values({
+          ...parsed.data,
+          identifier: parsed.data.identifier ?? generateSiteIdentifier(),
+        }).returning();
+        break;
+      } catch (error) {
+        if (!isDuplicateSiteIdentifier(error) || parsed.data.identifier || attempt === 4) throw error;
+      }
+    }
+    if (!site) throw new Error("Site creation returned no record");
     await ensureSchoolAccount(site.id, site.name);
     res.status(201).json(UpdateSiteResponse.parse(site));
   } catch (err) {
+    if (isDuplicateSiteIdentifier(err)) {
+      res.status(409).json({ error: "That identifier is already used by another site. Choose a different code." });
+      return;
+    }
     req.log.error({ err }, "Failed to create site");
     res.status(500).json({ error: "Failed to create site" });
   }
@@ -51,7 +68,7 @@ router.patch("/sites/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const parsed = UpdateSiteBody.safeParse(req.body);
+  const parsed = UpdateSiteBody.safeParse(normalizeSiteIdentifierBody(req.body));
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
@@ -68,6 +85,10 @@ router.patch("/sites/:id", async (req, res): Promise<void> => {
     }
     res.json(UpdateSiteResponse.parse(site));
   } catch (err) {
+    if (isDuplicateSiteIdentifier(err)) {
+      res.status(409).json({ error: "That identifier is already used by another site. Choose a different code." });
+      return;
+    }
     req.log.error({ err, siteId: params.data.id }, "Failed to update site");
     res.status(500).json({ error: "Failed to update site" });
   }

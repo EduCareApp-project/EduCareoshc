@@ -370,6 +370,12 @@ export const SiteStatus = {
 export interface Site {
   id: number;
   name: string;
+  /**
+   * @minLength 5
+   * @maxLength 5
+   * @pattern ^[A-Z0-9]{5}$
+   */
+  identifier: string;
   /** @nullable */
   address?: string | null;
   /** @nullable */
@@ -390,6 +396,13 @@ export const SiteInputStatus = {
 
 export interface SiteInput {
   name: string;
+  /**
+   * Five letters and/or numbers; generated automatically when omitted.
+   * @minLength 5
+   * @maxLength 5
+   * @pattern ^[A-Za-z0-9]{5}$
+   */
+  identifier?: string;
   address?: string;
   grouping?: string;
   status?: SiteInputStatus;
@@ -407,6 +420,12 @@ export const SiteUpdateStatus = {
 
 export interface SiteUpdate {
   name?: string;
+  /**
+   * @minLength 5
+   * @maxLength 5
+   * @pattern ^[A-Za-z0-9]{5}$
+   */
+  identifier?: string;
   address?: string;
   /** @nullable */
   grouping?: string | null;

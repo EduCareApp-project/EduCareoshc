@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { logEmailConfig } from "./lib/email";
+import { migrateSiteIdentifiers } from "./lib/siteIdentifiers";
 import { db, notificationSettingsTable, pool } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import {
@@ -212,6 +213,9 @@ async function startServer(): Promise<void> {
     logger.error({ err: migrationError }, "Failed to apply policy distribution migration");
     process.exit(1);
   }
+
+  await migrateSiteIdentifiers(pool);
+  logger.info("Site identifiers migration applied");
 
   app.listen(port, async (err) => {
     if (err) {

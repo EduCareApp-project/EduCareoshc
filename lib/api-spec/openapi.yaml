@@ -4378,12 +4378,17 @@ components:
 
     Site:
       type: object
-      required: [id, name, createdAt]
+      required: [id, name, identifier, createdAt]
       properties:
         id:
           type: integer
         name:
           type: string
+        identifier:
+          type: string
+          minLength: 5
+          maxLength: 5
+          pattern: '^[A-Z0-9]{5}$'
         address:
           type: ["string", "null"]
         grouping:
@@ -4403,6 +4408,12 @@ components:
       properties:
         name:
           type: string
+        identifier:
+          type: string
+          minLength: 5
+          maxLength: 5
+          pattern: '^[A-Za-z0-9]{5}$'
+          description: Five letters and/or numbers; generated automatically when omitted.
         address:
           type: string
         grouping:
@@ -4418,6 +4429,11 @@ components:
       properties:
         name:
           type: string
+        identifier:
+          type: string
+          minLength: 5
+          maxLength: 5
+          pattern: '^[A-Za-z0-9]{5}$'
         address:
           type: string
         grouping:

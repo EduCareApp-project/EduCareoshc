@@ -3922,9 +3922,19 @@ export const GetStaffComplianceReportResponse = zod.object({
 /**
  * @summary List all sites
  */
+export const listSitesResponseIdentifierMin = 5;
+export const listSitesResponseIdentifierMax = 5;
+
+export const listSitesResponseIdentifierRegExp = new RegExp("^[A-Z0-9]{5}$");
+
 export const ListSitesResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
+  identifier: zod
+    .string()
+    .min(listSitesResponseIdentifierMin)
+    .max(listSitesResponseIdentifierMax)
+    .regex(listSitesResponseIdentifierRegExp),
   address: zod.string().nullish(),
   grouping: zod.string().nullish(),
   status: zod.enum(["active", "pending", "closed"]).optional(),
@@ -3933,8 +3943,22 @@ export const ListSitesResponseItem = zod.object({
 });
 export const ListSitesResponse = zod.array(ListSitesResponseItem);
 
+export const createSiteBodyIdentifierMin = 5;
+export const createSiteBodyIdentifierMax = 5;
+
+export const createSiteBodyIdentifierRegExp = new RegExp("^[A-Za-z0-9]{5}$");
+
 export const CreateSiteBody = zod.object({
   name: zod.string(),
+  identifier: zod
+    .string()
+    .min(createSiteBodyIdentifierMin)
+    .max(createSiteBodyIdentifierMax)
+    .regex(createSiteBodyIdentifierRegExp)
+    .optional()
+    .describe(
+      "Five letters and\/or numbers; generated automatically when omitted.",
+    ),
   address: zod.string().optional(),
   grouping: zod.string().optional(),
   status: zod.enum(["active", "pending", "closed"]).optional(),
@@ -3945,17 +3969,38 @@ export const UpdateSiteParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const updateSiteBodyIdentifierMin = 5;
+export const updateSiteBodyIdentifierMax = 5;
+
+export const updateSiteBodyIdentifierRegExp = new RegExp("^[A-Za-z0-9]{5}$");
+
 export const UpdateSiteBody = zod.object({
   name: zod.string().optional(),
+  identifier: zod
+    .string()
+    .min(updateSiteBodyIdentifierMin)
+    .max(updateSiteBodyIdentifierMax)
+    .regex(updateSiteBodyIdentifierRegExp)
+    .optional(),
   address: zod.string().optional(),
   grouping: zod.string().nullish(),
   status: zod.enum(["active", "pending", "closed"]).optional(),
   isDoscel: zod.boolean().optional(),
 });
 
+export const updateSiteResponseIdentifierMin = 5;
+export const updateSiteResponseIdentifierMax = 5;
+
+export const updateSiteResponseIdentifierRegExp = new RegExp("^[A-Z0-9]{5}$");
+
 export const UpdateSiteResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
+  identifier: zod
+    .string()
+    .min(updateSiteResponseIdentifierMin)
+    .max(updateSiteResponseIdentifierMax)
+    .regex(updateSiteResponseIdentifierRegExp),
   address: zod.string().nullish(),
   grouping: zod.string().nullish(),
   status: zod.enum(["active", "pending", "closed"]).optional(),

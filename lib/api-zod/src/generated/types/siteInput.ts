@@ -9,6 +9,13 @@ import type { SiteInputStatus } from "./siteInputStatus";
 
 export interface SiteInput {
   name: string;
+  /**
+   * Five letters and/or numbers; generated automatically when omitted.
+   * @minLength 5
+   * @maxLength 5
+   * @pattern ^[A-Za-z0-9]{5}$
+   */
+  identifier?: string;
   address?: string;
   grouping?: string;
   status?: SiteInputStatus;

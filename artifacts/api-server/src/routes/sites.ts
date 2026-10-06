@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, sitesTable } from "@workspace/db";
 import { ensureSchoolAccount } from "../lib/schoolAccounts";
-import { generateSiteIdentifier, normalizeSiteIdentifierBody, isDuplicateSiteIdentifier } from "../lib/siteIdentifiers";
+import { normalizeSiteIdentifierBody, isDuplicateSiteIdentifier } from "../lib/siteIdentifiers";
 import {
   ListSitesResponse,
   CreateSiteBody,
@@ -37,18 +37,10 @@ router.post("/sites", async (req, res): Promise<void> => {
     return;
   }
   try {
-    let site: typeof sitesTable.$inferSelect | undefined;
-    for (let attempt = 0; attempt < 5; attempt++) {
-      try {
-        [site] = await db.insert(sitesTable).values({
-          ...parsed.data,
-          identifier: parsed.data.identifier ?? generateSiteIdentifier(),
-        }).returning();
-        break;
-      } catch (error) {
-        if (!isDuplicateSiteIdentifier(error) || parsed.data.identifier || attempt === 4) throw error;
-      }
-    }
+    const [site] = await db.insert(sitesTable).values({
+      ...parsed.data,
+      identifier: parsed.data.identifier ?? null,
+    }).returning();
     if (!site) throw new Error("Site creation returned no record");
     await ensureSchoolAccount(site.id, site.name);
     res.status(201).json(UpdateSiteResponse.parse(site));

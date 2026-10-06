@@ -10,11 +10,12 @@ import type { SiteUpdateStatus } from "./siteUpdateStatus";
 export interface SiteUpdate {
   name?: string;
   /**
-   * @minLength 5
+   * @minLength 1
    * @maxLength 5
-   * @pattern ^[A-Za-z0-9]{5}$
+   * @nullable
+   * @pattern ^[A-Za-z0-9]{1,5}$
    */
-  identifier?: string;
+  identifier?: string | null;
   address?: string;
   /** @nullable */
   grouping?: string | null;

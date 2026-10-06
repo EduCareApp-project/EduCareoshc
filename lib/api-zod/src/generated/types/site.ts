@@ -11,11 +11,12 @@ export interface Site {
   id: number;
   name: string;
   /**
-   * @minLength 5
+   * @minLength 1
    * @maxLength 5
-   * @pattern ^[A-Z0-9]{5}$
+   * @nullable
+   * @pattern ^[A-Z0-9]{1,5}$
    */
-  identifier: string;
+  identifier: string | null;
   /** @nullable */
   address?: string | null;
   /** @nullable */

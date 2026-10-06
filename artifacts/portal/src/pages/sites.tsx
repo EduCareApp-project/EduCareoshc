@@ -40,7 +40,7 @@ export default function Sites() {
     queryFn: async () => {
       const res = await fetch("/api/sites?all=true");
       if (!res.ok) throw new Error("Failed to fetch sites");
-      return res.json() as Promise<Array<{ id: number; name: string; identifier: string; status: string; address: string | null; grouping: string | null; isDoscel: boolean; createdAt: string }>>;
+      return res.json() as Promise<Array<{ id: number; name: string; identifier: string | null; status: string; address: string | null; grouping: string | null; isDoscel: boolean; createdAt: string }>>;
     },
   });
   const queryClient = useQueryClient();
@@ -67,12 +67,12 @@ export default function Sites() {
     setOpen(true);
   }
 
-  function openEdit(e: React.MouseEvent, site: { id: number; name: string; identifier: string; address?: string | null; grouping?: string | null; status?: string; isDoscel?: boolean }) {
+  function openEdit(e: React.MouseEvent, site: { id: number; name: string; identifier: string | null; address?: string | null; grouping?: string | null; status?: string; isDoscel?: boolean }) {
     e.stopPropagation();
     setEditing(site.id);
     setForm({
       name: site.name,
-      identifier: site.identifier,
+      identifier: site.identifier ?? "",
       address: site.address ?? "",
       grouping: site.grouping ?? "",
       status: (site.status ?? "active") as SiteStatus,
@@ -88,13 +88,13 @@ export default function Sites() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const identifier = form.identifier.trim().toUpperCase();
-    if ((editing !== null || identifier) && !/^[A-Z0-9]{5}$/.test(identifier)) {
-      toast({ title: "Use exactly 5 letters or numbers for the identifier", variant: "destructive" });
+    if (identifier && !/^[A-Z0-9]{1,5}$/.test(identifier)) {
+      toast({ title: "Use 1–5 letters or numbers for the identifier", variant: "destructive" });
       return;
     }
     const data = {
       name: form.name.trim(),
-      ...(identifier ? { identifier } : {}),
+      identifier: identifier || null,
       address: form.address.trim() || undefined,
       grouping: form.grouping.trim() || undefined,
       status: form.status,
@@ -212,13 +212,13 @@ export default function Sites() {
                   </Button>
                 </div>
               )}
-              <span
+              {site.identifier && <span
                 className="ml-2 rounded-md border bg-muted/50 px-2 py-1 font-mono text-xs font-semibold tracking-wider text-muted-foreground"
                 title="Site identifier"
                 aria-label={`Site identifier ${site.identifier}`}
               >
                 {site.identifier}
-              </span>
+              </span>}
             </div>
           </div>
 
@@ -334,15 +334,14 @@ export default function Sites() {
               value={form.identifier}
               onChange={(e) => setForm({ ...form, identifier: e.target.value.toUpperCase() })}
               maxLength={5}
-              minLength={5}
-              pattern="[A-Za-z0-9]{5}"
-              required={editing !== null}
+              minLength={1}
+              pattern="[A-Za-z0-9]{1,5}"
               placeholder="ABC12"
               className="font-mono uppercase"
               aria-describedby="site-identifier-help"
             />
             <p id="site-identifier-help" className="text-xs text-muted-foreground">
-              Exactly 5 letters or numbers.{editing === null ? " Leave blank to generate a code." : ""}
+              Optional. Enter up to 5 letters or numbers, or leave blank for no code.
             </p>
           </div>
             <div className="space-y-1">

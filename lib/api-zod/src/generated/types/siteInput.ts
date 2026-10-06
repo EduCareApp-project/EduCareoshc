@@ -10,12 +10,13 @@ import type { SiteInputStatus } from "./siteInputStatus";
 export interface SiteInput {
   name: string;
   /**
-   * Five letters and/or numbers; generated automatically when omitted.
-   * @minLength 5
+   * Optional manually entered code of one to five letters and/or numbers. No code is assigned when omitted.
+   * @minLength 1
    * @maxLength 5
-   * @pattern ^[A-Za-z0-9]{5}$
+   * @nullable
+   * @pattern ^[A-Za-z0-9]{1,5}$
    */
-  identifier?: string;
+  identifier?: string | null;
   address?: string;
   grouping?: string;
   status?: SiteInputStatus;

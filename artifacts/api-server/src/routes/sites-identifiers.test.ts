@@ -39,11 +39,12 @@ describe("Site identifiers", () => {
     chain.returning.mockResolvedValue([site]);
   });
 
-  it.each(["12345", "ABCDE", "AB123"])("accepts a five-character code: %s", async (identifier) => {
+  it.each(["1", "AB", "A12", "AB12", "12345", "ABCDE", "AB123"])("accepts a code of up to five characters: %s", async (identifier) => {
+    chain.returning.mockResolvedValueOnce([{ ...site, identifier }]);
     const response = await request(app()).post("/api/sites").send({ name: site.name, identifier });
     expect(response.status).toBe(201);
     expect(chain.values).toHaveBeenCalledWith({ name: site.name, identifier });
-    expect(response.body.identifier).toBe(site.identifier);
+    expect(response.body.identifier).toBe(identifier);
     expect(ensureSchoolAccount).toHaveBeenCalledWith(site.id, site.name);
   });
 
@@ -53,22 +54,32 @@ describe("Site identifiers", () => {
     expect(chain.set).toHaveBeenCalledWith({ identifier: "AB123" });
   });
 
-  it.each(["AB12", "ABC123", "AB-12", "", null, 12345])("rejects an invalid code: %s", async (identifier) => {
+  it.each(["ABC123", "AB-12", "#", 12345])("rejects an invalid code: %s", async (identifier) => {
     const response = await request(app()).post("/api/sites").send({ name: site.name, identifier });
     expect(response.status).toBe(400);
     expect(mockDb.insert).not.toHaveBeenCalled();
   });
 
-  it("generates a code when creating without one", async () => {
+  it("leaves the code unassigned when creating without one", async () => {
+    chain.returning.mockResolvedValueOnce([{ ...site, identifier: null }]);
     const response = await request(app()).post("/api/sites").send({ name: site.name });
     expect(response.status).toBe(201);
-    expect(chain.values.mock.calls[0][0].identifier).toMatch(/^[A-Z0-9]{5}$/);
+    expect(chain.values).toHaveBeenCalledWith({ name: site.name, identifier: null });
+    expect(response.body.identifier).toBeNull();
   });
 
   it("preserves a code during unrelated edits", async () => {
     const response = await request(app()).patch("/api/sites/4").send({ name: "Renamed site" });
     expect(response.status).toBe(200);
     expect(chain.set).toHaveBeenCalledWith({ name: "Renamed site" });
+  });
+
+  it.each(["A", "12", "BSC", "ASC1"])("saves and returns a short code on edit: %s", async (identifier) => {
+    chain.returning.mockResolvedValueOnce([{ ...site, identifier }]);
+    const response = await request(app()).patch("/api/sites/4").send({ identifier });
+    expect(response.status).toBe(200);
+    expect(chain.set).toHaveBeenCalledWith({ identifier });
+    expect(response.body.identifier).toBe(identifier);
   });
 
   it.each(["post", "patch"] as const)("returns a clear conflict on duplicate %s", async (method) => {
@@ -79,10 +90,19 @@ describe("Site identifiers", () => {
     expect(response.body.error).toContain("already used");
   });
 
-  it("retries an automatically generated code on a uniqueness collision", async () => {
-    chain.returning.mockRejectedValueOnce(duplicate).mockResolvedValueOnce([site]);
-    const response = await request(app()).post("/api/sites").send({ name: site.name });
+  it.each(["", "   ", null])("leaves an explicitly blank code unassigned: %s", async (identifier) => {
+    chain.returning.mockResolvedValueOnce([{ ...site, identifier: null }]);
+    const response = await request(app()).post("/api/sites").send({ name: site.name, identifier });
     expect(response.status).toBe(201);
-    expect(mockDb.insert).toHaveBeenCalledTimes(2);
+    expect(chain.values).toHaveBeenCalledWith({ name: site.name, identifier: null });
+    expect(response.body.identifier).toBeNull();
+  });
+
+  it("allows clearing an existing code without generating a replacement", async () => {
+    chain.returning.mockResolvedValueOnce([{ ...site, identifier: null }]);
+    const response = await request(app()).patch("/api/sites/4").send({ identifier: null });
+    expect(response.status).toBe(200);
+    expect(chain.set).toHaveBeenCalledWith({ identifier: null });
+    expect(response.body.identifier).toBeNull();
   });
 });

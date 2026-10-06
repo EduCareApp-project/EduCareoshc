@@ -1,15 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { pool as sharedPool } from "@workspace/db";
-import { generateSiteIdentifier, migrateSiteIdentifiers } from "./siteIdentifiers";
+import { migrateSiteIdentifiers } from "./siteIdentifiers";
 
 describe("Site identifier migration", () => {
-  it("generates five-character uppercase alphanumeric identifiers", () => {
-    for (let count = 0; count < 100; count++) {
-      expect(generateSiteIdentifier()).toMatch(/^[A-Z0-9]{5}$/);
-    }
-  });
-
-  it("only backfills missing codes and commits constraints in one transaction", async () => {
+  it("allows unassigned codes without changing any existing site data", async () => {
     const query = vi.fn(async (sql: string) => ({
       rows: sql.startsWith("SELECT id") ? [
         { id: 1, identifier: "KEEPT" },
@@ -21,10 +15,13 @@ describe("Site identifier migration", () => {
     const pool = { connect: vi.fn(async () => ({ query, release })) } as unknown as typeof sharedPool;
     await migrateSiteIdentifiers(pool);
     const updates = query.mock.calls.filter(([sql]) => sql.startsWith("UPDATE sites"));
-    expect(updates).toHaveLength(2);
-    const bindings = updates.map((call) => (call as unknown as [string, [string, number]])[1]);
-    expect(bindings.map(([, id]) => id)).toEqual([2, 3]);
-    expect(new Set(bindings.map(([code]) => code)).size).toBe(2);
+    expect(updates).toHaveLength(0);
+    const statements = query.mock.calls.map(([sql]) => sql).join("\n");
+    expect(statements).toContain("ALTER COLUMN identifier DROP NOT NULL");
+    expect(statements).toContain("ALTER COLUMN identifier DROP DEFAULT");
+    expect(statements).toContain("DROP CONSTRAINT IF EXISTS sites_identifier_format");
+    expect(statements).toContain("CHECK (identifier ~ '^[A-Z0-9]{1,5}$')");
+    expect(statements).not.toContain("random()");
     expect(query).toHaveBeenCalledWith("COMMIT");
     expect(release).toHaveBeenCalledOnce();
   });

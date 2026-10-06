@@ -4385,10 +4385,10 @@ components:
         name:
           type: string
         identifier:
-          type: string
-          minLength: 5
+          type: ["string", "null"]
+          minLength: 1
           maxLength: 5
-          pattern: '^[A-Z0-9]{5}$'
+          pattern: '^[A-Z0-9]{1,5}$'
         address:
           type: ["string", "null"]
         grouping:
@@ -4409,11 +4409,11 @@ components:
         name:
           type: string
         identifier:
-          type: string
-          minLength: 5
+          type: ["string", "null"]
+          minLength: 1
           maxLength: 5
-          pattern: '^[A-Za-z0-9]{5}$'
-          description: Five letters and/or numbers; generated automatically when omitted.
+          pattern: '^[A-Za-z0-9]{1,5}$'
+          description: Optional manually entered code of one to five letters and/or numbers. No code is assigned when omitted.
         address:
           type: string
         grouping:
@@ -4430,10 +4430,10 @@ components:
         name:
           type: string
         identifier:
-          type: string
-          minLength: 5
+          type: ["string", "null"]
+          minLength: 1
           maxLength: 5
-          pattern: '^[A-Za-z0-9]{5}$'
+          pattern: '^[A-Za-z0-9]{1,5}$'
         address:
           type: string
         grouping:

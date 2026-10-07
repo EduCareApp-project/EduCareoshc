@@ -10,10 +10,12 @@ import { format, isBefore, parseISO, startOfToday } from "date-fns";
 import { Link } from "wouter";
 import { EmergencyComplianceMatrix } from "@/components/emergency-compliance-matrix";
 import { useAuth } from "@/contexts/auth";
+import { useEmergencyHeadingPreferences } from "@/hooks/use-emergency-heading-preferences";
 
 export default function ReportsService() {
   const { user } = useAuth();
-  const emergencyPreferenceKey = user ? `educare:emergency-record-headings:${user.type}:${user.id}` : undefined;
+  const emergencyPreferenceKey = user?.type === "staff" ? `educare:emergency-record-headings:${user.type}:${user.id}` : undefined;
+  const headingPreferences = useEmergencyHeadingPreferences(emergencyPreferenceKey);
   const { isEducatorRole, ownSiteId } = usePermissions();
   const [filterSiteId, setFilterSiteId] = useState<string>(() =>
     isEducatorRole && ownSiteId ? String(ownSiteId) : "__all__"
@@ -140,6 +142,10 @@ export default function ReportsService() {
           <EmergencyComplianceMatrix
             key={emergencyPreferenceKey ?? "anonymous"}
             preferenceKey={emergencyPreferenceKey}
+            accountHeadings={headingPreferences.accountHeadings}
+            preferencesLoading={headingPreferences.preferencesLoading}
+            preferencesError={headingPreferences.preferencesError}
+            onSaveHeadings={emergencyPreferenceKey ? headingPreferences.saveHeadings : undefined}
             sites={sites}
             report={report}
             sitesLoading={sitesLoading}

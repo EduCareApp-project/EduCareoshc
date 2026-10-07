@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within, waitFor } from "@testing-library/react";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import type { Site, ServiceComplianceReport } from "@workspace/api-client-react";
 import { EmergencyComplianceMatrix } from "./emergency-compliance-matrix";
@@ -107,5 +107,52 @@ describe("EmergencyComplianceMatrix", () => {
     fireEvent.click(screen.getByRole("button", { name: "Lockdown Drill" }));
     expect(screen.getByRole("button", { name: "Lockdown Drill" })).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("status")).toHaveTextContent("couldn’t save");
+  });
+
+  it("waits for account preferences and restores them even without browser storage", () => {
+    const save = vi.fn().mockResolvedValue({});
+    const { rerender } = render(<EmergencyComplianceMatrix sites={sites} report={report} preferenceKey="account" preferencesLoading onSaveHeadings={save} />);
+    expect(screen.getByRole("button", { name: "Lockdown Drill" })).toBeDisabled();
+    rerender(<EmergencyComplianceMatrix sites={sites} report={report} preferenceKey="account" accountHeadings={{ lockdown: true, other: true }} onSaveHeadings={save} />);
+    expect(screen.getByRole("button", { name: "Lockdown Drill" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Other Emergency Record" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Safety Evacuation Drill" })).toHaveAttribute("aria-expanded", "true");
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it("uses account preferences instead of stale cached browser values", () => {
+    localStorage.setItem("account", JSON.stringify({ lockdown: true }));
+    render(<EmergencyComplianceMatrix sites={sites} report={report} preferenceKey="account" accountHeadings={{ other: true }} onSaveHeadings={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Lockdown Drill" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: "Other Emergency Record" })).toHaveAttribute("aria-expanded", "false");
+    expect(JSON.parse(localStorage.getItem("account")!)).toEqual({ other: true });
+  });
+
+  it("imports earlier browser settings once when the account has no saved settings", async () => {
+    localStorage.setItem("account", JSON.stringify({ lockdown: true }));
+    const save = vi.fn().mockResolvedValue({});
+    const { rerender } = render(<EmergencyComplianceMatrix sites={sites} report={report} preferenceKey="account" accountHeadings={null} onSaveHeadings={save} />);
+    await waitFor(() => expect(save).toHaveBeenCalledWith({ lockdown: true }));
+    rerender(<EmergencyComplianceMatrix sites={sites} report={report} preferenceKey="account" accountHeadings={{ lockdown: true }} onSaveHeadings={save} />);
+    expect(save).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Other Emergency Record" }));
+    expect(save).toHaveBeenLastCalledWith({ other: true });
+  });
+
+  it("does not overwrite a new toggle when a save response updates the query cache", () => {
+    const save = vi.fn().mockResolvedValue({});
+    const { rerender } = render(<EmergencyComplianceMatrix sites={sites} report={report} preferenceKey="account" accountHeadings={{}} onSaveHeadings={save} />);
+    fireEvent.click(screen.getByRole("button", { name: "Lockdown Drill" }));
+    fireEvent.click(screen.getByRole("button", { name: "Other Emergency Record" }));
+    rerender(<EmergencyComplianceMatrix sites={sites} report={report} preferenceKey="account" accountHeadings={{ lockdown: true }} onSaveHeadings={save} />);
+    expect(screen.getByRole("button", { name: "Other Emergency Record" })).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("shows an account save failure rather than silently claiming persistence", async () => {
+    const save = vi.fn().mockRejectedValue(new Error("Offline"));
+    render(<EmergencyComplianceMatrix sites={sites} report={report} preferenceKey="account" accountHeadings={{}} onSaveHeadings={save} />);
+    fireEvent.click(screen.getByRole("button", { name: "Lockdown Drill" }));
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("couldn’t be saved to your account"));
+    expect(screen.getByRole("button", { name: "Lockdown Drill" })).toHaveAttribute("aria-expanded", "false");
   });
 });

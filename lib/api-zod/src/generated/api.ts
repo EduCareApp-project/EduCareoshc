@@ -8,6 +8,43 @@
 import * as zod from "zod";
 
 /**
+ * @summary Get the signed-in staff member's emergency heading settings
+ */
+export const GetEmergencyRecordHeadingPreferencesResponse = zod.object({
+  collapsedHeadings: zod.union([
+    zod.object({
+      evacuation: zod.boolean().optional(),
+      lockdown: zod.boolean().optional(),
+      shelter_in_place: zod.boolean().optional(),
+      other: zod.boolean().optional(),
+    }),
+    zod.null(),
+  ]),
+});
+
+/**
+ * @summary Save changed emergency headings for the signed-in staff account
+ */
+export const UpdateEmergencyRecordHeadingPreferencesBody = zod.object({
+  evacuation: zod.boolean().optional(),
+  lockdown: zod.boolean().optional(),
+  shelter_in_place: zod.boolean().optional(),
+  other: zod.boolean().optional(),
+});
+
+export const UpdateEmergencyRecordHeadingPreferencesResponse = zod.object({
+  collapsedHeadings: zod.union([
+    zod.object({
+      evacuation: zod.boolean().optional(),
+      lockdown: zod.boolean().optional(),
+      shelter_in_place: zod.boolean().optional(),
+      other: zod.boolean().optional(),
+    }),
+    zod.null(),
+  ]),
+});
+
+/**
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({

@@ -38,6 +38,45 @@ tags:
   - name: excursions
   - name: clickup
 paths:
+  /auth/emergency-record-headings:
+    get:
+      operationId: getEmergencyRecordHeadingPreferences
+      tags: [staff]
+      summary: Get the signed-in staff member's emergency heading settings
+      responses:
+        "200":
+          description: Saved account settings, or null if not yet saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmergencyRecordHeadingPreferences"
+        "401":
+          description: Sign-in required
+        "403":
+          description: Staff account required
+    patch:
+      operationId: updateEmergencyRecordHeadingPreferences
+      tags: [staff]
+      summary: Save changed emergency headings for the signed-in staff account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmergencyRecordHeadings"
+      responses:
+        "200":
+          description: Updated account settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmergencyRecordHeadingPreferences"
+        "400":
+          description: Invalid settings
+        "401":
+          description: Sign-in required
+        "403":
+          description: Staff account required
   /healthz:
     get:
       operationId: healthCheck
@@ -4084,6 +4123,26 @@ paths:
 
 components:
   schemas:
+    EmergencyRecordHeadings:
+      type: object
+      additionalProperties: false
+      properties:
+        evacuation:
+          type: boolean
+        lockdown:
+          type: boolean
+        shelter_in_place:
+          type: boolean
+        other:
+          type: boolean
+    EmergencyRecordHeadingPreferences:
+      type: object
+      required: [collapsedHeadings]
+      properties:
+        collapsedHeadings:
+          anyOf:
+            - $ref: "#/components/schemas/EmergencyRecordHeadings"
+            - type: "null"
     Excursion:
       type: object
       required: [id, siteId, heading, excursionDate, description, venue, riskAssessmentPath, riskAssessmentName, purpose, cost, departureTime, arrivalTime, arrivalAtVenue, departureFromVenue, maximumChildren, transportMethod, restraintsFitted, childToStaffRatio, staffAttending, itemsToBring, otherInformation, medicalAuthorisationText, status, createdByStaffId, sentAt, completedAt, createdAt, updatedAt]

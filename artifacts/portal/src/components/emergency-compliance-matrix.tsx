@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { Site, ServiceComplianceReport } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { Check, X, Minus, AlertTriangle, ChevronDown } from "lucide-react";
@@ -44,23 +44,57 @@ interface Props {
   selectedSiteId?: number;
   onRetry?: () => void;
   preferenceKey?: string;
+  accountHeadings?: CollapsedHeadings | null;
+  preferencesLoading?: boolean;
+  preferencesError?: boolean;
+  onSaveHeadings?: (headings: CollapsedHeadings) => Promise<unknown>;
 }
 
-export function EmergencyComplianceMatrix({ sites, report, sitesLoading, sitesError, reportError, selectedSiteId, onRetry, preferenceKey }: Props) {
+export function EmergencyComplianceMatrix({ sites, report, sitesLoading, sitesError, reportError, selectedSiteId, onRetry, preferenceKey, accountHeadings, preferencesLoading, preferencesError, onSaveHeadings }: Props) {
   const panelId = useId();
   const [collapsed, setCollapsed] = useState<CollapsedHeadings>(() => readCollapsedHeadings(preferenceKey));
   const [saveError, setSaveError] = useState(false);
+  const restored = useRef(false);
+
+  function cacheHeadings(headings: CollapsedHeadings) {
+    if (!preferenceKey) return;
+    try {
+      localStorage.setItem(preferenceKey, JSON.stringify(headings));
+      if (!onSaveHeadings) setSaveError(false);
+    } catch (error) {
+      console.warn("Could not cache emergency record heading preferences", error);
+      if (!onSaveHeadings) setSaveError(true);
+    }
+  }
+
+  useEffect(() => {
+    if (onSaveHeadings && !preferencesLoading && preferencesError) {
+      restored.current = true;
+      return;
+    }
+    if (!onSaveHeadings || preferencesLoading || accountHeadings === undefined || restored.current) return;
+    restored.current = true;
+    if (accountHeadings !== null) {
+      // Account settings are authoritative, not a possibly stale browser cache.
+      setCollapsed(accountHeadings);
+      cacheHeadings(accountHeadings);
+    } else {
+      const existing = readCollapsedHeadings(preferenceKey);
+      if (Object.keys(existing).length > 0) {
+        // One-time import of settings saved by the earlier browser-only version.
+        void onSaveHeadings(existing).catch(() => setSaveError(true));
+      }
+    }
+  }, [accountHeadings, preferencesLoading, preferencesError, onSaveHeadings, preferenceKey]);
 
   function toggleHeading(type: DrillType) {
     const next = { ...collapsed, [type]: !collapsed[type] };
     setCollapsed(next);
-    if (!preferenceKey) return;
-    try {
-      localStorage.setItem(preferenceKey, JSON.stringify(next));
-      setSaveError(false);
-    } catch (error) {
-      console.warn("Could not save emergency record heading preferences", error);
-      setSaveError(true);
+    cacheHeadings(next);
+    if (onSaveHeadings) {
+      void onSaveHeadings({ [type]: next[type] })
+        .then(() => setSaveError(false))
+        .catch(() => setSaveError(true));
     }
   }
 
@@ -90,9 +124,13 @@ export function EmergencyComplianceMatrix({ sites, report, sitesLoading, sitesEr
           <span className="inline-flex items-center gap-1"><X className="h-3.5 w-3.5 text-red-600" /> Expired</span>
           <span className="inline-flex items-center gap-1"><Minus className="h-3.5 w-3.5" /> No record</span>
         </p>
+        {preferencesLoading && <p role="status" className="text-xs text-muted-foreground">Loading saved heading settings…</p>}
+        {preferencesError && (
+          <p role="status" className="text-xs text-amber-700">Your account’s heading settings couldn’t be loaded. Showing the settings saved in this browser.</p>
+        )}
         {saveError && (
           <p role="status" className="text-xs text-amber-700">
-            Your browser couldn’t save these heading settings. They may reset when you reload.
+            {onSaveHeadings ? "Your heading settings couldn’t be saved to your account. They may not be remembered next time." : "Your browser couldn’t save these heading settings. They may reset when you reload."}
           </p>
         )}
         {active.length === 0 && <p data-testid="emergency-matrix-empty" className="text-sm text-muted-foreground">No active services found.</p>}
@@ -101,10 +139,11 @@ export function EmergencyComplianceMatrix({ sites, report, sitesLoading, sitesEr
             <h3 className="text-sm font-semibold mb-1.5">
               <button
                 type="button"
+                disabled={preferencesLoading}
                 aria-expanded={!collapsed[type]}
                 aria-controls={`${panelId}-${type}`}
                 onClick={() => toggleHeading(type)}
-                className="flex min-h-9 w-full items-center justify-between gap-2 rounded-md px-1 text-left hover:bg-muted/50 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+                className="flex min-h-9 w-full items-center justify-between gap-2 rounded-md px-1 text-left hover:bg-muted/50 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50"
               >
                 {label}
                 <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${collapsed[type] ? "-rotate-90" : ""}`} />

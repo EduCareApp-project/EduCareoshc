@@ -71,6 +71,8 @@ export * from "./duplicateGuardianSummary";
 export * from "./duplicateRecordReason";
 export * from "./duplicateRecordsScanInput";
 export * from "./duplicateRecordsScanResult";
+export * from "./emergencyRecordHeadingPreferences";
+export * from "./emergencyRecordHeadings";
 export * from "./errorEnvelope";
 export * from "./evacuation";
 export * from "./evacuationDrillType";

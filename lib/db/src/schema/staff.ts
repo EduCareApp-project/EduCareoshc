@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { sitesTable } from "./sites";
@@ -22,6 +22,7 @@ export const staffTable = pgTable("staff", {
   passwordHash: text("password_hash"),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   isSuperAdmin: boolean("is_super_admin").notNull().default(false),
+  emergencyRecordHeadings: jsonb("emergency_record_headings").$type<Partial<Record<"evacuation" | "lockdown" | "shelter_in_place" | "other", boolean>>>(),
 });
 
 export const insertStaffSchema = createInsertSchema(staffTable).omit({ id: true, createdAt: true });

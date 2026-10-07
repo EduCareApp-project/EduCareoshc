@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import emergencyHeadingPreferencesRouter from "./emergency-heading-preferences";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { eq, asc, and, or, gt, isNull, isNotNull, inArray, sql, ne } from "drizzle-orm";
@@ -8,6 +9,7 @@ import { getEmailBranding } from "../lib/emailBranding";
 import { getAppUrl } from "../lib/appUrl";
 
 const router: IRouter = Router();
+router.use(emergencyHeadingPreferencesRouter);
 
 router.post("/auth/login", async (req, res): Promise<void> => {
   const { email, password } = req.body ?? {};

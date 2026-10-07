@@ -5,6 +5,17 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+export interface EmergencyRecordHeadings {
+  evacuation?: boolean;
+  lockdown?: boolean;
+  shelter_in_place?: boolean;
+  other?: boolean;
+}
+
+export interface EmergencyRecordHeadingPreferences {
+  collapsedHeadings: EmergencyRecordHeadings | null;
+}
+
 export type ExcursionStatus =
   (typeof ExcursionStatus)[keyof typeof ExcursionStatus];
 

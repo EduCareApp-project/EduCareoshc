@@ -1,6 +1,7 @@
+import { useId, useState } from "react";
 import type { Site, ServiceComplianceReport } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Check, X, Minus, AlertTriangle } from "lucide-react";
+import { Check, X, Minus, AlertTriangle, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -16,6 +17,24 @@ export const EMERGENCY_RECORD_TYPES: { type: DrillType; label: string }[] = [
 
 const fmt = (d: string | null | undefined) => (d ? format(new Date(d), "dd/MM/yyyy") : null);
 
+type CollapsedHeadings = Partial<Record<DrillType, boolean>>;
+
+function readCollapsedHeadings(preferenceKey?: string): CollapsedHeadings {
+  if (!preferenceKey) return {};
+  try {
+    const stored = JSON.parse(localStorage.getItem(preferenceKey) ?? "{}");
+    if (!stored || typeof stored !== "object" || Array.isArray(stored)) return {};
+    return Object.fromEntries(
+      EMERGENCY_RECORD_TYPES
+        .filter(({ type }) => typeof stored[type] === "boolean")
+        .map(({ type }) => [type, stored[type]]),
+    );
+  } catch (error) {
+    console.warn("Could not restore emergency record heading preferences", error);
+    return {};
+  }
+}
+
 interface Props {
   sites: Site[] | undefined;
   report: ServiceComplianceReport | undefined;
@@ -24,9 +43,27 @@ interface Props {
   reportError?: boolean;
   selectedSiteId?: number;
   onRetry?: () => void;
+  preferenceKey?: string;
 }
 
-export function EmergencyComplianceMatrix({ sites, report, sitesLoading, sitesError, reportError, selectedSiteId, onRetry }: Props) {
+export function EmergencyComplianceMatrix({ sites, report, sitesLoading, sitesError, reportError, selectedSiteId, onRetry, preferenceKey }: Props) {
+  const panelId = useId();
+  const [collapsed, setCollapsed] = useState<CollapsedHeadings>(() => readCollapsedHeadings(preferenceKey));
+  const [saveError, setSaveError] = useState(false);
+
+  function toggleHeading(type: DrillType) {
+    const next = { ...collapsed, [type]: !collapsed[type] };
+    setCollapsed(next);
+    if (!preferenceKey) return;
+    try {
+      localStorage.setItem(preferenceKey, JSON.stringify(next));
+      setSaveError(false);
+    } catch (error) {
+      console.warn("Could not save emergency record heading preferences", error);
+      setSaveError(true);
+    }
+  }
+
   if (sitesLoading) {
     return (
       <div data-testid="emergency-matrix-loading" className="space-y-3">
@@ -53,11 +90,31 @@ export function EmergencyComplianceMatrix({ sites, report, sitesLoading, sitesEr
           <span className="inline-flex items-center gap-1"><X className="h-3.5 w-3.5 text-red-600" /> Expired</span>
           <span className="inline-flex items-center gap-1"><Minus className="h-3.5 w-3.5" /> No record</span>
         </p>
+        {saveError && (
+          <p role="status" className="text-xs text-amber-700">
+            Your browser couldn’t save these heading settings. They may reset when you reload.
+          </p>
+        )}
         {active.length === 0 && <p data-testid="emergency-matrix-empty" className="text-sm text-muted-foreground">No active services found.</p>}
         {active.length > 0 && EMERGENCY_RECORD_TYPES.map(({ type, label }) => (
           <section key={type} data-testid={`emergency-row-${type}`} aria-label={label}>
-            <h3 className="text-sm font-semibold mb-1.5">{label}</h3>
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <h3 className="text-sm font-semibold mb-1.5">
+              <button
+                type="button"
+                aria-expanded={!collapsed[type]}
+                aria-controls={`${panelId}-${type}`}
+                onClick={() => toggleHeading(type)}
+                className="flex min-h-9 w-full items-center justify-between gap-2 rounded-md px-1 text-left hover:bg-muted/50 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                {label}
+                <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${collapsed[type] ? "-rotate-90" : ""}`} />
+              </button>
+            </h3>
+            <div
+              id={`${panelId}-${type}`}
+              hidden={!!collapsed[type]}
+              className={`${collapsed[type] ? "hidden" : "flex"} gap-2 overflow-x-auto pb-1`}
+            >
               {active.map((site) => {
                 const st = report.emergencyStatuses.find((e) => e.siteId === site.id && e.drillType === type);
                 const status = st?.status ?? "missing";

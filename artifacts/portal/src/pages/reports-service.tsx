@@ -9,8 +9,11 @@ import { ShieldCheck, AlertTriangle, CheckCircle2, ClipboardX, TrendingUp, Check
 import { format, isBefore, parseISO, startOfToday } from "date-fns";
 import { Link } from "wouter";
 import { EmergencyComplianceMatrix } from "@/components/emergency-compliance-matrix";
+import { useAuth } from "@/contexts/auth";
 
 export default function ReportsService() {
+  const { user } = useAuth();
+  const emergencyPreferenceKey = user ? `educare:emergency-record-headings:${user.type}:${user.id}` : undefined;
   const { isEducatorRole, ownSiteId } = usePermissions();
   const [filterSiteId, setFilterSiteId] = useState<string>(() =>
     isEducatorRole && ownSiteId ? String(ownSiteId) : "__all__"
@@ -135,6 +138,8 @@ export default function ReportsService() {
         </CardHeader>
         <CardContent>
           <EmergencyComplianceMatrix
+            key={emergencyPreferenceKey ?? "anonymous"}
+            preferenceKey={emergencyPreferenceKey}
             sites={sites}
             report={report}
             sitesLoading={sitesLoading}

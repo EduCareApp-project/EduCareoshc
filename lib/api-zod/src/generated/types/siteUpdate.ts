@@ -10,6 +10,12 @@ import type { SiteUpdateStatus } from "./siteUpdateStatus";
 export interface SiteUpdate {
   name?: string;
   /**
+   * Service opening date as YYYY-MM-DD. Null clears the date; omission leaves it unchanged.
+   * @nullable
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   */
+  serviceStartDate?: string | null;
+  /**
    * @minLength 1
    * @maxLength 5
    * @nullable

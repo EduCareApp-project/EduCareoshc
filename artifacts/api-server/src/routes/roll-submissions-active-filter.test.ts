@@ -13,7 +13,7 @@
  * Mock pattern follows sites-pending-filter.test.ts.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import express from "express";
 import pinoHttp from "pino-http";
@@ -190,6 +190,53 @@ function buildTestApp() {
   app.use("/api", rollSubmissionsRouter);
   return app;
 }
+
+describe("Service opening-date eligibility", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetState();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-07T12:00:00Z"));
+    const newSite = { ...makeSite(1, "New service", "active"), serviceStartDate: "2026-09-23" };
+    const oldSite = makeSite(2, "Established service", "active");
+    setActiveSites([newSite, oldSite]);
+    setAllSites([newSite, oldSite]);
+    setSubmissions([
+      { ...MOCK_SUBMISSIONS[0], weekStart: "2026-09-14" },
+      { ...MOCK_SUBMISSIONS[0], weekStart: "2026-09-21" },
+      { ...MOCK_SUBMISSIONS[0], weekStart: "2026-09-28" },
+    ]);
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("excludes a new service from weekly lists before its opening week", async () => {
+    const response = await request(buildTestApp()).get("/api/roll-submissions?weekStart=2026-09-14");
+    expect(response.status).toBe(200);
+    expect(response.body.sites.map((site: { siteId: number }) => site.siteId)).toEqual([2]);
+  });
+
+  it("includes a service in the week containing its midweek opening", async () => {
+    const response = await request(buildTestApp()).get("/api/roll-submissions?weekStart=2026-09-21");
+    expect(response.body.sites.map((site: { siteId: number }) => site.siteId)).toEqual([1, 2]);
+  });
+
+  it("adjusts report denominators and ignores pre-opening submissions", async () => {
+    const response = await request(buildTestApp()).get("/api/roll-submissions/report");
+    expect(response.status).toBe(200);
+    const newSite = response.body.sites.find((site: { siteId: number }) => site.siteId === 1);
+    expect(newSite.serviceStartDate).toBe("2026-09-23");
+    for (const period of ["last4Weeks", "last12Weeks", "last52Weeks"]) {
+      expect(newSite[period]).toEqual({ submitted: 2, totalPossible: 2, pct: 100 });
+    }
+    expect(response.body.sites[1].last52Weeks.totalPossible).toBe(52);
+  });
+
+  it("blocks writes for a service before its opening week", async () => {
+    const response = await request(buildTestApp()).put("/api/roll-submissions/2026-09-14/1").send({ submitted: true });
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain("service start date");
+  });
+});
 
 // ---------------------------------------------------------------------------
 // GET /api/roll-submissions — weekly roll-marking list

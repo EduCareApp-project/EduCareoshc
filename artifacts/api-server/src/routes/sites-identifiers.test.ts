@@ -105,4 +105,27 @@ describe("Site identifiers", () => {
     expect(chain.set).toHaveBeenCalledWith({ identifier: null });
     expect(response.body.identifier).toBeNull();
   });
+
+  it.each(["post", "patch"] as const)("saves a calendar-only service start date on %s", async (method) => {
+    chain.returning.mockResolvedValueOnce([{ ...site, serviceStartDate: "2026-09-23" }]);
+    const data = { name: site.name, serviceStartDate: "2026-09-23" };
+    const response = await request(app())[method](method === "post" ? "/api/sites" : "/api/sites/4").send(data);
+    expect(response.status).toBe(method === "post" ? 201 : 200);
+    expect(method === "post" ? chain.values : chain.set).toHaveBeenCalledWith(
+      method === "post" ? { ...data, identifier: null } : data,
+    );
+    expect(response.body.serviceStartDate).toBe("2026-09-23");
+  });
+
+  it.each(["2026-02-30", "23/09/2026", "2026-09-23T00:00:00Z"])("rejects an invalid service start date: %s", async (serviceStartDate) => {
+    const response = await request(app()).patch("/api/sites/4").send({ serviceStartDate });
+    expect(response.status).toBe(400);
+    expect(mockDb.update).not.toHaveBeenCalled();
+  });
+
+  it("clears a start date explicitly without changing it on unrelated edits", async () => {
+    const response = await request(app()).patch("/api/sites/4").send({ serviceStartDate: null });
+    expect(response.status).toBe(200);
+    expect(chain.set).toHaveBeenCalledWith({ serviceStartDate: null });
+  });
 });

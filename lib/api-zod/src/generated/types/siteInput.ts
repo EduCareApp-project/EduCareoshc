@@ -10,6 +10,12 @@ import type { SiteInputStatus } from "./siteInputStatus";
 export interface SiteInput {
   name: string;
   /**
+   * Optional service opening date as YYYY-MM-DD.
+   * @nullable
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   */
+  serviceStartDate?: string | null;
+  /**
    * Optional manually entered code of one to five letters and/or numbers. No code is assigned when omitted.
    * @minLength 1
    * @maxLength 5

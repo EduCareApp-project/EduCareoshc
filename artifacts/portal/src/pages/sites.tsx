@@ -14,8 +14,8 @@ import { Plus, MapPin, Pencil, Trash2, Building2, ChevronRight, FileText, Layers
 import { usePermissions } from "@/hooks/use-permissions";
 
 type SiteStatus = "active" | "pending" | "closed";
-type SiteForm = { name: string; identifier: string; address: string; grouping: string; status: SiteStatus; isDoscel: boolean };
-const EMPTY: SiteForm = { name: "", identifier: "", address: "", grouping: "", status: "active", isDoscel: false };
+type SiteForm = { name: string; identifier: string; serviceStartDate: string; address: string; grouping: string; status: SiteStatus; isDoscel: boolean };
+const EMPTY: SiteForm = { name: "", identifier: "", serviceStartDate: "", address: "", grouping: "", status: "active", isDoscel: false };
 
 function LatinCross({ className }: { className?: string }) {
   return (
@@ -40,7 +40,7 @@ export default function Sites() {
     queryFn: async () => {
       const res = await fetch("/api/sites?all=true");
       if (!res.ok) throw new Error("Failed to fetch sites");
-      return res.json() as Promise<Array<{ id: number; name: string; identifier: string | null; status: string; address: string | null; grouping: string | null; isDoscel: boolean; createdAt: string }>>;
+      return res.json() as Promise<Array<{ id: number; name: string; identifier: string | null; serviceStartDate: string | null; status: string; address: string | null; grouping: string | null; isDoscel: boolean; createdAt: string }>>;
     },
   });
   const queryClient = useQueryClient();
@@ -67,12 +67,13 @@ export default function Sites() {
     setOpen(true);
   }
 
-  function openEdit(e: React.MouseEvent, site: { id: number; name: string; identifier: string | null; address?: string | null; grouping?: string | null; status?: string; isDoscel?: boolean }) {
+  function openEdit(e: React.MouseEvent, site: { id: number; name: string; identifier: string | null; serviceStartDate?: string | null; address?: string | null; grouping?: string | null; status?: string; isDoscel?: boolean }) {
     e.stopPropagation();
     setEditing(site.id);
     setForm({
       name: site.name,
       identifier: site.identifier ?? "",
+      serviceStartDate: site.serviceStartDate ?? "",
       address: site.address ?? "",
       grouping: site.grouping ?? "",
       status: (site.status ?? "active") as SiteStatus,
@@ -83,6 +84,8 @@ export default function Sites() {
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: getListSitesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: ["/api/roll-submissions/report"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/roll-submissions"] });
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -95,6 +98,7 @@ export default function Sites() {
     const data = {
       name: form.name.trim(),
       identifier: identifier || null,
+      serviceStartDate: form.serviceStartDate || null,
       address: form.address.trim() || undefined,
       grouping: form.grouping.trim() || undefined,
       status: form.status,
@@ -352,6 +356,19 @@ export default function Sites() {
                 placeholder="e.g. Sunshine Centre North"
                 required
               />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="service-start-date">Service start date</Label>
+              <Input
+                id="service-start-date"
+                type="date"
+                value={form.serviceStartDate}
+                onChange={(e) => setForm({ ...form, serviceStartDate: e.target.value })}
+                aria-describedby="service-start-date-help"
+              />
+              <p id="service-start-date-help" className="text-xs text-muted-foreground">
+                Roll compliance begins in this week. Leave blank to include all historical weeks.
+              </p>
             </div>
             <div className="space-y-1">
               <Label>Address</Label>

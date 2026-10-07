@@ -3922,6 +3922,9 @@ export const GetStaffComplianceReportResponse = zod.object({
 /**
  * @summary List all sites
  */
+export const listSitesResponseServiceStartDateRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}$",
+);
 export const listSitesResponseIdentifierMax = 5;
 
 export const listSitesResponseIdentifierRegExp = new RegExp("^[A-Z0-9]{1,5}$");
@@ -3929,6 +3932,13 @@ export const listSitesResponseIdentifierRegExp = new RegExp("^[A-Z0-9]{1,5}$");
 export const ListSitesResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
+  serviceStartDate: zod
+    .string()
+    .regex(listSitesResponseServiceStartDateRegExp)
+    .nullish()
+    .describe(
+      "Service opening date as YYYY-MM-DD. Roll compliance starts in the week containing this date. Null preserves existing historical eligibility.",
+    ),
   identifier: zod
     .string()
     .min(1)
@@ -3943,12 +3953,20 @@ export const ListSitesResponseItem = zod.object({
 });
 export const ListSitesResponse = zod.array(ListSitesResponseItem);
 
+export const createSiteBodyServiceStartDateRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}$",
+);
 export const createSiteBodyIdentifierMax = 5;
 
 export const createSiteBodyIdentifierRegExp = new RegExp("^[A-Za-z0-9]{1,5}$");
 
 export const CreateSiteBody = zod.object({
   name: zod.string(),
+  serviceStartDate: zod
+    .string()
+    .regex(createSiteBodyServiceStartDateRegExp)
+    .nullish()
+    .describe("Optional service opening date as YYYY-MM-DD."),
   identifier: zod
     .string()
     .min(1)
@@ -3968,12 +3986,22 @@ export const UpdateSiteParams = zod.object({
   id: zod.coerce.number(),
 });
 
+export const updateSiteBodyServiceStartDateRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}$",
+);
 export const updateSiteBodyIdentifierMax = 5;
 
 export const updateSiteBodyIdentifierRegExp = new RegExp("^[A-Za-z0-9]{1,5}$");
 
 export const UpdateSiteBody = zod.object({
   name: zod.string().optional(),
+  serviceStartDate: zod
+    .string()
+    .regex(updateSiteBodyServiceStartDateRegExp)
+    .nullish()
+    .describe(
+      "Service opening date as YYYY-MM-DD. Null clears the date; omission leaves it unchanged.",
+    ),
   identifier: zod
     .string()
     .min(1)
@@ -3986,6 +4014,9 @@ export const UpdateSiteBody = zod.object({
   isDoscel: zod.boolean().optional(),
 });
 
+export const updateSiteResponseServiceStartDateRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}$",
+);
 export const updateSiteResponseIdentifierMax = 5;
 
 export const updateSiteResponseIdentifierRegExp = new RegExp("^[A-Z0-9]{1,5}$");
@@ -3993,6 +4024,13 @@ export const updateSiteResponseIdentifierRegExp = new RegExp("^[A-Z0-9]{1,5}$");
 export const UpdateSiteResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
+  serviceStartDate: zod
+    .string()
+    .regex(updateSiteResponseServiceStartDateRegExp)
+    .nullish()
+    .describe(
+      "Service opening date as YYYY-MM-DD. Roll compliance starts in the week containing this date. Null preserves existing historical eligibility.",
+    ),
   identifier: zod
     .string()
     .min(1)
@@ -4573,11 +4611,18 @@ export const GetRollComplianceReportQueryParams = zod.object({
   siteId: zod.coerce.number().optional(),
 });
 
+export const getRollComplianceReportResponseSitesItemServiceStartDateRegExp =
+  new RegExp("^\\d{4}-\\d{2}-\\d{2}$");
+
 export const GetRollComplianceReportResponse = zod.object({
   sites: zod.array(
     zod.object({
       siteId: zod.number(),
       siteName: zod.string(),
+      serviceStartDate: zod
+        .string()
+        .regex(getRollComplianceReportResponseSitesItemServiceStartDateRegExp)
+        .nullish(),
       last4Weeks: zod.object({
         submitted: zod.number(),
         totalPossible: zod.number(),

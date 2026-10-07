@@ -158,6 +158,9 @@ export default function ReportsService() {
             <ClipboardList className="h-5 w-5 text-muted-foreground" />
             <CardTitle className="text-base">Roll Compliance</CardTitle>
           </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            Completed weeks only, beginning with each service’s start week. Set the service start date in Add/Edit Site to exclude earlier weeks.
+          </p>
         </CardHeader>
         <CardContent className="space-y-5">
           {rollLoading ? (
@@ -180,13 +183,22 @@ export default function ReportsService() {
                   <tbody className="divide-y">
                     {rollReport.sites.map((site) => (
                       <tr key={site.siteId} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-3 py-2 font-medium">{site.siteName}</td>
+                        <td className="px-3 py-2 font-medium">
+                          {site.siteName}
+                          {site.serviceStartDate && <p className="text-xs text-muted-foreground font-normal">Started {format(parseISO(site.serviceStartDate), "dd/MM/yyyy")}</p>}
+                        </td>
                         {([site.last4Weeks, site.last12Weeks, site.last52Weeks] as const).map((cell, i) => (
                           <td key={i} className="px-3 py-2 text-center">
+                            {cell.totalPossible === 0 ? (
+                              <span className="text-xs text-muted-foreground" title="No eligible completed weeks since the service started">Not applicable</span>
+                            ) : (
+                              <>
                             <span className={`font-medium ${cell.pct === 100 ? "text-green-700" : cell.pct >= 75 ? "text-amber-700" : "text-red-700"}`}>
                               {cell.submitted}/{cell.totalPossible}
                             </span>
                             <span className="text-muted-foreground ml-1.5 text-xs">({cell.pct}%)</span>
+                              </>
+                            )}
                           </td>
                         ))}
                       </tr>

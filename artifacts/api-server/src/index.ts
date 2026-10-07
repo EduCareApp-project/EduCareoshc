@@ -65,7 +65,8 @@ async function migrateSitesColumns(): Promise<void> {
       ALTER TABLE sites
         ADD COLUMN IF NOT EXISTS grouping  text,
         ADD COLUMN IF NOT EXISTS status    text NOT NULL DEFAULT 'active',
-        ADD COLUMN IF NOT EXISTS is_doscel boolean NOT NULL DEFAULT false
+        ADD COLUMN IF NOT EXISTS is_doscel boolean NOT NULL DEFAULT false,
+        ADD COLUMN IF NOT EXISTS service_start_date date
     `);
   } finally {
     client.release();
@@ -214,6 +215,8 @@ async function startServer(): Promise<void> {
     process.exit(1);
   }
 
+  await migrateSitesColumns();
+  logger.info("Sites columns migration applied");
   await migrateSiteIdentifiers(pool);
   logger.info("Site identifiers migration applied");
 
@@ -225,13 +228,6 @@ async function startServer(): Promise<void> {
 
     logger.info({ port }, "Server listening");
     logEmailConfig();
-
-    try {
-      await migrateSitesColumns();
-      logger.info("Sites columns migration applied");
-    } catch (migrateErr) {
-      logger.warn({ err: migrateErr }, "Failed to apply sites columns migration");
-    }
 
     try {
       await fixRollSubmissionWeekStarts();

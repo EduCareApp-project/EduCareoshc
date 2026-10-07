@@ -11,6 +11,12 @@ export interface Site {
   id: number;
   name: string;
   /**
+   * Service opening date as YYYY-MM-DD. Roll compliance starts in the week containing this date. Null preserves existing historical eligibility.
+   * @nullable
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   */
+  serviceStartDate?: string | null;
+  /**
    * @minLength 1
    * @maxLength 5
    * @nullable

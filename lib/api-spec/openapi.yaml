@@ -4384,6 +4384,10 @@ components:
           type: integer
         name:
           type: string
+        serviceStartDate:
+          type: ["string", "null"]
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: Service opening date as YYYY-MM-DD. Roll compliance starts in the week containing this date. Null preserves existing historical eligibility.
         identifier:
           type: ["string", "null"]
           minLength: 1
@@ -4408,6 +4412,10 @@ components:
       properties:
         name:
           type: string
+        serviceStartDate:
+          type: ["string", "null"]
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: Optional service opening date as YYYY-MM-DD.
         identifier:
           type: ["string", "null"]
           minLength: 1
@@ -4429,6 +4437,10 @@ components:
       properties:
         name:
           type: string
+        serviceStartDate:
+          type: ["string", "null"]
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: Service opening date as YYYY-MM-DD. Null clears the date; omission leaves it unchanged.
         identifier:
           type: ["string", "null"]
           minLength: 1
@@ -7907,6 +7919,9 @@ components:
           type: integer
         siteName:
           type: string
+        serviceStartDate:
+          type: ["string", "null"]
+          pattern: '^\d{4}-\d{2}-\d{2}$'
         last4Weeks:
           $ref: "#/components/schemas/RollPeriodCell"
         last12Weeks:

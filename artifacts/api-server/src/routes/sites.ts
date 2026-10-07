@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { isValidCalendarDate } from "../lib/rollCompliance";
 import { eq } from "drizzle-orm";
 import { db, sitesTable } from "@workspace/db";
 import { ensureSchoolAccount } from "../lib/schoolAccounts";
@@ -31,7 +32,10 @@ router.get("/sites", async (req, res): Promise<void> => {
 });
 
 router.post("/sites", async (req, res): Promise<void> => {
-  const parsed = CreateSiteBody.safeParse(normalizeSiteIdentifierBody(req.body));
+  const parsed = CreateSiteBody.refine(
+    (data) => data.serviceStartDate == null || isValidCalendarDate(data.serviceStartDate),
+    { message: "Service start date must be a valid YYYY-MM-DD date", path: ["serviceStartDate"] },
+  ).safeParse(normalizeSiteIdentifierBody(req.body));
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
@@ -60,7 +64,10 @@ router.patch("/sites/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const parsed = UpdateSiteBody.safeParse(normalizeSiteIdentifierBody(req.body));
+  const parsed = UpdateSiteBody.refine(
+    (data) => data.serviceStartDate == null || isValidCalendarDate(data.serviceStartDate),
+    { message: "Service start date must be a valid YYYY-MM-DD date", path: ["serviceStartDate"] },
+  ).safeParse(normalizeSiteIdentifierBody(req.body));
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;

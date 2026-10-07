@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, boolean, timestamp, uniqueIndex, check } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, boolean, timestamp, date, uniqueIndex, check } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -8,6 +8,7 @@ export const sitesTable = pgTable("sites", {
   orgId: integer("org_id"),
   name: text("name").notNull(),
   identifier: text("identifier"),
+  serviceStartDate: date("service_start_date", { mode: "string" }),
   address: text("address"),
   grouping: text("grouping"),
   status: text("status").notNull().default("active"),

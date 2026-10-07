@@ -10,6 +10,11 @@ import type { RollPeriodCell } from "./rollPeriodCell";
 export interface RollSiteRow {
   siteId: number;
   siteName: string;
+  /**
+   * @nullable
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   */
+  serviceStartDate?: string | null;
   last4Weeks: RollPeriodCell;
   last12Weeks: RollPeriodCell;
   last52Weeks: RollPeriodCell;

@@ -371,6 +371,12 @@ export interface Site {
   id: number;
   name: string;
   /**
+   * Service opening date as YYYY-MM-DD. Roll compliance starts in the week containing this date. Null preserves existing historical eligibility.
+   * @nullable
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   */
+  serviceStartDate?: string | null;
+  /**
    * @minLength 1
    * @maxLength 5
    * @nullable
@@ -398,6 +404,12 @@ export const SiteInputStatus = {
 export interface SiteInput {
   name: string;
   /**
+   * Optional service opening date as YYYY-MM-DD.
+   * @nullable
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   */
+  serviceStartDate?: string | null;
+  /**
    * Optional manually entered code of one to five letters and/or numbers. No code is assigned when omitted.
    * @minLength 1
    * @maxLength 5
@@ -422,6 +434,12 @@ export const SiteUpdateStatus = {
 
 export interface SiteUpdate {
   name?: string;
+  /**
+   * Service opening date as YYYY-MM-DD. Null clears the date; omission leaves it unchanged.
+   * @nullable
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   */
+  serviceStartDate?: string | null;
   /**
    * @minLength 1
    * @maxLength 5
@@ -2848,6 +2866,11 @@ export interface RollPeriodCell {
 export interface RollSiteRow {
   siteId: number;
   siteName: string;
+  /**
+   * @nullable
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   */
+  serviceStartDate?: string | null;
   last4Weeks: RollPeriodCell;
   last12Weeks: RollPeriodCell;
   last52Weeks: RollPeriodCell;

@@ -2,22 +2,9 @@ import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, rollSubmissionsTable, sitesTable } from "@workspace/db";
 import { GetRollComplianceReportResponse } from "@workspace/api-zod";
+import { buildRollPeriodCell, getWeekStartUTC, isEligibleRollWeek, isValidCalendarDate } from "../lib/rollCompliance";
 
 const router: IRouter = Router();
-
-// All date helpers work in UTC to avoid server-timezone skew
-function getWeekStartUTC(d: Date): string {
-  const day = d.getUTCDay(); // 0=Sun … 6=Sat
-  const diff = day === 0 ? -6 : 1 - day; // days back to Monday
-  const monday = new Date(d.getTime() + diff * 86400000);
-  return `${monday.getUTCFullYear()}-${String(monday.getUTCMonth() + 1).padStart(2, "0")}-${String(monday.getUTCDate()).padStart(2, "0")}`;
-}
-
-function subtractWeeks(dateStr: string, n: number): string {
-  const ms = new Date(dateStr + "T00:00:00Z").getTime() - n * 7 * 86400000;
-  const d = new Date(ms);
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
-}
 
 // GET /api/roll-submissions/report?siteId=N
 // Returns a week-by-week compliance summary since records began, plus period summaries.
@@ -25,7 +12,7 @@ router.get("/roll-submissions/report", async (req, res): Promise<void> => {
   const siteIdFilter = typeof req.query.siteId === "string" ? parseInt(req.query.siteId, 10) : null;
 
   try {
-    const allSites = await db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable).where(eq(sitesTable.status, "active")).orderBy(sitesTable.name);
+    const allSites = await db.select({ id: sitesTable.id, name: sitesTable.name, serviceStartDate: sitesTable.serviceStartDate }).from(sitesTable).where(eq(sitesTable.status, "active")).orderBy(sitesTable.name);
     const filteredSites = siteIdFilter ? allSites.filter((s) => s.id === siteIdFilter) : allSites;
     const totalSitesCount = filteredSites.length;
 
@@ -42,29 +29,13 @@ router.get("/roll-submissions/report", async (req, res): Promise<void> => {
 
     // All cutoffs in UTC — "4 weeks" = the 4 complete weeks immediately before this week
     const currentWeekStart = getWeekStartUTC(new Date());
-    const cutoff4  = subtractWeeks(currentWeekStart, 4);
-    const cutoff12 = subtractWeeks(currentWeekStart, 12);
-    const cutoff52 = subtractWeeks(currentWeekStart, 52);
-
-    function siteCell(siteId: number, fromCutoff: string, weeksCount: number) {
-      const submitted = allSubmissions.filter(
-        (s) => s.siteId === siteId && s.submitted && s.accurate &&
-               (s.weekStart as string) >= fromCutoff &&
-               (s.weekStart as string) < currentWeekStart
-      ).length;
-      return {
-        submitted,
-        totalPossible: weeksCount,
-        pct: weeksCount > 0 ? Math.round((submitted / weeksCount) * 100) : 0,
-      };
-    }
-
     const sites = filteredSites.map((site) => ({
       siteId: site.id,
       siteName: site.name,
-      last4Weeks:  siteCell(site.id, cutoff4,  4),
-      last12Weeks: siteCell(site.id, cutoff12, 12),
-      last52Weeks: siteCell(site.id, cutoff52, 52),
+      serviceStartDate: site.serviceStartDate ?? null,
+      last4Weeks:  buildRollPeriodCell(site, allSubmissions, currentWeekStart, 4),
+      last12Weeks: buildRollPeriodCell(site, allSubmissions, currentWeekStart, 12),
+      last52Weeks: buildRollPeriodCell(site, allSubmissions, currentWeekStart, 52),
     }));
 
     res.json(GetRollComplianceReportResponse.parse({ sites, weeks: [] }));
@@ -82,14 +53,14 @@ router.get("/roll-submissions", async (req, res): Promise<void> => {
     ? req.query.weekStart
     : getWeekStartUTC(new Date());
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) {
+  if (!isValidCalendarDate(weekStart)) {
     res.status(400).json({ error: "weekStart must be YYYY-MM-DD" });
     return;
   }
 
   try {
     const sites = await db
-      .select({ id: sitesTable.id, name: sitesTable.name })
+      .select({ id: sitesTable.id, name: sitesTable.name, serviceStartDate: sitesTable.serviceStartDate })
       .from(sitesTable)
       .where(eq(sitesTable.status, "active"))
       .orderBy(sitesTable.name);
@@ -103,7 +74,7 @@ router.get("/roll-submissions", async (req, res): Promise<void> => {
 
     res.json({
       weekStart,
-      sites: sites.map((site) => {
+      sites: sites.filter((site) => isEligibleRollWeek(site.serviceStartDate, weekStart)).map((site) => {
         const sub = bySite.get(site.id);
         return {
           siteId: site.id,
@@ -129,7 +100,7 @@ router.put("/roll-submissions/:weekStart/:siteId", async (req, res): Promise<voi
   const { weekStart, siteId: siteIdStr } = req.params;
   const siteId = parseInt(siteIdStr, 10);
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart) || isNaN(siteId)) {
+  if (!isValidCalendarDate(weekStart) || isNaN(siteId)) {
     res.status(400).json({ error: "Invalid weekStart or siteId" });
     return;
   }
@@ -137,6 +108,16 @@ router.put("/roll-submissions/:weekStart/:siteId", async (req, res): Promise<voi
   const { submitted, accurate, notes } = req.body ?? {};
 
   try {
+    const [site] = await db.select({ id: sitesTable.id, serviceStartDate: sitesTable.serviceStartDate })
+      .from(sitesTable).where(eq(sitesTable.id, siteId)).limit(1);
+    if (!site) {
+      res.status(404).json({ error: "Site not found" });
+      return;
+    }
+    if (!isEligibleRollWeek(site.serviceStartDate, weekStart)) {
+      res.status(400).json({ error: "Roll compliance is not applicable before the service start date." });
+      return;
+    }
     const [existing] = await db
       .select()
       .from(rollSubmissionsTable)

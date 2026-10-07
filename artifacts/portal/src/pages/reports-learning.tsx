@@ -12,13 +12,15 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import { BookMarked, FileText, StickyNote, Eye } from "lucide-react";
-import { melbourneDate } from "@/lib/timezone";
+import { melbourneDate, melbourneDateStr } from "@/lib/timezone";
+import { filterPlanningCoverage } from "@/lib/learning-planning-coverage";
 import { subDays, subMonths, parseISO, isBefore, startOfDay } from "date-fns";
 
 // ── Period helpers ────────────────────────────────────────────────────────────
@@ -101,11 +103,13 @@ function MtopWheelCard({
   subtitle,
   data,
   loading,
+  controls,
 }: {
   title: string;
   subtitle: string;
   data: Array<{ name: string; fullName: string; count: number; color: string }>;
   loading?: boolean;
+  controls?: React.ReactNode;
 }) {
   const total = data.reduce((s, d) => s + d.count, 0);
   return (
@@ -113,6 +117,7 @@ function MtopWheelCard({
       <CardHeader className="pb-2">
         <CardTitle className="text-base">{title}</CardTitle>
         <p className="text-xs text-muted-foreground">{subtitle}</p>
+        {controls}
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -189,6 +194,7 @@ export default function ReportsLearning() {
     isEducatorRole && ownSiteId ? String(ownSiteId) : "all"
   );
   const [selectedPeriod, setSelectedPeriod] = useState<string>("7d");
+  const [includeFuturePlans, setIncludeFuturePlans] = useState(false);
 
   const { data: sites } = useListSites();
   const { data: children, isLoading: childrenLoading } = useListChildren();
@@ -199,6 +205,7 @@ export default function ReportsLearning() {
   const { data: report, isLoading: reportLoading } = useGetLearningStoriesReport();
 
   const cutoff = useMemo(() => periodCutoff(selectedPeriod), [selectedPeriod]);
+  const today = melbourneDateStr();
   const periodLabel = PERIODS.find((p) => p.value === selectedPeriod)?.label ?? "";
 
   // childIds in selected site (for filtering obs/jottings)
@@ -236,16 +243,10 @@ export default function ReportsLearning() {
     });
   }, [jottings, cutoff, childIdsInSite]);
 
-  // Planning experiences filtered by site + period (via startDate or createdAt)
-  const filteredPlanning = useMemo(() => {
-    if (!planning) return [];
-    return planning.filter((p) => {
-      if (p.isTemplate) return false;
-      const inPeriod = afterCutoff(p.startDate ?? p.createdAt, cutoff);
-      const inSite = selectedSite === "all" || String(p.siteId) === selectedSite;
-      return inPeriod && inSite;
-    });
-  }, [planning, cutoff, selectedSite]);
+  // Selected past period through today, optionally plus all future open plans.
+  const filteredPlanning = useMemo(() => filterPlanningCoverage(planning, {
+    selectedSite, cutoff, today, includeFuturePlans,
+  }), [planning, cutoff, today, selectedSite, includeFuturePlans]);
 
   // MTOP outcome counts — observations + posts
   const mtopObsPostsData = useMemo(() => {
@@ -388,9 +389,25 @@ export default function ReportsLearning() {
         />
         <MtopWheelCard
           title="Planning"
-          subtitle={`Outcome coverage across planning experiences — ${periodLabel.toLowerCase()}`}
+          subtitle={`Outcome coverage across planning experiences — ${periodLabel.toLowerCase()}${includeFuturePlans ? " + all future open plans" : ""}`}
           data={mtopPlanningData}
           loading={planningLoading}
+          controls={
+            <div className="space-y-1 pt-2">
+              <label htmlFor="include-future-plans" className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  id="include-future-plans"
+                  checked={includeFuturePlans}
+                  onCheckedChange={(checked) => setIncludeFuturePlans(checked === true)}
+                  aria-describedby="include-future-plans-help"
+                />
+                Include future plans
+              </label>
+              <p id="include-future-plans-help" className="text-xs text-muted-foreground">
+                Adds future plans for the selected site, excluding closed plans and templates.
+              </p>
+            </div>
+          }
         />
       </div>
 

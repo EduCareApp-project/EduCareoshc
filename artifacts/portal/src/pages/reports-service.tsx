@@ -8,15 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ShieldCheck, AlertTriangle, CheckCircle2, ClipboardX, TrendingUp, CheckSquare, Layers, ArrowRight, ClipboardList, ClipboardCheck } from "lucide-react";
 import { format, isBefore, parseISO, startOfToday } from "date-fns";
 import { Link } from "wouter";
+import { EmergencyComplianceMatrix } from "@/components/emergency-compliance-matrix";
 
 export default function ReportsService() {
   const { isEducatorRole, ownSiteId } = usePermissions();
   const [filterSiteId, setFilterSiteId] = useState<string>(() =>
     isEducatorRole && ownSiteId ? String(ownSiteId) : "__all__"
   );
-  const { data: sites } = useListSites();
+  const { data: sites, isLoading: sitesLoading, isError: sitesError, refetch: refetchSites } = useListSites();
   const siteIdParam = filterSiteId === "__all__" ? undefined : Number(filterSiteId);
-  const { data: report, isLoading } = useGetServiceComplianceReport(siteIdParam ? { siteId: siteIdParam } : undefined);
+  const { data: report, isLoading, isError: reportError, refetch: refetchReport } = useGetServiceComplianceReport(siteIdParam ? { siteId: siteIdParam } : undefined);
   const { data: allPlanning, isLoading: planningLoading } = useListPlanningExperiences();
   const { data: rollReport, isLoading: rollLoading } = useGetRollComplianceReport(siteIdParam ? { siteId: siteIdParam } : undefined);
   const { data: allReviews } = useListWeeklyReviews();
@@ -55,14 +56,6 @@ export default function ReportsService() {
     );
   }
 
-  const emergencyStatuses = report?.emergencyStatuses ?? [];
-  const emergencyAlerts = emergencyStatuses.filter((status) => status.status === "expired" || status.status === "expiring");
-  const drillTypeLabels = {
-    evacuation: "Safety Evacuation Drill",
-    lockdown: "Lockdown Drill",
-    shelter_in_place: "Shelter in Place Drill",
-    other: "Other Emergency Record",
-  } as const;
 
   const MetricCard = ({ title, value, icon: Icon, href, color = "border-border" }: { title: string; value: number; icon: any; href: string; color?: string }) => (
     <Link href={href}>
@@ -132,7 +125,7 @@ export default function ReportsService() {
             <div>
               <CardTitle className="text-base">Emergency Record Compliance</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Expired records remain outstanding until a newer record of the same type replaces them. Records due within 14 days are shown here as a warning.
+                Expired records remain outstanding until a newer record of the same type replaces them. Records due within 14 days show an Expiring soon warning on hover.
               </p>
             </div>
             <Link href="/evacuations">
@@ -141,45 +134,15 @@ export default function ReportsService() {
           </div>
         </CardHeader>
         <CardContent>
-          {emergencyAlerts.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-2">No emergency records are expired or due within 14 days.</p>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {emergencyAlerts.map((status) => {
-                const isExpired = status.status === "expired";
-                return (
-                  <div
-                    key={`${status.siteId}-${status.drillType}`}
-                    className="rounded-lg border border-red-300 bg-red-50 p-4 text-red-950"
-                  >
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="h-6 w-6 shrink-0 text-red-600" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-semibold">{drillTypeLabels[status.drillType]}</p>
-                          <Badge className="bg-red-100 text-red-800">
-                            {isExpired ? "Expired" : "Expiring Soon"}
-                          </Badge>
-                        </div>
-                        <p className="text-sm font-medium mt-1">{status.siteName}</p>
-                        <div className="text-sm mt-2 space-y-0.5">
-                          <p className="text-red-800">
-                            Last conducted: <span className="font-medium text-red-950">{status.lastConducted ? format(new Date(status.lastConducted), "dd/MM/yyyy") : "Not recorded"}</span>
-                          </p>
-                          <p className="text-red-800">
-                            Next due: <span className="font-medium text-red-950">
-                              {status.nextDue ? format(new Date(status.nextDue), "dd/MM/yyyy") : "Not recorded"}
-                              {isExpired ? " (EXPIRED)" : ""}
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <EmergencyComplianceMatrix
+            sites={sites}
+            report={report}
+            sitesLoading={sitesLoading}
+            sitesError={sitesError}
+            reportError={reportError}
+            selectedSiteId={siteIdParam}
+            onRetry={() => { refetchSites(); refetchReport(); }}
+          />
         </CardContent>
       </Card>
 

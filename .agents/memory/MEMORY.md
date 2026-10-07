@@ -20,3 +20,4 @@
 - [Policy lifecycle](policy-lifecycle.md) — saved staff distributions; show all active policies and a staff-specific foldaway history of signed inactive policies.
 - [Browser-cache diagnosis](browser-cache-diagnosis.md) — fresh-browser success does not rule out stale assets in an existing browser after publishing.
 - [Manual site identifiers](site-identifier-assignment.md) — do not automatically assign sites a code; leave assignment to the user.
+- [Test account normalization](test-account-normalization.md) — lowercase entire directly seeded login emails, including random suffixes, to avoid false sign-in failures.

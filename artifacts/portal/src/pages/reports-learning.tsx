@@ -20,7 +20,7 @@ import {
 } from "recharts";
 import { BookMarked, FileText, StickyNote, Eye } from "lucide-react";
 import { melbourneDate, melbourneDateStr } from "@/lib/timezone";
-import { filterPlanningCoverage } from "@/lib/learning-planning-coverage";
+import { filterPlanningCoverage, planningOutcomeIds } from "@/lib/learning-planning-coverage";
 import { subDays, subMonths, parseISO, isBefore, startOfDay } from "date-fns";
 
 // ── Period helpers ────────────────────────────────────────────────────────────
@@ -271,9 +271,8 @@ export default function ReportsLearning() {
   const mtopPlanningData = useMemo(() => {
     const counts = [0, 0, 0, 0, 0];
     for (const exp of filteredPlanning) {
-      for (const id of exp.outcomeIds ?? []) {
-        const n = typeof id === "string" ? parseInt(id, 10) : id;
-        if (n >= 1 && n <= 5) counts[n - 1]++;
+      for (const id of planningOutcomeIds(exp)) {
+        counts[id - 1]++;
       }
     }
     return counts.map((count, i) => ({

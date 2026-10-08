@@ -1,9 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { filterPlanningCoverage } from "./learning-planning-coverage";
+import { filterPlanningCoverage, planningOutcomeIds } from "./learning-planning-coverage";
 
 const options = { selectedSite: "1", cutoff: new Date("2026-10-01T00:00:00"), today: "2026-10-08", includeFuturePlans: false };
 const plan = (id: number, startDate: string | null, overrides = {}) => ({
   id, startDate, siteId: 1, stage: "planned", isTemplate: false, createdAt: "2026-10-05T00:00:00Z", ...overrides,
+});
+
+describe("Planning MTOP links from Learning Cycles", () => {
+  it("reads sub-outcome links when the separate outcome list is empty", () => {
+    expect(planningOutcomeIds({
+      outcomeIds: [],
+      frameworkLinks: "1.2 – Resilience\n2.1 – Relationships\n3.2 – Physical skills\n4.1 – Creativity\n4.2 – Problem solving\n5.1 – Communication",
+    })).toEqual([1, 2, 3, 4, 5]);
+  });
+  it("reads written outcome headings, including historical cycles", () => {
+    expect(planningOutcomeIds({ frameworkLinks: "MTOP Outcome 1 – Identity\nOutcome 3 – Wellbeing\nMTOP Outcome 5 – Communication" }))
+      .toEqual([1, 3, 5]);
+  });
+  it("avoids double counting repeated links and overlapping structured outcomes", () => {
+    expect(planningOutcomeIds({ outcomeIds: [1, 4], frameworkLinks: "1.2, 1.2, 4.1, 4.2, Outcome 4, 5.1" }))
+      .toEqual([1, 4, 5]);
+  });
+  it("retains valid structured outcomes and ignores invalid identifiers", () => {
+    expect(planningOutcomeIds({ outcomeIds: [2, "3.1", 0, 6, "4abc", "2", 1.5], frameworkLinks: "12.1 6.1 2026.10.12 version1.2 Outcome 9" }))
+      .toEqual([1, 2, 3]);
+    expect(planningOutcomeIds({})).toEqual([]);
+  });
 });
 const records = [
   plan(1, "2026-09-30"), plan(2, "2026-10-01"), plan(3, "2026-10-08"),

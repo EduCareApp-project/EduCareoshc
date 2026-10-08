@@ -16,7 +16,7 @@ vi.mock("@workspace/api-client-react", () => ({
     data: [
       { id: 1, siteId: 1, startDate: "2026-10-05", stage: "planned", outcomeIds: [1] },
       { id: 2, siteId: 1, startDate: "2026-09-10", stage: "closed", outcomeIds: [1] },
-      { id: 3, siteId: 1, startDate: "2026-10-10", stage: "planned", outcomeIds: [2] },
+      { id: 3, siteId: 1, startDate: "2026-10-12T00:00:00.000Z", stage: "planned", outcomeIds: [], frameworkLinks: "1.2 – Resilience\n2.1 – Relationships\n3.2 – Physical skills\n4.1 – Creativity\n4.2 – Problem solving\n5.1 – Communication" },
       { id: 4, siteId: 1, startDate: "2030-01-01", stage: "published", outcomeIds: [2] },
       { id: 5, siteId: 1, startDate: "2026-10-12", stage: "closed", outcomeIds: [3] },
       { id: 6, siteId: 2, startDate: "2026-10-10", stage: "planned", outcomeIds: [4] },
@@ -50,7 +50,7 @@ describe("Learning compliance future planning checkbox", () => {
     expect(screen.getAllByTestId("coverage-data")[1]).toHaveTextContent("[1,0,0,0,0]");
     fireEvent.click(checkbox);
     expect(checkbox).toBeChecked();
-    expect(screen.getAllByTestId("coverage-data")[1]).toHaveTextContent("[1,2,0,0,0]");
+    expect(screen.getAllByTestId("coverage-data")[1]).toHaveTextContent("[2,2,1,1,1]");
     expect(screen.getAllByTestId("coverage-data")[0]).toHaveTextContent("[0,0,0,1,0]");
     expect(screen.getByText(/last 7 days \+ all future open plans/)).toBeTruthy();
     fireEvent.click(checkbox);

@@ -33,7 +33,7 @@ function round(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
-function metricsForDay(
+export function metricsForDay(
   bsc: SchoolReportRow | undefined,
   asc: SchoolReportRow | undefined,
   day: AttendanceDay,

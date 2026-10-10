@@ -46,6 +46,7 @@ import type {
   ConfidentialNote,
   ConfidentialNoteInput,
   DashboardSummary,
+  DashboardUtilisation,
   DeleteBehaviouralNotification200,
   DeleteMergedDocument200,
   DocumentMergeUploadRequest,
@@ -79,6 +80,7 @@ import type {
   FileLibraryUpdate,
   GenerateExcursionFormRequest,
   GetChecklistPeriodOverrideParams,
+  GetDashboardUtilisationParams,
   GetExpiringMedicationsParams,
   GetLearningStoriesReportParams,
   GetNotificationCount200,
@@ -3838,6 +3840,109 @@ export const useUpdateNqsArea = <
 > => {
   return useMutation(getUpdateNqsAreaMutationOptions(options));
 };
+
+/**
+ * @summary Leadership booking totals from live school-report attendance
+ */
+export const getGetDashboardUtilisationUrl = (
+  params: GetDashboardUtilisationParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/dashboard/utilisation?${stringifiedParams}`
+    : `/api/dashboard/utilisation`;
+};
+
+export const getDashboardUtilisation = async (
+  params: GetDashboardUtilisationParams,
+  options?: RequestInit,
+): Promise<DashboardUtilisation> => {
+  return customFetch<DashboardUtilisation>(
+    getGetDashboardUtilisationUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetDashboardUtilisationQueryKey = (
+  params?: GetDashboardUtilisationParams,
+) => {
+  return [`/api/dashboard/utilisation`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetDashboardUtilisationQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDashboardUtilisation>>,
+  TError = ErrorType<void>,
+>(
+  params: GetDashboardUtilisationParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDashboardUtilisation>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetDashboardUtilisationQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getDashboardUtilisation>>
+  > = ({ signal }) =>
+    getDashboardUtilisation(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDashboardUtilisation>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDashboardUtilisationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDashboardUtilisation>>
+>;
+export type GetDashboardUtilisationQueryError = ErrorType<void>;
+
+/**
+ * @summary Leadership booking totals from live school-report attendance
+ */
+
+export function useGetDashboardUtilisation<
+  TData = Awaited<ReturnType<typeof getDashboardUtilisation>>,
+  TError = ErrorType<void>,
+>(
+  params: GetDashboardUtilisationParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDashboardUtilisation>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDashboardUtilisationQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 export const getGetDashboardSummaryUrl = () => {
   return `/api/dashboard/summary`;

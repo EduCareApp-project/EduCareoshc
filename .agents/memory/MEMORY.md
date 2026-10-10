@@ -11,6 +11,7 @@
 - [Finalised school report PDFs](finalised-school-report-pdfs.md) — preserve obligations and store one immutable private PDF with a stable organisation/service/period/year filename.
 - [School report carry-forward](school-report-carry-forward.md) — new reports inherit narrative from the latest finalised report, while attendance statistics always recalculate for the selected period.
 - [Attendance average denominators](attendance-average-denominators.md) — exclude a whole week from a service’s average when that service recorded zero attendance across all five days.
+- [Leadership utilisation](leadership-utilisation.md) — full-width, three-column dashboard reporting uses live school-account attendance for bookings by site and session.
 - [Excursion document provenance](excursion-document-provenance.md) — risk PDFs use a permanent protected prefix plus site/uploader provenance and atomic excursion claiming.
 - [Excursion reminder undo](excursion-reminder-undo.md) — removing a reminder hides the guardian assignment and deletes its in-app notification; undo restores both without resending email.
 - [Holiday-program excursion recipients](holiday-program-excursion-recipients.md) — guardian verification may include active children from any site because holiday programs combine sites.

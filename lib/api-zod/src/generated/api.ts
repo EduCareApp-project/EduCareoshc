@@ -1076,6 +1076,98 @@ export const UpdateNqsAreaResponse = zod.object({
   lastReviewedAt: zod.string().nullish(),
 });
 
+/**
+ * @summary Leadership booking totals from live school-report attendance
+ */
+export const getDashboardUtilisationQueryStartDateRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}$",
+);
+export const getDashboardUtilisationQueryEndDateRegExp = new RegExp(
+  "^\\d{4}-\\d{2}-\\d{2}$",
+);
+
+export const GetDashboardUtilisationQueryParams = zod.object({
+  startDate: zod.coerce
+    .string()
+    .regex(getDashboardUtilisationQueryStartDateRegExp),
+  endDate: zod.coerce.string().regex(getDashboardUtilisationQueryEndDateRegExp),
+});
+
+export const getDashboardUtilisationResponseTotalsBscMin = 0;
+
+export const getDashboardUtilisationResponseTotalsAscMin = 0;
+
+export const getDashboardUtilisationResponseTotalsPupilFreeMin = 0;
+
+export const getDashboardUtilisationResponseTotalsVacMin = 0;
+
+export const getDashboardUtilisationResponseSitesItemTotalsBscMin = 0;
+
+export const getDashboardUtilisationResponseSitesItemTotalsAscMin = 0;
+
+export const getDashboardUtilisationResponseSitesItemTotalsPupilFreeMin = 0;
+
+export const getDashboardUtilisationResponseSitesItemTotalsVacMin = 0;
+
+export const getDashboardUtilisationResponseSitesItemRecordedSessionsBscMin = 0;
+
+export const getDashboardUtilisationResponseSitesItemRecordedSessionsAscMin = 0;
+
+export const getDashboardUtilisationResponseSitesItemRecordedSessionsPupilFreeMin = 0;
+
+export const getDashboardUtilisationResponseSitesItemRecordedSessionsVacMin = 0;
+
+export const GetDashboardUtilisationResponse = zod.object({
+  startDate: zod.string(),
+  endDate: zod.string(),
+  totals: zod.object({
+    bsc: zod.number().min(getDashboardUtilisationResponseTotalsBscMin),
+    asc: zod.number().min(getDashboardUtilisationResponseTotalsAscMin),
+    pupilFree: zod
+      .number()
+      .min(getDashboardUtilisationResponseTotalsPupilFreeMin),
+    vac: zod.number().min(getDashboardUtilisationResponseTotalsVacMin),
+  }),
+  sites: zod.array(
+    zod.object({
+      siteId: zod.number(),
+      siteName: zod.string(),
+      identifier: zod.string().nullable(),
+      status: zod.string(),
+      totals: zod.object({
+        bsc: zod
+          .number()
+          .min(getDashboardUtilisationResponseSitesItemTotalsBscMin),
+        asc: zod
+          .number()
+          .min(getDashboardUtilisationResponseSitesItemTotalsAscMin),
+        pupilFree: zod
+          .number()
+          .min(getDashboardUtilisationResponseSitesItemTotalsPupilFreeMin),
+        vac: zod
+          .number()
+          .min(getDashboardUtilisationResponseSitesItemTotalsVacMin),
+      }),
+      recordedSessions: zod.object({
+        bsc: zod
+          .number()
+          .min(getDashboardUtilisationResponseSitesItemRecordedSessionsBscMin),
+        asc: zod
+          .number()
+          .min(getDashboardUtilisationResponseSitesItemRecordedSessionsAscMin),
+        pupilFree: zod
+          .number()
+          .min(
+            getDashboardUtilisationResponseSitesItemRecordedSessionsPupilFreeMin,
+          ),
+        vac: zod
+          .number()
+          .min(getDashboardUtilisationResponseSitesItemRecordedSessionsVacMin),
+      }),
+    }),
+  ),
+});
+
 export const GetDashboardSummaryResponse = zod.object({
   totalChildren: zod.number(),
   activeChildren: zod.number(),

@@ -30,6 +30,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useRef, useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getListNoticesQueryKey } from "@workspace/api-client-react";
+import { UtilisationSection } from "@/components/utilisation-section";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 
@@ -196,11 +197,11 @@ function NoticeBoard({ canManage, audience, siteId: externalSiteId }: { canManag
 
   return (
     <Card className="border-l-4 border-l-primary">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
           <Bell className="w-5 h-5" /> Notice Board
         </CardTitle>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {showSiteFilter && (
             <Select value={siteFilter} onValueChange={setSiteFilter}>
               <SelectTrigger className="h-8 w-40 text-xs">
@@ -1224,6 +1225,8 @@ function LeadershipDashboard() {
           )}
         </CardContent>
       </Card>
+
+      <UtilisationSection />
     </div>
   );
 }

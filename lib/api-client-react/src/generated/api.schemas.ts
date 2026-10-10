@@ -5,6 +5,34 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+export interface UtilisationCounts {
+  /** @minimum 0 */
+  bsc: number;
+  /** @minimum 0 */
+  asc: number;
+  /** @minimum 0 */
+  pupilFree: number;
+  /** @minimum 0 */
+  vac: number;
+}
+
+export interface UtilisationSite {
+  siteId: number;
+  siteName: string;
+  /** @nullable */
+  identifier: string | null;
+  status: string;
+  totals: UtilisationCounts;
+  recordedSessions: UtilisationCounts;
+}
+
+export interface DashboardUtilisation {
+  startDate: string;
+  endDate: string;
+  totals: UtilisationCounts;
+  sites: UtilisationSite[];
+}
+
 export interface EmergencyRecordHeadings {
   evacuation?: boolean;
   lockdown?: boolean;
@@ -2946,6 +2974,17 @@ export interface WeeklyReview {
   createdAt: string;
   updatedAt: string;
 }
+
+export type GetDashboardUtilisationParams = {
+  /**
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   */
+  startDate: string;
+  /**
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   */
+  endDate: string;
+};
 
 export type ListNoticesParams = {
   audience?: ListNoticesAudience;

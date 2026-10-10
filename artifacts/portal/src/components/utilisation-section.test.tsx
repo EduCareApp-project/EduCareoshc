@@ -10,7 +10,7 @@ vi.mock("recharts", () => ({
   BarChart: ({ data }: { data: unknown }) => <pre data-testid="booking-chart">{JSON.stringify(data)}</pre>,
   Bar: () => null, XAxis: () => null, YAxis: () => null, Tooltip: () => null, Legend: () => null, CartesianGrid: () => null,
 }));
-const initial = { startDate: "2026-04-10", endDate: "2026-10-10" };
+const initial = { startDate: "2026-09-28", endDate: "2026-10-04" };
 const report = {
   ...initial,
   totals: { bsc: 100, asc: 50, pupilFree: 20, vac: 0 },
@@ -37,6 +37,22 @@ describe("Leadership utilisation section", () => {
     hook.mockImplementation((params) => state({ data: { ...report, ...params } }));
   });
   afterEach(() => vi.useRealTimers());
+  it.each([
+    ["2026-10-09T02:00:00Z", "2026-09-28", "2026-10-04"],
+    ["2026-10-11T02:00:00Z", "2026-09-28", "2026-10-04"],
+    ["2026-10-12T02:00:00Z", "2026-10-05", "2026-10-11"],
+    ["2026-10-11T12:59:00Z", "2026-09-28", "2026-10-04"],
+    ["2026-10-11T13:00:00Z", "2026-10-05", "2026-10-11"],
+    ["2026-10-04T15:00:00Z", "2026-09-28", "2026-10-04"],
+    ["2027-01-01T02:00:00Z", "2026-12-21", "2026-12-27"],
+    ["2027-01-04T02:00:00Z", "2026-12-28", "2027-01-03"],
+  ])("defaults to the previous completed Melbourne week at %s", (now, startDate, endDate) => {
+    vi.setSystemTime(new Date(now));
+    render(<UtilisationSection />);
+    expect(screen.getByLabelText("Start date")).toHaveValue(startDate);
+    expect(screen.getByLabelText("End date (inclusive)")).toHaveValue(endDate);
+    expect(hook.mock.lastCall?.[0]).toEqual({ startDate, endDate });
+  });
   it("renders three columns, three graphs, and exact totals for every site and session", () => {
     render(<UtilisationSection />);
     expect(screen.getByText("Utilisation Data")).toBeTruthy();

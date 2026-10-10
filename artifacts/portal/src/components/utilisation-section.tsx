@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from "recharts";
-import { format, subMonths, parseISO, isValid } from "date-fns";
+import { format, startOfWeek, subWeeks, subDays, parseISO, isValid } from "date-fns";
 import { useGetDashboardUtilisation } from "@workspace/api-client-react";
 import type { UtilisationSite } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,8 +12,11 @@ import { melbourneDateStr } from "@/lib/timezone";
 type Counts = UtilisationSite["totals"];
 
 function defaultRange() {
-  const end = melbourneDateStr();
-  return { start: format(subMonths(parseISO(end), 6), "yyyy-MM-dd"), end };
+  const thisMonday = startOfWeek(parseISO(melbourneDateStr()), { weekStartsOn: 1 });
+  return {
+    start: format(subWeeks(thisMonday, 1), "yyyy-MM-dd"),
+    end: format(subDays(thisMonday, 1), "yyyy-MM-dd"),
+  };
 }
 
 export function validateRange(start: string, end: string): string | null {

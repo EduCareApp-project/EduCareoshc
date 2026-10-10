@@ -163,6 +163,7 @@ import type {
   RollComplianceReport,
   RoutineItemCompletion,
   RoutineItemCompletionInput,
+  SchoolReportPreviewInput,
   ServiceComplianceReport,
   SetGuardianPasswordInput,
   Site,
@@ -17890,3 +17891,112 @@ export function useListGuardianNotifications<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Preview a draft school-report PDF without saving or finalising it
+ */
+export const getPreviewSchoolReportUrl = (siteId: number, reportId: number) => {
+  return `/api/school-reports/${siteId}/summaries/${reportId}/preview`;
+};
+
+export const previewSchoolReport = async (
+  siteId: number,
+  reportId: number,
+  schoolReportPreviewInput: SchoolReportPreviewInput,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getPreviewSchoolReportUrl(siteId, reportId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(schoolReportPreviewInput),
+  });
+};
+
+export const getPreviewSchoolReportMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof previewSchoolReport>>,
+    TError,
+    {
+      siteId: number;
+      reportId: number;
+      data: BodyType<SchoolReportPreviewInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof previewSchoolReport>>,
+  TError,
+  {
+    siteId: number;
+    reportId: number;
+    data: BodyType<SchoolReportPreviewInput>;
+  },
+  TContext
+> => {
+  const mutationKey = ["previewSchoolReport"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof previewSchoolReport>>,
+    {
+      siteId: number;
+      reportId: number;
+      data: BodyType<SchoolReportPreviewInput>;
+    }
+  > = (props) => {
+    const { siteId, reportId, data } = props ?? {};
+
+    return previewSchoolReport(siteId, reportId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PreviewSchoolReportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof previewSchoolReport>>
+>;
+export type PreviewSchoolReportMutationBody =
+  BodyType<SchoolReportPreviewInput>;
+export type PreviewSchoolReportMutationError = ErrorType<void>;
+
+/**
+ * @summary Preview a draft school-report PDF without saving or finalising it
+ */
+export const usePreviewSchoolReport = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof previewSchoolReport>>,
+    TError,
+    {
+      siteId: number;
+      reportId: number;
+      data: BodyType<SchoolReportPreviewInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof previewSchoolReport>>,
+  TError,
+  {
+    siteId: number;
+    reportId: number;
+    data: BodyType<SchoolReportPreviewInput>;
+  },
+  TContext
+> => {
+  return useMutation(getPreviewSchoolReportMutationOptions(options));
+};

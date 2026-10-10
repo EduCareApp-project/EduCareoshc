@@ -5,6 +5,25 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+export type SchoolReportPreviewInputReportingObligations = {
+  /** @maxLength 20000 */
+  learningPlayProgramHighlights: string;
+  /** @maxLength 20000 */
+  teamServiceLeadership: string;
+  /** @maxLength 20000 */
+  policyPracticeUpdates: string;
+  /** @maxLength 20000 */
+  childSafetyWellbeing: string;
+  /** @maxLength 20000 */
+  communityFeedbackResolution: string;
+  /** @maxLength 20000 */
+  focusForFuture: string;
+};
+
+export interface SchoolReportPreviewInput {
+  reportingObligations: SchoolReportPreviewInputReportingObligations;
+}
+
 export interface UtilisationCounts {
   /** @minimum 0 */
   bsc: number;

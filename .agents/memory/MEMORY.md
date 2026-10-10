@@ -25,3 +25,4 @@
 - [Manual site identifiers](site-identifier-assignment.md) — do not automatically assign sites a code; leave assignment to the user.
 - [Test account normalization](test-account-normalization.md) — lowercase entire directly seeded login emails, including random suffixes, to avoid false sign-in failures.
 - [Service start-date compliance](service-start-date-compliance.md) — use actual opening dates, not portal creation dates, for roll eligibility; don’t infer historical start dates.
+- [Browser timer tests](browser-timer-tests.md) — Testing Library schedules its own intervals; identify the feature timer rather than assuming the first call.

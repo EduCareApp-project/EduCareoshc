@@ -18,11 +18,10 @@ import {
   selectedTermNumbers,
 } from "../lib/schoolReportStatistics";
 import { createSchoolReportPdf } from "../lib/schoolReportPdf";
+import { PreviewSchoolReportBody } from "@workspace/api-zod";
 import { refreshDraftSchoolReportSummaries } from "../lib/refreshDraftSchoolReportSummaries";
 import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage";
 import { Readable } from "node:stream";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -100,32 +99,40 @@ function finalizedReportFilename(organisationName: string, siteName: string, rep
   ].join(" - ") + ".pdf";
 }
 
-async function createStoredPdf(report: SchoolReportSummary) {
+async function generateReportPdf(report: SchoolReportSummary) {
   const [[site], [organisation], [emailSettings]] = await Promise.all([
     db.select({ name: sitesTable.name }).from(sitesTable).where(eq(sitesTable.id, report.siteId)).limit(1),
     db.select({ name: organisationTable.name }).from(organisationTable).limit(1),
-    db.select({ companyLogoPath: emailSettingsTable.companyLogoPath }).from(emailSettingsTable).limit(1),
+    db.select({
+      logoPath: emailSettingsTable.logoPath,
+      companyLogoPath: emailSettingsTable.companyLogoPath,
+    }).from(emailSettingsTable).limit(1),
   ]);
   const siteName = site?.name ?? "School";
   const organisationName = organisation?.name?.trim() || "Elysium OSHC";
   const name = finalizedReportFilename(organisationName, siteName, report);
-  const [educareLogoBytes, companyLogoBytes] = await Promise.all([
-    readFile(resolve(process.cwd(), "dist/assets/educare-logo-dark.png"))
-      .catch(() => readFile(resolve(process.cwd(), "assets/educare-logo-dark.png")))
-      .then((bytes) => new Uint8Array(bytes))
-      .catch(() => undefined),
-    emailSettings?.companyLogoPath
-      ? objectStorageService.getObjectEntityFile(emailSettings.companyLogoPath)
-          .then((file) => objectStorageService.downloadObject(file))
-          .then((response) => response.arrayBuffer())
-          .then((bytes) => new Uint8Array(bytes))
-          .catch(() => undefined)
-      : Promise.resolve(undefined),
+  async function loadLogo(path: string | null | undefined) {
+    if (!path) return undefined;
+    const file = await objectStorageService.getObjectEntityFile(path);
+    const response = await objectStorageService.downloadObject(file);
+    if (!response.ok) throw new Error("Could not download a configured school-report logo");
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (!bytes.length) throw new Error("A configured school-report logo is empty");
+    return bytes;
+  }
+  const [emailLogoBytes, companyLogoBytes] = await Promise.all([
+    loadLogo(emailSettings?.logoPath),
+    loadLogo(emailSettings?.companyLogoPath),
   ]);
   const bytes = await createSchoolReportPdf(report, siteName, organisationName, {
-    educareLogoBytes,
+    emailLogoBytes,
     companyLogoBytes,
   });
+  return { bytes, name };
+}
+
+async function createStoredPdf(report: SchoolReportSummary) {
+  const { bytes, name } = await generateReportPdf(report);
   const path = await objectStorageService.saveObjectEntity(bytes, "application/pdf", "generated/school-reports");
   return { path, name, createdAt: new Date() };
 }
@@ -359,6 +366,43 @@ router.put("/school-reports/:siteId/summaries/:reportId", async (req, res): Prom
   } catch (error) {
     req.log.error({ error, siteId, reportId }, "Failed to save reporting obligations");
     res.status(500).json({ error: "Failed to save reporting obligations" });
+  }
+});
+
+router.post("/school-reports/:siteId/summaries/:reportId/preview", async (req, res): Promise<void> => {
+  if (!requireReportManager(req, res)) return;
+  const siteId = parsePositiveInteger(req.params.siteId);
+  const reportId = parsePositiveInteger(req.params.reportId);
+  const input = PreviewSchoolReportBody.safeParse(req.body);
+  if (!siteId || !reportId || !input.success) {
+    res.status(400).json({ error: "Invalid report or reporting obligations (maximum 20,000 characters per section)" });
+    return;
+  }
+  try {
+    const [report] = await db.select().from(schoolReportSummariesTable).where(and(
+      eq(schoolReportSummariesTable.id, reportId),
+      eq(schoolReportSummariesTable.siteId, siteId),
+    )).limit(1);
+    if (!report) {
+      res.status(404).json({ error: "Report not found" });
+      return;
+    }
+    if (report.archivedAt || report.status !== "draft") {
+      res.status(409).json({ error: "Only an active draft report can be previewed" });
+      return;
+    }
+    // Overlay current editor text only in memory. Attendance and report identity
+    // always come from the stored draft; preview never saves or finalises it.
+    const { bytes, name } = await generateReportPdf({
+      ...report,
+      reportingObligations: input.data.reportingObligations,
+    });
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Content-Disposition", `inline; filename="Preview - ${name.replace(/["\r\n]/g, "")}"`);
+    res.type("application/pdf").send(Buffer.from(bytes));
+  } catch (error) {
+    req.log.error({ error, siteId, reportId }, "Failed to preview school report");
+    res.status(500).json({ error: "Failed to generate report preview. Please check the configured logos and try again." });
   }
 });
 

@@ -5706,3 +5706,51 @@ export const ListGuardianNotificationsResponseItem = zod.object({
 export const ListGuardianNotificationsResponse = zod.array(
   ListGuardianNotificationsResponseItem,
 );
+
+/**
+ * @summary Preview a draft school-report PDF without saving or finalising it
+ */
+
+export const PreviewSchoolReportParams = zod.object({
+  siteId: zod.coerce.number().min(1),
+  reportId: zod.coerce.number().min(1),
+});
+
+export const previewSchoolReportBodyReportingObligationsLearningPlayProgramHighlightsMax = 20000;
+
+export const previewSchoolReportBodyReportingObligationsTeamServiceLeadershipMax = 20000;
+
+export const previewSchoolReportBodyReportingObligationsPolicyPracticeUpdatesMax = 20000;
+
+export const previewSchoolReportBodyReportingObligationsChildSafetyWellbeingMax = 20000;
+
+export const previewSchoolReportBodyReportingObligationsCommunityFeedbackResolutionMax = 20000;
+
+export const previewSchoolReportBodyReportingObligationsFocusForFutureMax = 20000;
+
+export const PreviewSchoolReportBody = zod.object({
+  reportingObligations: zod.object({
+    learningPlayProgramHighlights: zod
+      .string()
+      .max(
+        previewSchoolReportBodyReportingObligationsLearningPlayProgramHighlightsMax,
+      ),
+    teamServiceLeadership: zod
+      .string()
+      .max(previewSchoolReportBodyReportingObligationsTeamServiceLeadershipMax),
+    policyPracticeUpdates: zod
+      .string()
+      .max(previewSchoolReportBodyReportingObligationsPolicyPracticeUpdatesMax),
+    childSafetyWellbeing: zod
+      .string()
+      .max(previewSchoolReportBodyReportingObligationsChildSafetyWellbeingMax),
+    communityFeedbackResolution: zod
+      .string()
+      .max(
+        previewSchoolReportBodyReportingObligationsCommunityFeedbackResolutionMax,
+      ),
+    focusForFuture: zod
+      .string()
+      .max(previewSchoolReportBodyReportingObligationsFocusForFutureMax),
+  }),
+});

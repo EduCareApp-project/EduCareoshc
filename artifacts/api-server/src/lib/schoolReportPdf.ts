@@ -7,6 +7,7 @@ import {
   type PDFPage,
 } from "pdf-lib";
 import type { SchoolReportSummary } from "@workspace/db";
+import sharp from "sharp";
 
 const PAGE_WIDTH = 595;
 const PAGE_HEIGHT = 842;
@@ -34,7 +35,7 @@ const OBLIGATION_HEADINGS: Array<[keyof SchoolReportSummary["reportingObligation
 ];
 
 type PdfBranding = {
-  educareLogoBytes?: Uint8Array;
+  emailLogoBytes?: Uint8Array;
   companyLogoBytes?: Uint8Array;
 };
 
@@ -69,15 +70,14 @@ function centeredX(text: string, font: PDFFont, size: number): number {
 
 async function embedImage(document: PDFDocument, bytes?: Uint8Array): Promise<PDFImage | undefined> {
   if (!bytes?.length) return undefined;
-  try {
-    return await document.embedPng(bytes);
-  } catch {
-    try {
-      return await document.embedJpg(bytes);
-    } catch {
-      return undefined;
-    }
-  }
+  // Global email settings also accept SVG, GIF and WebP. Convert all accepted
+  // logo formats to a bounded PNG rather than silently dropping non-PNG/JPEG.
+  const png = await sharp(bytes, { density: 144, limitInputPixels: 16_000_000 })
+    .rotate()
+    .resize({ width: 800, height: 320, fit: "inside", withoutEnlargement: true })
+    .png()
+    .toBuffer();
+  return document.embedPng(png);
 }
 
 function fitImage(image: PDFImage, maxWidth: number, maxHeight: number) {
@@ -85,34 +85,31 @@ function fitImage(image: PDFImage, maxWidth: number, maxHeight: number) {
   return { width: image.width * scale, height: image.height * scale };
 }
 
-function drawEduCareHeader(
+function drawReportHeader(
   page: PDFPage,
-  regular: PDFFont,
   bold: PDFFont,
-  logo?: PDFImage,
+  emailLogo?: PDFImage,
+  companyLogo?: PDFImage,
 ) {
-  page.drawRectangle({ x: 0, y: 782, width: PAGE_WIDTH, height: 60, color: rgb(1, 1, 1) });
-  page.drawLine({
-    start: { x: 0, y: 781 },
-    end: { x: PAGE_WIDTH, y: 781 },
-    thickness: 0.7,
-    color: GRID,
-  });
-  let textX = MARGIN;
-  if (logo) {
-    const size = fitImage(logo, 27, 27);
-    page.drawImage(logo, { x: MARGIN, y: 798, width: size.width, height: size.height });
-    textX += size.width + 9;
+  for (const [image, side] of [[emailLogo, "left"], [companyLogo, "right"]] as const) {
+    if (!image) continue;
+    const size = fitImage(image, 120, 45);
+    page.drawImage(image, {
+      x: side === "left" ? MARGIN : PAGE_WIDTH - MARGIN - size.width,
+      y: 806 - size.height / 2,
+      width: size.width,
+      height: size.height,
+    });
   }
-  page.drawText("EduCare", { x: textX, y: 804, size: 15, font: bold, color: BLACK });
-  const dividerX = textX + bold.widthOfTextAtSize("EduCare", 15) + 14;
-  page.drawLine({
-    start: { x: dividerX, y: 797 },
-    end: { x: dividerX, y: 825 },
-    thickness: 1,
-    color: GRID,
+  page.drawText("School Report", {
+    x: centeredX("School Report", bold, 20), y: 798, size: 20, font: bold, color: BLACK,
   });
-  page.drawText("School Report", { x: dividerX + 14, y: 806, size: 11, font: regular, color: TEXT });
+  page.drawLine({
+    start: { x: MARGIN, y: 776 },
+    end: { x: PAGE_WIDTH - MARGIN, y: 776 },
+    thickness: 0.8,
+    color: rgb(0, 0, 0),
+  });
 }
 
 function reportHeading(report: SchoolReportSummary): string {
@@ -127,26 +124,11 @@ function drawReportIdentity(
   siteName: string,
   regular: PDFFont,
   bold: PDFFont,
-  companyLogo?: PDFImage,
 ) {
   const title = `${organisationName} - ${siteName}`;
-  const titleSize = 19;
-  const titleWidth = bold.widthOfTextAtSize(title, titleSize);
-  const logoBox = companyLogo ? 42 : 0;
-  const gap = companyLogo ? 12 : 0;
-  const groupWidth = logoBox + gap + titleWidth;
-  const groupX = (PAGE_WIDTH - groupWidth) / 2;
-  if (companyLogo) {
-    const size = fitImage(companyLogo, logoBox, 38);
-    page.drawImage(companyLogo, {
-      x: groupX + (logoBox - size.width) / 2,
-      y: 720 + (38 - size.height) / 2,
-      width: size.width,
-      height: size.height,
-    });
-  }
+  const titleSize = Math.min(19, (PAGE_WIDTH - MARGIN * 2) / bold.widthOfTextAtSize(title, 1));
   page.drawText(title, {
-    x: groupX + logoBox + gap,
+    x: centeredX(title, bold, titleSize),
     y: 730,
     size: titleSize,
     font: bold,
@@ -435,14 +417,14 @@ export async function createSchoolReportPdf(
   const document = await PDFDocument.create();
   const regular = await document.embedFont(StandardFonts.Helvetica);
   const bold = await document.embedFont(StandardFonts.HelveticaBold);
-  const [educareLogo, companyLogo] = await Promise.all([
-    embedImage(document, branding.educareLogoBytes),
+  const [emailLogo, companyLogo] = await Promise.all([
+    embedImage(document, branding.emailLogoBytes),
     embedImage(document, branding.companyLogoBytes),
   ]);
 
   const overview = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-  drawEduCareHeader(overview, regular, bold, educareLogo);
-  drawReportIdentity(overview, report, organisationName, siteName, regular, bold, companyLogo);
+  drawReportHeader(overview, bold, emailLogo, companyLogo);
+  drawReportIdentity(overview, report, organisationName, siteName, regular, bold);
   overview.drawText("SERVICE DATA", { x: MARGIN, y: 654, size: 9, font: bold, color: DEEP_GREEN });
 
   const chartsWidth = 326;
@@ -467,23 +449,31 @@ export async function createSchoolReportPdf(
   );
 
   let page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-  let y = 788;
-  page.drawRectangle({ x: 0, y: 824, width: PAGE_WIDTH, height: 18, color: BRAND_GREEN });
-  page.drawText("EduCare", { x: MARGIN, y: 804, size: 10, font: bold, color: DEEP_GREEN });
+  let y = 740;
+  drawReportHeader(page, bold, emailLogo, companyLogo);
   page.drawText("REPORTING OBLIGATIONS", { x: MARGIN, y, size: 10, font: bold, color: DEEP_GREEN });
   y -= 32;
   for (const [key, heading] of OBLIGATION_HEADINGS) {
     const lines = wrapText(report.reportingObligations[key], regular, 10, PAGE_WIDTH - MARGIN * 2);
     const required = 24 + lines.length * 14 + 18;
-    if (y - required < MARGIN) {
+    // Keep short sections together, but allow a long section to continue onto
+    // additional pages without writing through the new header or off the page.
+    const minimumSpace = required <= 740 - MARGIN ? required : 56;
+    if (y - minimumSpace < MARGIN) {
       page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-      page.drawRectangle({ x: 0, y: 824, width: PAGE_WIDTH, height: 18, color: BRAND_GREEN });
-      page.drawText("EduCare", { x: MARGIN, y: 804, size: 10, font: bold, color: DEEP_GREEN });
-      y = 776;
+      drawReportHeader(page, bold, emailLogo, companyLogo);
+      y = 740;
     }
     page.drawText(heading, { x: MARGIN, y, size: 13, font: bold, color: BLACK });
     y -= 19;
     for (const line of lines) {
+      if (y < MARGIN + 14) {
+        page = document.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+        drawReportHeader(page, bold, emailLogo, companyLogo);
+        y = 740;
+        page.drawText(`${heading} (continued)`, { x: MARGIN, y, size: 13, font: bold, color: BLACK });
+        y -= 19;
+      }
       page.drawText(line, { x: MARGIN, y, size: 10, font: regular, color: TEXT });
       y -= 14;
     }

@@ -4152,8 +4152,54 @@ paths:
                 items:
                   $ref: "#/components/schemas/GuardianNotification"
 
+  /school-reports/{siteId}/summaries/{reportId}/preview:
+    post:
+      operationId: previewSchoolReport
+      tags: [school-reports]
+      summary: Preview a draft school-report PDF without saving or finalising it
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+        - name: reportId
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SchoolReportPreviewInput"
+      responses:
+        "200":
+          description: Temporary PDF preview using the current draft text and configured logos
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "400": { description: Invalid report identifiers or reporting obligations }
+        "403": { description: Report manager access required }
+        "404": { description: Report not found }
+        "409": { description: Only active draft reports can be previewed }
+        "500": { description: Failed to generate the preview }
+
 components:
   schemas:
+    SchoolReportPreviewInput:
+      type: object
+      required: [reportingObligations]
+      properties:
+        reportingObligations:
+          type: object
+          required: [learningPlayProgramHighlights, teamServiceLeadership, policyPracticeUpdates, childSafetyWellbeing, communityFeedbackResolution, focusForFuture]
+          properties:
+            learningPlayProgramHighlights: { type: string, maxLength: 20000 }
+            teamServiceLeadership: { type: string, maxLength: 20000 }
+            policyPracticeUpdates: { type: string, maxLength: 20000 }
+            childSafetyWellbeing: { type: string, maxLength: 20000 }
+            communityFeedbackResolution: { type: string, maxLength: 20000 }
+            focusForFuture: { type: string, maxLength: 20000 }
     UtilisationCounts:
       type: object
       required: [bsc, asc, pupilFree, vac]

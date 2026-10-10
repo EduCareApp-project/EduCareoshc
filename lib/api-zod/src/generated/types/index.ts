@@ -232,6 +232,8 @@ export * from "./rollSiteRow";
 export * from "./rollWeekSummary";
 export * from "./routineItemCompletion";
 export * from "./routineItemCompletionInput";
+export * from "./schoolReportPreviewInput";
+export * from "./schoolReportPreviewInputReportingObligations";
 export * from "./serviceComplianceReport";
 export * from "./serviceComplianceReportEmergencyStatusesItem";
 export * from "./serviceComplianceReportEmergencyStatusesItemDrillType";

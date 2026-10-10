@@ -14,7 +14,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Archive, ExternalLink, FileCheck2, Loader2, Save, Trash2 } from "lucide-react";
+import { Archive, ExternalLink, Eye, FileCheck2, Loader2, Save, Trash2 } from "lucide-react";
+import { previewSchoolReport } from "@workspace/api-client-react";
 import {
   type SchoolReportObligations,
   type SchoolReportSummary,
@@ -66,6 +67,7 @@ export function SchoolSummaryReport({
   const deleteReport = useDeleteSchoolReportSummary(siteId);
   const [obligations, setObligations] = useState(report.reportingObligations);
   const [confirmFinalizeOpen, setConfirmFinalizeOpen] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"archive" | "delete" | null>(null);
   const locked = report.status === "finalized" || !!report.archivedAt;
   const hasUnsavedChanges = JSON.stringify(obligations) !== JSON.stringify(report.reportingObligations);
@@ -89,6 +91,50 @@ export function SchoolSummaryReport({
         variant: "destructive",
       }),
     });
+  }
+
+  async function preview() {
+    // Open synchronously from the click so Safari/Chrome do not block a window
+    // created after the PDF request finishes.
+    const previewWindow = window.open("", "_blank");
+    if (!previewWindow) {
+      toast({
+        title: "Preview window blocked",
+        description: "Allow pop-ups for this site, then try Preview PDF again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    previewWindow.opener = null;
+    previewWindow.document.title = "School Report Preview";
+    previewWindow.document.body.textContent = "Generating report preview…";
+    setPreviewing(true);
+    let url: string | undefined;
+    try {
+      const pdf = await previewSchoolReport(siteId, report.id, { reportingObligations: obligations });
+      if (previewWindow.closed) return;
+      url = URL.createObjectURL(pdf);
+      previewWindow.location.replace(url);
+      // Keep the blob available while the PDF viewer is open, including for
+      // printing/downloading. Release it once that window closes.
+      const previewUrl = url;
+      const timer = window.setInterval(() => {
+        if (previewWindow.closed) {
+          URL.revokeObjectURL(previewUrl);
+          window.clearInterval(timer);
+        }
+      }, 1000);
+    } catch (error) {
+      if (url) URL.revokeObjectURL(url);
+      previewWindow.close();
+      toast({
+        title: "Unable to preview report",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setPreviewing(false);
+    }
   }
 
   function finalize() {
@@ -308,6 +354,11 @@ export function SchoolSummaryReport({
             </div>
           ))}
 
+          {!locked && (
+            <p className="text-xs text-muted-foreground">
+              Preview includes your current edits and opens in a new window. It does not save or finalise the report.
+            </p>
+          )}
           <div className="flex flex-wrap justify-end gap-2 border-t pt-5">
             <Button
               variant="outline"
@@ -320,6 +371,14 @@ export function SchoolSummaryReport({
             </Button>
             {!locked && (
               <>
+                <Button
+                  variant="outline"
+                  onClick={preview}
+                  disabled={previewing || saveObligations.isPending || finalizeReport.isPending}
+                >
+                  {previewing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
+                  {previewing ? "Generating preview…" : "Preview PDF"}
+                </Button>
                 <Button
                   onClick={() => setConfirmFinalizeOpen(true)}
                   disabled={hasUnsavedChanges}

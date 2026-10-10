@@ -62,14 +62,14 @@ describe("Leadership utilisation section", () => {
     const table = screen.getByRole("table");
     expect(screen.getAllByRole("table")).toHaveLength(1);
     expect(within(table).getAllByRole("columnheader").map((cell) => cell.textContent)).toEqual([
-      "Site", "Before School Care", "After School Care", "Pupil-free days", "Vacation Care", "Total",
+      "Site", "Before School Care", "After School Care", "Pupil-free days", "Vacation Care", "Total", "Rank",
     ]);
     expect(screen.getByTestId("row-utilisation-1")).toHaveTextContent("Mahogany (MAH)");
     const row = within(screen.getByTestId("row-utilisation-1"));
-    expect(row.getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["100", "50", "20", "0", "170"]);
+    expect(row.getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["100", "50", "20", "0", "170", "1"]);
     expect(screen.getByTestId("row-utilisation-2")).toHaveTextContent("inactive");
     const overall = within(table).getByRole("row", { name: /Overall total/ });
-    expect(within(overall).getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["100", "50", "20", "0", "170"]);
+    expect(within(overall).getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["100", "50", "20", "0", "170", "—"]);
     const data = JSON.parse(screen.getAllByTestId("booking-chart")[1].textContent!);
     expect(data[0]).toMatchObject({ asc: 50, pupilFree: 20 });
     expect(hook.mock.lastCall?.[0]).toEqual(initial);
@@ -91,12 +91,53 @@ describe("Leadership utilisation section", () => {
     } }));
     render(<UtilisationSection />);
     expect(within(screen.getByTestId("row-utilisation-1")).getAllByRole("cell").map((cell) => cell.textContent))
-      .toEqual(["100", "50", "20", "30", "200"]);
+      .toEqual(["100", "50", "20", "30", "200", "1"]);
     const zeroRow = within(screen.getByTestId("row-utilisation-2"));
     expect(zeroRow.getAllByText("0")).toHaveLength(2);
     expect(zeroRow.getAllByText("No records")).toHaveLength(3);
-    expect(within(screen.getByRole("row", { name: /Overall total/ })).getAllByRole("cell").at(-1))
+    expect(within(screen.getByRole("row", { name: /Overall total/ })).getAllByRole("cell").at(-2))
       .toHaveTextContent("200");
+  });
+  it("ranks combined booking totals highest first, shares ties, and leaves missing data unranked without reordering rows", () => {
+    hook.mockReturnValue(state({ data: {
+      ...report,
+      totals: { bsc: 290, asc: 50, pupilFree: 10, vac: 10 },
+      sites: [
+        { ...report.sites[0], totals: { bsc: 60, asc: 20, pupilFree: 0, vac: 0 } },
+        { ...report.sites[0], siteId: 2, totals: { bsc: 100, asc: 30, pupilFree: 10, vac: 0 } },
+        { ...report.sites[0], siteId: 3, totals: { bsc: 130, asc: 0, pupilFree: 0, vac: 10 } },
+        { ...report.sites[1], siteId: 4, recordedSessions: { bsc: 1, asc: 0, pupilFree: 0, vac: 0 } },
+        { ...report.sites[1], siteId: 5 },
+      ],
+    } }));
+    render(<UtilisationSection />);
+    expect(screen.getByTestId("rank-utilisation-1")).toHaveTextContent(/^3$/);
+    expect(screen.getByTestId("rank-utilisation-2")).toHaveTextContent(/^1$/);
+    expect(screen.getByTestId("rank-utilisation-3")).toHaveTextContent(/^1$/);
+    expect(screen.getByTestId("rank-utilisation-4")).toHaveTextContent(/^4$/);
+    expect(screen.getByTestId("rank-utilisation-5")).toHaveTextContent("Not ranked: no records");
+    expect(screen.getAllByTestId(/^row-utilisation-/).map((row) => row.dataset.testid))
+      .toEqual([1, 2, 3, 4, 5].map((id) => `row-utilisation-${id}`));
+  });
+  it("recalculates ranks when a different date range returns different booking totals", () => {
+    hook.mockImplementation((params) => state({ data: {
+      ...report, ...params,
+      ...(params.startDate === initial.startDate ? {} : {
+        totals: { bsc: 0, asc: 0, pupilFree: 0, vac: 10 },
+        sites: [
+          { ...report.sites[0], totals: { bsc: 0, asc: 0, pupilFree: 0, vac: 0 } },
+          { ...report.sites[1], totals: { bsc: 0, asc: 0, pupilFree: 0, vac: 10 },
+            recordedSessions: { bsc: 0, asc: 0, pupilFree: 0, vac: 1 } },
+        ],
+      }),
+    } }));
+    render(<UtilisationSection />);
+    expect(screen.getByTestId("rank-utilisation-1")).toHaveTextContent(/^1$/);
+    expect(screen.getByTestId("rank-utilisation-2")).toHaveTextContent("Not ranked");
+    fireEvent.change(screen.getByLabelText("Start date"), { target: { value: "2026-10-01" } });
+    submit();
+    expect(screen.getByTestId("rank-utilisation-1")).toHaveTextContent(/^2$/);
+    expect(screen.getByTestId("rank-utilisation-2")).toHaveTextContent(/^1$/);
   });
   it("applies changed dates only on submit and supports inclusive single-day ranges", () => {
     render(<UtilisationSection />);

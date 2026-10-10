@@ -47,6 +47,9 @@ const TABLE_COLUMNS: Series[] = COLUMNS.flatMap((col) => col.series).map((s) => 
   s.key === "pupilFree" ? { ...s, label: "Pupil-free days" } : s
 ));
 const bookingTotal = (counts: Counts) => TABLE_COLUMNS.reduce((sum, s) => sum + counts[s.key], 0);
+const hasRecordedBookings = (site: UtilisationSite) => (
+  TABLE_COLUMNS.some((s) => site.recordedSessions[s.key] > 0 || site.totals[s.key] > 0)
+);
 
 function Cell({ site, s }: { site: UtilisationSite; s: Series }) {
   const recorded = site.recordedSessions[s.key] > 0;
@@ -99,10 +102,20 @@ function UtilColumn({ col, sites, totals }: { col: (typeof COLUMNS)[number]; sit
 }
 
 function UtilisationTable({ sites, totals }: { sites: UtilisationSite[]; totals: Counts }) {
+  const ranked = sites.filter(hasRecordedBookings)
+    .map((site) => ({ siteId: site.siteId, total: bookingTotal(site.totals) }))
+    .sort((a, b) => b.total - a.total);
+  const ranks = new Map<number, number>();
+  let rank = 0;
+  ranked.forEach((site, index) => {
+    if (index === 0 || site.total !== ranked[index - 1].total) rank = index + 1;
+    ranks.set(site.siteId, rank);
+  });
+
   return (
     <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Utilisation booking totals">
       <table className="w-full min-w-[640px] text-sm" data-testid="table-utilisation">
-        <caption className="sr-only">Booking totals by site and session for the selected date range</caption>
+        <caption className="sr-only">Booking totals by site and session for the selected date range. Rank 1 has the most bookings. Equal totals share a rank; sites with no saved records are not ranked.</caption>
         <thead>
           <tr className="border-b bg-muted/40">
             <th scope="col" className="text-left px-3 py-2 font-medium text-muted-foreground">Site</th>
@@ -110,6 +123,7 @@ function UtilisationTable({ sites, totals }: { sites: UtilisationSite[]; totals:
               <th key={s.key} scope="col" className="text-right px-3 py-2 font-medium text-muted-foreground">{s.label}</th>
             ))}
             <th scope="col" className="text-right px-3 py-2 font-medium text-muted-foreground">Total</th>
+            <th scope="col" className="text-right px-3 py-2 font-medium text-muted-foreground" title="1 = most bookings. Equal totals share a rank.">Rank</th>
           </tr>
         </thead>
         <tbody>
@@ -124,9 +138,16 @@ function UtilisationTable({ sites, totals }: { sites: UtilisationSite[]; totals:
                 <td key={s.key} className="px-3 py-2 text-right tabular-nums"><Cell site={site} s={s} /></td>
               ))}
               <td className="px-3 py-2 text-right tabular-nums font-semibold">
-                {TABLE_COLUMNS.some((s) => site.recordedSessions[s.key] > 0 || site.totals[s.key] > 0)
+                {hasRecordedBookings(site)
                   ? nf(bookingTotal(site.totals))
                   : <span className="text-muted-foreground" title="No saved numeric records"><span aria-hidden="true">—</span><span className="sr-only">No records</span></span>}
+              </td>
+              <td className="px-3 py-2 text-right tabular-nums font-semibold" data-testid={`rank-utilisation-${site.siteId}`}>
+                {ranks.get(site.siteId) ?? (
+                  <span className="text-muted-foreground" title="No saved numeric records">
+                    <span aria-hidden="true">—</span><span className="sr-only">Not ranked: no records</span>
+                  </span>
+                )}
               </td>
             </tr>
           ))}
@@ -138,6 +159,7 @@ function UtilisationTable({ sites, totals }: { sites: UtilisationSite[]; totals:
               <td key={s.key} className="px-3 py-2 text-right tabular-nums">{nf(totals[s.key])}</td>
             ))}
             <td className="px-3 py-2 text-right tabular-nums">{nf(bookingTotal(totals))}</td>
+            <td className="px-3 py-2 text-right text-muted-foreground" aria-label="Not applicable">—</td>
           </tr>
         </tfoot>
       </table>

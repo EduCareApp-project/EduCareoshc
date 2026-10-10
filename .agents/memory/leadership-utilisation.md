@@ -20,3 +20,9 @@ Exclude pending sites from utilisation reporting. Recognise each service's actua
 **Why:** The user explicitly requested recognition of site start dates and exclusion of pending sites.
 
 **How to apply:** Apply eligibility consistently to graph series, table rows, recorded-day counts, and all booking totals. Sites without a supplied opening date retain their existing historical attendance eligibility.
+
+Booking rankings use combined raw bookings, with equal totals sharing competition ranks (1, 1, 3). Missing attendance data is not equivalent to recorded zero and must remain unranked.
+
+**Why:** The user requested rankings of total bookings, not averages or capacity percentages. Shared ranks avoid arbitrary tie-breaking, and unranked missing data avoids treating absent reports as confirmed zero bookings.
+
+**How to apply:** Compare only eligible sites within the selected period. Recorded zero remains a valid ranked total; adding ranks alone should not change the existing site ordering.

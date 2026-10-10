@@ -187,7 +187,7 @@ export function UtilisationSection() {
       <CardHeader>
         <CardTitle className="text-lg">Utilisation Data</CardTitle>
         <p className="text-xs text-muted-foreground">
-          Bookings across all sites, from attendance saved in school accounts’ Reports tab. Counts are session bookings, not unique children or capacity percentages. Pupil-free care is shown separately from After School Care. A dash means no saved records.
+          Bookings across eligible sites, from attendance saved in school accounts’ Reports tab. Pending sites are excluded, and bookings only count from each service’s start date. Counts are session bookings, not unique children or capacity percentages. Pupil-free care is shown separately from After School Care. A dash means no saved records.
         </p>
         <form
           className="flex flex-wrap items-end gap-3 pt-2"
@@ -227,7 +227,7 @@ export function UtilisationSection() {
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-64 w-full" />)}
           </div>
         ) : sites.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground" data-testid="state-utilisation-empty">No sites returned for this date range.</div>
+          <div className="text-center py-8 text-muted-foreground" data-testid="state-utilisation-empty">No eligible sites for this date range.</div>
         ) : (
           <div className="space-y-6">
             <div className="grid gap-8 grid-cols-1 lg:grid-cols-3">

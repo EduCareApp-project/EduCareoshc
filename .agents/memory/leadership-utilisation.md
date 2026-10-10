@@ -14,3 +14,9 @@ Default to the previous completed Monday–Sunday week, based on today's Melbour
 **Why:** The user explicitly selected “Previous completed Monday–Sunday week” after clarification.
 
 **How to apply:** The default end is the Sunday before this week's Monday, with the preceding Monday as the start. Keep manual date selection available.
+
+Exclude pending sites from utilisation reporting. Recognise each service's actual opening date: omit it from periods ending before it opened and exclude individual attendance days before opening within a partially eligible week. Do not infer missing opening dates from portal creation dates.
+
+**Why:** The user explicitly requested recognition of site start dates and exclusion of pending sites.
+
+**How to apply:** Apply eligibility consistently to graph series, table rows, recorded-day counts, and all booking totals. Sites without a supplied opening date retain their existing historical attendance eligibility.

@@ -26,7 +26,10 @@ router.get("/dashboard/utilisation", async (req, res): Promise<void> => {
   const { startDate, endDate } = parsed.data;
   try {
     const [sites, rows] = await Promise.all([
-      db.select({ id: sitesTable.id, name: sitesTable.name, identifier: sitesTable.identifier, status: sitesTable.status })
+      db.select({
+        id: sitesTable.id, name: sitesTable.name, identifier: sitesTable.identifier,
+        status: sitesTable.status, serviceStartDate: sitesTable.serviceStartDate,
+      })
         .from(sitesTable).orderBy(asc(sitesTable.name)),
       db.select({ siteId: schoolReportTermsTable.siteId, row: schoolReportRowsTable })
         .from(schoolReportRowsTable)

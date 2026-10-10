@@ -146,6 +146,6 @@ describe("Leadership utilisation section", () => {
   it("handles an empty site list", () => {
     hook.mockReturnValue(state({ data: { ...report, sites: [] } }));
     render(<UtilisationSection />);
-    expect(screen.getByTestId("state-utilisation-empty")).toHaveTextContent("No sites");
+    expect(screen.getByTestId("state-utilisation-empty")).toHaveTextContent("No eligible sites");
   });
 });

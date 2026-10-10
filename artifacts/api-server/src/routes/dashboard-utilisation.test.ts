@@ -15,7 +15,7 @@ const { select, queue, logError } = vi.hoisted(() => {
 });
 vi.mock("@workspace/db", () => ({
   db: { select },
-  sitesTable: { id: "siteId", name: "name", identifier: "identifier", status: "status" },
+  sitesTable: { id: "siteId", name: "name", identifier: "identifier", status: "status", serviceStartDate: "serviceStartDate" },
   schoolReportTermsTable: { id: "termId", siteId: "siteId" },
   schoolReportRowsTable: { id: "rowId", termId: "termId", weekBeginning: "weekBeginning" },
 }));
@@ -46,12 +46,31 @@ describe("Leadership utilisation API", () => {
     expect(select).not.toHaveBeenCalled();
   });
   it.each(["admin", "admin_support", "educational_leader"])("allows %s and returns all sites", async (role) => {
-    queue.push([{ id: 1, name: "Mahogany", identifier: "MAH", status: "active" }], []);
+    queue.push([{ id: 1, name: "Mahogany", identifier: "MAH", status: "active", serviceStartDate: null }], []);
     const result = await request(app({ type: "staff", role })).get("/dashboard/utilisation").query(dates);
     expect(result.status).toBe(200);
     expect(result.body.startDate).toBe(dates.startDate);
     expect(result.body.sites[0].siteName).toBe("Mahogany");
     expect(select).toHaveBeenCalledTimes(2);
+  });
+  it("uses stored start dates and excludes pending or not-yet-opened sites from the returned charts and totals", async () => {
+    queue.push([
+      { id: 1, name: "Open midweek", identifier: "MID", status: "active", serviceStartDate: "2026-10-07" },
+      { id: 2, name: "Pending", identifier: null, status: "pending", serviceStartDate: "2026-01-01" },
+      { id: 3, name: "Opens later", identifier: null, status: "active", serviceStartDate: "2026-10-12" },
+    ], [1, 2, 3].map((siteId) => ({
+      siteId,
+      row: {
+        id: siteId, serviceType: "BSC", weekBeginning: "2026-10-05",
+        monday: "1", tuesday: "2", wednesday: "3", thursday: "4", friday: "5",
+      },
+    })));
+    const result = await request(app({ type: "staff", role: "admin" })).get("/dashboard/utilisation").query(dates);
+    expect(result.status).toBe(200);
+    expect(select).toHaveBeenNthCalledWith(1, expect.objectContaining({ serviceStartDate: "serviceStartDate" }));
+    expect(result.body.sites.map((site: { siteId: number }) => site.siteId)).toEqual([1]);
+    expect(result.body.totals).toEqual({ bsc: 12, asc: 0, pupilFree: 0, vac: 0 });
+    expect(result.body.sites[0].recordedSessions.bsc).toBe(3);
   });
   it.each([
     {}, { ...dates, startDate: "2026-02-30" }, { ...dates, endDate: "invalid" },

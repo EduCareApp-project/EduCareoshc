@@ -28,12 +28,16 @@ function hasRecordedValue(value: string | null | undefined): boolean {
  * Totals count session bookings (not unique children or capacity utilisation).
  */
 export function calculateSchoolUtilisation(
-  sites: Pick<Site, "id" | "name" | "identifier" | "status">[],
+  sites: Pick<Site, "id" | "name" | "identifier" | "status" | "serviceStartDate">[],
   rows: Array<{ siteId: number; row: SchoolReportRow }>,
   startDate: string,
   endDate: string,
 ): DashboardUtilisation {
-  const resultSites: UtilisationSite[] = sites.map((site) => ({
+  const eligibleSites = sites.filter((site) => (
+    site.status !== "pending" && (!site.serviceStartDate || site.serviceStartDate <= endDate)
+  ));
+  const serviceStarts = new Map(eligibleSites.map((site) => [site.id, site.serviceStartDate]));
+  const resultSites: UtilisationSite[] = eligibleSites.map((site) => ({
     siteId: site.id, siteName: site.name, identifier: site.identifier, status: site.status,
     totals: emptyCounts(), recordedSessions: emptyCounts(),
   }));
@@ -55,9 +59,10 @@ export function calculateSchoolUtilisation(
   }
   for (const week of weeks.values()) {
     const site = bySite.get(week.siteId)!;
+    const serviceStartDate = serviceStarts.get(week.siteId);
     for (const [offset, day] of DAYS.entries()) {
       const date = shiftCalendarDate(week.weekBeginning, offset);
-      if (date < startDate || date > endDate) continue;
+      if (date < startDate || date > endDate || (serviceStartDate && date < serviceStartDate)) continue;
       const metrics = metricsForDay(week.bsc, week.asc, day);
       for (const service of ["bsc", "asc", "pupilFree"] as const) {
         site.totals[service] += metrics[service];

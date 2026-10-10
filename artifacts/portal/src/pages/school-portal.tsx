@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
@@ -317,9 +318,11 @@ export default function SchoolPortal() {
 
   const { site, staff, vitalRecords, vecraVisits } = data;
   const visiblePortalTabs = isStaff
-    ? ["vital", "vecra", "staff", "statistics", "reports", "qip"]
+    ? ["reports", "vital", "vecra", "staff", "statistics", "qip"]
     : data.portalSettings.visibleTabs;
-  const defaultPortalTab = visiblePortalTabs[0] ?? "staff";
+  const defaultPortalTab = visiblePortalTabs.includes("reports")
+    ? "reports"
+    : visiblePortalTabs[0] ?? "staff";
 
   const resetVitalForm = () => {
     vitalForm.reset();
@@ -421,6 +424,13 @@ export default function SchoolPortal() {
         </Card>
       ) : <Tabs defaultValue={defaultPortalTab} className="w-full">
         <TabsList className="w-full justify-start overflow-x-auto border-b rounded-none h-12 bg-transparent p-0">
+          {visiblePortalTabs.includes("reports") && <TabsTrigger
+            value="reports"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-6 h-12"
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Reports
+          </TabsTrigger>}
           {visiblePortalTabs.includes("vital") && <TabsTrigger
             value="vital" 
             className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-6 h-12"
@@ -441,13 +451,6 @@ export default function SchoolPortal() {
           >
             <Users className="w-4 h-4 mr-2" />
             Service Staff
-          </TabsTrigger>}
-          {visiblePortalTabs.includes("reports") && <TabsTrigger
-            value="reports"
-            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-6 h-12"
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            Reports
           </TabsTrigger>}
           {visiblePortalTabs.includes("qip") && <TabsTrigger
             value="qip"
@@ -934,16 +937,25 @@ export default function SchoolPortal() {
                       >
                         <Card className="h-full transition-colors hover:border-primary hover:bg-muted/30">
                           <CardContent className="flex h-full items-start gap-4 p-5">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
-                              {member.firstName[0]}{member.lastName[0]}
-                            </div>
+                            <Avatar className="h-12 w-12 shrink-0">
+                              {member.hasProfilePicture && (
+                                <AvatarImage
+                                  src={`/api/schools/${site.id}/staff/${member.id}/photo`}
+                                  alt={`${member.firstName} ${member.lastName}`}
+                                  className="object-cover"
+                                />
+                              )}
+                              <AvatarFallback className="bg-primary/10 font-semibold text-primary">
+                                {member.firstName[0]}{member.lastName[0]}
+                              </AvatarFallback>
+                            </Avatar>
                             <div className="min-w-0">
                               <p className="font-semibold">{member.firstName} {member.lastName}</p>
                               <p className="mt-1 text-xs capitalize text-primary">{member.role.replace(/_/g, " ")}</p>
                               {isStaff && member.qualifications && (
                                 <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{member.qualifications}</p>
                               )}
-                              {member.associatedSites && member.associatedSites.length > 0 && (
+                              {isStaff && member.associatedSites && member.associatedSites.length > 0 && (
                                 <p className="mt-2 flex items-start gap-1 text-xs text-muted-foreground">
                                   <Building2 className="mt-0.5 h-3 w-3 shrink-0" />
                                   <span className="line-clamp-2">{member.associatedSites.map((associatedSite) => associatedSite.name).join(", ")}</span>

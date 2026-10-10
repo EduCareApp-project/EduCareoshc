@@ -659,7 +659,7 @@ export function SchoolCurrentReportsPanel({
       <div>
         <h3 className="text-lg font-semibold">Live Service Statistics</h3>
         <p className="text-sm text-muted-foreground">
-          Rolling six-month attendance averages for this school.
+          Rolling six-month attendance averages for your school.
         </p>
       </div>
 
@@ -806,7 +806,6 @@ export function SchoolCurrentReportsPanel({
           <Card>
             <CardHeader>
               <CardTitle>Report PDFs</CardTitle>
-              <CardDescription>Most recently completed reports appear first.</CardDescription>
             </CardHeader>
             <CardContent>
               {isLoading ? <Skeleton className="h-24 w-full" /> : reports.length === 0 ? (

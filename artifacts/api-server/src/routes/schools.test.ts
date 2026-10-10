@@ -178,8 +178,8 @@ function queueTargetPortalData() {
 
 function buildTestApp(user: {
   id: number;
-  type: "school";
-  role: "school";
+  type: "school" | "staff";
+  role: string;
   siteId: number;
   email: string;
   name: string;
@@ -204,6 +204,22 @@ describe("GET /api/schools/:siteId/portal staff scope", () => {
     vi.clearAllMocks();
     whereCalls.length = 0;
   });
+  it("keeps staff home-site and association details available to administrators", async () => {
+    const { homeStaff, associatedStaff } = queueTargetPortalData();
+    Object.assign(homeStaff, { profilePicturePath: "/objects/private-profile-photo" });
+    const response = await request(buildTestApp({
+      id: 901, type: "staff", role: "admin", siteId: TARGET_SITE.id,
+      email: "test-admin", name: "Test Administrator",
+    })).get(`/api/schools/${TARGET_SITE.id}/portal`);
+    expect(response.status).toBe(200);
+    const home = response.body.staff.find((member: { id: number }) => member.id === homeStaff.id);
+    const associated = response.body.staff.find((member: { id: number }) => member.id === associatedStaff.id);
+    expect(home.siteId).toBe(TARGET_SITE.id);
+    expect(home.hasProfilePicture).toBe(true);
+    expect(home).not.toHaveProperty("profilePicturePath");
+    expect(home.associatedSites).toEqual([{ id: OTHER_SITE.id, name: OTHER_SITE.name }]);
+    expect(associated.associatedSites).toEqual([{ id: TARGET_SITE.id, name: TARGET_SITE.name }]);
+  });
 
   it("includes active Home Site and Associated Site staff, while excluding unrelated and inactive staff", async () => {
     const {
@@ -216,6 +232,7 @@ describe("GET /api/schools/:siteId/portal staff scope", () => {
       admin,
       adminSupport,
     } = queueTargetPortalData();
+    Object.assign(homeStaff, { profilePicturePath: "/objects/private-profile-photo" });
 
     const response = await request(
       buildTestApp({
@@ -242,8 +259,15 @@ describe("GET /api/schools/:siteId/portal staff scope", () => {
 
     const homeResult = response.body.staff.find((member: { id: number }) => member.id === homeStaff.id);
     const associatedResult = response.body.staff.find((member: { id: number }) => member.id === associatedStaff.id);
-    expect(homeResult.associatedSites).toEqual([{ id: OTHER_SITE.id, name: OTHER_SITE.name }]);
-    expect(associatedResult.associatedSites).toEqual([{ id: TARGET_SITE.id, name: TARGET_SITE.name }]);
+    expect(homeResult).not.toHaveProperty("associatedSites");
+    expect(homeResult.hasProfilePicture).toBe(true);
+    expect(associatedResult.hasProfilePicture).toBe(false);
+    expect(associatedResult).not.toHaveProperty("associatedSites");
+    for (const member of response.body.staff) {
+      expect(member).not.toHaveProperty("siteId");
+      expect(member).not.toHaveProperty("associatedSites");
+      expect(member).not.toHaveProperty("profilePicturePath");
+    }
     expect(response.body.portalSettings).toEqual({
       visibleTabs: ["staff", "reports"],
       visibleQualificationNames: ["First Aid"],
@@ -321,6 +345,7 @@ describe("GET /api/schools/:siteId/staff/:staffId profile", () => {
       profilePicturePath: null,
       hasProfilePicture: true,
     });
+    expect(response.body.staff).not.toHaveProperty("siteId");
     expect(response.body.qualifications).toEqual([{
       ...qualification,
       hasDocument: false,

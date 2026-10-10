@@ -28,6 +28,7 @@ export type Staff = {
   qualifications: string | null;
   status: string;
   associatedSites?: { id: number; name: string }[];
+  hasProfilePicture?: boolean;
 };
 
 export type SchoolStaffProfile = Staff & {

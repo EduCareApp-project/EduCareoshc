@@ -90,6 +90,7 @@ async function portalForSite(siteId: number, schoolView = false) {
     db.select({
       id: staffTable.id, firstName: staffTable.firstName, lastName: staffTable.lastName,
       role: staffTable.role, qualifications: staffTable.qualifications, status: staffTable.status, siteId: staffTable.siteId,
+      profilePicturePath: staffTable.profilePicturePath,
     }).from(staffTable).where(and(
       schoolStaffFilter,
       eq(staffTable.status, "active"),
@@ -124,6 +125,8 @@ async function portalForSite(siteId: number, schoolView = false) {
     .filter((member) => member.role !== "admin_support" && member.role !== "onboarding")
     .map((member) => ({
       ...member,
+      hasProfilePicture: !!member.profilePicturePath,
+      profilePicturePath: undefined,
       associatedSites: (associatedSitesByStaff.get(member.id) ?? []).filter((associatedSite) => associatedSite.id !== member.siteId),
     }))
     .sort((left, right) => {
@@ -139,7 +142,11 @@ async function portalForSite(siteId: number, schoolView = false) {
   return {
     site,
     account: account[0] ?? null,
-    staff: schoolView && !visibleTabs.includes("staff") ? [] : staffWithAssociations,
+    staff: schoolView && !visibleTabs.includes("staff") ? [] : schoolView
+      ? staffWithAssociations.map(({ id, firstName, lastName, role, qualifications, status, hasProfilePicture }) => ({
+        id, firstName, lastName, role, qualifications, status, hasProfilePicture,
+      }))
+      : staffWithAssociations,
     vitalRecords: schoolView && !visibleTabs.includes("vital") ? [] : vitalRecords,
     vecraVisits: schoolView && !visibleTabs.includes("vecra") ? [] : vecraVisits,
     portalSettings: {
@@ -256,6 +263,7 @@ router.get("/schools/:siteId/staff/:staffId", async (req, res): Promise<void> =>
     res.json({
       staff: {
         ...staffMember,
+        siteId: user?.type === "school" ? undefined : staffMember.siteId,
         hasProfilePicture: !!staffMember.profilePicturePath,
         profilePicturePath: null,
       },

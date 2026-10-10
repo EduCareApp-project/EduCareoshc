@@ -40,6 +40,11 @@ const COLUMNS: { id: string; title: string; series: Series[] }[] = [
   { id: "vac", title: "Vacation Care", series: [{ key: "vac", label: "Vacation Care", color: "#8a5a9e" }] },
 ];
 
+const TABLE_COLUMNS: Series[] = COLUMNS.flatMap((col) => col.series).map((s) => (
+  s.key === "pupilFree" ? { ...s, label: "Pupil-free days" } : s
+));
+const bookingTotal = (counts: Counts) => TABLE_COLUMNS.reduce((sum, s) => sum + counts[s.key], 0);
+
 function Cell({ site, s }: { site: UtilisationSite; s: Series }) {
   const recorded = site.recordedSessions[s.key] > 0;
   return recorded || site.totals[s.key] > 0 ? (
@@ -86,51 +91,54 @@ function UtilColumn({ col, sites, totals }: { col: (typeof COLUMNS)[number]; sit
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <caption className="sr-only">{col.title} booking totals by site</caption>
-          <thead>
-            <tr className="border-b bg-muted/40">
-              <th scope="col" className="text-left px-2 py-1.5 font-medium text-muted-foreground">Site</th>
-              {col.series.map((s) => (
-                <th key={s.key} scope="col" className="text-right px-2 py-1.5 font-medium text-muted-foreground">{multi ? s.label : "Bookings"}</th>
-              ))}
-              {multi && <th scope="col" className="text-right px-2 py-1.5 font-medium text-muted-foreground">Total</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {sites.map((site) => (
-              <tr key={site.siteId} className="border-b last:border-0" data-testid={`row-utilisation-${col.id}-${site.siteId}`}>
-                <th scope="row" className="text-left px-2 py-1.5 font-normal">
-                  {site.siteName}
-                  {site.identifier ? <span className="text-muted-foreground"> ({site.identifier})</span> : null}
-                  {site.status !== "active" && <span className="ml-1 text-muted-foreground capitalize">· {site.status}</span>}
-                </th>
-                {col.series.map((s) => (
-                  <td key={s.key} className="px-2 py-1.5 text-right tabular-nums"><Cell site={site} s={s} /></td>
-                ))}
-                {multi && (
-                  <td className="px-2 py-1.5 text-right tabular-nums font-medium">
-                    {col.series.some((s) => site.recordedSessions[s.key] > 0 || site.totals[s.key] > 0)
-                      ? nf(col.series.reduce((a, s) => a + site.totals[s.key], 0))
-                      : <span className="text-muted-foreground" title="No saved numeric records"><span aria-hidden="true">—</span><span className="sr-only">No records</span></span>}
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className="border-t-2 font-semibold">
-              <th scope="row" className="text-left px-2 py-1.5">Overall total</th>
-              {col.series.map((s) => (
-                <td key={s.key} className="px-2 py-1.5 text-right tabular-nums">{nf(totals[s.key])}</td>
-              ))}
-              {multi && <td className="px-2 py-1.5 text-right tabular-nums">{nf(total)}</td>}
-            </tr>
-          </tfoot>
-        </table>
-      </div>
     </section>
+  );
+}
+
+function UtilisationTable({ sites, totals }: { sites: UtilisationSite[]; totals: Counts }) {
+  return (
+    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Utilisation booking totals">
+      <table className="w-full min-w-[640px] text-sm" data-testid="table-utilisation">
+        <caption className="sr-only">Booking totals by site and session for the selected date range</caption>
+        <thead>
+          <tr className="border-b bg-muted/40">
+            <th scope="col" className="text-left px-3 py-2 font-medium text-muted-foreground">Site</th>
+            {TABLE_COLUMNS.map((s) => (
+              <th key={s.key} scope="col" className="text-right px-3 py-2 font-medium text-muted-foreground">{s.label}</th>
+            ))}
+            <th scope="col" className="text-right px-3 py-2 font-medium text-muted-foreground">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sites.map((site) => (
+            <tr key={site.siteId} className="border-b last:border-0" data-testid={`row-utilisation-${site.siteId}`}>
+              <th scope="row" className="text-left px-3 py-2 font-normal">
+                {site.siteName}
+                {site.identifier ? <span className="text-muted-foreground"> ({site.identifier})</span> : null}
+                {site.status !== "active" && <span className="ml-1 text-muted-foreground capitalize">· {site.status}</span>}
+              </th>
+              {TABLE_COLUMNS.map((s) => (
+                <td key={s.key} className="px-3 py-2 text-right tabular-nums"><Cell site={site} s={s} /></td>
+              ))}
+              <td className="px-3 py-2 text-right tabular-nums font-semibold">
+                {TABLE_COLUMNS.some((s) => site.recordedSessions[s.key] > 0 || site.totals[s.key] > 0)
+                  ? nf(bookingTotal(site.totals))
+                  : <span className="text-muted-foreground" title="No saved numeric records"><span aria-hidden="true">—</span><span className="sr-only">No records</span></span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="border-t-2 font-semibold">
+            <th scope="row" className="text-left px-3 py-2">Overall total</th>
+            {TABLE_COLUMNS.map((s) => (
+              <td key={s.key} className="px-3 py-2 text-right tabular-nums">{nf(totals[s.key])}</td>
+            ))}
+            <td className="px-3 py-2 text-right tabular-nums">{nf(bookingTotal(totals))}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   );
 }
 
@@ -218,8 +226,11 @@ export function UtilisationSection() {
         ) : sites.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground" data-testid="state-utilisation-empty">No sites returned for this date range.</div>
         ) : (
-          <div className="grid gap-8 grid-cols-1 lg:grid-cols-3">
-            {COLUMNS.map((c) => <UtilColumn key={c.id} col={c} sites={sites} totals={data.totals} />)}
+          <div className="space-y-6">
+            <div className="grid gap-8 grid-cols-1 lg:grid-cols-3">
+              {COLUMNS.map((c) => <UtilColumn key={c.id} col={c} sites={sites} totals={data.totals} />)}
+            </div>
+            <UtilisationTable sites={sites} totals={data.totals} />
           </div>
         )}
       </CardContent>

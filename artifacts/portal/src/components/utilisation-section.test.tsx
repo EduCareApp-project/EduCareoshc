@@ -43,22 +43,44 @@ describe("Leadership utilisation section", () => {
     expect(screen.getAllByTestId("booking-chart")).toHaveLength(3);
     expect(screen.getByTestId("text-utilisation-total-bsc")).toHaveTextContent("100");
     expect(screen.getByTestId("text-utilisation-total-asc")).toHaveTextContent("70");
-    expect(screen.getByTestId("row-utilisation-asc-1")).toHaveTextContent("Mahogany (MAH)");
-    const row = within(screen.getByTestId("row-utilisation-asc-1"));
-    expect(row.getByText("50")).toBeTruthy();
-    expect(row.getByText("20")).toBeTruthy();
-    expect(row.getByText("70")).toBeTruthy();
-    expect(screen.getByTestId("row-utilisation-bsc-2")).toHaveTextContent("inactive");
+    const table = screen.getByRole("table");
+    expect(screen.getAllByRole("table")).toHaveLength(1);
+    expect(within(table).getAllByRole("columnheader").map((cell) => cell.textContent)).toEqual([
+      "Site", "Before School Care", "After School Care", "Pupil-free days", "Vacation Care", "Total",
+    ]);
+    expect(screen.getByTestId("row-utilisation-1")).toHaveTextContent("Mahogany (MAH)");
+    const row = within(screen.getByTestId("row-utilisation-1"));
+    expect(row.getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["100", "50", "20", "0", "170"]);
+    expect(screen.getByTestId("row-utilisation-2")).toHaveTextContent("inactive");
+    const overall = within(table).getByRole("row", { name: /Overall total/ });
+    expect(within(overall).getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["100", "50", "20", "0", "170"]);
     const data = JSON.parse(screen.getAllByTestId("booking-chart")[1].textContent!);
     expect(data[0]).toMatchObject({ asc: 50, pupilFree: 20 });
     expect(hook.mock.lastCall?.[0]).toEqual(initial);
     expect(hook.mock.lastCall?.[1].query).toMatchObject({ refetchInterval: 60_000, refetchOnWindowFocus: true });
   });
-  it("shows recorded zero as 0 and missing records as a dash, including ASC combined totals", () => {
+  it("shows recorded zero as 0 and missing records as a dash, including the combined row total", () => {
     render(<UtilisationSection />);
-    expect(within(screen.getByTestId("row-utilisation-vac-1")).getByText("0")).toBeTruthy();
-    expect(within(screen.getByTestId("row-utilisation-vac-2")).getByText("No records")).toBeTruthy();
-    expect(within(screen.getByTestId("row-utilisation-asc-2")).getAllByText("No records")).toHaveLength(3);
+    expect(within(screen.getByTestId("row-utilisation-1")).getByText("0")).toBeTruthy();
+    expect(within(screen.getByTestId("row-utilisation-2")).getAllByText("No records")).toHaveLength(5);
+  });
+  it("adds all four categories once for mixed and zero-only sites", () => {
+    hook.mockReturnValue(state({ data: {
+      ...report,
+      totals: { bsc: 100, asc: 50, pupilFree: 20, vac: 30 },
+      sites: [
+        { ...report.sites[0], totals: { bsc: 100, asc: 50, pupilFree: 20, vac: 30 } },
+        { ...report.sites[1], recordedSessions: { bsc: 1, asc: 0, pupilFree: 0, vac: 0 } },
+      ],
+    } }));
+    render(<UtilisationSection />);
+    expect(within(screen.getByTestId("row-utilisation-1")).getAllByRole("cell").map((cell) => cell.textContent))
+      .toEqual(["100", "50", "20", "30", "200"]);
+    const zeroRow = within(screen.getByTestId("row-utilisation-2"));
+    expect(zeroRow.getAllByText("0")).toHaveLength(2);
+    expect(zeroRow.getAllByText("No records")).toHaveLength(3);
+    expect(within(screen.getByRole("row", { name: /Overall total/ })).getAllByRole("cell").at(-1))
+      .toHaveTextContent("200");
   });
   it("applies changed dates only on submit and supports inclusive single-day ranges", () => {
     render(<UtilisationSection />);

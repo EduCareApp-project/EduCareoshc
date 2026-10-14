@@ -28,3 +28,5 @@
 - [Browser timer tests](browser-timer-tests.md) — Testing Library schedules its own intervals; identify the feature timer rather than assuming the first call.
 - [Kidsoft Roll](kidsoft-roll-sharing.md) — paused idea: named child bookings, one day at a time, with school-triggered refresh into saved snapshots.
 - [Educator organisation calendar](organisation-calendar-scope.md) — shared month view, calendar first on mobile, creator-owned edits and leadership override; service calendars later.
+- [Dashboard layout editing](dashboard-layout-scope.md) — admin-only Educator/Leadership rearrangement; private drafts before applying to the organisation.
+- [Dashboard grid grips](dashboard-grid-grips.md) — third-party directional CSS can override local handle styles; check computed transforms and hit areas.

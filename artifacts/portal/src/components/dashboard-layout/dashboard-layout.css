@@ -1,0 +1,16 @@
+.dash-editing .react-grid-item { outline: 2px dashed hsl(var(--primary) / 0.5); outline-offset: 0; border-radius: 0.5rem; background: hsl(var(--background)); }
+.dash-editing .react-grid-item > .react-resizable-handle { background-image: none; padding: 0; }
+.dash-editing .react-grid-item > .react-resizable-handle.react-resizable-handle-s {
+  height: 8px; bottom: 0; left: 20%; right: 20%; width: auto; margin: 0;
+  cursor: ns-resize; background: hsl(var(--primary) / 0.6); border-radius: 4px; transform: none;
+}
+.dash-editing .react-grid-item > .react-resizable-handle.react-resizable-handle-e {
+  width: 8px; right: 0; top: 20%; bottom: 20%; height: auto; margin: 0;
+  cursor: ew-resize; background: hsl(var(--primary) / 0.6); border-radius: 4px; transform: none;
+}
+.dash-editing .react-grid-item > .react-resizable-handle.react-resizable-handle-se {
+  width: 18px; height: 18px; border-right: 3px solid hsl(var(--primary));
+  border-bottom: 3px solid hsl(var(--primary)); border-radius: 0;
+}
+.dash-editing .react-grid-item > .react-resizable-handle::after { display: none; }
+.react-grid-item.react-grid-placeholder { background: hsl(var(--primary)); border-radius: 0.5rem; }

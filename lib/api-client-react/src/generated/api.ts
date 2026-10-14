@@ -45,6 +45,10 @@ import type {
   ConditionReportUpdate,
   ConfidentialNote,
   ConfidentialNoteInput,
+  DashboardLayoutDocument,
+  DashboardLayoutDraftInput,
+  DashboardLayoutPublishInput,
+  DashboardLayoutState,
   DashboardSummary,
   DashboardUtilisation,
   DeleteBehaviouralNotification200,
@@ -200,6 +204,379 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+export const getGetDashboardLayoutUrl = (
+  dashboard: "educator" | "leadership",
+) => {
+  return `/api/dashboard-layouts/${dashboard}`;
+};
+
+export const getDashboardLayout = async (
+  dashboard: "educator" | "leadership",
+  options?: RequestInit,
+): Promise<DashboardLayoutState> => {
+  return customFetch<DashboardLayoutState>(
+    getGetDashboardLayoutUrl(dashboard),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetDashboardLayoutQueryKey = (
+  dashboard: "educator" | "leadership",
+) => {
+  return [`/api/dashboard-layouts/${dashboard}`] as const;
+};
+
+export const getGetDashboardLayoutQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDashboardLayout>>,
+  TError = ErrorType<unknown>,
+>(
+  dashboard: "educator" | "leadership",
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDashboardLayout>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetDashboardLayoutQueryKey(dashboard);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getDashboardLayout>>
+  > = ({ signal }) =>
+    getDashboardLayout(dashboard, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!dashboard,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDashboardLayout>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDashboardLayoutQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDashboardLayout>>
+>;
+export type GetDashboardLayoutQueryError = ErrorType<unknown>;
+
+export function useGetDashboardLayout<
+  TData = Awaited<ReturnType<typeof getDashboardLayout>>,
+  TError = ErrorType<unknown>,
+>(
+  dashboard: "educator" | "leadership",
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDashboardLayout>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDashboardLayoutQueryOptions(dashboard, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getSaveDashboardLayoutDraftUrl = (
+  dashboard: "educator" | "leadership",
+) => {
+  return `/api/dashboard-layouts/${dashboard}/draft`;
+};
+
+export const saveDashboardLayoutDraft = async (
+  dashboard: "educator" | "leadership",
+  dashboardLayoutDraftInput: DashboardLayoutDraftInput,
+  options?: RequestInit,
+): Promise<DashboardLayoutDocument> => {
+  return customFetch<DashboardLayoutDocument>(
+    getSaveDashboardLayoutDraftUrl(dashboard),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(dashboardLayoutDraftInput),
+    },
+  );
+};
+
+export const getSaveDashboardLayoutDraftMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveDashboardLayoutDraft>>,
+    TError,
+    {
+      dashboard: "educator" | "leadership";
+      data: BodyType<DashboardLayoutDraftInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof saveDashboardLayoutDraft>>,
+  TError,
+  {
+    dashboard: "educator" | "leadership";
+    data: BodyType<DashboardLayoutDraftInput>;
+  },
+  TContext
+> => {
+  const mutationKey = ["saveDashboardLayoutDraft"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof saveDashboardLayoutDraft>>,
+    {
+      dashboard: "educator" | "leadership";
+      data: BodyType<DashboardLayoutDraftInput>;
+    }
+  > = (props) => {
+    const { dashboard, data } = props ?? {};
+
+    return saveDashboardLayoutDraft(dashboard, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SaveDashboardLayoutDraftMutationResult = NonNullable<
+  Awaited<ReturnType<typeof saveDashboardLayoutDraft>>
+>;
+export type SaveDashboardLayoutDraftMutationBody =
+  BodyType<DashboardLayoutDraftInput>;
+export type SaveDashboardLayoutDraftMutationError = ErrorType<void>;
+
+export const useSaveDashboardLayoutDraft = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveDashboardLayoutDraft>>,
+    TError,
+    {
+      dashboard: "educator" | "leadership";
+      data: BodyType<DashboardLayoutDraftInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof saveDashboardLayoutDraft>>,
+  TError,
+  {
+    dashboard: "educator" | "leadership";
+    data: BodyType<DashboardLayoutDraftInput>;
+  },
+  TContext
+> => {
+  return useMutation(getSaveDashboardLayoutDraftMutationOptions(options));
+};
+
+export const getDiscardDashboardLayoutDraftUrl = (
+  dashboard: "educator" | "leadership",
+) => {
+  return `/api/dashboard-layouts/${dashboard}/draft`;
+};
+
+export const discardDashboardLayoutDraft = async (
+  dashboard: "educator" | "leadership",
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDiscardDashboardLayoutDraftUrl(dashboard), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDiscardDashboardLayoutDraftMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof discardDashboardLayoutDraft>>,
+    TError,
+    { dashboard: "educator" | "leadership" },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof discardDashboardLayoutDraft>>,
+  TError,
+  { dashboard: "educator" | "leadership" },
+  TContext
+> => {
+  const mutationKey = ["discardDashboardLayoutDraft"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof discardDashboardLayoutDraft>>,
+    { dashboard: "educator" | "leadership" }
+  > = (props) => {
+    const { dashboard } = props ?? {};
+
+    return discardDashboardLayoutDraft(dashboard, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DiscardDashboardLayoutDraftMutationResult = NonNullable<
+  Awaited<ReturnType<typeof discardDashboardLayoutDraft>>
+>;
+
+export type DiscardDashboardLayoutDraftMutationError = ErrorType<unknown>;
+
+export const useDiscardDashboardLayoutDraft = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof discardDashboardLayoutDraft>>,
+    TError,
+    { dashboard: "educator" | "leadership" },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof discardDashboardLayoutDraft>>,
+  TError,
+  { dashboard: "educator" | "leadership" },
+  TContext
+> => {
+  return useMutation(getDiscardDashboardLayoutDraftMutationOptions(options));
+};
+
+export const getPublishDashboardLayoutUrl = (
+  dashboard: "educator" | "leadership",
+) => {
+  return `/api/dashboard-layouts/${dashboard}/publish`;
+};
+
+export const publishDashboardLayout = async (
+  dashboard: "educator" | "leadership",
+  dashboardLayoutPublishInput: DashboardLayoutPublishInput,
+  options?: RequestInit,
+): Promise<DashboardLayoutState> => {
+  return customFetch<DashboardLayoutState>(
+    getPublishDashboardLayoutUrl(dashboard),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(dashboardLayoutPublishInput),
+    },
+  );
+};
+
+export const getPublishDashboardLayoutMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof publishDashboardLayout>>,
+    TError,
+    {
+      dashboard: "educator" | "leadership";
+      data: BodyType<DashboardLayoutPublishInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof publishDashboardLayout>>,
+  TError,
+  {
+    dashboard: "educator" | "leadership";
+    data: BodyType<DashboardLayoutPublishInput>;
+  },
+  TContext
+> => {
+  const mutationKey = ["publishDashboardLayout"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof publishDashboardLayout>>,
+    {
+      dashboard: "educator" | "leadership";
+      data: BodyType<DashboardLayoutPublishInput>;
+    }
+  > = (props) => {
+    const { dashboard, data } = props ?? {};
+
+    return publishDashboardLayout(dashboard, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PublishDashboardLayoutMutationResult = NonNullable<
+  Awaited<ReturnType<typeof publishDashboardLayout>>
+>;
+export type PublishDashboardLayoutMutationBody =
+  BodyType<DashboardLayoutPublishInput>;
+export type PublishDashboardLayoutMutationError = ErrorType<void>;
+
+export const usePublishDashboardLayout = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof publishDashboardLayout>>,
+    TError,
+    {
+      dashboard: "educator" | "leadership";
+      data: BodyType<DashboardLayoutPublishInput>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof publishDashboardLayout>>,
+  TError,
+  {
+    dashboard: "educator" | "leadership";
+    data: BodyType<DashboardLayoutPublishInput>;
+  },
+  TContext
+> => {
+  return useMutation(getPublishDashboardLayoutMutationOptions(options));
+};
 
 export const getListOrganisationCalendarEventsUrl = (
   params: ListOrganisationCalendarEventsParams,

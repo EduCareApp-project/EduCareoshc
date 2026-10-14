@@ -7,6 +7,312 @@
  */
 import * as zod from "zod";
 
+export const GetDashboardLayoutParams = zod.object({
+  dashboard: zod.enum(["educator", "leadership"]),
+});
+
+export const getDashboardLayoutResponsePublishedOneItemsItemIMax = 64;
+
+export const getDashboardLayoutResponsePublishedOneItemsItemXMin = 0;
+export const getDashboardLayoutResponsePublishedOneItemsItemXMax = 11;
+
+export const getDashboardLayoutResponsePublishedOneItemsItemYMin = 0;
+export const getDashboardLayoutResponsePublishedOneItemsItemYMax = 1000;
+
+export const getDashboardLayoutResponsePublishedOneItemsItemWMin = 2;
+export const getDashboardLayoutResponsePublishedOneItemsItemWMax = 12;
+
+export const getDashboardLayoutResponsePublishedOneItemsItemHMin = 2;
+export const getDashboardLayoutResponsePublishedOneItemsItemHMax = 48;
+
+export const getDashboardLayoutResponseDraftOneItemsItemIMax = 64;
+
+export const getDashboardLayoutResponseDraftOneItemsItemXMin = 0;
+export const getDashboardLayoutResponseDraftOneItemsItemXMax = 11;
+
+export const getDashboardLayoutResponseDraftOneItemsItemYMin = 0;
+export const getDashboardLayoutResponseDraftOneItemsItemYMax = 1000;
+
+export const getDashboardLayoutResponseDraftOneItemsItemWMin = 2;
+export const getDashboardLayoutResponseDraftOneItemsItemWMax = 12;
+
+export const getDashboardLayoutResponseDraftOneItemsItemHMin = 2;
+export const getDashboardLayoutResponseDraftOneItemsItemHMax = 48;
+
+export const GetDashboardLayoutResponse = zod.object({
+  dashboard: zod.enum(["educator", "leadership"]),
+  canEdit: zod.boolean(),
+  published: zod.union([
+    zod.object({
+      items: zod.array(
+        zod.object({
+          i: zod
+            .string()
+            .min(1)
+            .max(getDashboardLayoutResponsePublishedOneItemsItemIMax),
+          x: zod
+            .number()
+            .min(getDashboardLayoutResponsePublishedOneItemsItemXMin)
+            .max(getDashboardLayoutResponsePublishedOneItemsItemXMax),
+          y: zod
+            .number()
+            .min(getDashboardLayoutResponsePublishedOneItemsItemYMin)
+            .max(getDashboardLayoutResponsePublishedOneItemsItemYMax),
+          w: zod
+            .number()
+            .min(getDashboardLayoutResponsePublishedOneItemsItemWMin)
+            .max(getDashboardLayoutResponsePublishedOneItemsItemWMax),
+          h: zod
+            .number()
+            .min(getDashboardLayoutResponsePublishedOneItemsItemHMin)
+            .max(getDashboardLayoutResponsePublishedOneItemsItemHMax),
+        }),
+      ),
+      revision: zod.number(),
+      baseRevision: zod.number(),
+    }),
+    zod.null(),
+  ]),
+  draft: zod.union([
+    zod.object({
+      items: zod.array(
+        zod.object({
+          i: zod
+            .string()
+            .min(1)
+            .max(getDashboardLayoutResponseDraftOneItemsItemIMax),
+          x: zod
+            .number()
+            .min(getDashboardLayoutResponseDraftOneItemsItemXMin)
+            .max(getDashboardLayoutResponseDraftOneItemsItemXMax),
+          y: zod
+            .number()
+            .min(getDashboardLayoutResponseDraftOneItemsItemYMin)
+            .max(getDashboardLayoutResponseDraftOneItemsItemYMax),
+          w: zod
+            .number()
+            .min(getDashboardLayoutResponseDraftOneItemsItemWMin)
+            .max(getDashboardLayoutResponseDraftOneItemsItemWMax),
+          h: zod
+            .number()
+            .min(getDashboardLayoutResponseDraftOneItemsItemHMin)
+            .max(getDashboardLayoutResponseDraftOneItemsItemHMax),
+        }),
+      ),
+      revision: zod.number(),
+      baseRevision: zod.number(),
+    }),
+    zod.null(),
+  ]),
+});
+
+export const SaveDashboardLayoutDraftParams = zod.object({
+  dashboard: zod.enum(["educator", "leadership"]),
+});
+
+export const saveDashboardLayoutDraftBodyItemsItemIMax = 64;
+
+export const saveDashboardLayoutDraftBodyItemsItemXMin = 0;
+export const saveDashboardLayoutDraftBodyItemsItemXMax = 11;
+
+export const saveDashboardLayoutDraftBodyItemsItemYMin = 0;
+export const saveDashboardLayoutDraftBodyItemsItemYMax = 1000;
+
+export const saveDashboardLayoutDraftBodyItemsItemWMin = 2;
+export const saveDashboardLayoutDraftBodyItemsItemWMax = 12;
+
+export const saveDashboardLayoutDraftBodyItemsItemHMin = 2;
+export const saveDashboardLayoutDraftBodyItemsItemHMax = 48;
+
+export const saveDashboardLayoutDraftBodyItemsMax = 32;
+
+export const saveDashboardLayoutDraftBodyBaseRevisionMin = 0;
+
+export const saveDashboardLayoutDraftBodyExpectedDraftRevisionMin = 0;
+
+export const SaveDashboardLayoutDraftBody = zod.object({
+  items: zod
+    .array(
+      zod.object({
+        i: zod.string().min(1).max(saveDashboardLayoutDraftBodyItemsItemIMax),
+        x: zod
+          .number()
+          .min(saveDashboardLayoutDraftBodyItemsItemXMin)
+          .max(saveDashboardLayoutDraftBodyItemsItemXMax),
+        y: zod
+          .number()
+          .min(saveDashboardLayoutDraftBodyItemsItemYMin)
+          .max(saveDashboardLayoutDraftBodyItemsItemYMax),
+        w: zod
+          .number()
+          .min(saveDashboardLayoutDraftBodyItemsItemWMin)
+          .max(saveDashboardLayoutDraftBodyItemsItemWMax),
+        h: zod
+          .number()
+          .min(saveDashboardLayoutDraftBodyItemsItemHMin)
+          .max(saveDashboardLayoutDraftBodyItemsItemHMax),
+      }),
+    )
+    .min(1)
+    .max(saveDashboardLayoutDraftBodyItemsMax),
+  baseRevision: zod.number().min(saveDashboardLayoutDraftBodyBaseRevisionMin),
+  expectedDraftRevision: zod
+    .number()
+    .min(saveDashboardLayoutDraftBodyExpectedDraftRevisionMin),
+});
+
+export const saveDashboardLayoutDraftResponseItemsItemIMax = 64;
+
+export const saveDashboardLayoutDraftResponseItemsItemXMin = 0;
+export const saveDashboardLayoutDraftResponseItemsItemXMax = 11;
+
+export const saveDashboardLayoutDraftResponseItemsItemYMin = 0;
+export const saveDashboardLayoutDraftResponseItemsItemYMax = 1000;
+
+export const saveDashboardLayoutDraftResponseItemsItemWMin = 2;
+export const saveDashboardLayoutDraftResponseItemsItemWMax = 12;
+
+export const saveDashboardLayoutDraftResponseItemsItemHMin = 2;
+export const saveDashboardLayoutDraftResponseItemsItemHMax = 48;
+
+export const SaveDashboardLayoutDraftResponse = zod.object({
+  items: zod.array(
+    zod.object({
+      i: zod.string().min(1).max(saveDashboardLayoutDraftResponseItemsItemIMax),
+      x: zod
+        .number()
+        .min(saveDashboardLayoutDraftResponseItemsItemXMin)
+        .max(saveDashboardLayoutDraftResponseItemsItemXMax),
+      y: zod
+        .number()
+        .min(saveDashboardLayoutDraftResponseItemsItemYMin)
+        .max(saveDashboardLayoutDraftResponseItemsItemYMax),
+      w: zod
+        .number()
+        .min(saveDashboardLayoutDraftResponseItemsItemWMin)
+        .max(saveDashboardLayoutDraftResponseItemsItemWMax),
+      h: zod
+        .number()
+        .min(saveDashboardLayoutDraftResponseItemsItemHMin)
+        .max(saveDashboardLayoutDraftResponseItemsItemHMax),
+    }),
+  ),
+  revision: zod.number(),
+  baseRevision: zod.number(),
+});
+
+export const DiscardDashboardLayoutDraftParams = zod.object({
+  dashboard: zod.enum(["educator", "leadership"]),
+});
+
+export const PublishDashboardLayoutParams = zod.object({
+  dashboard: zod.enum(["educator", "leadership"]),
+});
+
+export const publishDashboardLayoutBodyExpectedRevisionMin = 0;
+
+export const PublishDashboardLayoutBody = zod.object({
+  expectedRevision: zod
+    .number()
+    .min(publishDashboardLayoutBodyExpectedRevisionMin),
+  expectedDraftRevision: zod.number().min(1),
+});
+
+export const publishDashboardLayoutResponsePublishedOneItemsItemIMax = 64;
+
+export const publishDashboardLayoutResponsePublishedOneItemsItemXMin = 0;
+export const publishDashboardLayoutResponsePublishedOneItemsItemXMax = 11;
+
+export const publishDashboardLayoutResponsePublishedOneItemsItemYMin = 0;
+export const publishDashboardLayoutResponsePublishedOneItemsItemYMax = 1000;
+
+export const publishDashboardLayoutResponsePublishedOneItemsItemWMin = 2;
+export const publishDashboardLayoutResponsePublishedOneItemsItemWMax = 12;
+
+export const publishDashboardLayoutResponsePublishedOneItemsItemHMin = 2;
+export const publishDashboardLayoutResponsePublishedOneItemsItemHMax = 48;
+
+export const publishDashboardLayoutResponseDraftOneItemsItemIMax = 64;
+
+export const publishDashboardLayoutResponseDraftOneItemsItemXMin = 0;
+export const publishDashboardLayoutResponseDraftOneItemsItemXMax = 11;
+
+export const publishDashboardLayoutResponseDraftOneItemsItemYMin = 0;
+export const publishDashboardLayoutResponseDraftOneItemsItemYMax = 1000;
+
+export const publishDashboardLayoutResponseDraftOneItemsItemWMin = 2;
+export const publishDashboardLayoutResponseDraftOneItemsItemWMax = 12;
+
+export const publishDashboardLayoutResponseDraftOneItemsItemHMin = 2;
+export const publishDashboardLayoutResponseDraftOneItemsItemHMax = 48;
+
+export const PublishDashboardLayoutResponse = zod.object({
+  dashboard: zod.enum(["educator", "leadership"]),
+  canEdit: zod.boolean(),
+  published: zod.union([
+    zod.object({
+      items: zod.array(
+        zod.object({
+          i: zod
+            .string()
+            .min(1)
+            .max(publishDashboardLayoutResponsePublishedOneItemsItemIMax),
+          x: zod
+            .number()
+            .min(publishDashboardLayoutResponsePublishedOneItemsItemXMin)
+            .max(publishDashboardLayoutResponsePublishedOneItemsItemXMax),
+          y: zod
+            .number()
+            .min(publishDashboardLayoutResponsePublishedOneItemsItemYMin)
+            .max(publishDashboardLayoutResponsePublishedOneItemsItemYMax),
+          w: zod
+            .number()
+            .min(publishDashboardLayoutResponsePublishedOneItemsItemWMin)
+            .max(publishDashboardLayoutResponsePublishedOneItemsItemWMax),
+          h: zod
+            .number()
+            .min(publishDashboardLayoutResponsePublishedOneItemsItemHMin)
+            .max(publishDashboardLayoutResponsePublishedOneItemsItemHMax),
+        }),
+      ),
+      revision: zod.number(),
+      baseRevision: zod.number(),
+    }),
+    zod.null(),
+  ]),
+  draft: zod.union([
+    zod.object({
+      items: zod.array(
+        zod.object({
+          i: zod
+            .string()
+            .min(1)
+            .max(publishDashboardLayoutResponseDraftOneItemsItemIMax),
+          x: zod
+            .number()
+            .min(publishDashboardLayoutResponseDraftOneItemsItemXMin)
+            .max(publishDashboardLayoutResponseDraftOneItemsItemXMax),
+          y: zod
+            .number()
+            .min(publishDashboardLayoutResponseDraftOneItemsItemYMin)
+            .max(publishDashboardLayoutResponseDraftOneItemsItemYMax),
+          w: zod
+            .number()
+            .min(publishDashboardLayoutResponseDraftOneItemsItemWMin)
+            .max(publishDashboardLayoutResponseDraftOneItemsItemWMax),
+          h: zod
+            .number()
+            .min(publishDashboardLayoutResponseDraftOneItemsItemHMin)
+            .max(publishDashboardLayoutResponseDraftOneItemsItemHMax),
+        }),
+      ),
+      revision: zod.number(),
+      baseRevision: zod.number(),
+    }),
+    zod.null(),
+  ]),
+});
+
 export const ListOrganisationCalendarEventsQueryParams = zod.object({
   from: zod.date(),
   to: zod.date(),

@@ -5,6 +5,74 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+export interface DashboardLayoutItem {
+  /**
+   * @minLength 1
+   * @maxLength 64
+   */
+  i: string;
+  /**
+   * @minimum 0
+   * @maximum 11
+   */
+  x: number;
+  /**
+   * @minimum 0
+   * @maximum 1000
+   */
+  y: number;
+  /**
+   * @minimum 2
+   * @maximum 12
+   */
+  w: number;
+  /**
+   * @minimum 2
+   * @maximum 48
+   */
+  h: number;
+}
+
+export interface DashboardLayoutDocument {
+  items: DashboardLayoutItem[];
+  revision: number;
+  baseRevision: number;
+}
+
+export interface DashboardLayoutDraftInput {
+  /**
+   * @minItems 1
+   * @maxItems 32
+   */
+  items: DashboardLayoutItem[];
+  /** @minimum 0 */
+  baseRevision: number;
+  /** @minimum 0 */
+  expectedDraftRevision: number;
+}
+
+export type DashboardLayoutStateDashboard =
+  (typeof DashboardLayoutStateDashboard)[keyof typeof DashboardLayoutStateDashboard];
+
+export const DashboardLayoutStateDashboard = {
+  educator: "educator",
+  leadership: "leadership",
+} as const;
+
+export interface DashboardLayoutState {
+  dashboard: DashboardLayoutStateDashboard;
+  canEdit: boolean;
+  published: DashboardLayoutDocument | null;
+  draft: DashboardLayoutDocument | null;
+}
+
+export interface DashboardLayoutPublishInput {
+  /** @minimum 0 */
+  expectedRevision: number;
+  /** @minimum 1 */
+  expectedDraftRevision: number;
+}
+
 export interface OrganisationCalendarEventInput {
   /**
    * @minLength 1

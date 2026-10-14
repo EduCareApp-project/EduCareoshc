@@ -34,6 +34,8 @@ import { getListNoticesQueryKey } from "@workspace/api-client-react";
 import { UtilisationSection } from "@/components/utilisation-section";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
+import { DashboardLayoutHost, type EditGuard } from "@/components/dashboard-layout/layout-host";
+import type { WidgetDef } from "@/components/dashboard-layout/layout-grid";
 
 // ─── Shared priority colours ────────────────────────────────────────────────
 const PRIORITY_COLORS: Record<string, string> = {
@@ -541,6 +543,15 @@ function NoticeBoard({ canManage, audience, siteId: externalSiteId }: { canManag
 export default function Dashboard() {
   const { isEducatorRole, ownSiteId } = usePermissions();
   const [activeTab, setActiveTab] = useState<string>(() => isEducatorRole ? "educator" : "leadership");
+  const { toast } = useToast();
+  const editGuard = useRef(false);
+  const changeTab = (tab: string) => {
+    if (editGuard.current && tab !== activeTab) {
+      toast({ title: "Finish editing the layout first", description: "Save your draft or exit edit mode before switching tabs." });
+      return;
+    }
+    setActiveTab(tab);
+  };
   const { data: sites } = useListSites();
   const [selectedSiteId, setSelectedSiteId] = useState<string>(() => isEducatorRole && ownSiteId ? String(ownSiteId) : "");
   const [guardianSiteId, setGuardianSiteId] = useState<string>(() => isEducatorRole && ownSiteId ? String(ownSiteId) : "__all__");
@@ -553,7 +564,7 @@ export default function Dashboard() {
         <p className="text-muted-foreground mt-1">Select a view based on your role.</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={changeTab}>
         <div className="flex items-center gap-6 flex-wrap">
           <TabsList className={`grid w-full ${isEducatorRole ? "max-w-xs grid-cols-2" : "max-w-md grid-cols-3"}`}>
             {!isEducatorRole && <TabsTrigger value="leadership">Leadership</TabsTrigger>}
@@ -598,11 +609,11 @@ export default function Dashboard() {
 
         {!isEducatorRole && (
           <TabsContent value="leadership" className="mt-6">
-            <LeadershipDashboard />
+            <LeadershipDashboard guard={editGuard} />
           </TabsContent>
         )}
         <TabsContent value="educator" className="mt-6">
-          <EducatorDashboard selectedSiteId={selectedSiteId || (sites?.[0] ? String(sites[0].id) : "")} />
+          <EducatorDashboard guard={editGuard} selectedSiteId={selectedSiteId || (sites?.[0] ? String(sites[0].id) : "")} />
         </TabsContent>
         <TabsContent value="guardian" className="mt-6">
           <GuardianDashboard siteFilter={guardianSiteId} />
@@ -1042,25 +1053,23 @@ function MedicationExpiryWidget({ siteId }: { siteId?: number }) {
   );
 }
 
-function LeadershipDashboard() {
+function LeadershipDashboard({ guard }: { guard?: EditGuard }) {
+  const { data: meds, isLoading: medLoading } = useGetExpiringMedications();
   const { data: summary, isLoading: loadingSummary } = useGetDashboardSummary();
   const { data: outcomes, isLoading: loadingOutcomes } = useGetOutcomeCounts();
   const { data: observations, isLoading: loadingObservations } = useGetRecentObservations();
   const { data: activity, isLoading: loadingActivity } = useGetRecentActivity();
 
-  return (
-    <div className="space-y-8">
-      <div className="space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Learning</h2>
-        <div className="grid gap-4 md:grid-cols-3">
+  const w_posts = (
           <MetricCard title="Posts (7 days)" value={summary?.postsLast7Days} icon={FileText} loading={loadingSummary} href="/posts" />
+  );
+  const w_jottings = (
           <MetricCard title="Jottings (7 days)" value={summary?.jottingsLast7Days} icon={PenLine} loading={loadingSummary} href="/jottings" />
+  );
+  const w_observations = (
           <MetricCard title="Observations (7 days)" value={summary?.observationsLast7Days} icon={BookOpen} loading={loadingSummary} href="/observations" />
-        </div>
-      </div>
-      <div className="space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Operational</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+  );
+  const w_staff_compliance = (
           <MetricCard
             title="Staff Compliance"
             value={summary?.totalStaff}
@@ -1075,6 +1084,8 @@ function LeadershipDashboard() {
             loading={loadingSummary}
             href="/staff"
           />
+  );
+  const w_weekly_plans = (
           <MetricCard
             title="Weekly Plans"
             label={summary ? `${summary.sitesWithPublishedPlan} / ${summary.totalSites}` : undefined}
@@ -1083,6 +1094,8 @@ function LeadershipDashboard() {
             loading={loadingSummary}
             href="/reports/weekly-plans"
           />
+  );
+  const w_open_incidents = (
           <MetricCard
             title="Open Incidents"
             value={summary?.openIncidents}
@@ -1091,6 +1104,8 @@ function LeadershipDashboard() {
             loading={loadingSummary}
             href="/incidents"
           />
+  );
+  const w_condition_reports = (
           <MetricCard
             title="Open Condition Reports"
             value={summary?.openConditionReports}
@@ -1099,13 +1114,8 @@ function LeadershipDashboard() {
             loading={loadingSummary}
             href="/condition-reports"
           />
-        </div>
-      </div>
-
-      <MedicationExpiryWidget />
-
-      <NoticeBoard canManage audience="leadership" />
-
+  );
+  const w_recent_observations = (
       <Card>
         <CardHeader>
           <CardTitle className="flex justify-between items-center text-lg">
@@ -1160,9 +1170,8 @@ function LeadershipDashboard() {
           )}
         </CardContent>
       </Card>
-
-      <RollSubmissionChecklist />
-
+  );
+  const w_recent_activity = (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between text-lg">
@@ -1226,10 +1235,53 @@ function LeadershipDashboard() {
           )}
         </CardContent>
       </Card>
+  );
+  const medVisible = medLoading || (meds?.length ?? 0) > 0;
+  const defaultView = (
+    <div className="space-y-8">
+      <div className="space-y-3">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Learning</h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          {w_posts}
+          {w_jottings}
+          {w_observations}
+        </div>
+      </div>
+      <div className="space-y-3">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Operational</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {w_staff_compliance}
+          {w_weekly_plans}
+          {w_open_incidents}
+          {w_condition_reports}
+        </div>
+      </div>
+
+      <MedicationExpiryWidget />
+
+      <NoticeBoard canManage audience="leadership" />
+
+      {w_recent_observations}
+
+      <RollSubmissionChecklist />
+
+      {w_recent_activity}
 
       <UtilisationSection />
     </div>
   );
+  const widgets: Record<string, WidgetDef> = {
+    posts: { view: w_posts, placeholder: "" }, jottings: { view: w_jottings, placeholder: "" },
+    observations: { view: w_observations, placeholder: "" }, "staff-compliance": { view: w_staff_compliance, placeholder: "" },
+    "weekly-plans": { view: w_weekly_plans, placeholder: "" }, "open-incidents": { view: w_open_incidents, placeholder: "" },
+    "condition-reports": { view: w_condition_reports, placeholder: "" },
+    "medication-expiry": { view: medVisible ? <MedicationExpiryWidget /> : null, placeholder: "Medication expiry appears here when any medication is expiring or expired. Nothing needs attention right now." },
+    "notice-board": { view: <NoticeBoard canManage audience="leadership" />, placeholder: "" },
+    "recent-observations": { view: w_recent_observations, placeholder: "" }, "recent-activity": { view: w_recent_activity, placeholder: "" },
+    "roll-submissions": { view: <RollSubmissionChecklist />, placeholder: "" },
+    utilisation: { view: <UtilisationSection />, placeholder: "" },
+  };
+  return <DashboardLayoutHost dashboard="leadership" widgets={widgets} defaultView={defaultView} guard={guard} />;
 }
 
 // ─── Outcome Pie Chart ───────────────────────────────────────────────────────
@@ -1304,7 +1356,7 @@ const CHECKLIST_FREQ_COLORS: Record<ChecklistFreq, string> = {
   annual: "bg-rose-100 text-rose-800",
 };
 
-function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
+function EducatorDashboard({ selectedSiteId, guard }: { selectedSiteId: string; guard?: EditGuard }) {
   const numericSiteId = selectedSiteId ? Number(selectedSiteId) : null;
   const siteParam = numericSiteId ? { siteId: numericSiteId } : undefined;
 
@@ -1342,18 +1394,8 @@ function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
     annual:  activeRoutines.filter((r) => r.frequency === "annual"),
   };
 
-  return (
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-      <div className="min-w-0 lg:sticky lg:top-4">
-        <OrganisationCalendar />
-      </div>
-      <div className="min-w-0 space-y-8">
-      <NoticeBoard canManage audience="educator" siteId={selectedSiteId || undefined} />
-
-      {/* Row 1: Service Compliance + Checklists */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {/* Service Compliance */}
-        <Card>
+  const w_service = (
+<Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between text-base">
               <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> Service Compliance</span>
@@ -1379,9 +1421,9 @@ function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
             )}
           </CardContent>
         </Card>
-
-        {/* Checklists */}
-        <Card>
+  );
+  const w_checklists = (
+<Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between text-base">
               <span className="flex items-center gap-2"><ClipboardList className="h-4 w-4 text-primary" /> Checklists</span>
@@ -1436,12 +1478,9 @@ function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
             )}
           </CardContent>
         </Card>
-      </div>
-
-      {/* Row 2: MTOP Outcomes + Children with no observations */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {/* MTOP Outcomes */}
-        <Card>
+  );
+  const w_mtop = (
+<Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between text-base">
               <span className="flex items-center gap-2"><GraduationCap className="h-4 w-4 text-primary" /> MTOP Outcomes</span>
@@ -1462,10 +1501,9 @@ function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
             )}
           </CardContent>
         </Card>
-
-        {/* Children with no observations — right column only */}
-        {childrenWithNoObs.length > 0 && (
-          <Card className="border-amber-200 bg-amber-50/50 self-start">
+  );
+  const w_missing = (
+<Card className="border-amber-200 bg-amber-50/50 self-start">
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2 text-amber-800">
                 <AlertTriangle className="h-4 w-4" /> Children with no observations this month
@@ -1481,13 +1519,9 @@ function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
               </div>
             </CardContent>
           </Card>
-        )}
-      </div>
-
-      <MedicationExpiryWidget siteId={numericSiteId ?? undefined} />
-
-      {/* Groceries button */}
-      <a
+  );
+  const w_groceries = (
+<a
         href="https://forms.gle/cDKqSt4pd7Xfvpww7"
         target="_blank"
         rel="noopener noreferrer"
@@ -1497,9 +1531,55 @@ function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
         <ShoppingCart className="h-6 w-6" />
         Groceries
       </a>
+  );
+  const { data: meds, isLoading: medLoading } = useGetExpiringMedications(siteParam);
+  const medVisible = medLoading || (meds?.length ?? 0) > 0;
+  const defaultView = (
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <div className="min-w-0 lg:sticky lg:top-4">
+        <OrganisationCalendar />
+      </div>
+      <div className="min-w-0 space-y-8">
+      <NoticeBoard canManage audience="educator" siteId={selectedSiteId || undefined} />
+
+      {/* Row 1: Service Compliance + Checklists */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        {/* Service Compliance */}
+        {w_service}
+
+        {/* Checklists */}
+                {w_checklists}
+      </div>
+
+      {/* Row 2: MTOP Outcomes + Children with no observations */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        {/* MTOP Outcomes */}
+                {w_mtop}
+
+        {/* Children with no observations — right column only */}
+        {childrenWithNoObs.length > 0 && (
+          w_missing
+        )}
+      </div>
+
+      <MedicationExpiryWidget siteId={numericSiteId ?? undefined} />
+
+      {/* Groceries button */}
+      {w_groceries}
       </div>
     </div>
   );
+  const widgets: Record<string, WidgetDef> = {
+    "organisation-calendar": { view: <OrganisationCalendar />, placeholder: "" },
+    "notice-board": { view: <NoticeBoard canManage audience="educator" siteId={selectedSiteId || undefined} />, placeholder: "" },
+    "service-compliance": { view: w_service, placeholder: "" },
+    checklists: { view: w_checklists, placeholder: "" },
+    "mtop-outcomes": { view: w_mtop, placeholder: "" },
+    "missing-observations": { view: childrenWithNoObs.length > 0 ? w_missing : null, placeholder: "Children with no observations appears here when any child at this service has none. Every child has an observation right now." },
+    "medication-expiry": { view: medVisible ? <MedicationExpiryWidget siteId={numericSiteId ?? undefined} /> : null, placeholder: "Medication expiry appears here when any medication is expiring or expired. Nothing needs attention right now." },
+    groceries: { view: w_groceries, placeholder: "" },
+  };
+  return <DashboardLayoutHost dashboard="educator" widgets={widgets} defaultView={defaultView} guard={guard} />;
 }
 
 // ─── Guardian ────────────────────────────────────────────────────────────────

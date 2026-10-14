@@ -7,6 +7,126 @@
  */
 import * as zod from "zod";
 
+export const ListOrganisationCalendarEventsQueryParams = zod.object({
+  from: zod.date(),
+  to: zod.date(),
+});
+
+export const ListOrganisationCalendarEventsResponseItem = zod.object({
+  id: zod.number(),
+  organisationId: zod.number(),
+  siteId: zod.number().nullable(),
+  title: zod.string(),
+  description: zod.string(),
+  location: zod.string(),
+  startDate: zod.coerce.date(),
+  endDate: zod.coerce.date(),
+  startTime: zod.string().nullable(),
+  endTime: zod.string().nullable(),
+  createdBy: zod.number().nullable(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+  canEdit: zod.boolean(),
+});
+export const ListOrganisationCalendarEventsResponse = zod.array(
+  ListOrganisationCalendarEventsResponseItem,
+);
+
+export const createOrganisationCalendarEventBodyTitleMax = 200;
+
+export const createOrganisationCalendarEventBodyDescriptionMax = 5000;
+
+export const createOrganisationCalendarEventBodyLocationMax = 300;
+
+export const createOrganisationCalendarEventBodyStartTimeRegExp = new RegExp(
+  "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+);
+export const createOrganisationCalendarEventBodyEndTimeRegExp = new RegExp(
+  "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+);
+
+export const CreateOrganisationCalendarEventBody = zod.object({
+  title: zod.string().min(1).max(createOrganisationCalendarEventBodyTitleMax),
+  description: zod
+    .string()
+    .max(createOrganisationCalendarEventBodyDescriptionMax)
+    .optional(),
+  location: zod
+    .string()
+    .max(createOrganisationCalendarEventBodyLocationMax)
+    .optional(),
+  startDate: zod.coerce.date(),
+  endDate: zod.coerce.date(),
+  startTime: zod
+    .string()
+    .regex(createOrganisationCalendarEventBodyStartTimeRegExp)
+    .nullish(),
+  endTime: zod
+    .string()
+    .regex(createOrganisationCalendarEventBodyEndTimeRegExp)
+    .nullish(),
+});
+
+export const UpdateOrganisationCalendarEventParams = zod.object({
+  id: zod.coerce.number().min(1),
+});
+
+export const updateOrganisationCalendarEventBodyTitleMax = 200;
+
+export const updateOrganisationCalendarEventBodyDescriptionMax = 5000;
+
+export const updateOrganisationCalendarEventBodyLocationMax = 300;
+
+export const updateOrganisationCalendarEventBodyStartTimeRegExp = new RegExp(
+  "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+);
+export const updateOrganisationCalendarEventBodyEndTimeRegExp = new RegExp(
+  "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+);
+
+export const UpdateOrganisationCalendarEventBody = zod.object({
+  title: zod.string().min(1).max(updateOrganisationCalendarEventBodyTitleMax),
+  description: zod
+    .string()
+    .max(updateOrganisationCalendarEventBodyDescriptionMax)
+    .optional(),
+  location: zod
+    .string()
+    .max(updateOrganisationCalendarEventBodyLocationMax)
+    .optional(),
+  startDate: zod.coerce.date(),
+  endDate: zod.coerce.date(),
+  startTime: zod
+    .string()
+    .regex(updateOrganisationCalendarEventBodyStartTimeRegExp)
+    .nullish(),
+  endTime: zod
+    .string()
+    .regex(updateOrganisationCalendarEventBodyEndTimeRegExp)
+    .nullish(),
+});
+
+export const UpdateOrganisationCalendarEventResponse = zod.object({
+  id: zod.number(),
+  organisationId: zod.number(),
+  siteId: zod.number().nullable(),
+  title: zod.string(),
+  description: zod.string(),
+  location: zod.string(),
+  startDate: zod.coerce.date(),
+  endDate: zod.coerce.date(),
+  startTime: zod.string().nullable(),
+  endTime: zod.string().nullable(),
+  createdBy: zod.number().nullable(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+  canEdit: zod.boolean(),
+});
+
+export const DeleteOrganisationCalendarEventParams = zod.object({
+  id: zod.coerce.number().min(1),
+});
+
 /**
  * @summary Get the signed-in staff member's emergency heading settings
  */

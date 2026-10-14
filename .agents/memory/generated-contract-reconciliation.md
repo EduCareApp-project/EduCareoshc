@@ -14,3 +14,9 @@ After interrupted code generation, check whether generated client files still ex
 **Why:** A runtime disconnect during code generation left generated client modules absent despite earlier success messages.
 
 **How to apply:** Re-run complete code generation before typechecking if generation was interrupted or the generated modules are missing.
+
+Custom refinements must use the same Zod entrypoint as generated API validators. Database insert schemas may use Zod v4 while generated API contracts use the root Zod v3 entrypoint.
+
+**Why:** Extending generated validators with database-style v4 schemas produced incompatible validation types; the API package also did not directly declare Zod.
+
+**How to apply:** Import the shared `z` export from the API-validation library, and verify its entrypoint against the generator before changing versions. Do not assume the database and API schemas use the same Zod version.

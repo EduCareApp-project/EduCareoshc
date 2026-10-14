@@ -38,6 +38,57 @@ tags:
   - name: excursions
   - name: clickup
 paths:
+  /organisation-calendar/events:
+    get:
+      operationId: listOrganisationCalendarEvents
+      tags: [calendar]
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: Organisation-wide events overlapping the requested date range, with caller-specific edit permissions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/OrganisationCalendarEvent" }
+    post:
+      operationId: createOrganisationCalendarEvent
+      tags: [calendar]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrganisationCalendarEventInput" }
+      responses:
+        "201":
+          description: Event created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrganisationCalendarEvent" }
+  /organisation-calendar/events/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    patch:
+      operationId: updateOrganisationCalendarEvent
+      tags: [calendar]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrganisationCalendarEventInput" }
+      responses:
+        "200":
+          description: Event updated by its creator or organisation leadership
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrganisationCalendarEvent" }
+    delete:
+      operationId: deleteOrganisationCalendarEvent
+      tags: [calendar]
+      responses:
+        "204": { description: Event deleted by its creator or organisation leadership }
   /auth/emergency-record-headings:
     get:
       operationId: getEmergencyRecordHeadingPreferences
@@ -4186,6 +4237,36 @@ paths:
 
 components:
   schemas:
+    OrganisationCalendarEventInput:
+      type: object
+      additionalProperties: false
+      required: [title, startDate, endDate]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, maxLength: 5000 }
+        location: { type: string, maxLength: 300 }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        startTime: { type: ["string", "null"], pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+        endTime: { type: ["string", "null"], pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+    OrganisationCalendarEvent:
+      type: object
+      required: [id, organisationId, siteId, title, description, location, startDate, endDate, startTime, endTime, createdBy, createdAt, updatedAt, canEdit]
+      properties:
+        id: { type: integer }
+        organisationId: { type: integer }
+        siteId: { type: ["integer", "null"] }
+        title: { type: string }
+        description: { type: string }
+        location: { type: string }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        startTime: { type: ["string", "null"] }
+        endTime: { type: ["string", "null"] }
+        createdBy: { type: ["integer", "null"] }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+        canEdit: { type: boolean }
     SchoolReportPreviewInput:
       type: object
       required: [reportingObligations]

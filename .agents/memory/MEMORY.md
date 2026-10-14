@@ -26,4 +26,5 @@
 - [Test account normalization](test-account-normalization.md) — lowercase entire directly seeded login emails, including random suffixes, to avoid false sign-in failures.
 - [Service start-date compliance](service-start-date-compliance.md) — use actual opening dates, not portal creation dates, for roll eligibility; don’t infer historical start dates.
 - [Browser timer tests](browser-timer-tests.md) — Testing Library schedules its own intervals; identify the feature timer rather than assuming the first call.
-- [Kidsoft roll sharing](kidsoft-roll-sharing.md) — map services and pull live Kidsoft rolls into static, school-scoped EduCare snapshots.
+- [Kidsoft Roll](kidsoft-roll-sharing.md) — paused idea: named child bookings, one day at a time, with school-triggered refresh into saved snapshots.
+- [Educator organisation calendar](organisation-calendar-scope.md) — shared month view, calendar first on mobile, creator-owned edits and leadership override; service calendars later.

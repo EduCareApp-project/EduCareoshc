@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "./ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { ScrollArea } from "./ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { useAuth } from "@/contexts/auth";
@@ -631,6 +631,8 @@ export function Layout({ children }: { children: ReactNode }) {
             className="p-0 w-72 border-r-0"
             style={{ backgroundColor: "#1b5e20" }}
           >
+            <SheetTitle className="sr-only">Main navigation</SheetTitle>
+            <SheetDescription className="sr-only">Navigate between EduCare pages.</SheetDescription>
             <NavLinks location={location} />
           </SheetContent>
         </Sheet>

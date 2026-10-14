@@ -21,6 +21,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO, startOfWeek, addDays, differenceInCalendarDays } from "date-fns";
 import { fmtMelb } from "@/lib/timezone";
+import { OrganisationCalendar } from "@/components/organisation-calendar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1342,11 +1343,15 @@ function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <div className="min-w-0 lg:sticky lg:top-4">
+        <OrganisationCalendar />
+      </div>
+      <div className="min-w-0 space-y-8">
       <NoticeBoard canManage audience="educator" siteId={selectedSiteId || undefined} />
 
       {/* Row 1: Service Compliance + Checklists */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {/* Service Compliance */}
         <Card>
           <CardHeader className="pb-3">
@@ -1434,7 +1439,7 @@ function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
       </div>
 
       {/* Row 2: MTOP Outcomes + Children with no observations */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {/* MTOP Outcomes */}
         <Card>
           <CardHeader className="pb-3">
@@ -1492,6 +1497,7 @@ function EducatorDashboard({ selectedSiteId }: { selectedSiteId: string }) {
         <ShoppingCart className="h-6 w-6" />
         Groceries
       </a>
+      </div>
     </div>
   );
 }

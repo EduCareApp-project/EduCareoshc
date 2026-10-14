@@ -5,6 +5,51 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+export interface OrganisationCalendarEventInput {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  title: string;
+  /** @maxLength 5000 */
+  description?: string;
+  /** @maxLength 300 */
+  location?: string;
+  startDate: string;
+  endDate: string;
+  /**
+   * @nullable
+   * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+   */
+  startTime?: string | null;
+  /**
+   * @nullable
+   * @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$
+   */
+  endTime?: string | null;
+}
+
+export interface OrganisationCalendarEvent {
+  id: number;
+  organisationId: number;
+  /** @nullable */
+  siteId: number | null;
+  title: string;
+  description: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  /** @nullable */
+  startTime: string | null;
+  /** @nullable */
+  endTime: string | null;
+  /** @nullable */
+  createdBy: number | null;
+  createdAt: string;
+  updatedAt: string;
+  canEdit: boolean;
+}
+
 export type SchoolReportPreviewInputReportingObligations = {
   /** @maxLength 20000 */
   learningPlayProgramHighlights: string;
@@ -2993,6 +3038,11 @@ export interface WeeklyReview {
   createdAt: string;
   updatedAt: string;
 }
+
+export type ListOrganisationCalendarEventsParams = {
+  from: string;
+  to: string;
+};
 
 export type GetDashboardUtilisationParams = {
   /**

@@ -1018,6 +1018,32 @@ paths:
           description: Leadership access required
         "500":
           description: Attendance could not be loaded
+  /dashboard/child-activity-gaps:
+    get:
+      operationId: getChildActivityGaps
+      summary: Active children with no observations, jottings, posts or planning cycles recorded in the last 30 days
+      tags: [dashboard]
+      parameters:
+        - in: query
+          name: siteId
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Children missing recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChildActivityGap"
+        "400":
+          description: Invalid site ID
+        "403":
+          description: Staff site access required
+        "500":
+          description: Child activity could not be checked
   /dashboard/summary:
     get:
       operationId: getDashboardSummary
@@ -7706,6 +7732,17 @@ components:
             type: array
             items:
               type: string
+
+    ChildActivityGap:
+      type: object
+      required: [childId, childName, noActivityForThreeMonths]
+      properties:
+        childId:
+          type: integer
+        childName:
+          type: string
+        noActivityForThreeMonths:
+          type: boolean
 
     LearningStoriesReport:
       type: object

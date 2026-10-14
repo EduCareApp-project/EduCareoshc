@@ -1594,6 +1594,23 @@ export const GetDashboardUtilisationResponse = zod.object({
   ),
 });
 
+/**
+ * @summary Active children with no observations, jottings, posts or planning cycles recorded in the last 30 days
+ */
+
+export const GetChildActivityGapsQueryParams = zod.object({
+  siteId: zod.coerce.number().min(1).optional(),
+});
+
+export const GetChildActivityGapsResponseItem = zod.object({
+  childId: zod.number(),
+  childName: zod.string(),
+  noActivityForThreeMonths: zod.boolean(),
+});
+export const GetChildActivityGapsResponse = zod.array(
+  GetChildActivityGapsResponseItem,
+);
+
 export const GetDashboardSummaryResponse = zod.object({
   totalChildren: zod.number(),
   activeChildren: zod.number(),

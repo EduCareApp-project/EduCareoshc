@@ -2601,6 +2601,12 @@ export interface PlanningExperienceUpdate {
   weeklyPlanData?: WeeklyPlanData | null;
 }
 
+export interface ChildActivityGap {
+  childId: number;
+  childName: string;
+  noActivityForThreeMonths: boolean;
+}
+
 export type LearningStoriesReportByChildItem = {
   childId: number;
   childName: string;
@@ -3121,6 +3127,13 @@ export type GetDashboardUtilisationParams = {
    * @pattern ^\d{4}-\d{2}-\d{2}$
    */
   endDate: string;
+};
+
+export type GetChildActivityGapsParams = {
+  /**
+   * @minimum 1
+   */
+  siteId?: number;
 };
 
 export type ListNoticesParams = {

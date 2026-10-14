@@ -32,6 +32,7 @@ import type {
   ChecklistTemplate,
   ChecklistTemplateInput,
   Child,
+  ChildActivityGap,
   ChildDocument,
   ChildDocumentInput,
   ChildInput,
@@ -84,6 +85,7 @@ import type {
   FileLibraryUpdate,
   GenerateExcursionFormRequest,
   GetChecklistPeriodOverrideParams,
+  GetChildActivityGapsParams,
   GetDashboardUtilisationParams,
   GetExpiringMedicationsParams,
   GetLearningStoriesReportParams,
@@ -4672,6 +4674,109 @@ export function useGetDashboardUtilisation<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetDashboardUtilisationQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Active children with no observations, jottings, posts or planning cycles recorded in the last 30 days
+ */
+export const getGetChildActivityGapsUrl = (
+  params?: GetChildActivityGapsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/dashboard/child-activity-gaps?${stringifiedParams}`
+    : `/api/dashboard/child-activity-gaps`;
+};
+
+export const getChildActivityGaps = async (
+  params?: GetChildActivityGapsParams,
+  options?: RequestInit,
+): Promise<ChildActivityGap[]> => {
+  return customFetch<ChildActivityGap[]>(getGetChildActivityGapsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetChildActivityGapsQueryKey = (
+  params?: GetChildActivityGapsParams,
+) => {
+  return [
+    `/api/dashboard/child-activity-gaps`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetChildActivityGapsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getChildActivityGaps>>,
+  TError = ErrorType<void>,
+>(
+  params?: GetChildActivityGapsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChildActivityGaps>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetChildActivityGapsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getChildActivityGaps>>
+  > = ({ signal }) =>
+    getChildActivityGaps(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getChildActivityGaps>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetChildActivityGapsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getChildActivityGaps>>
+>;
+export type GetChildActivityGapsQueryError = ErrorType<void>;
+
+/**
+ * @summary Active children with no observations, jottings, posts or planning cycles recorded in the last 30 days
+ */
+
+export function useGetChildActivityGaps<
+  TData = Awaited<ReturnType<typeof getChildActivityGaps>>,
+  TError = ErrorType<void>,
+>(
+  params?: GetChildActivityGapsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getChildActivityGaps>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetChildActivityGapsQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

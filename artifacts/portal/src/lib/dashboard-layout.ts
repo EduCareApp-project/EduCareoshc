@@ -16,8 +16,8 @@ export const LEADERSHIP_IDS = [
 export const WIDGET_LABELS: Record<string, string> = {
   "organisation-calendar": "Organisation calendar", "notice-board": "Notice board",
   "service-compliance": "Service compliance", checklists: "Checklists",
-  "mtop-outcomes": "MTOP outcomes", "missing-observations": "Children with no observations",
-  "medication-expiry": "Medication expiry", groceries: "Groceries",
+  "mtop-outcomes": "MTOP outcomes", "missing-observations": "Children with no active data",
+  "medication-expiry": "Notifications", groceries: "Groceries",
   posts: "Posts", jottings: "Jottings", observations: "Observations",
   "staff-compliance": "Staff compliance", "weekly-plans": "Weekly plans",
   "open-incidents": "Open incidents", "condition-reports": "Open condition reports",

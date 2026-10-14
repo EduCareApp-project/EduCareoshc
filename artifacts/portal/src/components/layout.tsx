@@ -176,8 +176,8 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const countQueryKey = getGetNotificationCountQueryKey();
-  const listQueryKey = getListNotificationsQueryKey();
+  const countQueryKey = [...getGetNotificationCountQueryKey(), "staff", user?.id];
+  const listQueryKey = [...getListNotificationsQueryKey(), "staff", user?.id];
 
   const { data: countData } = useGetNotificationCount({
     query: {
@@ -207,7 +207,7 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
             old?.map((n) => ({ ...n, read: true })),
         );
       },
-      onError: () => {
+      onSettled: () => {
         queryClient.invalidateQueries({ queryKey: countQueryKey });
         queryClient.invalidateQueries({ queryKey: listQueryKey });
       },
@@ -230,7 +230,7 @@ function NotificationBell({ dark = false }: { dark?: boolean }) {
             old?.map((n) => (n.id === id ? { ...n, read: true } : n)),
         );
       },
-      onError: () => {
+      onSettled: () => {
         queryClient.invalidateQueries({ queryKey: countQueryKey });
         queryClient.invalidateQueries({ queryKey: listQueryKey });
       },

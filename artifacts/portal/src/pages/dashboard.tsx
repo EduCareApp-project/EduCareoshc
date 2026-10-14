@@ -5,9 +5,10 @@ import {
   useListNotices, useCreateNotice, useDeleteNotice, useUpdateNotice,
   useGetServiceComplianceReport, useGetLearningStoriesReport,
   useListPlanningExperiences, useListPosts, useListSites,
-  useListChecklistRoutines, useListChildren, useGetExpiringMedications,
+  useListChecklistRoutines, useGetChildActivityGaps, getGetChildActivityGapsQueryKey, useGetExpiringMedications,
   useListChildMedications, useUpsertChildMedication,
   getListChildMedicationsQueryKey,
+  getGetExpiringMedicationsQueryKey,
 } from "@workspace/api-client-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { Link } from "wouter";
@@ -36,6 +37,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayoutHost, type EditGuard } from "@/components/dashboard-layout/layout-host";
 import type { WidgetDef } from "@/components/dashboard-layout/layout-grid";
+import { StaffNotificationsTile } from "@/components/staff-notifications-tile";
 
 // ─── Shared priority colours ────────────────────────────────────────────────
 const PRIORITY_COLORS: Record<string, string> = {
@@ -949,11 +951,33 @@ function QuickRenewDialog({
 }
 
 // ─── Medication Expiry Widget ────────────────────────────────────────────────
-function MedicationExpiryWidget({ siteId }: { siteId?: number }) {
+export function DashboardNotificationsWidget() {
+  const { ownSiteId, isFullAccess, ownId } = usePermissions();
+  // Personal alerts never follow the dashboard's service selector. Educators
+  // see their own service; organisation-wide leadership retain their full scope.
+  return <StaffNotificationsTile medicalAlerts={
+    <MedicationExpiryWidget siteId={isFullAccess ? undefined : ownSiteId ?? undefined}
+      enabled={ownId != null && (isFullAccess || ownSiteId != null)} />
+  } />;
+}
+
+function MedicationExpiryWidget({ siteId, enabled = true }: { siteId?: number; enabled?: boolean }) {
   const params = siteId ? { siteId } : undefined;
-  const { data, isLoading } = useGetExpiringMedications(params);
+  const { ownId } = usePermissions();
+  const { data, isLoading, isError, refetch } = useGetExpiringMedications(params, {
+    query: {
+      queryKey: [...getGetExpiringMedicationsQueryKey(params), "staff", ownId],
+      enabled,
+      refetchInterval: 30_000,
+      staleTime: 0,
+    },
+  });
   const [renewTarget, setRenewTarget] = useState<{ childId: number; slot: number; medName: string } | null>(null);
 
+  if (!enabled) return null;
+  if (isError) return <div role="alert" className="text-sm text-destructive">
+    Medication alerts could not be loaded. <Button variant="link" size="sm" onClick={() => void refetch()}>Retry</Button>
+  </div>;
   if (isLoading) {
     return (
       <Card className="border-l-4 border-l-orange-400">
@@ -1054,7 +1078,6 @@ function MedicationExpiryWidget({ siteId }: { siteId?: number }) {
 }
 
 function LeadershipDashboard({ guard }: { guard?: EditGuard }) {
-  const { data: meds, isLoading: medLoading } = useGetExpiringMedications();
   const { data: summary, isLoading: loadingSummary } = useGetDashboardSummary();
   const { data: outcomes, isLoading: loadingOutcomes } = useGetOutcomeCounts();
   const { data: observations, isLoading: loadingObservations } = useGetRecentObservations();
@@ -1236,7 +1259,6 @@ function LeadershipDashboard({ guard }: { guard?: EditGuard }) {
         </CardContent>
       </Card>
   );
-  const medVisible = medLoading || (meds?.length ?? 0) > 0;
   const defaultView = (
     <div className="space-y-8">
       <div className="space-y-3">
@@ -1257,7 +1279,7 @@ function LeadershipDashboard({ guard }: { guard?: EditGuard }) {
         </div>
       </div>
 
-      <MedicationExpiryWidget />
+      <DashboardNotificationsWidget />
 
       <NoticeBoard canManage audience="leadership" />
 
@@ -1275,7 +1297,7 @@ function LeadershipDashboard({ guard }: { guard?: EditGuard }) {
     observations: { view: w_observations, placeholder: "" }, "staff-compliance": { view: w_staff_compliance, placeholder: "" },
     "weekly-plans": { view: w_weekly_plans, placeholder: "" }, "open-incidents": { view: w_open_incidents, placeholder: "" },
     "condition-reports": { view: w_condition_reports, placeholder: "" },
-    "medication-expiry": { view: medVisible ? <MedicationExpiryWidget /> : null, placeholder: "Medication expiry appears here when any medication is expiring or expired. Nothing needs attention right now." },
+    "medication-expiry": { view: <DashboardNotificationsWidget />, placeholder: "" },
     "notice-board": { view: <NoticeBoard canManage audience="leadership" />, placeholder: "" },
     "recent-observations": { view: w_recent_observations, placeholder: "" }, "recent-activity": { view: w_recent_activity, placeholder: "" },
     "roll-submissions": { view: <RollSubmissionChecklist />, placeholder: "" },
@@ -1359,23 +1381,21 @@ const CHECKLIST_FREQ_COLORS: Record<ChecklistFreq, string> = {
 function EducatorDashboard({ selectedSiteId, guard }: { selectedSiteId: string; guard?: EditGuard }) {
   const numericSiteId = selectedSiteId ? Number(selectedSiteId) : null;
   const siteParam = numericSiteId ? { siteId: numericSiteId } : undefined;
+  const { ownId } = usePermissions();
 
   const { data: service, isLoading: loadingService } = useGetServiceComplianceReport(siteParam);
   const { data: learning, isLoading: loadingLearning } = useGetLearningStoriesReport(siteParam);
   const { data: summary, isLoading: loadingSummary } = useGetDashboardSummary();
   const { data: routines, isLoading: loadingRoutines } = useListChecklistRoutines();
-  const { data: children } = useListChildren();
+  const { data: childrenWithoutActivity, isError: activityError, refetch: retryActivity } = useGetChildActivityGaps(siteParam, {
+    query: {
+      queryKey: [...getGetChildActivityGapsQueryKey(siteParam), "staff", ownId],
+      enabled: ownId != null,
+      refetchInterval: 60_000,
+    },
+  });
 
   const evacOk = service?.evacuationStatus?.lastConducted && !service?.evacuationStatus?.isOverdue;
-
-  // Build a set of child IDs at the selected site for fast lookup
-  const siteChildIds = numericSiteId
-    ? new Set((children ?? []).filter((c) => c.siteId === numericSiteId).map((c) => c.id))
-    : null;
-
-  const childrenWithNoObs = (learning?.byChild ?? []).filter(
-    (c) => c.observationCount === 0 && (siteChildIds === null || siteChildIds.has(c.childId))
-  );
 
   const today = format(new Date(), "yyyy-MM-dd");
 
@@ -1506,17 +1526,24 @@ function EducatorDashboard({ selectedSiteId, guard }: { selectedSiteId: string; 
 <Card className="border-amber-200 bg-amber-50/50 self-start">
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2 text-amber-800">
-                <AlertTriangle className="h-4 w-4" /> Children with no observations this month
+                <AlertTriangle className="h-4 w-4" /> Children with no active data
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {childrenWithNoObs.map((c) => (
+              {activityError ? <p role="alert" className="text-sm text-destructive">
+                Child activity could not be checked. <Button size="sm" variant="link" onClick={() => void retryActivity()}>Retry</Button>
+              </p> : <div className="flex flex-wrap gap-2">
+                {(childrenWithoutActivity ?? []).map((c) => (
                   <Link key={c.childId} href={`/children/${c.childId}`}>
-                    <Badge className="bg-amber-100 text-amber-800 border-amber-300 cursor-pointer hover:bg-amber-200">{c.childName}</Badge>
+                    <Badge
+                      title={c.noActivityForThreeMonths ? "No activity recorded for three months" : "No activity recorded in the last 30 days"}
+                      className={c.noActivityForThreeMonths
+                        ? "bg-red-100 text-red-800 border-red-300 cursor-pointer hover:bg-red-200"
+                        : "bg-amber-100 text-amber-800 border-amber-300 cursor-pointer hover:bg-amber-200"}
+                    >{c.childName}<span className="sr-only">{c.noActivityForThreeMonths ? ": no activity recorded for three months" : ": no activity recorded in the last 30 days"}</span></Badge>
                   </Link>
                 ))}
-              </div>
+              </div>}
             </CardContent>
           </Card>
   );
@@ -1532,8 +1559,6 @@ function EducatorDashboard({ selectedSiteId, guard }: { selectedSiteId: string; 
         Groceries
       </a>
   );
-  const { data: meds, isLoading: medLoading } = useGetExpiringMedications(siteParam);
-  const medVisible = medLoading || (meds?.length ?? 0) > 0;
   const defaultView = (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
       <div className="min-w-0 lg:sticky lg:top-4">
@@ -1551,18 +1576,18 @@ function EducatorDashboard({ selectedSiteId, guard }: { selectedSiteId: string; 
                 {w_checklists}
       </div>
 
-      {/* Row 2: MTOP Outcomes + Children with no observations */}
+      {/* Row 2: MTOP Outcomes + Children with no active data */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {/* MTOP Outcomes */}
                 {w_mtop}
 
-        {/* Children with no observations — right column only */}
-        {childrenWithNoObs.length > 0 && (
+        {/* Children with no active data — right column only */}
+        {(activityError || (childrenWithoutActivity?.length ?? 0) > 0) && (
           w_missing
         )}
       </div>
 
-      <MedicationExpiryWidget siteId={numericSiteId ?? undefined} />
+      <DashboardNotificationsWidget />
 
       {/* Groceries button */}
       {w_groceries}
@@ -1575,8 +1600,8 @@ function EducatorDashboard({ selectedSiteId, guard }: { selectedSiteId: string; 
     "service-compliance": { view: w_service, placeholder: "" },
     checklists: { view: w_checklists, placeholder: "" },
     "mtop-outcomes": { view: w_mtop, placeholder: "" },
-    "missing-observations": { view: childrenWithNoObs.length > 0 ? w_missing : null, placeholder: "Children with no observations appears here when any child at this service has none. Every child has an observation right now." },
-    "medication-expiry": { view: medVisible ? <MedicationExpiryWidget siteId={numericSiteId ?? undefined} /> : null, placeholder: "Medication expiry appears here when any medication is expiring or expired. Nothing needs attention right now." },
+    "missing-observations": { view: activityError || (childrenWithoutActivity?.length ?? 0) > 0 ? w_missing : null, placeholder: "Children with no active data appears here when a child has no observation, jotting, post or planning cycle recorded in the last 30 days." },
+    "medication-expiry": { view: <DashboardNotificationsWidget />, placeholder: "" },
     groceries: { view: w_groceries, placeholder: "" },
   };
   return <DashboardLayoutHost dashboard="educator" widgets={widgets} defaultView={defaultView} guard={guard} />;

@@ -30,3 +30,5 @@
 - [Educator organisation calendar](organisation-calendar-scope.md) — shared month view, calendar first on mobile, creator-owned edits and leadership override; service calendars later.
 - [Dashboard layout editing](dashboard-layout-scope.md) — admin-only Educator/Leadership rearrangement; private drafts before applying to the organisation.
 - [Dashboard grid grips](dashboard-grid-grips.md) — third-party directional CSS can override local handle styles; check computed transforms and hit areas.
+- [Staff Notifications tile](staff-notification-tile.md) — consolidated personal notifications and medical alerts; keep the empty tile and its saved position.
+- [Child activity gaps](child-activity-gaps.md) — active children only; 30-day rolling window across four record types, with red badges after three calendar months.

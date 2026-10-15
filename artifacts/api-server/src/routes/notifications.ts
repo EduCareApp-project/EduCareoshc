@@ -1,12 +1,11 @@
 import { Router, type IRouter } from "express";
 import { logger } from "../lib/logger";
-import { eq, and, desc, isNull, lte, gte, inArray, not, isNotNull } from "drizzle-orm";
+import { eq, and, asc, desc, isNull, lte, gte, inArray, not, isNotNull } from "drizzle-orm";
 import {
   db,
   notificationsTable,
   notificationSettingsTable,
   staffTable,
-  staffQualificationsTable,
   qipItemsTable,
   checklistRoutinesTable,
   planningExperiencesTable,
@@ -20,8 +19,9 @@ import {
 import { createNotification, createNotificationsForRoles, getISOWeek, getYearMonth } from "../lib/notify";
 import { sendMedicationExpiryEmail, sendGuardianMedicationExpiryEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
-import { isEmailChannelEnabled, isInAppChannelEnabled } from "../lib/channelMap";
+import { isEmailChannelEnabled } from "../lib/channelMap";
 import { getAppUrl } from "../lib/appUrl";
+import { syncExpiryInbox } from "../lib/expiryInbox";
 
 const router: IRouter = Router();
 
@@ -165,56 +165,8 @@ async function computeDeadlineNotifications(): Promise<void> {
     }
   }
 
-  // ── 2. Staff compliance (qualifying expiry) ──────────────────────────────────
-  if (await isEnabled("staff_qualification_expiry")) {
-    const advanceDays = await getAdvanceDays("staff_qualification_expiry");
-    const windowEnd = new Date(today);
-    windowEnd.setDate(today.getDate() + advanceDays);
-    const windowEndStr = windowEnd.toISOString().split("T")[0];
-    const todayStr = today.toISOString().split("T")[0];
-    const monthKey = getYearMonth(today);
-
-    const quals = await db.select({
-      id: staffQualificationsTable.id,
-      staffId: staffQualificationsTable.staffId,
-      name: staffQualificationsTable.name,
-      expiryDate: staffQualificationsTable.expiryDate,
-      staffFirstName: staffTable.firstName,
-      staffLastName: staffTable.lastName,
-    })
-      .from(staffQualificationsTable)
-      .innerJoin(staffTable, and(
-        eq(staffTable.id, staffQualificationsTable.staffId),
-        eq(staffTable.status, "active"),
-      ));
-
-    for (const qual of quals) {
-      if (!qual.expiryDate) continue;
-      const expiryStr = typeof qual.expiryDate === "string" ? qual.expiryDate : qual.expiryDate;
-      if (expiryStr < todayStr || expiryStr > windowEndStr) continue;
-
-      const name = `${qual.staffFirstName} ${qual.staffLastName}`;
-
-      const recipients = await db.select({ id: staffTable.id })
-        .from(staffTable)
-        .where(and(
-          inArray(staffTable.role, ["admin", "educational_leader"]),
-          eq(staffTable.status, "active"),
-        ));
-
-      for (const r of recipients) {
-        await createNotification({
-          staffId: r.id,
-          type: "staff_qualification_expiry",
-          title: `${name} — ${qual.name ?? "qualification"} expires ${expiryStr}`,
-          href: `/staff/${qual.staffId}`,
-          referenceId: qual.staffId,
-          referenceType: "staff",
-          dedupeKey: `staff_qualification_expiry:${qual.id}:${monthKey}:${r.id}`,
-        });
-      }
-    }
-  }
+  // Staff qualification and medical inbox reminders are synchronised per
+  // recipient by syncExpiryInbox; email reminders below retain their own cadence.
 
   // ── 3. No published plan for current week ────────────────────────────────────
   if (await isEnabled("weekly_plan_missing")) {
@@ -290,29 +242,6 @@ async function computeDeadlineNotifications(): Promise<void> {
       const childName = `${child.firstName} ${child.lastName}`;
       const childProfileUrl = `${getAppUrl()}/children/${med.childId}`;
       const medicationLogsUrl = `${getAppUrl()}/medication-logs`;
-
-      // ── In-app notifications → active staff at the child's site ─────────────
-      if (await isInAppChannelEnabled("medication_expiry")) {
-        const siteStaff = await db.select({ id: staffTable.id })
-          .from(staffTable)
-          .where(and(
-            inArray(staffTable.role, ["admin", "educational_leader", "coordinator", "educator"]),
-            eq(staffTable.status, "active"),
-            ...(child.siteId ? [eq(staffTable.siteId, child.siteId)] : []),
-          ));
-
-        for (const s of siteStaff) {
-          await createNotification({
-            staffId: s.id,
-            type: "medication_expiry",
-            title: `${childName} — ${med.name} expires ${expiryStr}`,
-            href: `/children/${med.childId}`,
-            referenceId: med.id,
-            referenceType: "child_medication",
-            dedupeKey: `medication_expiry:${med.id}:${monthKey}:${s.id}`,
-          });
-        }
-      }
 
       // ── Email → site staff + guardians with portal accounts ─────────────────
       if (await isEmailChannelEnabled("medication_expiry")) {
@@ -459,10 +388,11 @@ router.get("/notifications", async (req, res): Promise<void> => {
   computeDeadlineNotifications().catch((err) => logger.warn({ err }, "Deadline notification computation failed"));
 
   try {
+    if (user.type === "staff") await syncExpiryInbox(user);
     const items = await db.select()
       .from(notificationsTable)
       .where(eq(notificationsTable.staffId, userId))
-      .orderBy(desc(notificationsTable.createdAt))
+      .orderBy(asc(notificationsTable.read), desc(notificationsTable.createdAt))
       .limit(50);
 
     res.json(items);
@@ -488,6 +418,7 @@ router.get("/notifications/count", async (req, res): Promise<void> => {
     }
   }
   try {
+    if (user.type === "staff") await syncExpiryInbox(user);
     const items = await db.select({ id: notificationsTable.id })
       .from(notificationsTable)
       .where(and(

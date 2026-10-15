@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+vi.mock("../lib/expiryInbox", () => ({ syncExpiryInbox: vi.fn().mockResolvedValue(undefined) }));
 import request from "supertest";
 import express from "express";
 import pinoHttp from "pino-http";

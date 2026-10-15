@@ -43,17 +43,19 @@ describe("staff Notifications tile", () => {
     expect(screen.queryByText(/no notifications/i)).not.toBeInTheDocument();
   });
 
-  it("includes every inbox category and uses live medical alerts instead of stale duplicates", async () => {
+  it("includes every unacknowledged category, including medical alerts, and hides acknowledged records", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response([
       notification(1, "Qualification needs attention"),
       notification(2, "A newly supported notification", "new_category"),
-      notification(3, "Old medical expiry record", "medication_expiry"),
+      notification(3, "Current medical expiry record", "medication_expiry"),
+      { ...notification(4, "Acknowledged alert"), read: true },
     ])));
     setup(<StaffNotificationsTile medicalAlerts={<div>Current medication alert</div>} />);
     expect(await screen.findByText("Qualification needs attention")).toBeVisible();
     expect(screen.getByText("A newly supported notification")).toBeVisible();
     expect(screen.getByText("Current medication alert")).toBeVisible();
-    expect(screen.queryByText("Old medical expiry record")).not.toBeInTheDocument();
+    expect(screen.getByText("Current medical expiry record")).toBeVisible();
+    expect(screen.queryByText("Acknowledged alert")).not.toBeInTheDocument();
   });
 
   it("never displays the previous staff member's cached inbox on account changes", async () => {
@@ -80,8 +82,9 @@ describe("staff Notifications tile", () => {
     });
     vi.stubGlobal("fetch", fetcher);
     setup();
-    fireEvent.click(await screen.findByRole("button", { name: "Mark all read" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Acknowledge all" }));
     await waitFor(() => expect(screen.queryByLabelText("Unread")).not.toBeInTheDocument());
+    expect(screen.queryByText("Staff alert")).not.toBeInTheDocument();
     expect(read).toBe(true);
     expect(screen.getByTestId("staff-notifications-tile")).toBeVisible();
   });
@@ -93,12 +96,46 @@ describe("staff Notifications tile", () => {
     expect(screen.getByRole("button", { name: "Retry" })).toBeVisible();
   });
 
-  it("scopes educator medication alerts to their own site", async () => {
+  it("acknowledges one notification without hiding the others, and shows a later recurring reminder", async () => {
+    let acknowledged = false;
+    let nextDay = false;
+    vi.stubGlobal("fetch", vi.fn((_url: RequestInfo | URL, options?: RequestInit) => {
+      if (options?.method === "PUT") {
+        acknowledged = true;
+        return Promise.resolve(response({ ok: true }));
+      }
+      return Promise.resolve(response([
+        { ...notification(nextDay ? 3 : 1, "Expired medical", "medication_expiry"), read: nextDay ? false : acknowledged },
+        notification(2, "Other notification"),
+      ]));
+    }));
+    const { client } = setup();
+    fireEvent.click(await screen.findByRole("button", { name: "Acknowledge Expired medical" }));
+    await waitFor(() => expect(screen.queryByText("Expired medical")).not.toBeInTheDocument());
+    expect(screen.getByText("Other notification")).toBeVisible();
+    nextDay = true;
+    await client.invalidateQueries();
+    expect(await screen.findByText("Expired medical")).toBeVisible();
+  });
+
+  it("keeps notifications visible when acknowledgement fails", async () => {
+    vi.stubGlobal("fetch", vi.fn((_url: RequestInfo | URL, options?: RequestInit) =>
+      Promise.resolve(options?.method === "PUT"
+        ? response({ error: "Failed" }, 500)
+        : response([notification(1, "Staff alert")]))));
+    setup();
+    fireEvent.click(await screen.findByRole("button", { name: "Acknowledge Staff alert" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Acknowledge Staff alert" })).toBeEnabled());
+    expect(screen.getByText("Staff alert")).toBeVisible();
+  });
+
+  it("uses the personal inbox for educator medication alerts, rather than a separate live list", async () => {
     const fetcher = vi.fn().mockImplementation(() => Promise.resolve(response([])));
     vi.stubGlobal("fetch", fetcher);
     const { client } = setup(<DashboardNotificationsWidget />);
     await waitFor(() => expect(client.isFetching()).toBe(0));
-    expect(fetcher.mock.calls.some(([url]) => String(url).includes("/medications/expiring?siteId=7"))).toBe(true);
+    expect(fetcher.mock.calls.some(([url]) => String(url).includes("/medications/expiring"))).toBe(false);
+    expect(fetcher.mock.calls.some(([url]) => String(url).endsWith("/notifications"))).toBe(true);
     expect(screen.getByTestId("staff-notifications-tile")).toBeVisible();
   });
 

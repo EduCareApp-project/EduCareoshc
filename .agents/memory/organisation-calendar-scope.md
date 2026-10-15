@@ -17,6 +17,12 @@ All educators and leadership can add events. Staff manage their own events; admi
 
 **How to apply:** Preserve the month view and shared scope when changing the dashboard. Do not convert this into the existing weekly learning-planning calendar.
 
+Selecting a calendar day shows its date and events inline below the month grid, not in an events window. Event creation, editing and deletion confirmation can still use dialogs.
+
+**Why:** The user explicitly requested the day and its events below the calendar rather than opening a window of events.
+
+**How to apply:** Keep day selection within the dashboard calendar tile and preserve the existing event management permissions.
+
 Future service calendars should support service-specific events linked to the service and organisation without crowding the global view.
 
 **Why:** The user described separate service calendars as a future requirement, not part of the initial shared calendar.

@@ -5,10 +5,10 @@ import {
   useListNotices, useCreateNotice, useDeleteNotice, useUpdateNotice,
   useGetServiceComplianceReport, useGetLearningStoriesReport,
   useListPlanningExperiences, useListPosts, useListSites,
-  useListChecklistRoutines, useGetChildActivityGaps, getGetChildActivityGapsQueryKey, useGetExpiringMedications,
+  useListChecklistRoutines, useGetChildActivityGaps, getGetChildActivityGapsQueryKey,
   useListChildMedications, useUpsertChildMedication,
   getListChildMedicationsQueryKey,
-  getGetExpiringMedicationsQueryKey,
+  getListNotificationsQueryKey, getGetNotificationCountQueryKey,
 } from "@workspace/api-client-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { Link } from "wouter";
@@ -20,7 +20,7 @@ import {
   Layers, Image, ChevronLeft, ChevronRight, GraduationCap, Paperclip, X, XCircle, Upload, Newspaper, Pencil, ExternalLink, ClipboardCheck, Building2, Pill, Loader2,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format, parseISO, startOfWeek, addDays, differenceInCalendarDays } from "date-fns";
+import { format, parseISO, startOfWeek, addDays } from "date-fns";
 import { fmtMelb } from "@/lib/timezone";
 import { OrganisationCalendar } from "@/components/organisation-calendar";
 import { Badge } from "@/components/ui/badge";
@@ -897,6 +897,8 @@ function QuickRenewDialog({
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["/api/medications/expiring"] });
           queryClient.invalidateQueries({ queryKey: getListChildMedicationsQueryKey(childId) });
+          queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetNotificationCountQueryKey() });
           toast({ title: "Expiry date updated" });
           onClose();
         },
@@ -952,129 +954,18 @@ function QuickRenewDialog({
 
 // ─── Medication Expiry Widget ────────────────────────────────────────────────
 export function DashboardNotificationsWidget() {
-  const { ownSiteId, isFullAccess, ownId } = usePermissions();
-  // Personal alerts never follow the dashboard's service selector. Educators
-  // see their own service; organisation-wide leadership retain their full scope.
-  return <StaffNotificationsTile medicalAlerts={
-    <MedicationExpiryWidget siteId={isFullAccess ? undefined : ownSiteId ?? undefined}
-      enabled={ownId != null && (isFullAccess || ownSiteId != null)} />
-  } />;
-}
-
-function MedicationExpiryWidget({ siteId, enabled = true }: { siteId?: number; enabled?: boolean }) {
-  const params = siteId ? { siteId } : undefined;
-  const { ownId } = usePermissions();
-  const { data, isLoading, isError, refetch } = useGetExpiringMedications(params, {
-    query: {
-      queryKey: [...getGetExpiringMedicationsQueryKey(params), "staff", ownId],
-      enabled,
-      refetchInterval: 30_000,
-      staleTime: 0,
-    },
-  });
   const [renewTarget, setRenewTarget] = useState<{ childId: number; slot: number; medName: string } | null>(null);
-
-  if (!enabled) return null;
-  if (isError) return <div role="alert" className="text-sm text-destructive">
-    Medication alerts could not be loaded. <Button variant="link" size="sm" onClick={() => void refetch()}>Retry</Button>
-  </div>;
-  if (isLoading) {
-    return (
-      <Card className="border-l-4 border-l-orange-400">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Pill className="h-4 w-4 text-orange-500" /> Medications needing attention
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!data || data.length === 0) return null;
-
-  return (
-    <Card className="border-l-4 border-l-orange-400">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center justify-between gap-2">
-          <span className="flex items-center gap-2">
-            <Pill className="h-4 w-4 text-orange-500" /> Medications needing attention
-          </span>
-          <Link href="/children?medical=1">
-            <span className="text-xs text-primary font-normal cursor-pointer hover:underline flex items-center gap-0.5">
-              View all <ChevronRight className="h-3 w-3" />
-            </span>
-          </Link>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          {data.map((child) => {
-            const hasExpired = child.medications.some((m) => m.status === "expired");
-            return (
-              <div key={child.childId} className={`rounded-md px-3 py-2.5 border ${hasExpired ? "border-red-200 bg-red-50/60" : "border-orange-200 bg-orange-50/60"}`}>
-                {/* Child name row — links to the medical tab */}
-                <Link href={`/children/${child.childId}?tab=medical`}>
-                  <div className="flex items-center gap-2 min-w-0 cursor-pointer hover:opacity-80 transition-opacity mb-1.5">
-                    <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${hasExpired ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>
-                      {child.childFirstName[0]}{child.childLastName[0]}
-                    </div>
-                    <div className="min-w-0">
-                      <p className={`text-sm font-medium leading-tight ${hasExpired ? "text-red-800" : "text-orange-800"}`}>
-                        {child.childFirstName} {child.childLastName}
-                      </p>
-                      {child.siteName && (
-                        <p className="text-xs text-muted-foreground leading-tight">{child.siteName}</p>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-                {/* Per-medication rows with individual inline-renew buttons */}
-                <div className="flex flex-col gap-1 pl-9">
-                  {child.medications.map((med) => {
-                    const expiry = new Date(med.expiryDate + "T00:00:00");
-                    const today = new Date(); today.setHours(0, 0, 0, 0);
-                    const daysLeft = differenceInCalendarDays(expiry, today);
-                    const label = med.status === "expired"
-                      ? `${med.name} — expired ${Math.abs(daysLeft)}d ago`
-                      : `${med.name} — expires in ${daysLeft}d`;
-                    return (
-                      <div key={med.slot} className="flex items-center gap-2">
-                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${med.status === "expired" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>
-                          {label}
-                        </span>
-                        <button
-                          className="text-xs text-primary hover:underline cursor-pointer whitespace-nowrap font-medium"
-                          onClick={() => setRenewTarget({ childId: child.childId, slot: med.slot, medName: med.name })}
-                        >
-                          Update expiry
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-
-      {/* Inline quick-renew dialog */}
-      {renewTarget && (
-        <QuickRenewDialog
-          childId={renewTarget.childId}
-          slot={renewTarget.slot}
-          medName={renewTarget.medName}
-          onClose={() => setRenewTarget(null)}
-        />
-      )}
-    </Card>
-  );
+  return <>
+    <StaffNotificationsTile renderAction={(notification) => {
+      const match = notification.type === "medication_expiry"
+        ? notification.href?.match(/^\/children\/(\d+)\?tab=medical&slot=(\d+)$/) : null;
+      if (!match) return null;
+      return <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setRenewTarget({
+        childId: Number(match[1]), slot: Number(match[2]), medName: "Medication",
+      })}>Update expiry</Button>;
+    }} />
+    {renewTarget && <QuickRenewDialog {...renewTarget} onClose={() => setRenewTarget(null)} />}
+  </>;
 }
 
 function LeadershipDashboard({ guard }: { guard?: EditGuard }) {

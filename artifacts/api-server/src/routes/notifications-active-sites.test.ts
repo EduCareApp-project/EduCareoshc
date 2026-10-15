@@ -9,6 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+vi.mock("../lib/expiryInbox", () => ({ syncExpiryInbox: vi.fn().mockResolvedValue(undefined) }));
 import request from "supertest";
 import express from "express";
 import pinoHttp from "pino-http";
@@ -78,6 +79,7 @@ vi.mock("drizzle-orm", () => ({
   eq:        mockEq,
   and:       vi.fn((...args: unknown[]) => `and(${args.join(",")})`),
   desc:      vi.fn((col: unknown) => `desc(${String(col)})`),
+  asc:       vi.fn((col: unknown) => `asc(${String(col)})`),
   isNull:    vi.fn(() => "isNull"),
   isNotNull: vi.fn(() => "isNotNull"),
   not:       vi.fn((v: unknown) => `not(${String(v)})`),

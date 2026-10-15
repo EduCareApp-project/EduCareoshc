@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -39,7 +38,10 @@ export function OrganisationCalendar() {
   const events = data ?? [];
   const invalidate = () => qc.invalidateQueries({ queryKey: [getListOrganisationCalendarEventsQueryKey()[0]] });
   const dayEvents = selected ? eventsOnDay(events, selected) : [];
-  const shift = (n: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + n, 1));
+  const shift = (n: number) => {
+    setMonth(new Date(month.getFullYear(), month.getMonth() + n, 1));
+    setSelected(null);
+  };
 
   async function confirmDelete() {
     if (!deleting || del.isPending) return;
@@ -67,7 +69,7 @@ export function OrganisationCalendar() {
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shift(-1)} aria-label="Previous month" data-testid="button-org-calendar-prev"><ChevronLeft className="h-4 w-4" /></Button>
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold" aria-live="polite" data-testid="text-org-calendar-month">{format(month, "MMMM yyyy")}</span>
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => { const d = parseYmd(today); setMonth(new Date(d.getFullYear(), d.getMonth(), 1)); }} data-testid="button-org-calendar-today">Today</Button>
+             <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => { const d = parseYmd(today); setMonth(new Date(d.getFullYear(), d.getMonth(), 1)); setSelected(today); }} data-testid="button-org-calendar-today">Today</Button>
           </div>
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shift(1)} aria-label="Next month" data-testid="button-org-calendar-next"><ChevronRight className="h-4 w-4" /></Button>
         </div>
@@ -97,7 +99,8 @@ export function OrganisationCalendar() {
                   key={day} type="button" onClick={() => setSelected(day)}
                   aria-label={`${format(parseYmd(day), "EEEE d MMMM yyyy")}${isToday ? ", today" : ""}, ${list.length} event${list.length === 1 ? "" : "s"}`}
                   aria-current={isToday ? "date" : undefined}
-                  className={`flex min-h-[3.5rem] flex-col items-stretch gap-0.5 bg-card p-1 text-left transition-colors hover:bg-muted/50 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring sm:min-h-[4.25rem] ${inMonth ? "" : "bg-muted/30 text-muted-foreground"}`}
+                  aria-pressed={selected === day}
+                  className={`flex min-h-[3.5rem] flex-col items-stretch gap-0.5 bg-card p-1 text-left transition-colors hover:bg-muted/50 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring sm:min-h-[4.25rem] ${inMonth ? "" : "bg-muted/30 text-muted-foreground"} ${selected === day ? "ring-2 ring-inset ring-primary bg-primary/5" : ""}`}
                   data-testid={`button-org-calendar-day-${day}`}
                 >
                   <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${isToday ? "bg-primary font-bold text-primary-foreground" : ""}`}>{parseInt(day.slice(8), 10)}</span>
@@ -113,17 +116,14 @@ export function OrganisationCalendar() {
             })}
           </div>
         )}
-        {!isLoading && !isError && events.length === 0 && (
+        {!selected && !isLoading && !isError && events.length === 0 && (
           <p className="text-center text-xs text-muted-foreground" data-testid="text-org-calendar-empty">No events in this view. Select a day to add one.</p>
         )}
-      </CardContent>
-
-      <Dialog open={!!selected && !formOpen && !deleting} onOpenChange={(o) => { if (!o) setSelected(null); }}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg" data-testid="dialog-org-calendar-day">
-          <DialogHeader>
-            <DialogTitle>{selected && format(parseYmd(selected), "EEEE d MMMM yyyy")}</DialogTitle>
-            <DialogDescription>{dayEvents.length === 0 ? "No events on this day." : `${dayEvents.length} event${dayEvents.length === 1 ? "" : "s"}`}</DialogDescription>
-          </DialogHeader>
+        {selected && !isLoading && !isError && <section className="space-y-3 border-t pt-3" aria-label="Selected day events" data-testid="section-org-calendar-day">
+          <div aria-live="polite">
+            <h3 className="text-sm font-semibold">{format(parseYmd(selected), "EEEE d MMMM yyyy")}</h3>
+            <p className="mt-1 text-xs text-muted-foreground">{dayEvents.length === 0 ? "No events on this day." : `${dayEvents.length} event${dayEvents.length === 1 ? "" : "s"}`}</p>
+          </div>
           <div className="space-y-3">
             {dayEvents.map((ev) => (
               <div key={ev.id} className="rounded-md border p-3" data-testid={`card-org-event-${ev.id}`}>
@@ -146,8 +146,8 @@ export function OrganisationCalendar() {
             ))}
             <Button className="w-full" onClick={() => { setEditing(null); setFormOpen(true); }} data-testid="button-org-day-add"><Plus className="mr-1 h-4 w-4" /> Add event</Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </section>}
+      </CardContent>
 
       <OrganisationCalendarEventDialog
         open={formOpen} onOpenChange={setFormOpen} event={editing}

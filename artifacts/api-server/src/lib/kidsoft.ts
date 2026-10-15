@@ -19,6 +19,12 @@ export function kidsoftConfigured(): boolean {
   return Boolean(process.env.KIDSOFT_SERVICE_KEY);
 }
 
+export function kidsoftToday(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Australia/Melbourne", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+}
+
 async function request(path: string, parameters: Record<string, string | string[]> = {}): Promise<Record<string, unknown>> {
   const key = process.env.KIDSOFT_SERVICE_KEY;
   if (!key) throw new KidsoftError("Kidsoft has not been connected. Ask your administrator to complete setup.");

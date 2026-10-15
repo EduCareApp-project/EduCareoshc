@@ -11,26 +11,28 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { apiErrorMessage, formatMelbourneDateTime, melbourneToday } from "@/components/kidsoft-utils";
+import { useAuth } from "@/contexts/auth";
+import { useMelbourneToday } from "@/hooks/use-melbourne-today";
+import { apiErrorMessage, formatMelbourneDateTime, groupSchoolCareBookings, melbourneToday } from "@/components/kidsoft-utils";
 
 export function SchoolKidsoftRoll({ siteId }: { siteId: number }) {
   const queryClient = useQueryClient();
-  const [date, setDate] = useState(melbourneToday);
+  const { user } = useAuth();
+  const schoolView = user?.type === "school";
+  const today = useMelbourneToday();
+  const [selectedDate, setDate] = useState(melbourneToday);
+  const date = schoolView ? today : selectedDate;
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const params = { date };
   const queryKey = getGetSchoolKidsoftRollQueryKey(siteId, params);
-  const { data, isLoading, isError, error, refetch } = useGetSchoolKidsoftRoll(siteId, params, {
-    query: { queryKey, enabled: !!siteId && /^\d{4}-\d{2}-\d{2}$/.test(date) },
+  const { data: response, isLoading, isError, error, refetch } = useGetSchoolKidsoftRoll(siteId, params, {
+    query: { queryKey, enabled: !!siteId && /^\d{4}-\d{2}-\d{2}$/.test(date), placeholderData: undefined },
   });
+  const data = response?.date === date ? response : undefined;
   const refresh = useRefreshSchoolKidsoftRoll();
 
-  const groups = useMemo(() => {
-    const map = new Map<string, NonNullable<typeof data>["bookings"]>();
-    for (const b of data?.bookings ?? []) {
-      map.set(b.sessionName, [...(map.get(b.sessionName) ?? []), b]);
-    }
-    return Array.from(map.entries());
-  }, [data]);
+  const groups = useMemo(() => groupSchoolCareBookings(data?.bookings ?? []), [data]);
+  const otherBookingCount = (data?.bookings.length ?? 0) - groups.reduce((total, group) => total + group.bookings.length, 0);
 
   async function onRefresh() {
     const target = date;
@@ -51,13 +53,17 @@ export function SchoolKidsoftRoll({ siteId }: { siteId: number }) {
         <div>
           <h3 className="text-lg font-semibold">Daily Bookings</h3>
           <p className="max-w-xl text-sm text-muted-foreground">
-            Children booked into your OSHC service, from a saved copy. This is the booked roll, not actual attendance.
+            {schoolView ? "Today's children booked into your OSHC service, from a saved copy." : "Children booked into your OSHC service, from a saved copy."} This is the booked roll, not actual attendance.
           </p>
         </div>
         <div className="flex items-end gap-2">
           <label className="text-xs font-medium text-muted-foreground">
-            <span className="mb-1 flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />Date</span>
-            <Input type="date" value={date} onChange={(e) => changeDate(e.target.value)} className="w-44" data-testid="input-roll-date" />
+            <span className="mb-1 flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />{schoolView ? "Today" : "Date"}</span>
+            {schoolView ? (
+              <span className="flex min-h-9 items-center text-sm text-foreground" data-testid="text-roll-today">
+                {new Intl.DateTimeFormat("en-AU", { timeZone: "Australia/Melbourne", day: "numeric", month: "long", year: "numeric" }).format(new Date(`${date}T00:00:00Z`))}
+              </span>
+            ) : <Input type="date" value={date} onChange={(e) => changeDate(e.target.value)} className="w-44" data-testid="input-roll-date" />}
           </label>
           <Button onClick={onRefresh} disabled={refresh.isPending || isLoading || !date || !data?.mapped} data-testid="button-refresh-roll">
             {refresh.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
@@ -115,13 +121,14 @@ export function SchoolKidsoftRoll({ siteId }: { siteId: number }) {
             </CardContent></Card>
           ) : (
             <div className="space-y-4">
-              {groups.map(([session, rows]) => (
+              {groups.map(({ name: session, bookings: rows }) => (
                 <Card key={session} data-testid={`group-session-${session}`}>
-                  <div className="flex items-center justify-between border-b px-4 py-3">
+                  <div className="flex items-center justify-between rounded-t-xl bg-[#1b5e20] px-4 py-3 text-white">
                     <h4 className="font-semibold">{session}</h4>
-                    <Badge variant="secondary">{rows.length} booked</Badge>
+                    <Badge className="border-white/30 bg-white/15 text-white hover:bg-white/15">{rows.length} booked</Badge>
                   </div>
                   <ul className="divide-y">
+                    {!rows.length && <li className="px-4 py-4 text-sm text-muted-foreground">No bookings for this session.</li>}
                     {rows.map((b) => (
                       <li key={b.bookingId} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm" data-testid={`row-booking-${b.bookingId}`}>
                         <span className="font-medium">{b.childName}</span>
@@ -134,6 +141,11 @@ export function SchoolKidsoftRoll({ siteId }: { siteId: number }) {
                   </ul>
                 </Card>
               ))}
+              {otherBookingCount > 0 && (
+                <p className="text-sm text-muted-foreground" role="status">
+                  {otherBookingCount} booking{otherBookingCount === 1 ? "" : "s"} for other session types {otherBookingCount === 1 ? "is" : "are"} included in the totals but not in these before/after-school lists.
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">Absence flags show what was recorded against the booking. They are not a record of who actually attended.</p>
             </div>
           )}

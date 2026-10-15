@@ -4372,6 +4372,7 @@ paths:
   /schools/{siteId}/kidsoft-roll:
     get:
       operationId: getSchoolKidsoftRoll
+      summary: Read a saved roll; schools may only read today's Melbourne date
       tags: [schools]
       parameters:
         - {name: siteId, in: path, required: true, schema: {type: integer}}
@@ -4387,6 +4388,7 @@ paths:
   /schools/{siteId}/kidsoft-roll/refresh:
     post:
       operationId: refreshSchoolKidsoftRoll
+      summary: Refresh a roll; schools may only refresh today's Melbourne date
       tags: [schools]
       parameters:
         - {name: siteId, in: path, required: true, schema: {type: integer}}

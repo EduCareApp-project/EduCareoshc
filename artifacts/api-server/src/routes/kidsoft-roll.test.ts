@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import express from "express";
 import request from "supertest";
 
@@ -35,10 +35,13 @@ function app(user: object = { type: "school", siteId }) {
   return server;
 }
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-15T01:00:00Z"));
   vi.clearAllMocks(); mocks.state.results = []; mocks.state.writes = 0;
   mocks.getServices.mockResolvedValue([{ id: mapping.serviceId, name: mapping.serviceName }]);
   mocks.getRoll.mockResolvedValue(old.bookings);
 });
+afterEach(() => vi.useRealTimers());
 function schoolRows(snapshot: unknown = old) {
   mocks.state.results = [[{ featureSettings: { schoolPortalVisibleTabs: ["roll"] } }], [{ status: "active" }], [mapping], [snapshot]];
 }
@@ -66,6 +69,33 @@ describe("Kidsoft school access and snapshot safety", () => {
     expect(response.body.totalChildren).toBe(1);
     expect(mocks.getRoll).not.toHaveBeenCalled();
     expect(mocks.getServices).not.toHaveBeenCalled();
+  });
+  it("blocks schools reading or refreshing yesterday and tomorrow before any database or upstream access", async () => {
+    for (const date of ["2026-10-14", "2026-10-16"]) {
+      expect((await request(app()).get(`/schools/7/kidsoft-roll?date=${date}`)).status).toBe(403);
+      expect((await request(app()).post("/schools/7/kidsoft-roll/refresh").send({ date })).status).toBe(403);
+    }
+    expect(mocks.db.select).not.toHaveBeenCalled();
+    expect(mocks.getRoll).not.toHaveBeenCalled();
+  });
+  it("uses Melbourne today rather than the UTC date", async () => {
+    vi.setSystemTime(new Date("2026-10-14T13:30:00Z"));
+    schoolRows();
+    expect((await request(app()).get("/schools/7/kidsoft-roll?date=2026-10-15")).status).toBe(200);
+    expect((await request(app()).get("/schools/7/kidsoft-roll?date=2026-10-14")).status).toBe(403);
+  });
+  it("keeps date selection available to authorised staff", async () => {
+    mocks.state.results = [[{ status: "active" }], [mapping], [old]];
+    expect((await request(app({ type: "staff", role: "admin" })).get("/schools/7/kidsoft-roll?date=2026-10-14")).status).toBe(200);
+  });
+  it("does not save or return the previous day's roll if midnight passes during refresh", async () => {
+    schoolRows();
+    mocks.getRoll.mockImplementation(async () => {
+      vi.setSystemTime(new Date("2026-10-15T13:00:00Z"));
+      return old.bookings;
+    });
+    expect((await request(app()).post("/schools/7/kidsoft-roll/refresh").send({ date: "2026-10-15" })).status).toBe(403);
+    expect(mocks.state.writes).toBe(0);
   });
   it("blocks the roll when disabled in school visibility settings", async () => {
     mocks.state.results = [[{ featureSettings: { schoolPortalVisibleTabs: ["reports"] } }]];

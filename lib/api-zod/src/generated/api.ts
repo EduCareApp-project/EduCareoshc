@@ -6237,6 +6237,9 @@ export const UpdateKidsoftMappingResponse = zod.object({
   ok: zod.boolean(),
 });
 
+/**
+ * @summary Read a saved roll; schools may only read today's Melbourne date
+ */
 export const GetSchoolKidsoftRollParams = zod.object({
   siteId: zod.coerce.number(),
 });
@@ -6265,6 +6268,9 @@ export const GetSchoolKidsoftRollResponse = zod.object({
   ),
 });
 
+/**
+ * @summary Refresh a roll; schools may only refresh today's Melbourne date
+ */
 export const RefreshSchoolKidsoftRollParams = zod.object({
   siteId: zod.coerce.number(),
 });

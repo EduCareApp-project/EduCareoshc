@@ -9,11 +9,17 @@ The feature originally discussed as **Kidsoft Roll** uses **Daily Bookings** as 
 
 **Why:** The user resumed the feature and then asked to call the tab Daily Bookings.
 
-Schools need the list of individual children booked in, not just attendance totals. Display one selected day at a time. Schools themselves must have a Refresh button that pulls the latest live booking data from Kidsoft.
+Schools need the list of individual children booked in, not just attendance totals. Schools may only see today's bookings, using the Melbourne calendar day; they cannot select or request earlier or future days. Schools themselves must have a Refresh button that pulls the latest live booking data from Kidsoft.
 
-**Why:** The user explicitly clarified that schools should see booked children for one day and be able to refresh the data themselves.
+**Why:** The user narrowed the original day-selection request to today only for school accounts and retained school-triggered refresh.
 
 **How to apply:** Treat imported rolls as saved snapshots between refreshes, rather than a live embedded Kidsoft page. Keep each school's access scoped to its mapped service. Do not restrict refresh to staff accounts or substitute actual attendance for booked children.
+
+Show Before School Care and After School Care with dark green headings and white writing. Combine casual and regular bookings for each care type, and retain Marked absent badges.
+
+**Why:** The user explicitly requested these two combined groups, the heading colours and the absence indicators.
+
+**How to apply:** Keep source booking and absence details intact while presenting the combined lists. Do not label full-day bookings as before- or after-school care merely to force them into these groups.
 
 Kidsoft bookings are authoritative for this roll; do not match children to EduCare profiles by name or apply EduCare learning-list status filters to the imported roll.
 

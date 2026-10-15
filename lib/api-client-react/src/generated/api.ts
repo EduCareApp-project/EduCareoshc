@@ -19007,6 +19007,9 @@ export const useUpdateKidsoftMapping = <
   return useMutation(getUpdateKidsoftMappingMutationOptions(options));
 };
 
+/**
+ * @summary Read a saved roll; schools may only read today's Melbourne date
+ */
 export const getGetSchoolKidsoftRollUrl = (
   siteId: number,
   params: GetSchoolKidsoftRollParams,
@@ -19089,6 +19092,10 @@ export type GetSchoolKidsoftRollQueryResult = NonNullable<
 >;
 export type GetSchoolKidsoftRollQueryError = ErrorType<void>;
 
+/**
+ * @summary Read a saved roll; schools may only read today's Melbourne date
+ */
+
 export function useGetSchoolKidsoftRoll<
   TData = Awaited<ReturnType<typeof getSchoolKidsoftRoll>>,
   TError = ErrorType<void>,
@@ -19117,6 +19124,9 @@ export function useGetSchoolKidsoftRoll<
   return { ...query, queryKey: queryOptions.queryKey };
 }
 
+/**
+ * @summary Refresh a roll; schools may only refresh today's Melbourne date
+ */
 export const getRefreshSchoolKidsoftRollUrl = (siteId: number) => {
   return `/api/schools/${siteId}/kidsoft-roll/refresh`;
 };
@@ -19179,6 +19189,9 @@ export type RefreshSchoolKidsoftRollMutationBody =
   BodyType<RefreshSchoolKidsoftRollBody>;
 export type RefreshSchoolKidsoftRollMutationError = ErrorType<void>;
 
+/**
+ * @summary Refresh a roll; schools may only refresh today's Melbourne date
+ */
 export const useRefreshSchoolKidsoftRoll = <
   TError = ErrorType<void>,
   TContext = unknown,

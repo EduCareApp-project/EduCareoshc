@@ -3,7 +3,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { pool, sitesTable, organisationTable, kidsoftServiceMappingsTable, kidsoftRollSnapshotsTable, type KidsoftRollBooking } from "@workspace/db";
 import { z, GetKidsoftSetupResponse, GetSchoolKidsoftRollResponse } from "@workspace/api-zod";
-import { getKidsoftRoll, getKidsoftServices, kidsoftConfigured, KidsoftError } from "../lib/kidsoft";
+import { getKidsoftRoll, getKidsoftServices, kidsoftConfigured, kidsoftToday, KidsoftError } from "../lib/kidsoft";
 
 const router = Router();
 // Share the existing database pool but never log SQL parameters containing
@@ -26,6 +26,14 @@ function admin(req: Request, res: Response): boolean {
   const user = req.session.user!;
   if (user.type !== "staff" || !admins.has(user.role)) {
     res.status(403).json({ error: "Administrator access required" });
+    return false;
+  }
+  return true;
+}
+
+function schoolDayAccess(req: Request, res: Response, day: string): boolean {
+  if (req.session.user?.type === "school" && day !== kidsoftToday()) {
+    res.status(403).json({ error: "Schools can only view today's bookings (Melbourne time)." });
     return false;
   }
   return true;
@@ -124,6 +132,7 @@ router.put("/kidsoft/mappings/:siteId", async (req, res) => {
 router.get("/schools/:siteId/kidsoft-roll", async (req, res) => {
   const date = dateSchema.safeParse(req.query.date);
   if (!date.success) { res.status(400).json({ error: "Choose a valid day" }); return; }
+  if (!schoolDayAccess(req, res, date.data)) return;
   try {
     const siteId = await siteAccess(req, res);
     if (siteId === null) return;
@@ -132,6 +141,7 @@ router.get("/schools/:siteId/kidsoft-roll", async (req, res) => {
       eq(kidsoftRollSnapshotsTable.siteId, siteId), eq(kidsoftRollSnapshotsTable.rollDate, date.data),
       eq(kidsoftRollSnapshotsTable.serviceId, mapping.serviceId),
     )) : [];
+    if (!schoolDayAccess(req, res, date.data)) return;
     res.json(rollResponse(date.data, mapping, snapshot));
   } catch (error) { failure(req, res, error); }
 });
@@ -140,6 +150,7 @@ const refreshing = new Set<number>();
 router.post("/schools/:siteId/kidsoft-roll/refresh", async (req, res) => {
   const body = z.object({ date: dateSchema }).safeParse(req.body);
   if (!body.success) { res.status(400).json({ error: "Choose a valid day" }); return; }
+  if (!schoolDayAccess(req, res, body.data.date)) return;
   let claimed: number | null = null;
   try {
     const siteId = await siteAccess(req, res);
@@ -158,16 +169,19 @@ router.post("/schools/:siteId/kidsoft-roll/refresh", async (req, res) => {
     const activeService = (await getKidsoftServices()).some((service) => service.id === mapping.serviceId);
     if (!activeService) throw new KidsoftError("The mapped Kidsoft service is no longer active. Ask your administrator to check the mapping.");
     const bookings = await getKidsoftRoll(mapping.serviceId, body.data.date);
+    if (!schoolDayAccess(req, res, body.data.date)) return;
     const snapshot = await db.transaction(async (tx) => {
       const [current] = await tx.select().from(kidsoftServiceMappingsTable)
         .where(eq(kidsoftServiceMappingsTable.siteId, siteId)).for("update");
       if (!current || current.serviceId !== mapping.serviceId) return null;
+      if (req.session.user?.type === "school" && body.data.date !== kidsoftToday()) return null;
       const [saved] = await tx.insert(kidsoftRollSnapshotsTable).values({
         siteId, rollDate: body.data.date, serviceId: mapping.serviceId, bookings, refreshedAt: new Date(),
       }).onConflictDoUpdate({ target: [kidsoftRollSnapshotsTable.siteId, kidsoftRollSnapshotsTable.rollDate],
         set: { serviceId: mapping.serviceId, bookings, refreshedAt: new Date() } }).returning();
       return saved;
     });
+    if (!schoolDayAccess(req, res, body.data.date)) return;
     if (!snapshot) { res.status(409).json({ error: "The service mapping changed during refresh. Please reload and try again." }); return; }
     res.json(rollResponse(body.data.date, mapping, snapshot));
   } catch (error) { failure(req, res, error); }

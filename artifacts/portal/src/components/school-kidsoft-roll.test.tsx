@@ -48,13 +48,15 @@ describe("Daily Bookings school view", () => {
     expect(screen.getAllByRole("heading", { level: 4 })).toHaveLength(2);
     expect(within(before).getByRole("heading").parentElement).toHaveClass("bg-[#1b5e20]", "text-white");
   });
-  it("keeps staff date selection available", () => {
+  it("also hides all counts in the staff preview while keeping staff date selection available", () => {
     mocks.user.type = "staff";
     setup();
     expect(screen.getByTestId("input-roll-date")).toHaveValue("2026-10-15");
-    expect(screen.getByTestId("text-total-bookings")).toHaveTextContent("4");
-    expect(screen.getByTestId("text-total-children")).toHaveTextContent("2");
-    expect(screen.getAllByText("2 booked")).toHaveLength(2);
+    expect(screen.queryByTestId("text-total-bookings")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("text-total-children")).not.toBeInTheDocument();
+    expect(screen.queryByText(/\d+ booked/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("Alex Test")).toHaveLength(2);
+    expect(screen.getByText("Marked absent")).toBeInTheDocument();
   });
   it("changes the requested date at Melbourne midnight and hides the old day's cached names", () => {
     vi.setSystemTime(new Date("2026-10-15T12:59:59.900Z"));

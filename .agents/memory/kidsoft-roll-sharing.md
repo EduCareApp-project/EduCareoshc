@@ -17,7 +17,9 @@ Schools need the list of individual children booked in, not just attendance tota
 
 Show Before School Care and After School Care with dark green headings and white writing. Combine casual and regular bookings for each care type, and retain Marked absent badges.
 
-Do not show booking totals, child counts or session count badges in the school-facing view; staff counts remain available.
+Do not show booking totals, child counts or session count badges anywhere on the school portal Daily Bookings page, including when staff preview it.
+
+**Why:** The user requested removal from the schools view and reported that the role-only change still left counts visible. Treat this as a page-level presentation rule, not a school-login-only rule.
 
 **Why:** The user explicitly requested these two combined groups, the heading colours and the absence indicators.
 

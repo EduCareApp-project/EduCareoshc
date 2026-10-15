@@ -215,18 +215,16 @@ export default function ChildrenList() {
         >
           <HeartPulse className="h-4 w-4" />
           Medical
-          <span
-            role="status"
-            aria-live="polite"
-            aria-label={isLoading ? "Loading children count" : `${filteredChildren?.length ?? 0} children displayed`}
-            data-testid="children-display-count"
-            className={`ml-1 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-xs tabular-nums ${
-              medicalFilter ? "bg-white/20 text-white" : "bg-muted text-foreground"
-            }`}
-          >
-            {isLoading ? "—" : filteredChildren?.length ?? 0}
-          </span>
         </button>
+        <span
+          role="status"
+          aria-live="polite"
+          aria-label={isLoading ? "Loading children count" : `${filteredChildren?.length ?? 0} children displayed`}
+          data-testid="children-display-count"
+          className="inline-flex min-w-7 items-center justify-center rounded-full border border-input bg-card px-2 py-1 text-xs font-medium tabular-nums text-foreground"
+        >
+          {isLoading ? "—" : filteredChildren?.length ?? 0}
+        </span>
 
         <div className="flex rounded-md border border-input bg-card overflow-hidden ml-auto">
           <button

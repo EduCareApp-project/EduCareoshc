@@ -56,6 +56,9 @@ describe("Children displayed count beside Medical", () => {
   it("matches the populated children through service, medical and inactive filter changes", () => {
     render(<ChildrenList />);
     expectCount(4);
+    const count = screen.getByTestId("children-display-count");
+    expect(count.closest("button")).toBeNull();
+    expect(screen.getByRole("button", { name: "Medical" }).nextElementSibling).toBe(count);
     selectService("7");
     expectCount(2);
     toggleMedical();

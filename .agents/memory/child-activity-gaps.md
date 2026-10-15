@@ -14,3 +14,9 @@ Observation, jotting and planning-cycle child lists must also exclude inactive a
 **Why:** The user reported two entries with the same name in Jottings even though one profile was inactive, and repeated the active-only requirement across all four learning surfaces.
 
 **How to apply:** Apply active status consistently to child selectors and active record feeds, while leaving child management and historical storage intact. Refresh those lists and the activity-gap tile when a profile's status changes.
+
+For Posts, keep older organisation-wide/unlinked posts visible and preserve their original audience and historical child links while narrowing the staff learning feed. Do not reinterpret or change those older posts' audience without confirming the intended visibility with the user.
+
+**Why:** Active-only browsing does not imply that earlier organisation-wide posts should lose their audience; the requested work explicitly required confirmation before changing it.
+
+**How to apply:** Keep feed filtering separate from stored post associations and guardian-facing visibility. Ask before changing the audience of older organisation-wide posts.

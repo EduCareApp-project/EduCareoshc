@@ -81,22 +81,23 @@ function setPendingForSite(siteId: number, offset: number) {
 }
 
 // Full params log — each call to useListPosts appends an entry here.
-const listPostsParamsSeen: Array<{ offset: number; siteId?: number; childId?: number }> = [];
+const listPostsParamsSeen: Array<{ offset: number; siteId?: number; childId?: number; activeChildrenOnly?: string; publicationStatus?: string }> = [];
 
 // Track which offsets were requested so tests can assert on the call log.
 const listPostsOffsetsSeen: number[] = [];
 
 // Configurable sites list returned by useListSites.
 let mockSites: Array<{ id: number; name: string }> = [];
+let mockChildren: Array<{ id: number; firstName: string; lastName: string; status: string; siteId: number }> = [];
 
 // ---------------------------------------------------------------------------
 // Module mocks
 // ---------------------------------------------------------------------------
 
 vi.mock("@workspace/api-client-react", () => ({
-  useListPosts: ({ params }: { params: { limit: number; offset: number; siteId?: number; childId?: number } }) => {
+  useListPosts: ({ params }: { params: { limit: number; offset: number; siteId?: number; childId?: number; activeChildrenOnly?: string; publicationStatus?: string } }) => {
     listPostsOffsetsSeen.push(params.offset);
-    listPostsParamsSeen.push({ offset: params.offset, siteId: params.siteId, childId: params.childId });
+    listPostsParamsSeen.push({ offset: params.offset, siteId: params.siteId, childId: params.childId, activeChildrenOnly: params.activeChildrenOnly, publicationStatus: params.publicationStatus });
 
     // Site-keyed lookup has priority when siteId is present.
     if (params.siteId !== undefined) {
@@ -113,7 +114,8 @@ vi.mock("@workspace/api-client-react", () => ({
       }
     );
   },
-  useListChildren:     () => ({ data: [] }),
+  useListChildren:     () => ({ data: mockChildren, isLoading: false, isError: false }),
+  getListChildrenQueryKey: () => ["/api/children"],
   useListSites:        () => ({ data: mockSites }),
   useDeletePost:       () => ({ mutate: vi.fn(), isPending: false }),
   useLikePost:         () => ({ mutate: vi.fn(), isPending: false }),
@@ -207,6 +209,7 @@ beforeEach(() => {
   listPostsOffsetsSeen.length = 0;
   listPostsParamsSeen.length = 0;
   mockSites = [];
+  mockChildren = [];
   vi.clearAllMocks();
 });
 
@@ -457,6 +460,37 @@ describe("Posts page — 'Load more' preserves the active site filter", () => {
     expect(
       screen.queryByRole("button", { name: /load more/i }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("Posts active-child feed", () => {
+  it("requests active-only published and draft pages before pagination and filters cached inactive-only cards by ID", async () => {
+    mockChildren = [
+      { id: 101, firstName: "Chopper", lastName: "Example", status: "active", siteId: 7 },
+      { id: 102, firstName: "Chopper", lastName: "Example", status: "inactive", siteId: 7 },
+      { id: 103, firstName: "Archived", lastName: "Child", status: "archived", siteId: 7 },
+    ];
+    const active = { ...makePost(1), title: "Active story", childIds: [101] };
+    const inactive = { ...makePost(2), title: "Inactive story", childIds: [102] };
+    const archived = { ...makePost(3), title: "Archived story", childIds: [103] };
+    const mixed = { ...makePost(4), title: "Mixed story", childIds: [101, 102, 103] };
+    const general = { ...makePost(5), title: "Organisation-wide story", childIds: [] };
+    setPageData(0, [active, inactive, archived, mixed, general]);
+
+    renderPosts();
+    expect(await screen.findByText("Active story")).toBeVisible();
+    expect(screen.getByText("Mixed story")).toBeVisible();
+    expect(screen.getByText("Organisation-wide story")).toBeVisible();
+    expect(screen.queryByText("Inactive story")).not.toBeInTheDocument();
+    expect(screen.queryByText("Archived story")).not.toBeInTheDocument();
+    expect(screen.getByText("Mixed story").closest(".group")).toHaveTextContent("Chopper Example");
+    expect(screen.getByText("Mixed story").closest(".group")?.textContent?.match(/Chopper Example/g)).toHaveLength(1);
+    expect(listPostsParamsSeen).toContainEqual(expect.objectContaining({
+      activeChildrenOnly: "true", publicationStatus: "published", offset: 0,
+    }));
+    expect(listPostsParamsSeen).toContainEqual(expect.objectContaining({
+      activeChildrenOnly: "true", publicationStatus: "draft",
+    }));
   });
 });
 

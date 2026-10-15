@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGetPost, useUpdatePost, useListChildren, useListSites, getListPostsQueryKey, getGetPostQueryKey } from "@workspace/api-client-react";
+import { useGetPost, useUpdatePost, useListSites, getListPostsQueryKey, getGetPostQueryKey } from "@workspace/api-client-react";
+import { useActiveChildren } from "@/hooks/use-active-children";
 import { useActiveStaff } from "@/hooks/use-active-staff";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +34,8 @@ export default function EditPost() {
 
   const { data: post, isLoading: postLoading } = useGetPost(id, { query: { queryKey: getGetPostQueryKey(id), enabled: id > 0 } });
   const { data: sites } = useListSites();
-  const { data: children } = useListChildren();
+  const childrenQuery = useActiveChildren();
+  const { data: children } = childrenQuery;
   const { data: staff } = useActiveStaff();
   const updatePost = useUpdatePost();
 
@@ -100,6 +102,11 @@ export default function EditPost() {
     if (!form.siteId || form.siteId === "none") e.siteId = "Site is required";
     if (!form.title.trim()) e.title = "Title is required";
     if (!form.date) e.date = "Date is required";
+    if (!children || childrenQuery.isError) e.children = "Active children could not be loaded. Please retry before saving.";
+    else if (form.childIds.some((id) =>
+      !post?.childIds?.includes(id) && !children.some((child) => child.id === id))) {
+      e.children = "A selected child is no longer active. Change the site selection and select the children again.";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -223,7 +230,12 @@ export default function EditPost() {
                 <Label>Site <span className="text-destructive">*</span></Label>
                 <Select
                   value={form.siteId}
-                  onValueChange={(v) => setForm({ ...form, siteId: v, childIds: [] })}
+                  onValueChange={(v) => setForm({
+                    ...form, siteId: v,
+                    // A site change clears selectable links, not hidden historical ones.
+                    childIds: form.childIds.filter((childId) =>
+                      post?.childIds?.includes(childId) && !(children ?? []).some((child) => child.id === childId)),
+                  })}
                 >
                   <SelectTrigger className={errors.siteId ? "border-destructive" : ""}><SelectValue placeholder="Select site" /></SelectTrigger>
                   <SelectContent>
@@ -237,6 +249,11 @@ export default function EditPost() {
 
               <div className="space-y-1.5 sm:col-span-2">
                 <Label>Children</Label>
+                {childrenQuery.isError && <p role="alert" className="text-sm text-destructive">Active children could not be loaded. <Button type="button" variant="link" onClick={() => void childrenQuery.refetch()}>Retry</Button></p>}
+                {errors.children && <p role="alert" className="text-xs text-destructive">{errors.children}</p>}
+                {children && form.childIds.some((id) => !(children ?? []).some((child) => child.id === id)) && (
+                  <p className="text-sm text-muted-foreground">Existing links to inactive or archived children are retained for history.</p>
+                )}
                 {filteredChildren.length === 0 ? (
                   <p className="text-sm text-muted-foreground italic">
                     {form.siteId && form.siteId !== "none"

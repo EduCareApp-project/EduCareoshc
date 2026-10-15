@@ -5,9 +5,14 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+import type { ListPostsActiveChildrenOnly } from "./listPostsActiveChildrenOnly";
 import type { ListPostsPublicationStatus } from "./listPostsPublicationStatus";
 
 export type ListPostsParams = {
+  /**
+   * Keep unlinked posts and posts linked to at least one active child. Does not change stored audiences or historical links.
+   */
+  activeChildrenOnly?: ListPostsActiveChildrenOnly;
   /**
    * @minimum 1
    */

@@ -1,4 +1,6 @@
-import { useListPosts, useListChildren, useDeletePost, getListPostsQueryKey, useListSites, useLikePost, useUnlikePost } from "@workspace/api-client-react";
+import { useListPosts, useDeletePost, getListPostsQueryKey, useListSites, useLikePost, useUnlikePost } from "@workspace/api-client-react";
+import { useActiveChildren } from "@/hooks/use-active-children";
+import { hasActiveChildLink } from "@/lib/active-children";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,7 +35,8 @@ export default function Posts() {
   const childIdParam = new URLSearchParams(window.location.search).get("childId");
   const filterChildId = childIdParam ? parseInt(childIdParam) : null;
 
-  const { data: children } = useListChildren();
+  const childrenQuery = useActiveChildren();
+  const { data: children } = childrenQuery;
   const { data: sites } = useListSites();
   const { canDelete, canEditPost, isEducatorRole, ownSiteId } = usePermissions();
   const deleteMutation = useDeletePost();
@@ -59,6 +62,7 @@ export default function Posts() {
   // Server-side pagination fetch
   const { data: pageData, isLoading, isFetching } = useListPosts({
     params: {
+      activeChildrenOnly: "true",
       limit: PAGE_SIZE,
       offset,
       ...(filterChildId ? { childId: filterChildId } : {}),
@@ -68,11 +72,28 @@ export default function Posts() {
   });
   const { data: draftPosts, isLoading: draftsLoading } = useListPosts({
     params: {
+      activeChildrenOnly: "true",
       ...(filterChildId ? { childId: filterChildId } : {}),
       ...(serverSiteId !== undefined ? { siteId: serverSiteId } : {}),
       publicationStatus: "draft",
     },
   });
+
+  // A reactivated child can make previously excluded posts eligible again.
+  // Refresh the server-paginated feed when membership of the active set changes.
+  const activeChildKey = children?.map((child) => child.id).sort((a, b) => a - b).join(",");
+  const previousActiveChildKey = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (activeChildKey === undefined) return;
+    if (previousActiveChildKey.current !== undefined && previousActiveChildKey.current !== activeChildKey) {
+      setOffset(0);
+      setAccumulatedPosts([]);
+      setHasMore(true);
+      setIsSwitchingFilter(true);
+      void queryClient.invalidateQueries({ queryKey: getListPostsQueryKey() });
+    }
+    previousActiveChildKey.current = activeChildKey;
+  }, [activeChildKey, queryClient]);
 
   // Accumulate pages as they arrive
   const lastPageDataRef = useRef<Post[] | undefined>(undefined);
@@ -114,8 +135,13 @@ export default function Posts() {
     ? `${filteredChild.firstName} ${filteredChild.lastName}`
     : null;
 
-  // Posts are already filtered server-side; display them as-is
-  const displayedPosts = accumulatedPosts;
+  // Recheck cached pages when a child's status changes. Never match by name.
+  const activeIds = new Set((children ?? []).map((child) => child.id));
+  const isVisiblePost = (post: Post) => children !== undefined
+    && (!filterChildId || activeIds.has(filterChildId))
+    && hasActiveChildLink(post.childIds ?? [], activeIds);
+  const displayedPosts = accumulatedPosts.filter(isVisiblePost);
+  const displayedDrafts = (draftPosts ?? []).filter(isVisiblePost);
 
   const likeMutation = useLikePost();
   const unlikeMutation = useUnlikePost();
@@ -191,7 +217,13 @@ export default function Posts() {
         </div>
       </div>
 
-      {!draftsLoading && (draftPosts?.length ?? 0) > 0 && (
+      {childrenQuery.isError && (
+        <div role="alert" className="text-destructive">
+          Active children could not be loaded.
+          <Button variant="link" onClick={() => void childrenQuery.refetch()}>Retry</Button>
+        </div>
+      )}
+      {!childrenQuery.isError && !draftsLoading && displayedDrafts.length > 0 && (
         <Card className="border-amber-200 bg-amber-50/40">
           <CardContent className="p-4 space-y-3">
             <div>
@@ -199,7 +231,7 @@ export default function Posts() {
               <p className="text-sm text-muted-foreground">Continue working on these posts before publishing.</p>
             </div>
             <div className="divide-y rounded-md border bg-card">
-              {draftPosts?.map((post) => (
+              {displayedDrafts.map((post) => (
                 <div key={post.id} className="flex items-center gap-3 px-3 py-2.5">
                   <FileEdit className="h-4 w-4 shrink-0 text-amber-600" />
                   <div className="min-w-0 flex-1 text-sm">
@@ -219,7 +251,7 @@ export default function Posts() {
         </Card>
       )}
 
-      {(isLoading && accumulatedPosts.length === 0) || isSwitchingFilter ? (
+      {childrenQuery.isError ? null : (isLoading && accumulatedPosts.length === 0) || childrenQuery.isLoading || isSwitchingFilter ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-72 rounded-xl" />)}
         </div>
@@ -275,11 +307,11 @@ export default function Posts() {
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="font-semibold leading-snug line-clamp-2">{post.title}</h3>
                       </div>
-                      {post.childNames && post.childNames.length > 0 && (
+                      {(post.childIds ?? []).some((id) => activeIds.has(id)) && (
                         <div className="flex flex-wrap gap-1">
-                          {post.childNames.map((name) => (
-                            <Badge key={name} variant="secondary" className="text-xs gap-1">
-                              <User className="h-2.5 w-2.5" />{name}
+                          {(children ?? []).filter((child) => post.childIds?.includes(child.id)).map((child) => (
+                            <Badge key={child.id} variant="secondary" className="text-xs gap-1">
+                              <User className="h-2.5 w-2.5" />{child.firstName} {child.lastName}
                             </Badge>
                           ))}
                         </div>
@@ -341,6 +373,7 @@ export default function Posts() {
       )}
 
       <PostDetailDialog
+        activeChildren={children}
         postId={selectedPostId}
         open={selectedPostId !== null}
         onClose={() => setSelectedPostId(null)}

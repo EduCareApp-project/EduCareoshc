@@ -45,6 +45,7 @@ interface PostDetailDialogProps {
   canEditPost?: boolean;
   onDeleted?: () => void;
   defaultCommentName?: string;
+  activeChildren?: ReadonlyArray<{ id: number; firstName: string; lastName: string }>;
 }
 
 export function PostDetailDialog({
@@ -55,6 +56,7 @@ export function PostDetailDialog({
   canEditPost,
   onDeleted,
   defaultCommentName,
+  activeChildren,
 }: PostDetailDialogProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -160,10 +162,13 @@ export function PostDetailDialog({
             {/* Header */}
             <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-6 py-4 flex items-start justify-between gap-3">
               <SheetHeader className="flex-1 text-left space-y-0">
-                {post.childNames && post.childNames.length > 0 && (
+                {(activeChildren ? activeChildren.some((child) => post.childIds?.includes(child.id)) : !!post.childNames?.length) && (
                   <div className="flex flex-wrap gap-1.5 mb-2">
-                    {post.childNames.map((name) => (
-                      <Badge key={name} variant="secondary" className="gap-1 text-xs">
+                    {(activeChildren
+                      ? activeChildren.filter((child) => post.childIds?.includes(child.id)).map((child) => ({ id: child.id, name: `${child.firstName} ${child.lastName}` }))
+                      : (post.childNames ?? []).map((name, index) => ({ id: index, name }))
+                    ).map(({ id, name }) => (
+                      <Badge key={id} variant="secondary" className="gap-1 text-xs">
                         <User className="h-2.5 w-2.5" />{name}
                       </Badge>
                     ))}

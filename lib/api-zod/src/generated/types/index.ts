@@ -162,6 +162,7 @@ export * from "./listNoticesAudience";
 export * from "./listNoticesParams";
 export * from "./listNotificationSettingsParams";
 export * from "./listOrganisationCalendarEventsParams";
+export * from "./listPostsActiveChildrenOnly";
 export * from "./listPostsParams";
 export * from "./listPostsPublicationStatus";
 export * from "./listQipStrengthsParams";

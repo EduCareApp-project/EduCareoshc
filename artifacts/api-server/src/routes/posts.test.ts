@@ -4,6 +4,7 @@ import express from "express";
 import pinoHttp from "pino-http";
 import pino from "pino";
 import { Writable } from "node:stream";
+import { sql } from "drizzle-orm";
 
 // ---------------------------------------------------------------------------
 // Hoist mocks — must run before any module imports.
@@ -193,6 +194,20 @@ beforeEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("GET /api/posts – pagination", () => {
+  it("applies active-child conditions before pagination only when requested", async () => {
+    const { app } = buildApp();
+    setPostsRows([]);
+    const active = await request(app).get("/api/posts?activeChildrenOnly=true&limit=10&offset=0");
+    expect(active.status).toBe(200);
+    expect(postsChain.where).toHaveBeenCalledTimes(1);
+    expect(postsChain.limit).toHaveBeenCalledWith(10);
+    expect(postsChain.offset).toHaveBeenCalledWith(0);
+    const predicateText = vi.mocked(sql).mock.calls.map(([chunks]) => [...chunks].join("?")).join(" ");
+    expect(predicateText).toContain("cardinality");
+    expect(predicateText).toContain("exists");
+    expect(predicateText).toContain("'active'");
+    expect((await request(app).get("/api/posts?activeChildrenOnly=invalid")).status).toBe(400);
+  });
   it("returns 400 for invalid pagination params", async () => {
     const { app } = buildApp();
     const res = await request(app).get("/api/posts?limit=notanumber");

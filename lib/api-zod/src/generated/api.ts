@@ -3370,6 +3370,12 @@ export const UpsertChecklistPeriodOverrideResponse = zod.object({
 export const listPostsQueryOffsetMin = 0;
 
 export const ListPostsQueryParams = zod.object({
+  activeChildrenOnly: zod
+    .enum(["true", "false"])
+    .optional()
+    .describe(
+      "Keep unlinked posts and posts linked to at least one active child. Does not change stored audiences or historical links.",
+    ),
   limit: zod.coerce.number().min(1).optional(),
   publicationStatus: zod.enum(["published", "draft"]).optional(),
   offset: zod.coerce.number().min(listPostsQueryOffsetMin).optional(),

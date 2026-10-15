@@ -3212,6 +3212,10 @@ export type GetChecklistPeriodOverrideParams = {
 
 export type ListPostsParams = {
   /**
+   * Keep unlinked posts and posts linked to at least one active child. Does not change stored audiences or historical links.
+   */
+  activeChildrenOnly?: ListPostsActiveChildrenOnly;
+  /**
    * @minimum 1
    */
   limit?: number;
@@ -3229,6 +3233,14 @@ export type ListPostsParams = {
    */
   siteId?: number;
 };
+
+export type ListPostsActiveChildrenOnly =
+  (typeof ListPostsActiveChildrenOnly)[keyof typeof ListPostsActiveChildrenOnly];
+
+export const ListPostsActiveChildrenOnly = {
+  true: "true",
+  false: "false",
+} as const;
 
 export type ListPostsPublicationStatus =
   (typeof ListPostsPublicationStatus)[keyof typeof ListPostsPublicationStatus];

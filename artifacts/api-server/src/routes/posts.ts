@@ -89,12 +89,30 @@ router.get("/posts", async (req, res): Promise<void> => {
       res.status(400).json({ error: "Invalid pagination parameters" });
       return;
     }
-    const { limit, offset, childId, siteId, publicationStatus } = parsed.data;
+    const { limit, offset, childId, siteId, publicationStatus, activeChildrenOnly } = parsed.data;
 
     const likerId = sessionLikerId(req);
 
     // Build WHERE conditions applied before limit/offset so pagination is over filtered rows
     const conditions = [];
+    if (activeChildrenOnly === "true") {
+      // Opt-in learning-feed scope only: historical/guardian callers keep their audience.
+      conditions.push(sql`(
+        coalesce(cardinality(${postsTable.childIds}), 0) = 0
+        or exists (
+          select 1 from ${childrenTable}
+          where ${childrenTable.id} = any(${postsTable.childIds})
+          and ${childrenTable.status} = 'active'
+        )
+      )`);
+      if (childId !== undefined) {
+        conditions.push(sql`exists (
+          select 1 from ${childrenTable}
+          where ${childrenTable.id} = ${childId}
+          and ${childrenTable.status} = 'active'
+        )`);
+      }
+    }
     if (siteId !== undefined) conditions.push(eq(postsTable.siteId, siteId));
     if (childId !== undefined) conditions.push(sql`${postsTable.childIds} @> ARRAY[${childId}]::integer[]`);
     if (publicationStatus === "published") conditions.push(isNotNull(postsTable.publishedAt));

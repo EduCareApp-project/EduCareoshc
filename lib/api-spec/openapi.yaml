@@ -2861,6 +2861,13 @@ paths:
       operationId: listPosts
       tags: [posts]
       parameters:
+        - name: activeChildrenOnly
+          in: query
+          required: false
+          description: Keep unlinked posts and posts linked to at least one active child. Does not change stored audiences or historical links.
+          schema:
+            type: string
+            enum: ["true", "false"]
         - name: limit
           in: query
           required: false

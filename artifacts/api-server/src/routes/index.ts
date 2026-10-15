@@ -55,6 +55,7 @@ import clickupRouter from "./clickup";
 import superAdminRouter from "./super-admin";
 import aiToolsRouter from "./ai-tools";
 import schoolsRouter from "./schools";
+import kidsoftRollRouter from "./kidsoft-roll";
 import schoolReportsRouter from "./school-reports";
 import schoolReportSummariesRouter from "./school-report-summaries";
 import excursionsRouter from "./excursions";
@@ -113,6 +114,14 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
   const ownSchoolReportPath = new RegExp(
     `^/school-reports/${user.siteId}/(?:summaries(?:/\\d+/pdf)?|live-statistics)$`,
   );
+  const ownKidsoftRoll = req.path === `/schools/${user.siteId}/kidsoft-roll`;
+  const ownKidsoftRefresh = req.path === `/schools/${user.siteId}/kidsoft-roll/refresh`;
+  // Explicit exception to read-only school sessions: import a local snapshot
+  // using GET-only Kidsoft calls, never write bookings or change another site.
+  if ((req.method === "GET" && ownKidsoftRoll) || (req.method === "POST" && ownKidsoftRefresh)) {
+    next();
+    return;
+  }
   if (
     req.method === "GET" &&
     (
@@ -223,6 +232,7 @@ router.use(behaviouralNotificationsRouter);
 router.use(clickupRouter);
 router.use(aiToolsRouter);
 router.use(schoolsRouter);
+router.use(kidsoftRollRouter);
 router.use(schoolReportsRouter);
 router.use(schoolReportSummariesRouter);
 router.use(excursionsRouter);

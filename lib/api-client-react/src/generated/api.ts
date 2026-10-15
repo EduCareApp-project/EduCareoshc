@@ -91,6 +91,7 @@ import type {
   GetLearningStoriesReportParams,
   GetNotificationCount200,
   GetRollComplianceReportParams,
+  GetSchoolKidsoftRollParams,
   GetServiceComplianceReportParams,
   GetWeeklyReviewStatsParams,
   Guardian,
@@ -105,6 +106,8 @@ import type {
   IncidentUpdate,
   Jotting,
   JottingInput,
+  KidsoftRoll,
+  KidsoftSetup,
   LearningStoriesReport,
   ListJottingsParams,
   ListNoticesParams,
@@ -169,6 +172,7 @@ import type {
   QipSourceUpdate,
   QipStrength,
   QipStrengthUpdate,
+  RefreshSchoolKidsoftRollBody,
   RollComplianceReport,
   RoutineItemCompletion,
   RoutineItemCompletionInput,
@@ -184,6 +188,8 @@ import type {
   StaffQualification,
   StaffQualificationInput,
   StaffUpdate,
+  UpdateKidsoftMapping200,
+  UpdateKidsoftMappingBody,
   UpdateNotificationSettingItem,
   UpdateNotificationSettings200,
   UploadUrlRequest,
@@ -18839,4 +18845,356 @@ export const usePreviewSchoolReport = <
   TContext
 > => {
   return useMutation(getPreviewSchoolReportMutationOptions(options));
+};
+
+/**
+ * @summary Admin-only Kidsoft service directory and saved site mappings
+ */
+export const getGetKidsoftSetupUrl = () => {
+  return `/api/kidsoft/setup`;
+};
+
+export const getKidsoftSetup = async (
+  options?: RequestInit,
+): Promise<KidsoftSetup> => {
+  return customFetch<KidsoftSetup>(getGetKidsoftSetupUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetKidsoftSetupQueryKey = () => {
+  return [`/api/kidsoft/setup`] as const;
+};
+
+export const getGetKidsoftSetupQueryOptions = <
+  TData = Awaited<ReturnType<typeof getKidsoftSetup>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getKidsoftSetup>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetKidsoftSetupQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getKidsoftSetup>>> = ({
+    signal,
+  }) => getKidsoftSetup({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getKidsoftSetup>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetKidsoftSetupQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getKidsoftSetup>>
+>;
+export type GetKidsoftSetupQueryError = ErrorType<void>;
+
+/**
+ * @summary Admin-only Kidsoft service directory and saved site mappings
+ */
+
+export function useGetKidsoftSetup<
+  TData = Awaited<ReturnType<typeof getKidsoftSetup>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getKidsoftSetup>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetKidsoftSetupQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getUpdateKidsoftMappingUrl = (siteId: number) => {
+  return `/api/kidsoft/mappings/${siteId}`;
+};
+
+export const updateKidsoftMapping = async (
+  siteId: number,
+  updateKidsoftMappingBody: UpdateKidsoftMappingBody,
+  options?: RequestInit,
+): Promise<UpdateKidsoftMapping200> => {
+  return customFetch<UpdateKidsoftMapping200>(
+    getUpdateKidsoftMappingUrl(siteId),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateKidsoftMappingBody),
+    },
+  );
+};
+
+export const getUpdateKidsoftMappingMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateKidsoftMapping>>,
+    TError,
+    { siteId: number; data: BodyType<UpdateKidsoftMappingBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateKidsoftMapping>>,
+  TError,
+  { siteId: number; data: BodyType<UpdateKidsoftMappingBody> },
+  TContext
+> => {
+  const mutationKey = ["updateKidsoftMapping"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateKidsoftMapping>>,
+    { siteId: number; data: BodyType<UpdateKidsoftMappingBody> }
+  > = (props) => {
+    const { siteId, data } = props ?? {};
+
+    return updateKidsoftMapping(siteId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateKidsoftMappingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateKidsoftMapping>>
+>;
+export type UpdateKidsoftMappingMutationBody =
+  BodyType<UpdateKidsoftMappingBody>;
+export type UpdateKidsoftMappingMutationError = ErrorType<void>;
+
+export const useUpdateKidsoftMapping = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateKidsoftMapping>>,
+    TError,
+    { siteId: number; data: BodyType<UpdateKidsoftMappingBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateKidsoftMapping>>,
+  TError,
+  { siteId: number; data: BodyType<UpdateKidsoftMappingBody> },
+  TContext
+> => {
+  return useMutation(getUpdateKidsoftMappingMutationOptions(options));
+};
+
+export const getGetSchoolKidsoftRollUrl = (
+  siteId: number,
+  params: GetSchoolKidsoftRollParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/schools/${siteId}/kidsoft-roll?${stringifiedParams}`
+    : `/api/schools/${siteId}/kidsoft-roll`;
+};
+
+export const getSchoolKidsoftRoll = async (
+  siteId: number,
+  params: GetSchoolKidsoftRollParams,
+  options?: RequestInit,
+): Promise<KidsoftRoll> => {
+  return customFetch<KidsoftRoll>(getGetSchoolKidsoftRollUrl(siteId, params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSchoolKidsoftRollQueryKey = (
+  siteId: number,
+  params?: GetSchoolKidsoftRollParams,
+) => {
+  return [
+    `/api/schools/${siteId}/kidsoft-roll`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetSchoolKidsoftRollQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSchoolKidsoftRoll>>,
+  TError = ErrorType<void>,
+>(
+  siteId: number,
+  params: GetSchoolKidsoftRollParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSchoolKidsoftRoll>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetSchoolKidsoftRollQueryKey(siteId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getSchoolKidsoftRoll>>
+  > = ({ signal }) =>
+    getSchoolKidsoftRoll(siteId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!siteId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSchoolKidsoftRoll>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSchoolKidsoftRollQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSchoolKidsoftRoll>>
+>;
+export type GetSchoolKidsoftRollQueryError = ErrorType<void>;
+
+export function useGetSchoolKidsoftRoll<
+  TData = Awaited<ReturnType<typeof getSchoolKidsoftRoll>>,
+  TError = ErrorType<void>,
+>(
+  siteId: number,
+  params: GetSchoolKidsoftRollParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSchoolKidsoftRoll>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSchoolKidsoftRollQueryOptions(
+    siteId,
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getRefreshSchoolKidsoftRollUrl = (siteId: number) => {
+  return `/api/schools/${siteId}/kidsoft-roll/refresh`;
+};
+
+export const refreshSchoolKidsoftRoll = async (
+  siteId: number,
+  refreshSchoolKidsoftRollBody: RefreshSchoolKidsoftRollBody,
+  options?: RequestInit,
+): Promise<KidsoftRoll> => {
+  return customFetch<KidsoftRoll>(getRefreshSchoolKidsoftRollUrl(siteId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(refreshSchoolKidsoftRollBody),
+  });
+};
+
+export const getRefreshSchoolKidsoftRollMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof refreshSchoolKidsoftRoll>>,
+    TError,
+    { siteId: number; data: BodyType<RefreshSchoolKidsoftRollBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof refreshSchoolKidsoftRoll>>,
+  TError,
+  { siteId: number; data: BodyType<RefreshSchoolKidsoftRollBody> },
+  TContext
+> => {
+  const mutationKey = ["refreshSchoolKidsoftRoll"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof refreshSchoolKidsoftRoll>>,
+    { siteId: number; data: BodyType<RefreshSchoolKidsoftRollBody> }
+  > = (props) => {
+    const { siteId, data } = props ?? {};
+
+    return refreshSchoolKidsoftRoll(siteId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RefreshSchoolKidsoftRollMutationResult = NonNullable<
+  Awaited<ReturnType<typeof refreshSchoolKidsoftRoll>>
+>;
+export type RefreshSchoolKidsoftRollMutationBody =
+  BodyType<RefreshSchoolKidsoftRollBody>;
+export type RefreshSchoolKidsoftRollMutationError = ErrorType<void>;
+
+export const useRefreshSchoolKidsoftRoll = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof refreshSchoolKidsoftRoll>>,
+    TError,
+    { siteId: number; data: BodyType<RefreshSchoolKidsoftRollBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof refreshSchoolKidsoftRoll>>,
+  TError,
+  { siteId: number; data: BodyType<RefreshSchoolKidsoftRollBody> },
+  TContext
+> => {
+  return useMutation(getRefreshSchoolKidsoftRollMutationOptions(options));
 };

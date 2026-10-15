@@ -15,4 +15,5 @@ export const FeatureSettingsSchoolPortalVisibleTabsItem = {
   staff: "staff",
   reports: "reports",
   qip: "qip",
+  roll: "roll",
 } as const;

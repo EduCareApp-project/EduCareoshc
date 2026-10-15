@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { logEmailConfig } from "./lib/email";
 import { migrateSiteIdentifiers } from "./lib/siteIdentifiers";
+import { migrateKidsoftRoll } from "./lib/kidsoftMigration";
 import { db, notificationSettingsTable, pool } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import {
@@ -220,6 +221,8 @@ async function startServer(): Promise<void> {
   await pool.query("ALTER TABLE staff ADD COLUMN IF NOT EXISTS emergency_record_headings jsonb");
   await migrateSiteIdentifiers(pool);
   logger.info("Site identifiers migration applied");
+  await migrateKidsoftRoll(pool);
+  logger.info("Kidsoft Roll schema ready");
 
   app.listen(port, async (err) => {
     if (err) {

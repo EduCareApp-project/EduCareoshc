@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ServiceDocumentationPanel } from "@/components/service-documentation-panel";
 import { SchoolCurrentReportsPanel, SchoolReportsPanel } from "@/components/school-reports-panel";
+import { SchoolKidsoftRoll } from "@/components/school-kidsoft-roll";
 import QipPublic from "@/pages/qip-public";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -318,7 +319,7 @@ export default function SchoolPortal() {
 
   const { site, staff, vitalRecords, vecraVisits } = data;
   const visiblePortalTabs = isStaff
-    ? ["reports", "vital", "vecra", "staff", "statistics", "qip"]
+    ? ["reports", "vital", "vecra", "staff", "statistics", "qip", "roll"]
     : data.portalSettings.visibleTabs;
   const defaultPortalTab = visiblePortalTabs.includes("reports")
     ? "reports"
@@ -458,6 +459,14 @@ export default function SchoolPortal() {
           >
             <TrendingUp className="w-4 h-4 mr-2" />
             QIP
+          </TabsTrigger>}
+          {visiblePortalTabs.includes("roll") && <TabsTrigger
+            value="roll"
+            data-testid="tab-roll"
+            className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none px-6 h-12"
+          >
+            <Users className="w-4 h-4 mr-2" />
+            Daily Bookings
           </TabsTrigger>}
           {visiblePortalTabs.includes("statistics") && <TabsTrigger
             value="statistics"
@@ -718,6 +727,10 @@ export default function SchoolPortal() {
                 </CollapsibleContent>
               </Card>
             </Collapsible>
+          </TabsContent>}
+
+          {visiblePortalTabs.includes("roll") && <TabsContent value="roll" className="mt-0">
+            <SchoolKidsoftRoll siteId={site.id} />
           </TabsContent>}
 
           {/* Public QIP Tab */}

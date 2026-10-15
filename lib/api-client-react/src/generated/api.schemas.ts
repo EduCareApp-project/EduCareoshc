@@ -5,6 +5,44 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+export type KidsoftSetupServicesItem = {
+  id: string;
+  name: string;
+};
+
+export type KidsoftSetupSitesItem = {
+  siteId: number;
+  siteName: string;
+  serviceId: string | null;
+  serviceName: string | null;
+};
+
+export interface KidsoftSetup {
+  connected: boolean;
+  services: KidsoftSetupServicesItem[];
+  sites: KidsoftSetupSitesItem[];
+}
+
+export interface KidsoftRollBooking {
+  bookingId: string;
+  childId: string;
+  childName: string;
+  sessionName: string;
+  startTime: string;
+  endTime: string;
+  absent: boolean;
+}
+
+export interface KidsoftRoll {
+  mapped: boolean;
+  serviceName: string | null;
+  date: string;
+  refreshedAt: string | null;
+  totalBookings: number;
+  totalChildren: number;
+  bookings: KidsoftRollBooking[];
+}
+
 export interface DashboardLayoutItem {
   /**
    * @minLength 1
@@ -2698,6 +2736,7 @@ export const FeatureSettingsSchoolPortalVisibleTabsItem = {
   staff: "staff",
   reports: "reports",
   qip: "qip",
+  roll: "roll",
 } as const;
 
 export type FeatureSettingsNotificationChannelMap = {
@@ -3252,4 +3291,20 @@ export type GetWeeklyReviewStatsParams = {
 
 export type ListWeeklyReviewsParams = {
   siteId?: number;
+};
+
+export type UpdateKidsoftMappingBody = {
+  serviceId: string | null;
+};
+
+export type UpdateKidsoftMapping200 = {
+  ok: boolean;
+};
+
+export type GetSchoolKidsoftRollParams = {
+  date: string;
+};
+
+export type RefreshSchoolKidsoftRollBody = {
+  date: string;
 };

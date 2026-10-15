@@ -34,7 +34,7 @@ const DEFAULTS: Required<FeatureSettings> = {
   staffCannotWorkQuals: [],
   staffResponsiblePersonQuals: [],
   staffEducatorQuals: [],
-  schoolPortalVisibleTabs: ["vital", "vecra", "staff", "reports", "qip"],
+  schoolPortalVisibleTabs: ["vital", "vecra", "staff", "reports", "qip", "roll"],
   schoolPortalVisibleQualificationNames: DEFAULT_SCHOOL_QUALIFICATIONS,
   childrenRequireMedicalNotes: false,
   childrenShowDobOnProfile: false,

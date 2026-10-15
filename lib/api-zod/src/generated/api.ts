@@ -4683,7 +4683,7 @@ export const GetFeatureSettingsResponse = zod.object({
   staffResponsiblePersonQuals: zod.array(zod.string()).optional(),
   staffEducatorQuals: zod.array(zod.string()).optional(),
   schoolPortalVisibleTabs: zod
-    .array(zod.enum(["vital", "vecra", "staff", "reports", "qip"]))
+    .array(zod.enum(["vital", "vecra", "staff", "reports", "qip", "roll"]))
     .optional(),
   schoolPortalVisibleQualificationNames: zod.array(zod.string()).optional(),
   childrenRequireMedicalNotes: zod.boolean().optional(),
@@ -4750,7 +4750,7 @@ export const UpdateFeatureSettingsBody = zod.object({
   staffResponsiblePersonQuals: zod.array(zod.string()).optional(),
   staffEducatorQuals: zod.array(zod.string()).optional(),
   schoolPortalVisibleTabs: zod
-    .array(zod.enum(["vital", "vecra", "staff", "reports", "qip"]))
+    .array(zod.enum(["vital", "vecra", "staff", "reports", "qip", "roll"]))
     .optional(),
   schoolPortalVisibleQualificationNames: zod.array(zod.string()).optional(),
   childrenRequireMedicalNotes: zod.boolean().optional(),
@@ -4814,7 +4814,7 @@ export const UpdateFeatureSettingsResponse = zod.object({
   staffResponsiblePersonQuals: zod.array(zod.string()).optional(),
   staffEducatorQuals: zod.array(zod.string()).optional(),
   schoolPortalVisibleTabs: zod
-    .array(zod.enum(["vital", "vecra", "staff", "reports", "qip"]))
+    .array(zod.enum(["vital", "vecra", "staff", "reports", "qip", "roll"]))
     .optional(),
   schoolPortalVisibleQualificationNames: zod.array(zod.string()).optional(),
   childrenRequireMedicalNotes: zod.boolean().optional(),
@@ -6196,4 +6196,93 @@ export const PreviewSchoolReportBody = zod.object({
       .string()
       .max(previewSchoolReportBodyReportingObligationsFocusForFutureMax),
   }),
+});
+
+/**
+ * @summary Admin-only Kidsoft service directory and saved site mappings
+ */
+export const GetKidsoftSetupResponse = zod.object({
+  connected: zod.boolean(),
+  services: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+    }),
+  ),
+  sites: zod.array(
+    zod.object({
+      siteId: zod.number(),
+      siteName: zod.string(),
+      serviceId: zod.string().nullable(),
+      serviceName: zod.string().nullable(),
+    }),
+  ),
+});
+
+export const UpdateKidsoftMappingParams = zod.object({
+  siteId: zod.coerce.number(),
+});
+
+export const UpdateKidsoftMappingBody = zod.object({
+  serviceId: zod.string().nullable(),
+});
+
+export const UpdateKidsoftMappingResponse = zod.object({
+  ok: zod.boolean(),
+});
+
+export const GetSchoolKidsoftRollParams = zod.object({
+  siteId: zod.coerce.number(),
+});
+
+export const GetSchoolKidsoftRollQueryParams = zod.object({
+  date: zod.date(),
+});
+
+export const GetSchoolKidsoftRollResponse = zod.object({
+  mapped: zod.boolean(),
+  serviceName: zod.string().nullable(),
+  date: zod.coerce.date(),
+  refreshedAt: zod.coerce.date().nullable(),
+  totalBookings: zod.number(),
+  totalChildren: zod.number(),
+  bookings: zod.array(
+    zod.object({
+      bookingId: zod.string(),
+      childId: zod.string(),
+      childName: zod.string(),
+      sessionName: zod.string(),
+      startTime: zod.string(),
+      endTime: zod.string(),
+      absent: zod.boolean(),
+    }),
+  ),
+});
+
+export const RefreshSchoolKidsoftRollParams = zod.object({
+  siteId: zod.coerce.number(),
+});
+
+export const RefreshSchoolKidsoftRollBody = zod.object({
+  date: zod.coerce.date(),
+});
+
+export const RefreshSchoolKidsoftRollResponse = zod.object({
+  mapped: zod.boolean(),
+  serviceName: zod.string().nullable(),
+  date: zod.coerce.date(),
+  refreshedAt: zod.coerce.date().nullable(),
+  totalBookings: zod.number(),
+  totalChildren: zod.number(),
+  bookings: zod.array(
+    zod.object({
+      bookingId: zod.string(),
+      childId: zod.string(),
+      childName: zod.string(),
+      sessionName: zod.string(),
+      startTime: zod.string(),
+      endTime: zod.string(),
+      absent: zod.boolean(),
+    }),
+  ),
 });

@@ -1,4 +1,5 @@
 export * from "./calendar-events";
+export * from "./kidsoft-roll";
 export * from "./sites";
 export * from "./children";
 export * from "./parent_accounts";

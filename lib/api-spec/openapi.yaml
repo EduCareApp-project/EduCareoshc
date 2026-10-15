@@ -4324,6 +4324,81 @@ paths:
         "409": { description: Only active draft reports can be previewed }
         "500": { description: Failed to generate the preview }
 
+  /kidsoft/setup:
+    get:
+      operationId: getKidsoftSetup
+      tags: [schools]
+      summary: Admin-only Kidsoft service directory and saved site mappings
+      responses:
+        "200":
+          description: Setup data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KidsoftSetup"
+        "403": {description: Administrator access required}
+        "502": {description: Kidsoft is unavailable}
+  /kidsoft/mappings/{siteId}:
+    put:
+      operationId: updateKidsoftMapping
+      tags: [schools]
+      parameters:
+        - {name: siteId, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [serviceId]
+              properties:
+                serviceId: {type: string, nullable: true}
+      responses:
+        "200":
+          description: Mapping saved
+          content:
+            application/json:
+              schema: {type: object, required: [ok], properties: {ok: {type: boolean}}}
+        "400": {description: Invalid service or site}
+        "403": {description: Administrator access required}
+        "409": {description: Kidsoft service already mapped}
+  /schools/{siteId}/kidsoft-roll:
+    get:
+      operationId: getSchoolKidsoftRoll
+      tags: [schools]
+      parameters:
+        - {name: siteId, in: path, required: true, schema: {type: integer}}
+        - {name: date, in: query, required: true, schema: {type: string, format: date}}
+      responses:
+        "200":
+          description: Saved snapshot for this school and day; no Kidsoft request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KidsoftRoll"
+        "403": {description: School or role cannot access this site}
+  /schools/{siteId}/kidsoft-roll/refresh:
+    post:
+      operationId: refreshSchoolKidsoftRoll
+      tags: [schools]
+      parameters:
+        - {name: siteId, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [date], properties: {date: {type: string, format: date}}}
+      responses:
+        "200":
+          description: Newly saved roll snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KidsoftRoll"
+        "403": {description: School or role cannot access this site}
+        "409": {description: Service is unmapped or mapping changed during refresh}
+        "429": {description: Wait before refreshing again}
+        "502": {description: Refresh failed; previous snapshot retained}
 components:
   parameters:
     DashboardLayoutView:
@@ -4334,6 +4409,54 @@ components:
         type: string
         enum: [educator, leadership]
   schemas:
+    KidsoftSetup:
+      type: object
+      required: [connected, services, sites]
+      properties:
+        connected: {type: boolean}
+        services:
+          type: array
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id: {type: string}
+              name: {type: string}
+        sites:
+          type: array
+          items:
+            type: object
+            required: [siteId, siteName, serviceId, serviceName]
+            properties:
+              siteId: {type: integer}
+              siteName: {type: string}
+              serviceId: {type: string, nullable: true}
+              serviceName: {type: string, nullable: true}
+    KidsoftRoll:
+      type: object
+      required: [mapped, serviceName, date, refreshedAt, totalBookings, totalChildren, bookings]
+      properties:
+        mapped: {type: boolean}
+        serviceName: {type: string, nullable: true}
+        date: {type: string, format: date}
+        refreshedAt: {type: string, format: date-time, nullable: true}
+        totalBookings: {type: integer}
+        totalChildren: {type: integer}
+        bookings:
+          type: array
+          items:
+            $ref: "#/components/schemas/KidsoftRollBooking"
+    KidsoftRollBooking:
+      type: object
+      required: [bookingId, childId, childName, sessionName, startTime, endTime, absent]
+      properties:
+        bookingId: {type: string}
+        childId: {type: string}
+        childName: {type: string}
+        sessionName: {type: string}
+        startTime: {type: string}
+        endTime: {type: string}
+        absent: {type: boolean}
     DashboardLayoutItem:
       type: object
       additionalProperties: false
@@ -7881,7 +8004,7 @@ components:
           type: array
           items:
             type: string
-            enum: [vital, vecra, staff, reports, qip]
+            enum: [vital, vecra, staff, reports, qip, roll]
         schoolPortalVisibleQualificationNames:
           type: array
           items:

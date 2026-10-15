@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { usePermissions } from "@/hooks/use-permissions";
+import { KidsoftSettingsPanel } from "@/components/kidsoft-settings-panel";
 import { useToast } from "@/hooks/use-toast";
 
 const PORTAL_AREAS = [
@@ -19,6 +20,7 @@ const PORTAL_AREAS = [
   { id: "vecra", label: "VECRA Visits", description: "Visit details, findings, actions and follow-up dates." },
   { id: "staff", label: "Service Staff", description: "Staff assigned to or associated with the school." },
   { id: "reports", label: "Reports", description: "Current school reports shared with the school account." },
+  { id: "roll", label: "Daily Bookings", description: "Booked children for each day, from a saved copy of the service's Kidsoft roll." },
   { id: "qip", label: "QIP", description: "The school's current Quality Improvement Plan." },
 ] as const;
 
@@ -43,7 +45,7 @@ const DEFAULT_QUALIFICATIONS = [
 type PortalArea = typeof PORTAL_AREAS[number]["id"];
 
 export default function SettingsSchoolPortal() {
-  const { isFullAccess } = usePermissions();
+  const { isFullAccess, isAdmin } = usePermissions();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: settings, isLoading } = useGetFeatureSettings({
@@ -157,6 +159,8 @@ export default function SettingsSchoolPortal() {
           )}
         </Card>
       ))}
+
+      {isAdmin && <KidsoftSettingsPanel />}
 
       <div className="flex justify-end">
         <Button onClick={save} disabled={isLoading || updateSettings.isPending}>

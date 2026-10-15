@@ -9,7 +9,7 @@ import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage"
 const router: IRouter = Router();
 const ADMIN_ROLES = new Set(["director", "admin", "admin_support", "coordinator", "educational_leader"]);
 const objectStorageService = new ObjectStorageService();
-const DEFAULT_SCHOOL_PORTAL_TABS = ["vital", "vecra", "staff", "reports", "qip"] as const;
+const DEFAULT_SCHOOL_PORTAL_TABS = ["vital", "vecra", "staff", "reports", "qip", "roll"] as const;
 
 function schoolPortalStaffRank(
   member: { role: string; siteId: number | null },

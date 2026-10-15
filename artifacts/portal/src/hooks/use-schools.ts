@@ -177,7 +177,7 @@ export type SchoolPortalData = {
   vitalRecords: VitalRecord[];
   vecraVisits: VecraVisit[];
   portalSettings: {
-    visibleTabs: Array<"vital" | "vecra" | "staff" | "reports" | "qip">;
+    visibleTabs: Array<"vital" | "vecra" | "staff" | "reports" | "qip" | "roll">;
     visibleQualificationNames: string[];
   };
 };

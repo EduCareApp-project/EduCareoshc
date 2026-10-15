@@ -5,23 +5,17 @@ import {
   useGetSchoolKidsoftRoll,
   useRefreshSchoolKidsoftRoll,
 } from "@workspace/api-client-react";
-import { AlertTriangle, CalendarDays, Link2Off, Loader2, RefreshCw, Users } from "lucide-react";
+import { AlertTriangle, Link2Off, Loader2, RefreshCw, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/contexts/auth";
 import { useMelbourneToday } from "@/hooks/use-melbourne-today";
 import { apiErrorMessage, formatMelbourneDateTime, groupSchoolCareBookings, melbourneToday } from "@/components/kidsoft-utils";
 
 export function SchoolKidsoftRoll({ siteId }: { siteId: number }) {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const schoolView = user?.type === "school";
-  const today = useMelbourneToday();
-  const [selectedDate, setDate] = useState(melbourneToday);
-  const date = schoolView ? today : selectedDate;
+  const date = useMelbourneToday();
   const [refreshError, setRefreshError] = useState<string | null>(null);
   const params = { date };
   const queryKey = getGetSchoolKidsoftRollQueryKey(siteId, params);
@@ -35,7 +29,7 @@ export function SchoolKidsoftRoll({ siteId }: { siteId: number }) {
   const otherBookingCount = (data?.bookings.length ?? 0) - groups.reduce((total, group) => total + group.bookings.length, 0);
 
   async function onRefresh() {
-    const target = date;
+    const target = melbourneToday();
     setRefreshError(null);
     try {
       const result = await refresh.mutateAsync({ siteId, data: { date: target } });
@@ -45,29 +39,25 @@ export function SchoolKidsoftRoll({ siteId }: { siteId: number }) {
     }
   }
 
-  const changeDate = (v: string) => { setDate(v); setRefreshError(null); };
-
   return (
     <div className="space-y-5" data-testid="panel-kidsoft-roll">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold">Daily Bookings</h3>
           <p className="max-w-xl text-sm text-muted-foreground">
-            {schoolView ? "Today's children booked into your OSHC service, from a saved copy." : "Children booked into your OSHC service, from a saved copy."} This is the booked roll, not actual attendance.
+            Today's children booked into your OSHC service, from a saved copy. This is the booked roll, not actual attendance.
           </p>
         </div>
         <div className="flex items-end gap-2">
-          <label className="text-xs font-medium text-muted-foreground">
-            <span className="mb-1 flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />{schoolView ? "Today" : "Date"}</span>
-            {schoolView ? (
-              <span className="flex min-h-9 items-center text-sm text-foreground" data-testid="text-roll-today">
-                {new Intl.DateTimeFormat("en-AU", { timeZone: "Australia/Melbourne", day: "numeric", month: "long", year: "numeric" }).format(new Date(`${date}T00:00:00Z`))}
-              </span>
-            ) : <Input type="date" value={date} onChange={(e) => changeDate(e.target.value)} className="w-44" data-testid="input-roll-date" />}
-          </label>
+          <div className="text-xs font-medium text-muted-foreground">
+            <span className="mb-1 block">Today</span>
+            <span className="flex min-h-9 items-center text-sm text-foreground" data-testid="text-roll-today">
+              {new Intl.DateTimeFormat("en-AU", { timeZone: "Australia/Melbourne", day: "numeric", month: "long", year: "numeric" }).format(new Date(`${date}T00:00:00Z`))}
+            </span>
+          </div>
           <Button onClick={onRefresh} disabled={refresh.isPending || isLoading || !date || !data?.mapped} data-testid="button-refresh-roll">
             {refresh.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Refresh this day
+            Refresh today
           </Button>
         </div>
       </div>
@@ -106,13 +96,13 @@ export function SchoolKidsoftRoll({ siteId }: { siteId: number }) {
 
           {!data.refreshedAt ? (
             <Card className="border-dashed bg-muted/30 shadow-none"><CardContent className="py-12 text-center" data-testid="state-roll-not-refreshed">
-              <p className="font-medium">No saved roll for this day yet</p>
-              <p className="mt-1 text-sm text-muted-foreground">Choose Refresh this day to fetch and save the booked roll for {date}.</p>
+              <p className="font-medium">No saved roll for today yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">Choose Refresh today to fetch and save today's booked roll.</p>
             </CardContent></Card>
           ) : data.bookings.length === 0 ? (
             <Card className="border-dashed bg-muted/30 shadow-none"><CardContent className="flex flex-col items-center py-12 text-center" data-testid="state-roll-empty">
               <Users className="mb-3 h-10 w-10 opacity-30" />
-              <p className="font-medium">No children were booked on this day</p>
+              <p className="font-medium">No children were booked today</p>
               <p className="mt-1 text-sm text-muted-foreground">This was checked and saved successfully.</p>
             </CardContent></Card>
           ) : (

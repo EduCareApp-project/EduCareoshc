@@ -15,6 +15,12 @@ Schools need the list of individual children booked in, not just attendance tota
 
 **How to apply:** Treat imported rolls as saved snapshots between refreshes, rather than a live embedded Kidsoft page. Keep each school's access scoped to its mapped service. Do not restrict refresh to staff accounts or substitute actual attendance for booked children.
 
+Daily Bookings must have no calendar or date picker for any viewer, including staff preview. Display and refresh only the current Melbourne day's bookings.
+
+**Why:** The user explicitly requested removing the calendar and limiting this tab to the current day, not merely limiting school logins.
+
+**How to apply:** Keep a read-only today label and Refresh today action; advance the displayed day at Melbourne midnight and determine the current day again when refreshing.
+
 Show Before School Care and After School Care with dark green headings and white writing. Combine casual and regular bookings for each care type, and retain Marked absent badges.
 
 Do not show booking totals, child counts or session count badges anywhere on the school portal Daily Bookings page, including when staff preview it.

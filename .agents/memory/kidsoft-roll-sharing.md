@@ -5,9 +5,9 @@ description: Intended source and snapshot behaviour for school-facing Kidsoft ro
 
 Map the organisation's different Kidsoft services to EduCare services, pull live roll information from Kidsoft, and display it statically in the EduCare school portal.
 
-The user calls this idea **Kidsoft Roll**. Do not implement the integration until the user explicitly resumes it.
+The user calls this feature **Kidsoft Roll**.
 
-**Why:** The user asked to pause the idea and said they will refer to it as Kidsoft Roll when returning to it.
+**Why:** The user supplied this name for returning to the feature; the previous instruction to pause it no longer applies.
 
 Schools need the list of individual children booked in, not just attendance totals. Display one selected day at a time. Schools themselves must have a Refresh button that pulls the latest live booking data from Kidsoft.
 

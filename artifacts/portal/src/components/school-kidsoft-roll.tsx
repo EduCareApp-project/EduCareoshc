@@ -93,7 +93,7 @@ export function SchoolKidsoftRoll({ siteId }: { siteId: number }) {
         </CardContent></Card>
       ) : (
         <>
-          <div className="grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-3">
+          <div className={`grid gap-3 rounded-xl border bg-card p-4 ${schoolView ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
             <div>
               <p className="text-xs uppercase tracking-wider text-muted-foreground">Service</p>
               <p className="font-medium" data-testid="text-roll-service">{data.serviceName}</p>
@@ -102,10 +102,10 @@ export function SchoolKidsoftRoll({ siteId }: { siteId: number }) {
               <p className="text-xs uppercase tracking-wider text-muted-foreground">Last updated (Melbourne)</p>
               <p className="font-medium" data-testid="text-roll-updated">{data.refreshedAt ? formatMelbourneDateTime(data.refreshedAt) : "Not yet refreshed"}</p>
             </div>
-            <div className="flex gap-6">
+            {!schoolView && <div className="flex gap-6">
               <div><p className="text-xs uppercase tracking-wider text-muted-foreground">Bookings</p><p className="text-xl font-semibold" data-testid="text-total-bookings">{data.totalBookings}</p></div>
               <div><p className="text-xs uppercase tracking-wider text-muted-foreground">Children</p><p className="text-xl font-semibold" data-testid="text-total-children">{data.totalChildren}</p></div>
-            </div>
+            </div>}
           </div>
 
           {!data.refreshedAt ? (
@@ -125,7 +125,7 @@ export function SchoolKidsoftRoll({ siteId }: { siteId: number }) {
                 <Card key={session} data-testid={`group-session-${session}`}>
                   <div className="flex items-center justify-between rounded-t-xl bg-[#1b5e20] px-4 py-3 text-white">
                     <h4 className="font-semibold">{session}</h4>
-                    <Badge className="border-white/30 bg-white/15 text-white hover:bg-white/15">{rows.length} booked</Badge>
+                    {!schoolView && <Badge className="border-white/30 bg-white/15 text-white hover:bg-white/15">{rows.length} booked</Badge>}
                   </div>
                   <ul className="divide-y">
                     {!rows.length && <li className="px-4 py-4 text-sm text-muted-foreground">No bookings for this session.</li>}
@@ -143,7 +143,9 @@ export function SchoolKidsoftRoll({ siteId }: { siteId: number }) {
               ))}
               {otherBookingCount > 0 && (
                 <p className="text-sm text-muted-foreground" role="status">
-                  {otherBookingCount} booking{otherBookingCount === 1 ? "" : "s"} for other session types {otherBookingCount === 1 ? "is" : "are"} included in the totals but not in these before/after-school lists.
+                  {schoolView
+                    ? "Bookings for other session types are not included in these before/after-school lists."
+                    : `${otherBookingCount} booking${otherBookingCount === 1 ? "" : "s"} for other session types ${otherBookingCount === 1 ? "is" : "are"} included in the totals but not in these before/after-school lists.`}
                 </p>
               )}
               <p className="text-xs text-muted-foreground">Absence flags show what was recorded against the booking. They are not a record of who actually attended.</p>

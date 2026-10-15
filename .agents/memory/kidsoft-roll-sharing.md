@@ -17,6 +17,8 @@ Schools need the list of individual children booked in, not just attendance tota
 
 Show Before School Care and After School Care with dark green headings and white writing. Combine casual and regular bookings for each care type, and retain Marked absent badges.
 
+Do not show booking totals, child counts or session count badges in the school-facing view; staff counts remain available.
+
 **Why:** The user explicitly requested these two combined groups, the heading colours and the absence indicators.
 
 **How to apply:** Keep source booking and absence details intact while presenting the combined lists. Do not label full-day bookings as before- or after-school care merely to force them into these groups.

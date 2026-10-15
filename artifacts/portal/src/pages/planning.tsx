@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useListPlanningExperiences, useListChildren, useListSites } from "@workspace/api-client-react";
+import { useListPlanningExperiences, useListSites } from "@workspace/api-client-react";
+import { useActiveChildren } from "@/hooks/use-active-children";
+import { hasActiveChildLink } from "@/lib/active-children";
 import { usePermissions } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,8 +37,11 @@ export default function Planning() {
   const [siteFilter, setSiteFilter] = useState(() =>
     isEducatorRole && ownSiteId ? String(ownSiteId) : "all"
   );
-  const { data: experiences, isLoading } = useListPlanningExperiences();
-  const { data: children } = useListChildren();
+  const { data: experiences, isLoading: loadingExperiences } = useListPlanningExperiences();
+  const childrenQuery = useActiveChildren();
+  const { data: children } = childrenQuery;
+  const isLoading = loadingExperiences || childrenQuery.isLoading;
+  const activeIds = new Set((children ?? []).map((child) => child.id));
   const { data: sites } = useListSites();
 
   const childName = (id: number) => {
@@ -55,6 +60,7 @@ export default function Planning() {
       if (exp.stage === "published") return false;
       if (siteFilter === "templates") return exp.isTemplate === true;
       if (exp.isTemplate) return false;
+      if (!hasActiveChildLink(exp.childIds ?? [], activeIds)) return false;
       if (siteFilter === "all") return true;
       if (siteFilter === "none") return !exp.siteId;
       return exp.siteId === parseInt(siteFilter, 10);
@@ -64,6 +70,8 @@ export default function Planning() {
       const bo = STAGE_ORDER[b.stage] ?? 99;
       return ao !== bo ? ao - bo : (a.title ?? "").localeCompare(b.title ?? "");
     });
+
+  if (childrenQuery.isError) return <div role="alert" className="text-destructive">Active children could not be loaded. <Button variant="link" onClick={() => void childrenQuery.refetch()}>Retry</Button></div>;
 
   return (
     <div className="space-y-6">
@@ -139,8 +147,9 @@ export default function Planning() {
         <div className="space-y-3">
           {filtered.map((exp) => {
             const site = siteName(exp.siteId);
-            const focusNames = (exp.childIds ?? []).slice(0, 3).map(childName);
-            const extraChildren = (exp.childIds ?? []).length - 3;
+            const focusChildren = (exp.childIds ?? []).filter((id) => activeIds.has(id));
+            const focusNames = focusChildren.slice(0, 3).map(childName);
+            const extraChildren = focusChildren.length - 3;
             return (
               <button
                 key={exp.id}
@@ -167,7 +176,7 @@ export default function Planning() {
                           {format(new Date(exp.startDate), "dd/MM/yyyy")}
                         </span>
                       )}
-                      {(exp.childIds ?? []).length > 0 && (
+                      {focusChildren.length > 0 && (
                         <span className="flex items-center gap-1">
                           <Users className="h-3.5 w-3.5" />
                           {focusNames.join(", ")}{extraChildren > 0 ? ` +${extraChildren} more` : ""}

@@ -3,11 +3,11 @@ import {
   useCreateObservation,
   useGetObservation,
   useUpdateObservation,
-  useListChildren,
   getGetObservationQueryKey,
   getListObservationsQueryKey,
 } from "@workspace/api-client-react";
 import { useActiveStaff } from "@/hooks/use-active-staff";
+import { useActiveChildren } from "@/hooks/use-active-children";
 import { useLocation, useRoute, useSearch } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,7 @@ export default function NewObservation() {
   const { data: existingObservation } = useGetObservation(observationId, {
     query: { queryKey: getGetObservationQueryKey(observationId), enabled: isEditing },
   });
-  const { data: children } = useListChildren();
+  const { data: children } = useActiveChildren();
   const { data: staff } = useActiveStaff();
 
   const activeChildren = useMemo(() => children?.filter((c) => c.status === "active") || [], [children]);
@@ -78,6 +78,7 @@ export default function NewObservation() {
   function validate() {
     const e: Record<string, string> = {};
     if (!form.childId) e.childId = "Select a child";
+    else if (!activeChildren.some((child) => child.id === Number(form.childId))) e.childId = "Select an active child";
     if (!form.staffId) e.staffId = "Select an educator";
     if (!form.observationDate) e.observationDate = "Date is required";
     if (!form.description.trim()) e.description = "Observation is required";

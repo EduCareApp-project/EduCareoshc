@@ -5,13 +5,13 @@ import {
   useCreatePlanningExperience,
   useUpdatePlanningExperience,
   useDeletePlanningExperience,
-  useListChildren,
   useListSites,
   useListOutcomes,
   useListPlanningComments, getListPlanningCommentsQueryKey,
   useCreatePlanningComment, useDeletePlanningComment,
 } from "@workspace/api-client-react";
 import { useActiveStaff } from "@/hooks/use-active-staff";
+import { useActiveChildren } from "@/hooks/use-active-children";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpload } from "@workspace/object-storage-web";
 import { Button } from "@/components/ui/button";
@@ -219,7 +219,7 @@ export default function PlanningDetail() {
   const isTemplate = isNew ? isTemplateQuery : (loadingExp ? null : experience?.isTemplate === true);
   // true when the user is allowed to edit/delete this cycle (always true for non-templates)
   const canEditThisCycle = isTemplate !== null && (!isTemplate || isAdminOrEL);
-  const { data: allChildren } = useListChildren();
+  const { data: allChildren } = useActiveChildren();
   const { data: sites } = useListSites();
   const { data: staffList } = useActiveStaff();
 

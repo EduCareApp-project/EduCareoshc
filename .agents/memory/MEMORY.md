@@ -31,4 +31,4 @@
 - [Dashboard layout editing](dashboard-layout-scope.md) — admin-only Educator/Leadership rearrangement; private drafts before applying to the organisation.
 - [Dashboard grid grips](dashboard-grid-grips.md) — third-party directional CSS can override local handle styles; check computed transforms and hit areas.
 - [Staff Notifications tile](staff-notification-tile.md) — consolidated personal notifications and medical alerts; keep the empty tile and its saved position.
-- [Child activity gaps](child-activity-gaps.md) — active children only; 30-day rolling window across four record types, with red badges after three calendar months.
+- [Active-child learning lists](child-activity-gaps.md) — exclude inactive/archived profiles across learning lists; activity gaps use 30 days, with red badges after three months.

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useListJottings, useCreateJotting, useDeleteJotting, useArchiveJotting, useUpdateJotting, useListChildren, useListSites } from "@workspace/api-client-react";
+import { useListJottings, useCreateJotting, useDeleteJotting, useArchiveJotting, useUpdateJotting, useListSites } from "@workspace/api-client-react";
+import { useActiveChildren } from "@/hooks/use-active-children";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,8 +17,10 @@ import { useToast } from "@/hooks/use-toast";
 export default function Jottings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { data: jottings, isLoading } = useListJottings({ includeArchived: true });
-  const { data: children } = useListChildren();
+  const { data: jottings, isLoading: loadingJottings } = useListJottings({ includeArchived: true });
+  const childrenQuery = useActiveChildren();
+  const { data: children } = childrenQuery;
+  const isLoading = loadingJottings || childrenQuery.isLoading;
   const { data: sites } = useListSites();
   const { canDelete, isEducatorRole, ownSiteId } = usePermissions();
   const canEdit = !isEducatorRole;
@@ -53,6 +56,7 @@ export default function Jottings() {
   }
 
   function matchesSiteFilter(j: { childId?: number | null }) {
+    if (j.childId != null && !childSiteMap.has(j.childId)) return false;
     if (listSiteFilter === "all") return true;
     if (!j.childId) return listSiteFilter === "none";
     return listSiteFilter === "none" ? false : childSiteMap.get(j.childId) === parseInt(listSiteFilter);
@@ -65,6 +69,10 @@ export default function Jottings() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!content.trim()) return;
+    if (childId !== "none" && !childSiteMap.has(Number(childId))) {
+      toast({ title: "Select an active child", description: "This child is no longer active.", variant: "destructive" });
+      return;
+    }
     const data: Record<string, unknown> = { content };
     if (childId !== "none") data.childId = parseInt(childId);
     createMutation.mutate({ data: data as any }, {
@@ -104,6 +112,10 @@ export default function Jottings() {
 
   function handleSaveEdit(id: number) {
     if (!editContent.trim()) return;
+    if (editChildId !== "none" && !childSiteMap.has(Number(editChildId))) {
+      toast({ title: "Select an active child", description: "This child is no longer active.", variant: "destructive" });
+      return;
+    }
     updateMutation.mutate({
       id,
       data: {
@@ -120,6 +132,8 @@ export default function Jottings() {
   }
 
   const showSiteFilter = sites && sites.length > 0;
+
+  if (childrenQuery.isError) return <div role="alert" className="text-destructive">Active children could not be loaded. <Button variant="link" onClick={() => void childrenQuery.refetch()}>Retry</Button></div>;
 
   return (
     <div className="space-y-6">
@@ -213,7 +227,7 @@ export default function Jottings() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No child linked</SelectItem>
-                      {(children ?? []).filter((c) => c.status === "active").map((c) => (
+                      {(children ?? []).map((c) => (
                         <SelectItem key={c.id} value={String(c.id)}>{c.firstName} {c.lastName}</SelectItem>
                       ))}
                     </SelectContent>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { melbourneDateTimeStr, toMelbourneDate, melbourneLocalToUTCISO, fmtMelb } from "@/lib/timezone";
 import {
-  useGetChild, getGetChildQueryKey, useUpdateChild, useDeleteChild,
+  useGetChild, getGetChildQueryKey, useUpdateChild, useDeleteChild, getGetChildActivityGapsQueryKey,
   useGetChildObservations, getGetChildObservationsQueryKey, useListSites,
   useGetChildWelfareNotes, getGetChildWelfareNotesQueryKey, useCreateWelfareNote, useUpdateWelfareNote, useDeleteWelfareNote,
   useGetChildConfidentialNotes, getGetChildConfidentialNotesQueryKey, useCreateConfidentialNote, useUpdateConfidentialNote, useDeleteConfidentialNote,
@@ -1233,6 +1233,7 @@ export default function ChildProfile() {
     deleteMutation.mutate({ id }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+        queryClient.invalidateQueries({ queryKey: getGetChildActivityGapsQueryKey() });
         toast({ title: "Profile deleted" });
         navigate("/children");
       },
@@ -1257,6 +1258,8 @@ export default function ChildProfile() {
       onSuccess: () => {
         setEditOpen(false);
         queryClient.invalidateQueries({ queryKey: [`/api/children/${id}`] });
+        queryClient.invalidateQueries({ queryKey: ["/api/children"] });
+        queryClient.invalidateQueries({ queryKey: getGetChildActivityGapsQueryKey() });
         toast({ title: "Profile updated" });
       },
       onError: () => toast({ title: "Failed to save changes", variant: "destructive" }),

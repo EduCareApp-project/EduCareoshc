@@ -1,4 +1,5 @@
-import { useListObservations, useListChildren, useListSites } from "@workspace/api-client-react";
+import { useListObservations, useListSites } from "@workspace/api-client-react";
+import { useActiveChildren } from "@/hooks/use-active-children";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,8 +14,10 @@ import { usePermissions } from "@/hooks/use-permissions";
 
 export default function ObservationsList() {
   const { isEducatorRole, ownSiteId } = usePermissions();
-  const { data: observations, isLoading } = useListObservations();
-  const { data: children } = useListChildren();
+  const { data: observations, isLoading: loadingObservations } = useListObservations();
+  const childrenQuery = useActiveChildren();
+  const { data: children } = childrenQuery;
+  const isLoading = loadingObservations || childrenQuery.isLoading;
   const { data: sites } = useListSites();
   const [search, setSearch] = useState("");
   const [siteFilter, setSiteFilter] = useState<string>("all");
@@ -27,6 +30,7 @@ export default function ObservationsList() {
   const showSiteFilter = !isEducatorRole && (sites ?? []).length > 1;
 
   const matchesFilters = (obs: NonNullable<typeof observations>[number]) => {
+    if (!childSiteMap.has(obs.childId)) return false;
     // Educators are always scoped to their own site
     if (isEducatorRole && ownSiteId) {
       const childSite = childSiteMap.get(obs.childId);
@@ -53,6 +57,8 @@ export default function ObservationsList() {
   function observationDate(value: string) {
     return new Date(value.length === 10 ? `${value}T00:00:00` : value);
   }
+
+  if (childrenQuery.isError) return <div role="alert" className="text-destructive">Active children could not be loaded. <Button variant="link" onClick={() => void childrenQuery.refetch()}>Retry</Button></div>;
 
   return (
     <div className="space-y-6">

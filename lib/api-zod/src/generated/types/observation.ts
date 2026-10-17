@@ -16,6 +16,8 @@ export interface Observation {
   staffName?: string | null;
   /** @nullable */
   siteName?: string | null;
+  /** @nullable */
+  siteIdentifier?: string | null;
   description: string;
   observationDate: Date;
   outcomeIds: string[];

@@ -968,6 +968,10 @@ export interface StaffUpdate {
   associatedSiteIds?: number[];
 }
 
+export interface DashboardPreferences {
+  recentObservationsCollapsed: boolean;
+}
+
 export interface Observation {
   id: number;
   childId: number;
@@ -978,6 +982,8 @@ export interface Observation {
   staffName?: string | null;
   /** @nullable */
   siteName?: string | null;
+  /** @nullable */
+  siteIdentifier?: string | null;
   description: string;
   observationDate: string;
   outcomeIds: string[];

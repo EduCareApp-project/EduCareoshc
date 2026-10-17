@@ -434,6 +434,24 @@ export const DeleteOrganisationCalendarEventParams = zod.object({
 });
 
 /**
+ * @summary Get the signed-in staff member's personal dashboard preferences
+ */
+export const GetDashboardPreferencesResponse = zod.object({
+  recentObservationsCollapsed: zod.boolean(),
+});
+
+/**
+ * @summary Save the signed-in staff member's personal dashboard preferences
+ */
+export const UpdateDashboardPreferencesBody = zod.object({
+  recentObservationsCollapsed: zod.boolean(),
+});
+
+export const UpdateDashboardPreferencesResponse = zod.object({
+  recentObservationsCollapsed: zod.boolean(),
+});
+
+/**
  * @summary Get the signed-in staff member's emergency heading settings
  */
 export const GetEmergencyRecordHeadingPreferencesResponse = zod.object({
@@ -780,6 +798,7 @@ export const GetChildObservationsResponseItem = zod.object({
   staffId: zod.number(),
   staffName: zod.string().nullish(),
   siteName: zod.string().nullish(),
+  siteIdentifier: zod.string().nullish(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
   outcomeIds: zod
@@ -1227,6 +1246,7 @@ export const ListObservationsResponseItem = zod.object({
   staffId: zod.number(),
   staffName: zod.string().nullish(),
   siteName: zod.string().nullish(),
+  siteIdentifier: zod.string().nullish(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
   outcomeIds: zod
@@ -1272,6 +1292,7 @@ export const GetObservationResponse = zod.object({
   staffId: zod.number(),
   staffName: zod.string().nullish(),
   siteName: zod.string().nullish(),
+  siteIdentifier: zod.string().nullish(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
   outcomeIds: zod
@@ -1310,6 +1331,7 @@ export const UpdateObservationResponse = zod.object({
   staffId: zod.number(),
   staffName: zod.string().nullish(),
   siteName: zod.string().nullish(),
+  siteIdentifier: zod.string().nullish(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
   outcomeIds: zod
@@ -1643,6 +1665,7 @@ export const GetRecentObservationsResponseItem = zod.object({
   staffId: zod.number(),
   staffName: zod.string().nullish(),
   siteName: zod.string().nullish(),
+  siteIdentifier: zod.string().nullish(),
   description: zod.string(),
   observationDate: zod.coerce.date(),
   outcomeIds: zod

@@ -65,6 +65,7 @@ export * from "./dashboardLayoutItem";
 export * from "./dashboardLayoutPublishInput";
 export * from "./dashboardLayoutState";
 export * from "./dashboardLayoutStateDashboard";
+export * from "./dashboardPreferences";
 export * from "./dashboardSummary";
 export * from "./dashboardUtilisation";
 export * from "./deleteBehaviouralNotification200";

@@ -219,6 +219,7 @@ async function startServer(): Promise<void> {
   await migrateSitesColumns();
   logger.info("Sites columns migration applied");
   await pool.query("ALTER TABLE staff ADD COLUMN IF NOT EXISTS emergency_record_headings jsonb");
+  await pool.query("ALTER TABLE staff ADD COLUMN IF NOT EXISTS recent_observations_collapsed boolean NOT NULL DEFAULT false");
   await migrateSiteIdentifiers(pool);
   logger.info("Site identifiers migration applied");
   await migrateKidsoftRoll(pool);

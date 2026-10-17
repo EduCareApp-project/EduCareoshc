@@ -23,6 +23,7 @@ export const staffTable = pgTable("staff", {
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   isSuperAdmin: boolean("is_super_admin").notNull().default(false),
   emergencyRecordHeadings: jsonb("emergency_record_headings").$type<Partial<Record<"evacuation" | "lockdown" | "shelter_in_place" | "other", boolean>>>(),
+  recentObservationsCollapsed: boolean("recent_observations_collapsed").notNull().default(false),
 });
 
 export const insertStaffSchema = createInsertSchema(staffTable).omit({ id: true, createdAt: true });

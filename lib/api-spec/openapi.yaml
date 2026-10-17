@@ -152,6 +152,41 @@ paths:
       tags: [calendar]
       responses:
         "204": { description: Event deleted by its creator or organisation leadership }
+  /auth/dashboard-preferences:
+    get:
+      operationId: getDashboardPreferences
+      tags: [staff]
+      summary: Get the signed-in staff member's personal dashboard preferences
+      responses:
+        "200":
+          description: Saved personal dashboard preferences
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DashboardPreferences" }
+        "401": { description: Sign-in required }
+        "403": { description: Staff account required }
+        "404": { description: Staff account not found }
+        "500": { description: Preferences could not be loaded }
+    patch:
+      operationId: updateDashboardPreferences
+      tags: [staff]
+      summary: Save the signed-in staff member's personal dashboard preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DashboardPreferences" }
+      responses:
+        "200":
+          description: Saved personal dashboard preferences
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DashboardPreferences" }
+        "400": { description: Invalid dashboard preferences }
+        "401": { description: Sign-in required }
+        "403": { description: Staff account required }
+        "404": { description: Staff account not found }
+        "500": { description: Preferences could not be saved }
   /auth/emergency-record-headings:
     get:
       operationId: getEmergencyRecordHeadingPreferences
@@ -5362,6 +5397,12 @@ components:
           items:
             type: integer
 
+    DashboardPreferences:
+      type: object
+      required: [recentObservationsCollapsed]
+      properties:
+        recentObservationsCollapsed: { type: boolean }
+
     Observation:
       type: object
       required: [id, childId, staffId, description, observationDate, outcomeIds, createdAt, updatedAt]
@@ -5377,6 +5418,8 @@ components:
         staffName:
           type: ["string", "null"]
         siteName:
+          type: ["string", "null"]
+        siteIdentifier:
           type: ["string", "null"]
         description:
           type: string

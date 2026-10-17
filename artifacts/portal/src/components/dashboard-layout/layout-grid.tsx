@@ -8,7 +8,7 @@ import { minSize, readingOrder, WIDGET_LABELS, type LayoutItem } from "@/lib/das
 
 const Grid = WidthProvider(Responsive);
 
-export type WidgetDef = { view: ReactNode | null; placeholder: string };
+export type WidgetDef = { view: ReactNode | null; placeholder: string; collapsed?: boolean };
 
 export function LayoutGrid({ items, widgets, editing, stacked, disabled = false, onCommit }: {
   items: LayoutItem[]; widgets: Record<string, WidgetDef>; editing: boolean; stacked: boolean;
@@ -25,7 +25,11 @@ export function LayoutGrid({ items, widgets, editing, stacked, disabled = false,
       </div>
     );
   }
-  const layout = shown.map((it) => ({ ...it, ...minSize(it.i), resizeHandles: ["s", "e", "se"] as ("s" | "e" | "se")[] }));
+  const layout = shown.map((it) => ({
+    ...it, ...minSize(it.i),
+    ...(!editing && widgets[it.i]?.collapsed ? { h: 2, minH: 2, maxH: 2 } : {}),
+    resizeHandles: ["s", "e", "se"] as ("s" | "e" | "se")[],
+  }));
   const commit = (l: readonly { i: string; x: number; y: number; w: number; h: number }[]) => {
     if (!onCommit || disabled) return;
     const map = new Map(l.map((n) => [n.i, n]));

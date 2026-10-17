@@ -143,16 +143,20 @@ router.get("/dashboard/recent-observations", async (req, res): Promise<void> => 
     const childList = await db.select().from(childrenTable);
     const staffList = await db.select().from(staffTable);
     const programList = await db.select().from(programsTable);
+    const siteList = await db.select().from(sitesTable);
 
     const enriched = rows.map((obs) => {
       const child = childList.find((c) => c.id === obs.childId);
       const staff = staffList.find((s) => s.id === obs.staffId);
       const program = programList.find((p) => p.id === obs.programId);
+      const site = siteList.find((s) => s.id === child?.siteId);
       return {
         ...obs,
         childName: child ? `${child.firstName} ${child.lastName}` : null,
         staffName: staff ? `${staff.firstName} ${staff.lastName}` : null,
         programName: program ? program.title : null,
+        siteName: site?.name ?? null,
+        siteIdentifier: site?.identifier ?? null,
       };
     });
 

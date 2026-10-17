@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  useGetDashboardSummary, useGetOutcomeCounts, useGetRecentObservations, useGetRecentActivity,
+  useGetDashboardSummary, useGetOutcomeCounts, useGetRecentActivity,
   useListNotices, useCreateNotice, useDeleteNotice, useUpdateNotice,
   useGetServiceComplianceReport, useGetLearningStoriesReport,
   useListPlanningExperiences, useListPosts, useListSites,
@@ -38,6 +38,8 @@ import { useToast } from "@/hooks/use-toast";
 import { DashboardLayoutHost, type EditGuard } from "@/components/dashboard-layout/layout-host";
 import type { WidgetDef } from "@/components/dashboard-layout/layout-grid";
 import { StaffNotificationsTile } from "@/components/staff-notifications-tile";
+import { RecentObservationsTile } from "@/components/recent-observations-tile";
+import { useDashboardPreferences } from "@/hooks/use-dashboard-preferences";
 
 // ─── Shared priority colours ────────────────────────────────────────────────
 const PRIORITY_COLORS: Record<string, string> = {
@@ -971,7 +973,7 @@ export function DashboardNotificationsWidget() {
 function LeadershipDashboard({ guard }: { guard?: EditGuard }) {
   const { data: summary, isLoading: loadingSummary } = useGetDashboardSummary();
   const { data: outcomes, isLoading: loadingOutcomes } = useGetOutcomeCounts();
-  const { data: observations, isLoading: loadingObservations } = useGetRecentObservations();
+  const observationPreferences = useDashboardPreferences();
   const { data: activity, isLoading: loadingActivity } = useGetRecentActivity();
 
   const w_posts = (
@@ -1030,60 +1032,7 @@ function LeadershipDashboard({ guard }: { guard?: EditGuard }) {
           />
   );
   const w_recent_observations = (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex justify-between items-center text-lg">
-            <span>Recent Observations</span>
-            <Link href="/observations"><span className="text-sm text-primary font-normal cursor-pointer hover:underline">View all</span></Link>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {loadingObservations ? (
-            <div className="space-y-4 p-6"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
-          ) : !observations || observations.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">No recent observations</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/40">
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Date</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Child</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Observation</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Site</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Submitter</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {observations.slice(0, 10).map((obs) => (
-                    <tr key={obs.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap align-top">
-                        {format(new Date(obs.observationDate.length === 10 ? obs.observationDate + "T00:00:00" : obs.observationDate), "dd/MM/yyyy")}
-                      </td>
-                      <td className="px-4 py-3 font-medium whitespace-nowrap align-top">
-                        {obs.childName ?? <span className="text-muted-foreground italic">Unknown</span>}
-                      </td>
-                      <td className="px-4 py-3 align-top max-w-xs">
-                        <Link href={`/observations/${obs.id}`}>
-                          <span className="line-clamp-2 cursor-pointer hover:text-primary transition-colors leading-snug">
-                            {obs.description}
-                          </span>
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap align-top">
-                        {obs.siteName ?? <span className="italic">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap align-top">
-                        {obs.staffName ?? <span className="italic">—</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <RecentObservationsTile preferences={observationPreferences} />
   );
   const w_recent_activity = (
       <Card>
@@ -1190,7 +1139,7 @@ function LeadershipDashboard({ guard }: { guard?: EditGuard }) {
     "condition-reports": { view: w_condition_reports, placeholder: "" },
     "medication-expiry": { view: <DashboardNotificationsWidget />, placeholder: "" },
     "notice-board": { view: <NoticeBoard canManage audience="leadership" />, placeholder: "" },
-    "recent-observations": { view: w_recent_observations, placeholder: "" }, "recent-activity": { view: w_recent_activity, placeholder: "" },
+    "recent-observations": { view: w_recent_observations, placeholder: "", collapsed: observationPreferences.collapsed && !observationPreferences.error }, "recent-activity": { view: w_recent_activity, placeholder: "" },
     "roll-submissions": { view: <RollSubmissionChecklist />, placeholder: "" },
     utilisation: { view: <UtilisationSection />, placeholder: "" },
   };

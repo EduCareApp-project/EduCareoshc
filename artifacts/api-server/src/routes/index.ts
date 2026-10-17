@@ -17,6 +17,7 @@ import noticesRouter from "./notices";
 import organisationCalendarRouter from "./organisation-calendar";
 import dashboardLayoutsRouter from "./dashboard-layouts";
 import dashboardPreferencesRouter from "./dashboard-preferences";
+import { organisationContext } from "../middlewares/organisation-context";
 import jottingsRouter from "./jottings";
 import incidentsRouter from "./incidents";
 import conditionReportsRouter from "./condition-reports";
@@ -93,7 +94,14 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
   next();
 });
 
-// School accounts are tenant-scoped and read-only. Keep this boundary central so
+// Public document/logo handlers may reach this point without an account.
+// Control-plane and credential routes above deliberately remain separate.
+router.use((req, res, next) => {
+  if (!req.session?.user) { next(); return; }
+  return organisationContext(req, res, next);
+});
+
+// School accounts are site-scoped and read-only. Keep this boundary central so
 // adding a new staff API cannot accidentally expose it to school sessions.
 router.use((req: Request, res: Response, next: NextFunction): void => {
   const user = req.session.user;

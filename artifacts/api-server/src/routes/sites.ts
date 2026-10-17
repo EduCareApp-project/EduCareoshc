@@ -43,6 +43,7 @@ router.post("/sites", async (req, res): Promise<void> => {
   try {
     const [site] = await db.insert(sitesTable).values({
       ...parsed.data,
+      orgId: res.locals.organisationId,
       identifier: parsed.data.identifier ?? null,
     }).returning();
     if (!site) throw new Error("Site creation returned no record");

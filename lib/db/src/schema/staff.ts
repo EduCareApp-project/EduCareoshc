@@ -1,10 +1,13 @@
-import { pgTable, serial, text, timestamp, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, boolean, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { sitesTable } from "./sites";
+import { organisationTable } from "./organisation";
 
 export const staffTable = pgTable("staff", {
   id: serial("id").primaryKey(),
+  // Transitional nullable ownership: require only after each environment's legacy backfill.
+  organisationId: integer("organisation_id").references(() => organisationTable.id, { onDelete: "restrict" }),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   email: text("email").notNull().unique(),
@@ -24,8 +27,8 @@ export const staffTable = pgTable("staff", {
   isSuperAdmin: boolean("is_super_admin").notNull().default(false),
   emergencyRecordHeadings: jsonb("emergency_record_headings").$type<Partial<Record<"evacuation" | "lockdown" | "shelter_in_place" | "other", boolean>>>(),
   recentObservationsCollapsed: boolean("recent_observations_collapsed").notNull().default(false),
-});
+}, (table) => [index("staff_organisation_idx").on(table.organisationId)]);
 
-export const insertStaffSchema = createInsertSchema(staffTable).omit({ id: true, createdAt: true });
+export const insertStaffSchema = createInsertSchema(staffTable).omit({ id: true, createdAt: true, organisationId: true });
 export type InsertStaff = z.infer<typeof insertStaffSchema>;
 export type Staff = typeof staffTable.$inferSelect;

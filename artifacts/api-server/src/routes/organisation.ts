@@ -1,15 +1,19 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, organisationTable } from "@workspace/db";
+import { organisationContext } from "../middlewares/organisation-context";
 
 const router: IRouter = Router();
+// Limit this middleware to these paths; this router is mounted without a prefix.
+router.use("/organisation", organisationContext);
 
 const ORG_ID_REGEX = /^\d{6}[A-Z]$/;
 
 // GET /api/organisation
 router.get("/organisation", async (req, res): Promise<void> => {
   try {
-    const [row] = await db.select().from(organisationTable).limit(1);
+    const [row] = await db.select().from(organisationTable)
+      .where(eq(organisationTable.id, res.locals.organisationId)).limit(1);
     res.json(row ?? null);
   } catch (err) {
     req.log.error({ err }, "Failed to fetch organisation");
@@ -19,6 +23,11 @@ router.get("/organisation", async (req, res): Promise<void> => {
 
 // PUT /api/organisation
 router.put("/organisation", async (req, res): Promise<void> => {
+  const user = req.session.user;
+  if (user?.type !== "staff" || !["admin", "admin_support", "director"].includes(user.role)) {
+    res.status(403).json({ error: "Only organisation administrators can update company settings" });
+    return;
+  }
   const { organisationId, name, approvalNumber, abn, servicePhone, serviceEmail } = req.body ?? {};
 
   if (organisationId !== undefined && organisationId !== null && organisationId !== "") {
@@ -31,7 +40,8 @@ router.put("/organisation", async (req, res): Promise<void> => {
   }
 
   try {
-    const [existing] = await db.select().from(organisationTable).limit(1);
+    const [existing] = await db.select().from(organisationTable)
+      .where(eq(organisationTable.id, res.locals.organisationId)).limit(1);
 
     const patch: Record<string, unknown> = { updatedAt: new Date() };
     if (organisationId !== undefined) patch.organisationId = organisationId ?? null;
@@ -49,11 +59,7 @@ router.put("/organisation", async (req, res): Promise<void> => {
         .returning();
       res.json(updated);
     } else {
-      const [created] = await db
-        .insert(organisationTable)
-        .values(patch as any)
-        .returning();
-      res.status(201).json(created);
+      res.status(404).json({ error: "Organisation not found" });
     }
   } catch (err) {
     req.log.error({ err }, "Failed to update organisation");

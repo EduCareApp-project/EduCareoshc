@@ -101,6 +101,7 @@ router.post("/import/children", async (req, res): Promise<void> => {
       }
 
       await db.insert(childrenTable).values({
+        organisationId: res.locals.organisationId,
         firstName: firstName!,
         lastName: lastName!,
         dateOfBirth: dateOfBirth! as any,
@@ -121,6 +122,7 @@ router.post("/import/children", async (req, res): Promise<void> => {
         .limit(1);
       if (existingAccount.length === 0) {
         await db.insert(parentAccountsTable).values({
+          organisationId: res.locals.organisationId,
           guardianEmail: guardianEmail!,
           username: username ?? null,
         });
@@ -187,6 +189,7 @@ router.post("/import/staff", async (req, res): Promise<void> => {
       }
 
       await db.insert(staffTable).values({
+        organisationId: res.locals.organisationId,
         firstName: firstName!,
         lastName: lastName!,
         email: email!,
@@ -244,6 +247,7 @@ router.post("/import/guardians", async (req, res): Promise<void> => {
       }
 
       await db.insert(parentAccountsTable).values({
+        organisationId: res.locals.organisationId,
         guardianEmail,
         username: username ?? null,
       });

@@ -128,7 +128,7 @@ router.patch("/guardians/:email", async (req, res): Promise<void> => {
   try {
     await db
       .insert(parentAccountsTable)
-      .values({ guardianEmail: email, username: parsed.data.username })
+      .values({ guardianEmail: email, username: parsed.data.username, organisationId: res.locals.organisationId })
       .onConflictDoUpdate({
         target: parentAccountsTable.guardianEmail,
         set: { username: parsed.data.username },
@@ -202,7 +202,7 @@ router.post("/guardians/:email/reset-password", async (req, res): Promise<void> 
 
     await db
       .insert(parentAccountsTable)
-      .values({ guardianEmail: email, passwordHash: hash })
+      .values({ guardianEmail: email, passwordHash: hash, organisationId: res.locals.organisationId })
       .onConflictDoUpdate({
         target: parentAccountsTable.guardianEmail,
         set: { passwordHash: hash },

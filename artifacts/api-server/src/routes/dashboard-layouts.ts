@@ -1,6 +1,7 @@
 import { Router, type Request } from "express";
-import { and, asc, eq } from "drizzle-orm";
-import { db, dashboardLayoutsTable as layouts, dashboardLayoutDraftsTable as drafts, organisationTable } from "@workspace/db";
+import { and, eq } from "drizzle-orm";
+import { db, dashboardLayoutsTable as layouts, dashboardLayoutDraftsTable as drafts } from "@workspace/db";
+import { organisationContext } from "../middlewares/organisation-context";
 import { dashboardView, hasAllDashboardTiles, isLayoutAdministrator, layoutDraftInput, layoutItems, layoutPublishInput, type DashboardView } from "./dashboard-layout-validation";
 
 const router = Router();
@@ -10,11 +11,6 @@ type Draft = typeof drafts.$inferSelect;
 function document(row: Published | Draft | undefined) {
   return row ? { items: layoutItems.parse(row.items), revision: row.revision,
     baseRevision: "baseRevision" in row ? row.baseRevision : row.revision } : null;
-}
-async function organisationId() {
-  const [row] = await db.select({ id: organisationTable.id }).from(organisationTable).orderBy(asc(organisationTable.id)).limit(1);
-  if (!row) throw new Error("Organisation is not configured");
-  return row.id;
 }
 function publishedScope(org: number, view: DashboardView) {
   return and(eq(layouts.organisationId, org), eq(layouts.dashboard, view));
@@ -37,11 +33,12 @@ router.use((req, res, next) => {
   }
   next();
 });
+router.use(organisationContext);
 router.get("/:dashboard", async (req, res) => {
   const view = dashboardView.safeParse(req.params.dashboard);
   if (!view.success) { res.status(400).json({ error: "Unknown dashboard" }); return; }
   try {
-    const org = await organisationId();
+    const org = res.locals.organisationId as number;
     const user = req.session.user!;
     const [published] = await db.select().from(layouts).where(publishedScope(org, view.data)).limit(1);
     const [draft] = isLayoutAdministrator(user)
@@ -56,7 +53,7 @@ router.put("/:dashboard/draft", async (req, res) => {
     res.status(400).json({ error: "Provide every dashboard tile exactly once, with valid sizes and positions" }); return;
   }
   try {
-    const org = await organisationId();
+    const org = res.locals.organisationId as number;
     const user = req.session.user!;
     const values = { items: input.data.items, baseRevision: input.data.baseRevision,
       revision: input.data.expectedDraftRevision + 1, updatedAt: new Date() };
@@ -73,7 +70,7 @@ router.delete("/:dashboard/draft", async (req, res) => {
   const view = dashboardView.safeParse(req.params.dashboard);
   if (!view.success) { res.status(400).json({ error: "Unknown dashboard" }); return; }
   try {
-    const org = await organisationId();
+    const org = res.locals.organisationId as number;
     await db.delete(drafts).where(draftScope(org, view.data, req.session.user!.id));
     res.status(204).end();
   } catch (error) { failure(req, res, error, "Unable to discard your layout draft"); }
@@ -83,7 +80,7 @@ router.post("/:dashboard/publish", async (req, res) => {
   const input = layoutPublishInput.safeParse(req.body);
   if (!view.success || !input.success) { res.status(400).json({ error: "Provide valid layout revisions" }); return; }
   try {
-    const org = await organisationId();
+    const org = res.locals.organisationId as number;
     const user = req.session.user!;
     const result = await db.transaction(async (tx) => {
       // Bootstrap inside the transaction, so failure never leaves an empty shared layout.

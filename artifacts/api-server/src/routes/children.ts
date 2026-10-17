@@ -83,7 +83,9 @@ router.post("/children", async (req, res): Promise<void> => {
   }
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [child] = await db.insert(childrenTable).values(parsed.data as any).returning();
+    const [child] = await db.insert(childrenTable).values({
+      ...parsed.data, organisationId: res.locals.organisationId,
+    } as any).returning();
     res.status(201).json(GetChildResponse.parse(child));
   } catch (err) {
     req.log.error({ err }, "Failed to create child");

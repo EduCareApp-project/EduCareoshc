@@ -31,7 +31,8 @@ vi.mock("@workspace/db", () => {
   mock.update.mockImplementation(chain);
   mock.delete.mockImplementation(chain);
   return {
-    organisationTable: { id: "org.id" },
+    staffTable: { id: "staff.id", organisationId: "staff.org" },
+    parentAccountsTable: {}, schoolAccountsTable: {}, sitesTable: {},
     calendarEventsTable: {
       id: "event.id", organisationId: "event.org", siteId: "event.site", startDate: "event.start",
       endDate: "event.end", startTime: "event.time", createdBy: "event.owner",
@@ -64,7 +65,7 @@ beforeEach(() => {
 });
 describe("organisation calendar", () => {
   it("creates a shared event with server-owned organisation and creator", async () => {
-    mock.rows.push([{ id: 1 }], [row]);
+    mock.rows.push([{ organisationId: 1 }], [row]);
     const response = await request(app()).post(url).send(input);
     expect(response.status).toBe(201);
     expect(response.body.canEdit).toBe(true);
@@ -73,7 +74,7 @@ describe("organisation calendar", () => {
       description: "", location: "", startTime: null, endTime: null });
   });
   it("lists overlapping events only in the organisation's global calendar", async () => {
-    mock.rows.push([{ id: 1 }], [row, { ...row, id: 11, createdBy: 99 }]);
+    mock.rows.push([{ organisationId: 1 }], [row, { ...row, id: 11, createdBy: 99 }]);
     const response = await request(app()).get(`${url}?from=2026-10-01&to=2026-10-31`);
     expect(response.status).toBe(200);
     expect(response.body.map((event: { canEdit: boolean }) => event.canEdit)).toEqual([true, false]);
@@ -96,6 +97,7 @@ describe("organisation calendar", () => {
     { ...input, startTime: "12:00", endTime: "11:00" }, { ...input, endTime: "12:00" },
     { ...input, organisationId: 2 }, { ...input, siteId: 55 }, { ...input, createdBy: 99 },
   ])("rejects malformed or client-owned protected fields: %j", async (data) => {
+    mock.rows.push([{ organisationId: 1 }]);
     expect((await request(app()).post(url).send(data)).status).toBe(400);
     expect(mock.insert).not.toHaveBeenCalled();
   });
@@ -104,21 +106,21 @@ describe("organisation calendar", () => {
       startTime: "23:00", endTime: "01:00" }).success).toBe(true);
   });
   it("lets the creator edit with an atomic ownership condition", async () => {
-    mock.rows.push([{ id: 1 }], [row], [{ ...row, title: "Updated" }]);
+    mock.rows.push([{ organisationId: 1 }], [row], [{ ...row, title: "Updated" }]);
     const response = await request(app()).patch(`${url}/10`).send({ ...input, title: "Updated" });
     expect(response.status).toBe(200);
     expect(response.body.title).toBe("Updated");
     expect(JSON.stringify(mock.conditions)).toContain('"eq":["event.owner",21]');
   });
   it.each(["patch", "delete"] as const)("denies another educator's %s operation", async (method) => {
-    mock.rows.push([{ id: 1 }], [{ ...row, createdBy: 99 }]);
+    mock.rows.push([{ organisationId: 1 }], [{ ...row, createdBy: 99 }]);
     const response = await request(app())[method](`${url}/10`).send(input);
     expect(response.status).toBe(403);
     expect(mock.update).not.toHaveBeenCalled();
     expect(mock.delete).not.toHaveBeenCalled();
   });
   it.each(["admin", "director", "educational_leader", "admin_support"])("allows %s to delete any organisation event", async (role) => {
-    mock.rows.push([{ id: 1 }], [{ ...row, createdBy: 99 }], [{ id: 10 }]);
+    mock.rows.push([{ organisationId: 1 }], [{ ...row, createdBy: 99 }], [{ id: 10 }]);
     const response = await request(app({ ...educator, role })).delete(`${url}/10`);
     expect(response.status).toBe(204);
   });
@@ -127,17 +129,18 @@ describe("organisation calendar", () => {
     expect(canManageCalendarEvent({ ...educator, role: "coordinator" }, { createdBy: 99 })).toBe(false);
   });
   it("returns not found for events outside the organisation/global scope", async () => {
-    mock.rows.push([{ id: 1 }], []);
+    mock.rows.push([{ organisationId: 1 }], []);
     expect((await request(app()).delete(`${url}/10`)).status).toBe(404);
     expect(mock.delete).not.toHaveBeenCalled();
     expect(JSON.stringify(mock.conditions)).toContain('"eq":["event.org",1]');
   });
   it("reports write failure instead of claiming success", async () => {
-    mock.rows.push([{ id: 1 }]);
+    mock.rows.push([{ organisationId: 1 }]);
     mock.insert.mockImplementationOnce(() => { throw new Error("database unavailable"); });
     expect((await request(app()).post(url).send(input)).status).toBe(500);
   });
   it("rejects invalid date ranges and fractional ids", async () => {
+    mock.rows.push([{ organisationId: 1 }], [{ organisationId: 1 }]);
     expect((await request(app()).get(`${url}?from=2026-10-31&to=2026-10-01`)).status).toBe(400);
     expect((await request(app()).delete(`${url}/1.3`)).status).toBe(400);
   });

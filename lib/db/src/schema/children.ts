@@ -1,10 +1,12 @@
-import { pgTable, serial, text, timestamp, date, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, date, integer, boolean, jsonb, index } from "drizzle-orm/pg-core";
 import { sitesTable } from "./sites";
+import { organisationTable } from "./organisation";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 export const childrenTable = pgTable("children", {
   id: serial("id").primaryKey(),
+  organisationId: integer("organisation_id").references(() => organisationTable.id, { onDelete: "restrict" }),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   dateOfBirth: date("date_of_birth").notNull(),
@@ -31,8 +33,8 @@ export const childrenTable = pgTable("children", {
   hasMealConsideration: boolean("has_meal_consideration").notNull().default(false),
   mealConsiderationDetails: text("meal_consideration_details"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [index("children_organisation_idx").on(table.organisationId)]);
 
-export const insertChildSchema = createInsertSchema(childrenTable).omit({ id: true, createdAt: true });
+export const insertChildSchema = createInsertSchema(childrenTable).omit({ id: true, createdAt: true, organisationId: true });
 export type InsertChild = z.infer<typeof insertChildSchema>;
 export type Child = typeof childrenTable.$inferSelect;

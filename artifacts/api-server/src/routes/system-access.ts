@@ -342,7 +342,7 @@ router.post("/reports/system-access/guardian/provision-and-send", async (req, re
     // Upsert: create account if it doesn't exist yet
     await db
       .insert(parentAccountsTable)
-      .values({ guardianEmail: normalised })
+      .values({ guardianEmail: normalised, organisationId: res.locals.organisationId })
       .onConflictDoNothing({ target: parentAccountsTable.guardianEmail });
 
     const baseUrl = getBaseUrl();

@@ -97,7 +97,9 @@ router.post("/staff", async (req, res): Promise<void> => {
     const staffData = isProfileOnlyRole(parsedStaffData.role)
       ? { ...parsedStaffData, siteId: null }
       : parsedStaffData;
-    const [member] = await db.insert(staffTable).values(staffData).returning();
+    const [member] = await db.insert(staffTable).values({
+      ...staffData, organisationId: res.locals.organisationId,
+    }).returning();
     if (isProfileOnlyRole(staffData.role)) {
       await replaceAssociatedSites(member.id, []);
     } else if (associatedSiteIds !== undefined) {

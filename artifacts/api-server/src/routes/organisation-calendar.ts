@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Request } from "express";
 import { and, asc, eq, gte, isNull, lte } from "drizzle-orm";
-import { db, calendarEventsTable, organisationTable, type CalendarEvent } from "@workspace/db";
+import { db, calendarEventsTable, type CalendarEvent } from "@workspace/db";
+import { organisationContext } from "../middlewares/organisation-context";
 import {
   CreateOrganisationCalendarEventBody, UpdateOrganisationCalendarEventBody,
   ListOrganisationCalendarEventsQueryParams,
@@ -49,12 +50,7 @@ router.use((req, res, next) => {
   next();
 });
 
-async function currentOrganisationId() {
-  const [organisation] = await db.select({ id: organisationTable.id }).from(organisationTable)
-    .orderBy(asc(organisationTable.id)).limit(1);
-  if (!organisation) throw new Error("Organisation has not been configured");
-  return organisation.id;
-}
+router.use(organisationContext);
 function scope(organisationId: number, id?: number) {
   return and(eq(calendarEventsTable.organisationId, organisationId), isNull(calendarEventsTable.siteId),
     id === undefined ? undefined : eq(calendarEventsTable.id, id));
@@ -77,7 +73,7 @@ router.get("/events", async (req, res) => {
   const parsed = rangeInput.safeParse(req.query);
   if (!parsed.success) { res.status(400).json({ error: "Provide valid from and to dates" }); return; }
   try {
-    const organisationId = await currentOrganisationId();
+    const organisationId = res.locals.organisationId as number;
     const events = await db.select().from(calendarEventsTable).where(and(
       scope(organisationId), lte(calendarEventsTable.startDate, parsed.data.to),
       gte(calendarEventsTable.endDate, parsed.data.from),
@@ -93,7 +89,7 @@ router.post("/events", async (req, res) => {
   const parsed = calendarCreateInput.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid event" }); return; }
   try {
-    const organisationId = await currentOrganisationId();
+    const organisationId = res.locals.organisationId as number;
     const [event] = await db.insert(calendarEventsTable).values({
       ...eventValues(parsed.data), organisationId, siteId: null, createdBy: req.session.user!.id,
     }).returning();
@@ -110,7 +106,7 @@ router.patch("/events/:id", async (req, res) => {
   const parsed = calendarUpdateInput.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid event" }); return; }
   try {
-    const organisationId = await currentOrganisationId();
+    const organisationId = res.locals.organisationId as number;
     const [existing] = await db.select().from(calendarEventsTable).where(scope(organisationId, id.data)).limit(1);
     if (!existing) { res.status(404).json({ error: "Event not found" }); return; }
     if (!canManageCalendarEvent(req.session.user!, existing)) {
@@ -131,7 +127,7 @@ router.delete("/events/:id", async (req, res) => {
   const id = eventId(req.params.id);
   if (!id.success) { res.status(400).json({ error: "Invalid event id" }); return; }
   try {
-    const organisationId = await currentOrganisationId();
+    const organisationId = res.locals.organisationId as number;
     const [existing] = await db.select().from(calendarEventsTable).where(scope(organisationId, id.data)).limit(1);
     if (!existing) { res.status(404).json({ error: "Event not found" }); return; }
     if (!canManageCalendarEvent(req.session.user!, existing)) {

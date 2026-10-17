@@ -29,7 +29,8 @@ vi.mock("@workspace/db", () => {
   m.transaction.mockImplementation((fn) => fn(db));
   db.transaction = m.transaction;
   return {
-    db, organisationTable: { id: "org.id" },
+    db, staffTable: { id: "staff.id", organisationId: "staff.org" },
+    parentAccountsTable: {}, schoolAccountsTable: {}, sitesTable: {},
     dashboardLayoutsTable: { name: "shared", organisationId: "shared.org", dashboard: "shared.view" },
     dashboardLayoutDraftsTable: { name: "draft", organisationId: "draft.org", dashboard: "draft.view",
       staffId: "draft.owner", revision: "draft.revision" },
@@ -57,7 +58,7 @@ beforeEach(() => {
 });
 describe("dashboard private drafts and organisation layouts", () => {
   it("returns only the current administrator's private draft", async () => {
-    m.rows.push([{ id: 1 }], [], [draft]);
+    m.rows.push([{ organisationId: 1 }], [], [draft]);
     const r = await request(app()).get(url);
     expect(r.status).toBe(200);
     expect(r.body).toMatchObject({ canEdit: true, published: null, draft: { items, revision: 1 } });
@@ -65,10 +66,10 @@ describe("dashboard private drafts and organisation layouts", () => {
     expect(r.body.draft.staffId).toBeUndefined();
   });
   it("returns shared layout without querying drafts for an educator", async () => {
-    m.rows.push([{ id: 1 }], [{ items, revision: 2 }]);
+    m.rows.push([{ organisationId: 1 }], [{ items, revision: 2 }]);
     const r = await request(app({ ...admin, role: "educator" })).get(url);
     expect(r.body).toMatchObject({ canEdit: false, draft: null, published: { items, revision: 2, baseRevision: 2 } });
-    expect(m.where).toHaveLength(1);
+    expect(m.where).toHaveLength(2); // membership + published layout; no private draft
   });
   it.each(["educator", "coordinator", "educational_leader", "onboarding"])("denies %s writes", async (role) => {
     for (const [method, path] of [["put", "/draft"], ["post", "/publish"], ["delete", "/draft"]] as const) {
@@ -83,7 +84,7 @@ describe("dashboard private drafts and organisation layouts", () => {
     expect((await request(app(null)).get(url)).status).toBe(401);
   });
   it.each(["admin", "admin_support", "director"])("allows %s to save only their own draft", async (role) => {
-    m.rows.push([{ id: 1 }], [draft]);
+    m.rows.push([{ organisationId: 1 }], [draft]);
     const r = await request(app({ ...admin, role })).put(url + "/draft").send(input);
     expect(r.status).toBe(200);
     expect(m.values[0]).toMatchObject({ staffId: 23, organisationId: 1, dashboard: "educator", revision: 1 });
@@ -91,6 +92,7 @@ describe("dashboard private drafts and organisation layouts", () => {
   });
   it("rejects unknown, duplicate and missing tile IDs", async () => {
     for (const bad of [items.slice(1), [...items.slice(1), items[1]], [...items.slice(1), { ...items[0], i: "fake" }]]) {
+      m.rows.push([{ organisationId: 1 }]);
       expect((await request(app()).put(url + "/draft").send({ ...input, items: bad })).status).toBe(400);
     }
     expect(m.writes).toHaveLength(0);
@@ -105,19 +107,19 @@ describe("dashboard private drafts and organisation layouts", () => {
     expect(layoutPublishInput.safeParse({ expectedRevision: 0, expectedDraftRevision: 1.5 }).success).toBe(false);
   });
   it("rejects stale private saves rather than overwriting them", async () => {
-    m.rows.push([{ id: 1 }], []);
+    m.rows.push([{ organisationId: 1 }], []);
     const r = await request(app()).put(url + "/draft").send({ ...input, expectedDraftRevision: 2 });
     expect(r.status).toBe(409);
     expect(JSON.stringify(m.where)).toContain('"column":"draft.revision","value":2');
   });
   it("discards only the caller's private draft, never the shared layout", async () => {
-    m.rows.push([{ id: 1 }], []);
+    m.rows.push([{ organisationId: 1 }], []);
     expect((await request(app()).delete(url + "/draft")).status).toBe(204);
     expect(m.writes).toEqual(["delete:draft"]);
     expect(JSON.stringify(m.where)).toContain('"column":"draft.owner","value":23');
   });
   it("publishes the saved private draft atomically and advances both revisions", async () => {
-    m.rows.push([{ id: 1 }], [], [{ items: [], revision: 0 }], [draft],
+    m.rows.push([{ organisationId: 1 }], [], [{ items: [], revision: 0 }], [draft],
       [{ items, revision: 1 }], [{ ...draft, revision: 2, baseRevision: 1 }]);
     const r = await request(app()).post(url + "/publish").send({ expectedRevision: 0, expectedDraftRevision: 1 });
     expect(r.status).toBe(200);
@@ -126,12 +128,12 @@ describe("dashboard private drafts and organisation layouts", () => {
     expect(m.writes).toEqual(["insert:shared", "update:shared", "update:draft"]);
   });
   it("does not apply a draft based on an outdated shared layout", async () => {
-    m.rows.push([{ id: 1 }], [], [{ items, revision: 2 }], [draft]);
+    m.rows.push([{ organisationId: 1 }], [], [{ items, revision: 2 }], [draft]);
     expect((await request(app()).post(url + "/publish").send({ expectedRevision: 0, expectedDraftRevision: 1 })).status).toBe(409);
     expect(m.writes).toEqual(["insert:shared"]); // bootstrap is rolled back by real transaction
   });
   it("does not apply a saved draft changed in another session", async () => {
-    m.rows.push([{ id: 1 }], [], [{ items, revision: 0 }], [{ ...draft, revision: 2 }]);
+    m.rows.push([{ organisationId: 1 }], [], [{ items, revision: 0 }], [{ ...draft, revision: 2 }]);
     expect((await request(app()).post(url + "/publish").send({ expectedRevision: 0, expectedDraftRevision: 1 })).status).toBe(409);
     expect(m.writes).toEqual(["insert:shared"]);
   });

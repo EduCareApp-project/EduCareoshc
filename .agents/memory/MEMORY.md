@@ -5,6 +5,7 @@
 - [Document merge storage](document-merge-storage.md) — source uploads are staff-owned DB records; merged PDFs stay private and temporary sources are removed after successful merging.
 - [Post-merge schema sync](post-merge-schema-sync.md) — Drizzle push-force can still prompt on populated constraint changes; post-merge must answer no explicitly and allow setup time.
 - [School account boundary](school-account-boundary.md) — each Site owns one generated school account; school sessions are read-only and API-scoped to that account's site.
+- [Existing tenant ownership](tenant-migration-scope.md) — all existing data can belong to Elysium OSHC; reuse its existing company record when adding multi-tenancy.
 - [Admin Support role](admin-support-role.md) — admin-equivalent access, but intentionally site-less and excluded from educator, compliance, guardian, and school-facing staff views.
 - [School report closure semantics](school-report-closure-semantics.md) — pupil-free flags are session-specific; matching BSC and ASC flags mean the service was closed that day.
 - [School report snapshots](school-report-snapshots.md) — generated statistics freeze the selected attendance period; narrative stays editable only until finalisation.

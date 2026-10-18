@@ -1,3 +1,4 @@
+import { currentOrganisationId } from "@workspace/db";
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, organisationTable, type FeatureSettings } from "@workspace/db";
@@ -81,6 +82,7 @@ router.get("/settings/features", async (req, res): Promise<void> => {
     const [row] = await db
       .select({ featureSettings: organisationTable.featureSettings })
       .from(organisationTable)
+      .where(eq(organisationTable.id, currentOrganisationId()))
       .limit(1);
     const merged = { ...DEFAULTS, ...(row?.featureSettings ?? {}) };
     res.json(merged);
@@ -101,7 +103,7 @@ router.put("/settings/features", async (req, res): Promise<void> => {
   const patch = req.body ?? {};
 
   try {
-    const [existing] = await db.select().from(organisationTable).limit(1);
+    const [existing] = await db.select().from(organisationTable).where(eq(organisationTable.id, currentOrganisationId())).limit(1);
 
     if (existing) {
       const current = existing.featureSettings ?? {};
@@ -112,11 +114,7 @@ router.put("/settings/features", async (req, res): Promise<void> => {
         .where(eq(organisationTable.id, existing.id));
       res.json({ ...DEFAULTS, ...updated });
     } else {
-      await db.insert(organisationTable).values({
-        featureSettings: patch,
-        updatedAt: new Date(),
-      } as any);
-      res.json({ ...DEFAULTS, ...patch });
+      res.status(404).json({ error: "Company not found" });
     }
   } catch (err) {
     req.log.error({ err }, "Failed to update feature settings");

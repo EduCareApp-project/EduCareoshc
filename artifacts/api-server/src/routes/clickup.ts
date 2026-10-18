@@ -1,15 +1,10 @@
 import { Router, type IRouter } from "express";
+import { tenantIntegration } from "../lib/tenantIntegration";
 
 const router: IRouter = Router();
 
-const CLICKUP_LIST_ID = "901612753466";
 const CLICKUP_API_BASE = "https://api.clickup.com/api/v2";
 
-function getToken(): string {
-  const token = process.env.CLICKUP_API_TOKEN;
-  if (!token) throw new Error("CLICKUP_API_TOKEN is not set");
-  return token;
-}
 
 function resolveDropdown(cf: any): string | null {
   if (cf.value === null || cf.value === undefined) return null;
@@ -41,8 +36,12 @@ router.get("/clickup/service-reports", async (req, res): Promise<void> => {
     return;
   }
   try {
-    const token = getToken();
-    const url = `${CLICKUP_API_BASE}/list/${CLICKUP_LIST_ID}/task?archived=false&include_closed=true&page=0&order_by=created&reverse=true`;
+    const integration = await tenantIntegration("clickup");
+    if (!integration?.secret || !integration.resourceId) {
+      res.status(503).json({ error: "ClickUp has not been connected for this company." }); return;
+    }
+    const token = integration.secret;
+    const url = `${CLICKUP_API_BASE}/list/${encodeURIComponent(integration.resourceId)}/task?archived=false&include_closed=true&page=0&order_by=created&reverse=true`;
     const response = await fetch(url, {
       headers: { Authorization: token },
     });

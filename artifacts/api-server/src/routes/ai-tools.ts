@@ -1,3 +1,4 @@
+import { currentOrganisationId } from "@workspace/db";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
 import { and, desc, eq, inArray } from "drizzle-orm";
@@ -230,7 +231,7 @@ router.post("/ai-tools/excursion-form/generate", async (req, res): Promise<void>
     }
 
     const [[organisation], [settings]] = await Promise.all([
-      db.select().from(organisationTable).limit(1),
+      db.select().from(organisationTable).where(eq(organisationTable.id, currentOrganisationId())).limit(1),
       db.select({ companyLogoPath: emailSettingsTable.companyLogoPath }).from(emailSettingsTable).limit(1),
     ]);
     if (!settings?.companyLogoPath) {

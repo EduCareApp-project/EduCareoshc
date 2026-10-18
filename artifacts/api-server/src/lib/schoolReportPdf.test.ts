@@ -7,6 +7,7 @@ import { createSchoolReportPdf } from "./schoolReportPdf";
 
 function reportFixture() {
     const report = {
+      organisationId: 1,
       id: 1,
       siteId: 1,
       reportYear: 2026,

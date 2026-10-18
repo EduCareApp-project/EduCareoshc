@@ -1,4 +1,4 @@
-import { db, notificationsTable, notificationSettingsTable, childMedicationsTable, childrenTable, staffQualificationsTable, staffTable } from "@workspace/db";
+import { db, currentOrganisationId, notificationsTable, notificationSettingsTable, childMedicationsTable, childrenTable, staffQualificationsTable, staffTable } from "@workspace/db";
 import { and, eq, inArray, isNull, notInArray, or } from "drizzle-orm";
 import { createNotification } from "./notify";
 import { isInAppChannelEnabled } from "./channelMap";
@@ -10,15 +10,16 @@ export function expiryReminderKey(type: string, id: number, expiry: string, staf
 }
 
 type Recipient = { id: number; role: string; siteId?: number | null };
-const pending = new Map<number, Promise<void>>();
+const pending = new Map<string, Promise<void>>();
 
 /** Refresh only this staff member's inbox, without changing email reminder frequency. */
 export async function syncExpiryInbox(user: Recipient): Promise<void> {
-  const existing = pending.get(user.id);
+  const key = `${currentOrganisationId()}:${user.id}`;
+  const existing = pending.get(key);
   if (existing) return existing;
   const work = refresh(user);
-  pending.set(user.id, work);
-  try { await work; } finally { pending.delete(user.id); }
+  pending.set(key, work);
+  try { await work; } finally { pending.delete(key); }
 }
 
 async function refresh(user: Recipient): Promise<void> {

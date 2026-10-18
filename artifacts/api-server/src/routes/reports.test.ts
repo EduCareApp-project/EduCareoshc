@@ -36,6 +36,7 @@ const { mockDb, queueResults, whereCalls } = vi.hoisted(() => {
 
 
 vi.mock("@workspace/db", () => ({
+  currentOrganisationId: () => 1,
   db: mockDb,
   childrenTable: {},
   staffTable: { status: "staff.status", isSuperAdmin: "staff.is_super_admin", role: "staff.role" },

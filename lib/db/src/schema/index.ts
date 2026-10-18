@@ -51,3 +51,5 @@ export * from './school_reports';
 export * from './staff_sites';
 export * from "./excursions";
 export * from "./guardian_notifications";
+export * from "./tenant-assets";
+export * from "./control-plane";

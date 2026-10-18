@@ -1,4 +1,5 @@
-import { pgTable, serial, date, boolean, text, timestamp, unique, integer } from "drizzle-orm/pg-core";
+import { serial, date, boolean, text, timestamp, unique, integer } from "drizzle-orm/pg-core";
+import { tenantTable as pgTable } from "./tenant-table";
 import { sitesTable } from "./sites";
 
 export const rollSubmissionsTable = pgTable("roll_submissions", {

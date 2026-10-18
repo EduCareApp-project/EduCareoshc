@@ -5,7 +5,7 @@
  *
  * The filtering in sites.ts works like this:
  *   - Default (no ?all):  WHERE status = 'active'  → callers get active sites only
- *   - ?all=true:          No WHERE clause           → management page gets all sites
+ *   - ?all=true:          Company WHERE only         → management page gets all company sites
  *
  * These tests confirm both paths behave correctly and that the exact
  * status-column predicate is applied.
@@ -130,6 +130,11 @@ function buildTestApp() {
   const app = express();
   app.use(express.json());
   app.use(pinoHttp({ logger: pino({ level: "silent" }, new Writable({ write(_c, _e, cb) { cb(); } })) }));
+  app.use((_req, res, next) => {
+    res.locals.organisationId = 1;
+    res.locals.organisationContextVerified = true;
+    next();
+  });
   app.use("/api", sitesRouter);
   return app;
 }
@@ -159,7 +164,7 @@ describe("GET /api/sites — pending-site visibility", () => {
     await request(buildTestApp()).get("/api/sites");
     expect(chain.where).toHaveBeenCalled();
     const predicates = chain.where.mock.calls.map(([p]: [unknown]) => String(p));
-    expect(predicates.some((p) => p === "eq(status,active)")).toBe(true);
+    expect(predicates.some((p) => p.includes("eq(status,active)"))).toBe(true);
   });
 
   it("does not include Lumen Christi (id=9) in the default response", async () => {
@@ -194,8 +199,9 @@ describe("GET /api/sites — pending-site visibility", () => {
 
   it("does NOT apply a status WHERE predicate when ?all=true is set", async () => {
     await request(buildTestApp()).get("/api/sites?all=true");
-    // The ?all=true code path builds the query without calling .where()
-    expect(chain.where).not.toHaveBeenCalled();
+    const predicates = chain.where.mock.calls.map(([p]: [unknown]) => String(p));
+    expect(predicates.length).toBeGreaterThan(0);
+    expect(predicates.every((p) => !p.includes("eq(status,active)"))).toBe(true);
   });
 
   it("includes Lumen Christi (id=9) when ?all=true is set", async () => {
@@ -226,7 +232,7 @@ describe("GET /api/sites — pending-site visibility", () => {
 
     // Active filter still applied
     const predicates = chain.where.mock.calls.map(([p]: [unknown]) => String(p));
-    expect(predicates.some((p) => p === "eq(status,active)")).toBe(true);
+    expect(predicates.some((p) => p.includes("eq(status,active)"))).toBe(true);
 
     const ids: number[] = res.body.map((s: { id: number }) => s.id);
     expect(ids).toContain(9);

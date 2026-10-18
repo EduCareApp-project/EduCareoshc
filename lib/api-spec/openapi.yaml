@@ -38,6 +38,51 @@ tags:
   - name: excursions
   - name: clickup
 paths:
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PortalLoginInput"
+      responses:
+        "200":
+          description: Signed in to one unambiguous company account.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [user]
+                properties:
+                  user: {$ref: "#/components/schemas/PortalAuthUser"}
+        "400": {description: Invalid request}
+        "401": {description: Invalid credentials or ambiguous company}
+        "500": {description: Sign in failed}
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PortalForgotPasswordInput"
+      responses:
+        "200":
+          description: A reset link is sent only for an unambiguous company account; account existence is not disclosed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok: {type: boolean}
+        "400": {description: Invalid request}
+        "500": {description: Reset request failed}
   /dashboard-layouts/{dashboard}:
     get:
       operationId: getDashboardLayout
@@ -4453,6 +4498,32 @@ components:
         type: string
         enum: [educator, leadership]
   schemas:
+    PortalLoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email: {type: string, minLength: 1}
+        password: {type: string, minLength: 1}
+        organisationCode:
+          type: string
+          description: Required when this identity belongs to more than one company.
+    PortalForgotPasswordInput:
+      type: object
+      required: [email]
+      properties:
+        email: {type: string, minLength: 1}
+        organisationCode: {type: string}
+    PortalAuthUser:
+      type: object
+      required: [id, type, role, email, name]
+      properties:
+        id: {type: integer}
+        organisationId: {type: integer}
+        type: {type: string, enum: [staff, guardian, school]}
+        role: {type: string}
+        email: {type: string}
+        name: {type: string}
+        siteId: {type: [integer, "null"]}
     KidsoftSetup:
       type: object
       required: [connected, services, sites]

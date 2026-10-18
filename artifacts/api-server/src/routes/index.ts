@@ -18,6 +18,8 @@ import organisationCalendarRouter from "./organisation-calendar";
 import dashboardLayoutsRouter from "./dashboard-layouts";
 import dashboardPreferencesRouter from "./dashboard-preferences";
 import { organisationContext } from "../middlewares/organisation-context";
+import { publicOrganisationContext } from "../middlewares/public-organisation-context";
+import { guardianBoundary } from "../middlewares/guardian-boundary";
 import jottingsRouter from "./jottings";
 import incidentsRouter from "./incidents";
 import conditionReportsRouter from "./condition-reports";
@@ -97,7 +99,7 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
 // Public document/logo handlers may reach this point without an account.
 // Control-plane and credential routes above deliberately remain separate.
 router.use((req, res, next) => {
-  if (!req.session?.user) { next(); return; }
+  if (!req.session?.user) { publicOrganisationContext(req, res, next); return; }
   return organisationContext(req, res, next);
 });
 
@@ -189,6 +191,7 @@ router.use((req: Request, res: Response, next: NextFunction): void => {
 });
 
 // ── Protected routes ──────────────────────────────────────────────────────────
+router.use(guardianBoundary);
 router.use(childrenRouter);
 router.use(guardianFinancialRouter); // must precede guardiansRouter to avoid /:email wildcard conflicts
 router.use(guardiansRouter);

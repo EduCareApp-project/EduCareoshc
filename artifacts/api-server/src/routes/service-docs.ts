@@ -198,6 +198,7 @@ router.get("/service-docs/public/file/:id", async (req, res): Promise<void> => {
       .select({
         documentPath: fileLibraryTable.documentPath,
         categoryId: fileLibraryTable.categoryId,
+        siteId: fileLibraryTable.siteId,
       })
       .from(fileLibraryTable)
       .where(eq(fileLibraryTable.id, id))
@@ -210,6 +211,9 @@ router.get("/service-docs/public/file/:id", async (req, res): Promise<void> => {
         404,
       ));
       return;
+    }
+    if (req.session?.user?.type === "school" && file.siteId !== req.session.user.siteId) {
+      res.status(404).json({ error: "Document not found" }); return;
     }
 
     const cats = await db

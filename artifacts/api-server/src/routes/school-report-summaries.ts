@@ -1,3 +1,4 @@
+import { currentOrganisationId } from "@workspace/db";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte } from "drizzle-orm";
 import {
@@ -102,14 +103,14 @@ function finalizedReportFilename(organisationName: string, siteName: string, rep
 async function generateReportPdf(report: SchoolReportSummary) {
   const [[site], [organisation], [emailSettings]] = await Promise.all([
     db.select({ name: sitesTable.name }).from(sitesTable).where(eq(sitesTable.id, report.siteId)).limit(1),
-    db.select({ name: organisationTable.name }).from(organisationTable).limit(1),
+    db.select({ name: organisationTable.name }).from(organisationTable).where(eq(organisationTable.id, currentOrganisationId())).limit(1),
     db.select({
       logoPath: emailSettingsTable.logoPath,
       companyLogoPath: emailSettingsTable.companyLogoPath,
     }).from(emailSettingsTable).limit(1),
   ]);
   const siteName = site?.name ?? "School";
-  const organisationName = organisation?.name?.trim() || "Elysium OSHC";
+  const organisationName = organisation?.name?.trim() || "Organisation";
   const name = finalizedReportFilename(organisationName, siteName, report);
   async function loadLogo(path: string | null | undefined) {
     if (!path) return undefined;

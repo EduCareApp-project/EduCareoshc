@@ -1,8 +1,16 @@
 import { Router, type IRouter } from "express";
 import { db, childrenTable, staffTable, parentAccountsTable, observationsTable, jottingsTable, postsTable } from "@workspace/db";
 import { eq, and, ilike } from "drizzle-orm";
+import { organisationId, ownsSites } from "../lib/tenant";
 
 const router: IRouter = Router();
+router.use("/import", async (req, res, next) => {
+  if (!requireAdmin(req, res)) return;
+  if (!(await ownsSites(organisationId(res), [req.body?.siteId]))) {
+    res.status(400).json({ error: "Invalid service" }); return;
+  }
+  next();
+});
 
 const ADMIN_ROLES = new Set(["admin", "admin_support", "educational_leader"]);
 
@@ -89,6 +97,7 @@ router.post("/import/children", async (req, res): Promise<void> => {
       const existing = await db.select({ id: childrenTable.id })
         .from(childrenTable)
         .where(and(
+          eq(childrenTable.organisationId, organisationId(res)),
           eq(childrenTable.firstName, firstName!),
           eq(childrenTable.lastName, lastName!),
           eq(childrenTable.guardianEmail, guardianEmail!),
@@ -118,7 +127,7 @@ router.post("/import/children", async (req, res): Promise<void> => {
       // Also create a guardian portal account if one doesn't already exist
       const existingAccount = await db.select({ id: parentAccountsTable.id })
         .from(parentAccountsTable)
-        .where(eq(parentAccountsTable.guardianEmail, guardianEmail!))
+        .where(and(eq(parentAccountsTable.guardianEmail, guardianEmail!), eq(parentAccountsTable.organisationId, organisationId(res))))
         .limit(1);
       if (existingAccount.length === 0) {
         await db.insert(parentAccountsTable).values({
@@ -180,7 +189,7 @@ router.post("/import/staff", async (req, res): Promise<void> => {
     try {
       const existing = await db.select({ id: staffTable.id })
         .from(staffTable)
-        .where(eq(staffTable.email, email!))
+        .where(and(eq(staffTable.email, email!), eq(staffTable.organisationId, organisationId(res))))
         .limit(1);
 
       if (existing.length > 0) {
@@ -197,7 +206,7 @@ router.post("/import/staff", async (req, res): Promise<void> => {
         qualifications,
         phone: phone ?? null,
         wwccNumber: wwccNumber ?? null,
-        siteId: role === "admin_support" ? null : siteId,
+        siteId: role === "admin_support" || role === "onboarding" ? null : siteId,
       });
       result.inserted++;
     } catch (err: any) {
@@ -238,7 +247,7 @@ router.post("/import/guardians", async (req, res): Promise<void> => {
     try {
       const existing = await db.select({ id: parentAccountsTable.id })
         .from(parentAccountsTable)
-        .where(eq(parentAccountsTable.guardianEmail, guardianEmail))
+        .where(and(eq(parentAccountsTable.guardianEmail, guardianEmail), eq(parentAccountsTable.organisationId, organisationId(res))))
         .limit(1);
 
       if (existing.length > 0) {
@@ -265,8 +274,10 @@ async function resolveChild(
   firstName: string,
   lastName: string,
   siteId: number | null,
+  orgId: number,
 ): Promise<number | null> {
   const conditions: any[] = [
+    eq(childrenTable.organisationId, orgId),
     ilike(childrenTable.firstName, firstName.trim()),
     ilike(childrenTable.lastName, lastName.trim()),
   ];
@@ -278,14 +289,14 @@ async function resolveChild(
   return rows[0]?.id ?? null;
 }
 
-async function resolveStaff(emailOrName: string): Promise<number | null> {
+async function resolveStaff(emailOrName: string, orgId: number): Promise<number | null> {
   const val = emailOrName.trim();
   if (!val) return null;
   // Try email first
   if (val.includes("@")) {
     const rows = await db.select({ id: staffTable.id })
       .from(staffTable)
-      .where(ilike(staffTable.email, val))
+      .where(and(eq(staffTable.organisationId, orgId), ilike(staffTable.email, val)))
       .limit(1);
     return rows[0]?.id ?? null;
   }
@@ -294,7 +305,7 @@ async function resolveStaff(emailOrName: string): Promise<number | null> {
   if (parts.length >= 2) {
     const rows = await db.select({ id: staffTable.id })
       .from(staffTable)
-      .where(and(ilike(staffTable.firstName, parts[0]), ilike(staffTable.lastName, parts.slice(1).join(" "))))
+      .where(and(eq(staffTable.organisationId, orgId), ilike(staffTable.firstName, parts[0]), ilike(staffTable.lastName, parts.slice(1).join(" "))))
       .limit(1);
     return rows[0]?.id ?? null;
   }
@@ -350,13 +361,13 @@ router.post("/import/observations", async (req, res): Promise<void> => {
     }
 
     try {
-      const childId = await resolveChild(childFirstName!, childLastName!, siteId ?? null);
+      const childId = await resolveChild(childFirstName!, childLastName!, siteId ?? null, organisationId(res));
       if (!childId) {
         result.errors.push({ row: rowNum, message: `Child "${childFirstName} ${childLastName}" not found${siteId ? " at selected site" : ""}`, data: `${childFirstName} ${childLastName}` });
         continue;
       }
 
-      const staffId = await resolveStaff(staffRef!);
+      const staffId = await resolveStaff(staffRef!, organisationId(res));
       if (!staffId) {
         result.errors.push({ row: rowNum, message: `Staff "${staffRef}" not found`, data: `${childFirstName} ${childLastName}` });
         continue;
@@ -413,7 +424,7 @@ router.post("/import/jottings", async (req, res): Promise<void> => {
     try {
       let childId: number | null = null;
       if (childFirstName && childLastName) {
-        childId = await resolveChild(childFirstName, childLastName, siteId ?? null);
+        childId = await resolveChild(childFirstName, childLastName, siteId ?? null, organisationId(res));
         if (!childId) {
           result.errors.push({ row: rowNum, message: `Child "${childFirstName} ${childLastName}" not found${siteId ? " at selected site" : ""}`, data: content.slice(0, 60) });
           continue;
@@ -422,7 +433,7 @@ router.post("/import/jottings", async (req, res): Promise<void> => {
 
       let staffId: number | null = null;
       if (staffRef) {
-        staffId = await resolveStaff(staffRef);
+        staffId = await resolveStaff(staffRef, organisationId(res));
         if (!staffId) {
           result.errors.push({ row: rowNum, message: `Staff "${staffRef}" not found`, data: content.slice(0, 60) });
           continue;
@@ -487,7 +498,7 @@ router.post("/import/posts", async (req, res): Promise<void> => {
     try {
       const childIds: number[] = [];
       if (childFirstName && childLastName) {
-        const childId = await resolveChild(childFirstName, childLastName, siteId ?? null);
+        const childId = await resolveChild(childFirstName, childLastName, siteId ?? null, organisationId(res));
         if (!childId) {
           result.errors.push({ row: rowNum, message: `Child "${childFirstName} ${childLastName}" not found${siteId ? " at selected site" : ""}`, data: title });
           continue;
@@ -497,7 +508,7 @@ router.post("/import/posts", async (req, res): Promise<void> => {
 
       let staffId: number | null = null;
       if (staffRef) {
-        staffId = await resolveStaff(staffRef);
+        staffId = await resolveStaff(staffRef, organisationId(res));
         if (!staffId) {
           result.errors.push({ row: rowNum, message: `Staff "${staffRef}" not found`, data: title });
           continue;

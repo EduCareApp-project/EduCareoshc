@@ -1,4 +1,5 @@
-import { pgTable, serial, text, timestamp, integer, date, boolean, jsonb } from "drizzle-orm/pg-core";
+import { serial, text, timestamp, integer, date, boolean, jsonb } from "drizzle-orm/pg-core";
+import { tenantTable as pgTable } from "./tenant-table";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { sitesTable } from "./sites";

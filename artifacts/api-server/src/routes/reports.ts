@@ -1,3 +1,4 @@
+import { currentOrganisationId } from "@workspace/db";
 import { Router, type IRouter } from "express";
 import { and, eq, ne, isNotNull } from "drizzle-orm";
 import { db, childrenTable, staffTable, observationsTable, outcomesTable, evacuationsTable, incidentsTable, conditionReportsTable, qipItemsTable, checklistRoutinesTable, professionalDevelopmentTable, staffQualificationsTable, postsTable, organisationTable, sitesTable } from "@workspace/db";
@@ -177,7 +178,7 @@ router.get("/reports/staff-compliance", async (req, res): Promise<void> => {
       )),
       db.select().from(professionalDevelopmentTable),
       db.select().from(staffQualificationsTable),
-      db.select({ featureSettings: organisationTable.featureSettings }).from(organisationTable).limit(1),
+      db.select({ featureSettings: organisationTable.featureSettings }).from(organisationTable).where(eq(organisationTable.id, currentOrganisationId())).limit(1),
     ]);
 
     const fs = (orgRow[0]?.featureSettings ?? {}) as any;

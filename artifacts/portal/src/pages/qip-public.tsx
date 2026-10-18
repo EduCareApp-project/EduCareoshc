@@ -59,17 +59,18 @@ export default function QipPublic({ siteId: siteIdProp, embedded = false }: QipP
 
   const params = new URLSearchParams(window.location.search);
   const siteId = siteIdProp != null ? String(siteIdProp) : params.get("siteId");
+  const organisationId = params.get("organisationId");
   const pageUrl = embedded && siteId
     ? `${window.location.origin}/qip-public?siteId=${siteId}`
     : window.location.href;
 
   useEffect(() => {
-    const url = siteId ? `/api/qip/public?siteId=${siteId}` : `/api/qip/public`;
+    const url = siteId ? `/api/qip/public?siteId=${siteId}` : `/api/qip/public${organisationId ? `?organisationId=${encodeURIComponent(organisationId)}` : ""}`;
     fetch(url)
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("QIP unavailable"); return r.json(); })
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => { setError("Unable to load QIP data."); setLoading(false); });
-  }, [siteId]);
+  }, [siteId, organisationId]);
 
   function downloadQR() {
     const svg = qrRef.current?.querySelector("svg");

@@ -20,6 +20,8 @@ vi.mock("@workspace/db", () => {
   mock.select.mockReturnValue(chain);
   return {
     db: { select: mock.select },
+    systemDb: { select: mock.select },
+    withOrganisationContext: (_id: number, callback: () => unknown) => callback(),
     staffTable: { id: "staff.id", organisationId: "staff.org" },
     parentAccountsTable: { id: "guardian.id", organisationId: "guardian.org" },
     schoolAccountsTable: { id: "school.id", siteId: "school.site" },

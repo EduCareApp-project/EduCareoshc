@@ -8,8 +8,21 @@ import {
   childrenTable,
   sitesTable,
 } from "@workspace/db";
+import { guardianChildren, organisationId } from "../lib/tenant";
 
 const router: IRouter = Router();
+router.use("/guardians", (req, res, next) => {
+  if (req.session.user?.type !== "staff") { res.status(403).json({ error: "Staff access required" }); return; }
+  next();
+});
+router.use("/guardians/:email/financial", async (req, res, next) => {
+  if (req.method !== "GET" && !requireAdmin(req, res)) return;
+  const email = String(req.params.email).trim().toLowerCase();
+  const [child] = await db.select({ id: childrenTable.id }).from(childrenTable)
+    .where(guardianChildren(organisationId(res), email)).limit(1);
+  if (!child) { res.status(404).json({ error: "Guardian not found" }); return; }
+  next();
+});
 
 const VALID_STATUSES = ["active", "payment_plan", "suspended"] as const;
 type FinancialStatus = (typeof VALID_STATUSES)[number];
@@ -24,16 +37,16 @@ function requireAdmin(req: Request, res: Response): boolean {
 }
 
 /** Get or lazily create the financial account row for a guardian. */
-async function getOrCreateAccount(guardianEmail: string) {
+async function getOrCreateAccount(guardianEmail: string, orgId: number) {
   const [existing] = await db
     .select()
     .from(guardianFinancialAccountsTable)
-    .where(eq(guardianFinancialAccountsTable.guardianEmail, guardianEmail));
+    .where(and(eq(guardianFinancialAccountsTable.guardianEmail, guardianEmail), eq(guardianFinancialAccountsTable.organisationId, orgId)));
   if (existing) return existing;
 
   const [created] = await db
     .insert(guardianFinancialAccountsTable)
-    .values({ guardianEmail, status: "active" })
+    .values({ guardianEmail, status: "active", organisationId: orgId })
     .onConflictDoNothing()
     .returning();
 
@@ -42,7 +55,7 @@ async function getOrCreateAccount(guardianEmail: string) {
     const [retry] = await db
       .select()
       .from(guardianFinancialAccountsTable)
-      .where(eq(guardianFinancialAccountsTable.guardianEmail, guardianEmail));
+      .where(and(eq(guardianFinancialAccountsTable.guardianEmail, guardianEmail), eq(guardianFinancialAccountsTable.organisationId, orgId)));
     return retry;
   }
   return created;
@@ -57,7 +70,7 @@ router.get("/guardians/financial/suspended-report", async (req, res): Promise<vo
     const suspendedAccounts = await db
       .select()
       .from(guardianFinancialAccountsTable)
-      .where(eq(guardianFinancialAccountsTable.status, "suspended"));
+      .where(and(eq(guardianFinancialAccountsTable.status, "suspended"), eq(guardianFinancialAccountsTable.organisationId, organisationId(res))));
 
     if (suspendedAccounts.length === 0) {
       res.json([]);
@@ -67,9 +80,9 @@ router.get("/guardians/financial/suspended-report", async (req, res): Promise<vo
     const suspendedEmails = suspendedAccounts.map((a) => a.guardianEmail);
 
     const [childrenByPrimary, childrenBySecondary, allSites] = await Promise.all([
-      db.select().from(childrenTable).where(inArray(childrenTable.guardianEmail, suspendedEmails)),
-      db.select().from(childrenTable).where(inArray(childrenTable.guardian2Email, suspendedEmails)),
-      db.select().from(sitesTable).where(eq(sitesTable.status, "active")),
+      db.select().from(childrenTable).where(and(inArray(childrenTable.guardianEmail, suspendedEmails), eq(childrenTable.organisationId, organisationId(res)))),
+      db.select().from(childrenTable).where(and(inArray(childrenTable.guardian2Email, suspendedEmails), eq(childrenTable.organisationId, organisationId(res)))),
+      db.select().from(sitesTable).where(and(eq(sitesTable.status, "active"), eq(sitesTable.orgId, organisationId(res)))),
     ]);
 
     // Merge child lists, de-duplicating by id
@@ -155,7 +168,7 @@ router.get("/guardians/financial/on-radar", async (req, res): Promise<void> => {
     const radarAccounts = await db
       .select()
       .from(guardianFinancialAccountsTable)
-      .where(eq(guardianFinancialAccountsTable.status, "payment_plan"));
+      .where(and(eq(guardianFinancialAccountsTable.status, "payment_plan"), eq(guardianFinancialAccountsTable.organisationId, organisationId(res))));
 
     if (radarAccounts.length === 0) {
       res.json([]);
@@ -165,18 +178,18 @@ router.get("/guardians/financial/on-radar", async (req, res): Promise<void> => {
     const radarEmails = radarAccounts.map((a) => a.guardianEmail);
 
     const [childrenByPrimary, childrenBySecondary, allPlans, allSites, latestComms] = await Promise.all([
-      db.select().from(childrenTable).where(inArray(childrenTable.guardianEmail, radarEmails)),
-      db.select().from(childrenTable).where(inArray(childrenTable.guardian2Email, radarEmails)),
+      db.select().from(childrenTable).where(and(inArray(childrenTable.guardianEmail, radarEmails), eq(childrenTable.organisationId, organisationId(res)))),
+      db.select().from(childrenTable).where(and(inArray(childrenTable.guardian2Email, radarEmails), eq(childrenTable.organisationId, organisationId(res)))),
       db
         .select()
         .from(guardianPaymentPlansTable)
-        .where(inArray(guardianPaymentPlansTable.guardianEmail, radarEmails))
+        .where(and(inArray(guardianPaymentPlansTable.guardianEmail, radarEmails), eq(guardianPaymentPlansTable.organisationId, organisationId(res))))
         .orderBy(desc(guardianPaymentPlansTable.createdAt)),
-      db.select().from(sitesTable).where(eq(sitesTable.status, "active")),
+      db.select().from(sitesTable).where(and(eq(sitesTable.status, "active"), eq(sitesTable.orgId, organisationId(res)))),
       db
         .select()
         .from(guardianCommunicationLogsTable)
-        .where(inArray(guardianCommunicationLogsTable.guardianEmail, radarEmails))
+        .where(and(inArray(guardianCommunicationLogsTable.guardianEmail, radarEmails), eq(guardianCommunicationLogsTable.organisationId, organisationId(res))))
         .orderBy(desc(guardianCommunicationLogsTable.createdAt)),
     ]);
 
@@ -359,7 +372,7 @@ router.get("/guardians/financial/communication-log", async (req, res): Promise<v
           guardian2Email: childrenTable.guardian2Email,
         })
         .from(childrenTable)
-        .where(eq(childrenTable.siteId, siteIdParam));
+        .where(and(eq(childrenTable.siteId, siteIdParam), eq(childrenTable.organisationId, organisationId(res))));
 
       siteGuardianEmails = [
         ...new Set(
@@ -401,32 +414,17 @@ router.get("/guardians/financial/communication-log", async (req, res): Promise<v
           ),
         )
       : null;
-    const combinedFilter = communicationFilter && cursorFilter
-      ? and(communicationFilter, cursorFilter)
-      : communicationFilter ?? cursorFilter;
+    const combinedFilter = and(eq(guardianCommunicationLogsTable.organisationId, organisationId(res)),
+      communicationFilter ?? undefined, cursorFilter ?? undefined);
 
-    const communicationsQuery = combinedFilter
-      ? db
-          .select()
-          .from(guardianCommunicationLogsTable)
-          .where(combinedFilter)
-          .orderBy(
-            desc(guardianCommunicationLogsTable.createdAt),
-            desc(guardianCommunicationLogsTable.id),
-          )
-          .limit(pageSizeParam + 1)
-      : db
-          .select()
-          .from(guardianCommunicationLogsTable)
-          .orderBy(
-            desc(guardianCommunicationLogsTable.createdAt),
-            desc(guardianCommunicationLogsTable.id),
-          )
-          .limit(pageSizeParam + 1);
+    const communicationsQuery = db.select().from(guardianCommunicationLogsTable)
+      .where(combinedFilter)
+      .orderBy(desc(guardianCommunicationLogsTable.createdAt), desc(guardianCommunicationLogsTable.id))
+      .limit(pageSizeParam + 1);
 
     const [communicationsWithLookahead, sites] = await Promise.all([
       communicationsQuery,
-      db.select().from(sitesTable).where(eq(sitesTable.status, "active")),
+      db.select().from(sitesTable).where(and(eq(sitesTable.status, "active"), eq(sitesTable.orgId, organisationId(res)))),
     ]);
     const hasNextPage = communicationsWithLookahead.length > pageSizeParam;
     const communications = communicationsWithLookahead.slice(0, pageSizeParam);
@@ -457,7 +455,7 @@ router.get("/guardians/financial/communication-log", async (req, res): Promise<v
       .select()
       .from(childrenTable)
       .where(
-        or(
+        and(eq(childrenTable.organisationId, organisationId(res)), or(
           sql`lower(trim(${childrenTable.guardianEmail})) in (${sql.join(
             communicationEmails.map((email) => sql`${email}`),
             sql`, `,
@@ -466,7 +464,7 @@ router.get("/guardians/financial/communication-log", async (req, res): Promise<v
             communicationEmails.map((email) => sql`${email}`),
             sql`, `,
           )})`,
-        ),
+        )),
       );
 
     const sitesById = new Map(sites.map((site) => [site.id, site]));
@@ -578,21 +576,21 @@ router.get("/guardians/financial/communication-log", async (req, res): Promise<v
 
 // GET /guardians/:email/financial — fetch status + logs + plans
 router.get("/guardians/:email/financial", async (req, res): Promise<void> => {
-  const email = decodeURIComponent(req.params.email ?? "");
+  const email = decodeURIComponent(req.params.email ?? "").trim().toLowerCase();
   if (!email) { res.status(400).json({ error: "Email required" }); return; }
 
   try {
     const [account, communications, plans] = await Promise.all([
-      getOrCreateAccount(email),
+      getOrCreateAccount(email, organisationId(res)),
       db
         .select()
         .from(guardianCommunicationLogsTable)
-        .where(eq(guardianCommunicationLogsTable.guardianEmail, email))
+        .where(and(eq(guardianCommunicationLogsTable.guardianEmail, email), eq(guardianCommunicationLogsTable.organisationId, organisationId(res))))
         .orderBy(desc(guardianCommunicationLogsTable.createdAt)),
       db
         .select()
         .from(guardianPaymentPlansTable)
-        .where(eq(guardianPaymentPlansTable.guardianEmail, email))
+        .where(and(eq(guardianPaymentPlansTable.guardianEmail, email), eq(guardianPaymentPlansTable.organisationId, organisationId(res))))
         .orderBy(desc(guardianPaymentPlansTable.createdAt)),
     ]);
 
@@ -610,7 +608,7 @@ router.get("/guardians/:email/financial", async (req, res): Promise<void> => {
 
 // PATCH /guardians/:email/financial — update financial status + reasoning
 router.patch("/guardians/:email/financial", async (req, res): Promise<void> => {
-  const email = decodeURIComponent(req.params.email ?? "");
+  const email = decodeURIComponent(req.params.email ?? "").trim().toLowerCase();
   const { status, reasoning } = req.body ?? {};
   if (!VALID_STATUSES.includes(status as FinancialStatus)) {
     res.status(400).json({ error: "Invalid status. Must be active, payment_plan, or suspended." });
@@ -620,9 +618,9 @@ router.patch("/guardians/:email/financial", async (req, res): Promise<void> => {
   try {
     await db
       .insert(guardianFinancialAccountsTable)
-      .values({ guardianEmail: email, status, reasoning: reasoningValue, updatedAt: new Date() })
+      .values({ guardianEmail: email, status, reasoning: reasoningValue, updatedAt: new Date(), organisationId: organisationId(res) })
       .onConflictDoUpdate({
-        target: [guardianFinancialAccountsTable.guardianEmail],
+        target: [guardianFinancialAccountsTable.organisationId, guardianFinancialAccountsTable.guardianEmail],
         set: { status, reasoning: reasoningValue, updatedAt: new Date() },
       });
     res.json({ status, reasoning: reasoningValue });
@@ -634,7 +632,7 @@ router.patch("/guardians/:email/financial", async (req, res): Promise<void> => {
 
 // POST /guardians/:email/financial/communications — add a communication log entry
 router.post("/guardians/:email/financial/communications", async (req, res): Promise<void> => {
-  const email = decodeURIComponent(req.params.email ?? "");
+  const email = decodeURIComponent(req.params.email ?? "").trim().toLowerCase();
   const { note, staffName } = req.body ?? {};
   if (!note?.trim()) { res.status(400).json({ error: "Note is required" }); return; }
 
@@ -642,6 +640,7 @@ router.post("/guardians/:email/financial/communications", async (req, res): Prom
     const [entry] = await db
       .insert(guardianCommunicationLogsTable)
       .values({
+        organisationId: organisationId(res),
         guardianEmail: email,
         note: note.trim(),
         staffName: staffName?.trim() || null,
@@ -658,7 +657,7 @@ router.post("/guardians/:email/financial/communications", async (req, res): Prom
 router.delete(
   "/guardians/:email/financial/communications/:id",
   async (req, res): Promise<void> => {
-    const email = decodeURIComponent(req.params.email ?? "");
+    const email = decodeURIComponent(req.params.email ?? "").trim().toLowerCase();
     const id = parseInt(req.params.id ?? "", 10);
     if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
@@ -668,6 +667,7 @@ router.delete(
         .where(
           and(
             eq(guardianCommunicationLogsTable.id, id),
+            eq(guardianCommunicationLogsTable.organisationId, organisationId(res)),
             eq(guardianCommunicationLogsTable.guardianEmail, email)
           )
         );
@@ -681,7 +681,7 @@ router.delete(
 
 // POST /guardians/:email/financial/payment-plans — add a payment plan
 router.post("/guardians/:email/financial/payment-plans", async (req, res): Promise<void> => {
-  const email = decodeURIComponent(req.params.email ?? "");
+  const email = decodeURIComponent(req.params.email ?? "").trim().toLowerCase();
   const { type, amount, frequency, description, expectedDate, startDate, endDate } = req.body ?? {};
 
   if (!["one_off", "recurring"].includes(type)) {
@@ -699,6 +699,7 @@ router.post("/guardians/:email/financial/payment-plans", async (req, res): Promi
     const [plan] = await db
       .insert(guardianPaymentPlansTable)
       .values({
+        organisationId: organisationId(res),
         guardianEmail: email,
         type,
         amount: String(parsedAmount),
@@ -720,7 +721,7 @@ router.post("/guardians/:email/financial/payment-plans", async (req, res): Promi
 router.patch(
   "/guardians/:email/financial/payment-plans/:id",
   async (req, res): Promise<void> => {
-    const email = decodeURIComponent(req.params.email ?? "");
+    const email = decodeURIComponent(req.params.email ?? "").trim().toLowerCase();
     const id = parseInt(req.params.id ?? "", 10);
     if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
@@ -732,6 +733,7 @@ router.patch(
         .where(
           and(
             eq(guardianPaymentPlansTable.id, id),
+            eq(guardianPaymentPlansTable.organisationId, organisationId(res)),
             eq(guardianPaymentPlansTable.guardianEmail, email)
           )
         );
@@ -747,7 +749,7 @@ router.patch(
 router.delete(
   "/guardians/:email/financial/payment-plans/:id",
   async (req, res): Promise<void> => {
-    const email = decodeURIComponent(req.params.email ?? "");
+    const email = decodeURIComponent(req.params.email ?? "").trim().toLowerCase();
     const id = parseInt(req.params.id ?? "", 10);
     if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
@@ -757,6 +759,7 @@ router.delete(
         .where(
           and(
             eq(guardianPaymentPlansTable.id, id),
+            eq(guardianPaymentPlansTable.organisationId, organisationId(res)),
             eq(guardianPaymentPlansTable.guardianEmail, email)
           )
         );

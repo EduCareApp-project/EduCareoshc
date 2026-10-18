@@ -1,4 +1,5 @@
-import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
+import { serial, integer, text, timestamp } from "drizzle-orm/pg-core";
+import { tenantTable as pgTable } from "./tenant-table";
 import { observationsTable } from "./observations";
 import { staffTable } from "./staff";
 

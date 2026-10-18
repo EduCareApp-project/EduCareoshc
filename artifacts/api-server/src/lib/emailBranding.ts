@@ -1,5 +1,5 @@
 import { db, emailSettingsTable } from "@workspace/db";
-import { logger } from "./logger";
+import { eq } from "drizzle-orm";
 
 export interface EmailBranding {
   senderName: string;
@@ -20,23 +20,23 @@ function getBaseUrl(): string {
 
 const DEFAULT_LOGO_PATH = "/educare-logo-dark.png";
 
-export async function getEmailBranding(): Promise<EmailBranding> {
+export async function getEmailBranding(organisationId: number | null): Promise<EmailBranding> {
   const fallbackLogoUrl = `${getBaseUrl()}${DEFAULT_LOGO_PATH}`;
-  try {
-    const [row] = await db.select().from(emailSettingsTable).limit(1);
-    if (!row) return { senderName: "EduCare Portal", logoUrl: fallbackLogoUrl, templates: {} };
+  // null is reserved for public, platform-level messages. It never means "the
+  // first company". Portal messages must supply the verified owner explicitly.
+  if (organisationId === null) return { senderName: "EduCare Portal", logoUrl: fallbackLogoUrl, templates: {} };
+  if (!Number.isSafeInteger(organisationId) || organisationId <= 0) throw new Error("Email organisation is required");
+  const [row] = await db.select().from(emailSettingsTable)
+    .where(eq(emailSettingsTable.organisationId, organisationId)).limit(1);
+  if (!row) return { senderName: "EduCare Portal", logoUrl: fallbackLogoUrl, templates: {} };
 
-    const logoUrl = row.logoPath
-      ? `${getBaseUrl()}/api/email-settings/logo`
-      : fallbackLogoUrl;
+  const logoUrl = row.logoPath
+    ? `${getBaseUrl()}/api/email-settings/logo?organisationId=${organisationId}`
+    : fallbackLogoUrl;
 
-    return {
-      senderName: row.senderName,
-      logoUrl,
-      templates: (row.templates as EmailBranding["templates"]) ?? {},
-    };
-  } catch (err) {
-    logger.warn({ err }, "Failed to fetch email branding settings — using defaults");
-    return { senderName: "EduCare Portal", logoUrl: fallbackLogoUrl, templates: {} };
-  }
+  return {
+    senderName: row.senderName,
+    logoUrl,
+    templates: (row.templates as EmailBranding["templates"]) ?? {},
+  };
 }

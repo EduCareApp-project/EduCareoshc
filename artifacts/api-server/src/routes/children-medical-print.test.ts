@@ -42,6 +42,7 @@ vi.mock("drizzle-orm", () => ({
   eq: vi.fn((column: unknown, value: unknown) => `eq(${String(column)},${String(value)})`),
   asc: vi.fn((column: unknown) => `asc(${String(column)})`),
   inArray: vi.fn(() => "inArray"),
+  and: vi.fn((...conditions) => conditions),
 }));
 
 import childrenRouter from "./children";
@@ -49,7 +50,9 @@ import childrenRouter from "./children";
 function buildApp(user: { type: "staff" | "guardian"; id: number; role?: string }) {
   const app = express();
   app.use(pinoHttp({ logger: pino({ level: "silent" }, new Writable({ write(_chunk, _encoding, done) { done(); } })) }));
-  app.use((req, _res, next) => {
+  app.use((req, res, next) => {
+    res.locals.organisationId = 1;
+    res.locals.organisationContextVerified = true;
     (req as any).session = { user };
     next();
   });

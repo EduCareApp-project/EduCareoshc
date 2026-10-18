@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, sql, or, desc } from "drizzle-orm";
+import { and, eq, sql, or, desc } from "drizzle-orm";
+import { organisationId, guardianChildren } from "../lib/tenant";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { db, childrenTable, parentAccountsTable, guardianLoginLogsTable } from "@workspace/db";
@@ -12,6 +13,7 @@ import {
 import { sendWelcomeEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 import { getAppUrl } from "../lib/appUrl";
+import { organisationRoutingQuery } from "../lib/accountOrganisation";
 
 const router: IRouter = Router();
 
@@ -27,9 +29,9 @@ function generatePassword(): string {
   return result;
 }
 
-async function buildGuardianList() {
-  const children = await db.select().from(childrenTable).orderBy(childrenTable.guardianName);
-  const accounts = await db.select().from(parentAccountsTable);
+async function buildGuardianList(orgId: number) {
+  const children = await db.select().from(childrenTable).where(eq(childrenTable.organisationId, orgId)).orderBy(childrenTable.guardianName);
+  const accounts = await db.select().from(parentAccountsTable).where(eq(parentAccountsTable.organisationId, orgId));
   const accountMap = new Map(accounts.map((a) => [a.guardianEmail, a]));
 
   const grouped = new Map<string, {
@@ -93,7 +95,7 @@ async function buildGuardianList() {
 
 router.get("/guardians", async (req, res): Promise<void> => {
   try {
-    const list = await buildGuardianList();
+    const list = await buildGuardianList(organisationId(res));
     res.json(ListGuardiansResponse.parse(list));
   } catch (err) {
     req.log.error({ err }, "Failed to list guardians");
@@ -102,9 +104,9 @@ router.get("/guardians", async (req, res): Promise<void> => {
 });
 
 router.get("/guardians/:email", async (req, res): Promise<void> => {
-  const email = decodeURIComponent(req.params.email);
+  const email = decodeURIComponent(req.params.email).trim().toLowerCase();
   try {
-    const list = await buildGuardianList();
+    const list = await buildGuardianList(organisationId(res));
     const guardian = list.find((g) => g.guardianEmail === email);
     if (!guardian) {
       res.status(404).json({ error: "Guardian not found" });
@@ -118,7 +120,7 @@ router.get("/guardians/:email", async (req, res): Promise<void> => {
 });
 
 router.patch("/guardians/:email", async (req, res): Promise<void> => {
-  const email = decodeURIComponent(req.params.email);
+  const email = decodeURIComponent(req.params.email).trim().toLowerCase();
   const parsed = UpdateGuardianBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -126,16 +128,20 @@ router.patch("/guardians/:email", async (req, res): Promise<void> => {
   }
 
   try {
+    const list = await buildGuardianList(organisationId(res));
+    if (!list.some((guardian) => guardian.guardianEmail === email)) {
+      res.status(404).json({ error: "Guardian not found" }); return;
+    }
     await db
       .insert(parentAccountsTable)
-      .values({ guardianEmail: email, username: parsed.data.username, organisationId: res.locals.organisationId })
+      .values({ guardianEmail: email, username: parsed.data.username, organisationId: organisationId(res) })
       .onConflictDoUpdate({
-        target: parentAccountsTable.guardianEmail,
+        target: [parentAccountsTable.organisationId, parentAccountsTable.guardianEmail],
         set: { username: parsed.data.username },
+        setWhere: eq(parentAccountsTable.organisationId, organisationId(res)),
       });
 
-    const list = await buildGuardianList();
-    const guardian = list.find((g) => g.guardianEmail === email);
+    const guardian = (await buildGuardianList(organisationId(res))).find((g) => g.guardianEmail === email);
     res.json(GetGuardianResponse.parse(guardian));
   } catch (err) {
     req.log.error({ err, email }, "Failed to update guardian");
@@ -144,18 +150,13 @@ router.patch("/guardians/:email", async (req, res): Promise<void> => {
 });
 
 router.post("/guardians/:email/send-welcome-email", async (req, res): Promise<void> => {
-  const email = decodeURIComponent(req.params.email);
+  const email = decodeURIComponent(req.params.email).trim().toLowerCase();
 
   try {
     const [existing] = await db
       .select()
       .from(childrenTable)
-      .where(
-        or(
-          eq(childrenTable.guardianEmail, email),
-          eq(childrenTable.guardian2Email, email),
-        )
-      );
+      .where(guardianChildren(organisationId(res), email));
 
     if (!existing) {
       res.status(404).json({ error: "Guardian not found" });
@@ -167,8 +168,9 @@ router.post("/guardians/:email/send-welcome-email", async (req, res): Promise<vo
         ? existing.guardianName
         : (existing.guardian2Name ?? email);
 
-    const branding = await getEmailBranding();
-    await sendWelcomeEmail(email, guardianName, getAppUrl(), branding);
+    const branding = await getEmailBranding(organisationId(res));
+    const query = await organisationRoutingQuery(organisationId(res));
+    await sendWelcomeEmail(email, guardianName, `${getAppUrl()}/login${query ? `?${query}` : ""}`, branding);
 
     res.json({ ok: true });
   } catch (err) {
@@ -178,18 +180,13 @@ router.post("/guardians/:email/send-welcome-email", async (req, res): Promise<vo
 });
 
 router.post("/guardians/:email/reset-password", async (req, res): Promise<void> => {
-  const email = decodeURIComponent(req.params.email);
+  const email = decodeURIComponent(req.params.email).trim().toLowerCase();
 
   try {
     const [existing] = await db
       .select()
       .from(childrenTable)
-      .where(
-        or(
-          eq(childrenTable.guardianEmail, email),
-          eq(childrenTable.guardian2Email, email),
-        )
-      );
+      .where(guardianChildren(organisationId(res), email));
 
     if (!existing) {
       res.status(404).json({ error: "Guardian not found" });
@@ -202,10 +199,11 @@ router.post("/guardians/:email/reset-password", async (req, res): Promise<void> 
 
     await db
       .insert(parentAccountsTable)
-      .values({ guardianEmail: email, passwordHash: hash, organisationId: res.locals.organisationId })
+      .values({ guardianEmail: email, passwordHash: hash, organisationId: organisationId(res) })
       .onConflictDoUpdate({
-        target: parentAccountsTable.guardianEmail,
+        target: [parentAccountsTable.organisationId, parentAccountsTable.guardianEmail],
         set: { passwordHash: hash },
+        setWhere: eq(parentAccountsTable.organisationId, organisationId(res)),
       });
 
     res.json(ResetGuardianPasswordResponse.parse({ newPassword }));
@@ -222,7 +220,7 @@ router.get("/guardians/:email/login-logs", async (req, res): Promise<void> => {
     const logs = await db
       .select({ id: guardianLoginLogsTable.id, loggedInAt: guardianLoginLogsTable.loggedInAt })
       .from(guardianLoginLogsTable)
-      .where(eq(guardianLoginLogsTable.guardianEmail, email))
+      .where(and(eq(guardianLoginLogsTable.guardianEmail, email), eq(guardianLoginLogsTable.organisationId, organisationId(res))))
       .orderBy(desc(guardianLoginLogsTable.loggedInAt))
       .limit(200);
     res.json(logs);

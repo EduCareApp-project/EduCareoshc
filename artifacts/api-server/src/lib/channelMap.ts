@@ -1,5 +1,6 @@
-import { db } from "@workspace/db";
+import { db, currentOrganisationId } from "@workspace/db";
 import { organisationTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 const DEFAULTS: Record<string, { email: boolean; inApp: boolean }> = {
   guardian_notice:      { email: true,  inApp: false },
@@ -30,7 +31,8 @@ const DEFAULTS: Record<string, { email: boolean; inApp: boolean }> = {
 };
 
 async function fetchChannelMap(): Promise<Record<string, { email?: boolean; inApp?: boolean }>> {
-  const [row] = await db.select({ fs: organisationTable.featureSettings }).from(organisationTable).limit(1);
+  const [row] = await db.select({ fs: organisationTable.featureSettings }).from(organisationTable)
+    .where(eq(organisationTable.id, currentOrganisationId())).limit(1);
   return ((row?.fs as any)?.notificationChannelMap ?? {}) as Record<string, { email?: boolean; inApp?: boolean }>;
 }
 

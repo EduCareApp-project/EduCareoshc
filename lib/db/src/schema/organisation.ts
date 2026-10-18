@@ -1,4 +1,5 @@
-import { pgTable, serial, text, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { serial, text, timestamp, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
+import { scopedTable as pgTable } from "./scoped-table";
 import { sql } from "drizzle-orm";
 
 export interface FeatureSettings {
@@ -92,6 +93,6 @@ export const organisationTable = pgTable("organisation", {
     .default(sql`'{}'::jsonb`),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [uniqueIndex("organisation_public_code_ci_unique").on(sql`lower(${table.organisationId})`)]);
 
 export type Organisation = typeof organisationTable.$inferSelect;

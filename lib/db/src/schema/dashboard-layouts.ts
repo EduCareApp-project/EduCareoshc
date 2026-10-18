@@ -1,4 +1,5 @@
-import { pgTable, serial, integer, text, jsonb, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { serial, integer, text, jsonb, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { scopedTable as pgTable } from "./scoped-table";
 import { organisationTable } from "./organisation";
 import { staffTable } from "./staff";
 

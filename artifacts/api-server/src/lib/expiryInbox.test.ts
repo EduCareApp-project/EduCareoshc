@@ -67,7 +67,7 @@ const mocks = vi.hoisted(() => {
   };
   return { tables, state, db };
 });
-vi.mock("@workspace/db", () => ({ ...mocks.tables, db: mocks.db }));
+vi.mock("@workspace/db", () => ({ ...mocks.tables, db: mocks.db, currentOrganisationId: () => 1 }));
 vi.mock("drizzle-orm", () => {
   const fn = (op: string) => (...args: any[]) => ({ op, args });
   return { eq: fn("eq"), and: fn("and"), or: fn("or"), inArray: fn("in"), notInArray: fn("notIn"), isNull: fn("null") };

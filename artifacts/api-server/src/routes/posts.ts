@@ -322,7 +322,7 @@ router.patch("/posts/:id", async (req, res): Promise<void> => {
 
       const portalUrl = `${appUrl}/notices`;
 
-      getEmailBranding().then((branding) =>
+      getEmailBranding(res.locals.organisationId).then((branding) =>
         sendPostNotificationEmail(recipients, { postTitle: post.title, excerpt, portalUrl, firstImageUrl }, branding)
       ).catch((err) => {
         req.log.error({ err }, "Post notification email dispatch failed");

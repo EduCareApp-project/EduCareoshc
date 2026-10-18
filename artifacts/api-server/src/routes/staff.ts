@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, ne, asc, inArray } from "drizzle-orm";
+import { and, eq, ne, asc, inArray } from "drizzle-orm";
+import { organisationId, ownsSites } from "../lib/tenant";
 import { db, sitesTable, staffSitesTable, staffTable } from "@workspace/db";
 import {
   CreateStaffBody,
@@ -28,13 +29,13 @@ function isProfileOnlyRole(role: string | undefined | null): boolean {
 
 const router: IRouter = Router();
 
-async function addAssociatedSites<T extends { id: number; siteId?: number | null }>(members: T[]) {
+async function addAssociatedSites<T extends { id: number; siteId?: number | null }>(members: T[], orgId: number) {
   if (members.length === 0) return members.map((member) => ({ ...member, associatedSiteIds: [], associatedSites: [] }));
   const links = await db
     .select({ staffId: staffSitesTable.staffId, id: sitesTable.id, name: sitesTable.name })
     .from(staffSitesTable)
     .innerJoin(sitesTable, eq(staffSitesTable.siteId, sitesTable.id))
-    .where(inArray(staffSitesTable.staffId, members.map((member) => member.id)))
+    .where(and(inArray(staffSitesTable.staffId, members.map((member) => member.id)), eq(sitesTable.orgId, orgId)))
     .orderBy(asc(sitesTable.name));
   const byStaff = new Map<number, { id: number; name: string }[]>();
   for (const link of links) {
@@ -48,10 +49,10 @@ async function addAssociatedSites<T extends { id: number; siteId?: number | null
   });
 }
 
-async function replaceAssociatedSites(staffId: number, siteIds: number[]) {
+async function replaceAssociatedSites(staffId: number, siteIds: number[], orgId: number) {
   const uniqueSiteIds = [...new Set(siteIds.filter((siteId) => Number.isInteger(siteId) && siteId > 0))];
   if (uniqueSiteIds.length > 0) {
-    const existingSites = await db.select({ id: sitesTable.id }).from(sitesTable);
+    const existingSites = await db.select({ id: sitesTable.id }).from(sitesTable).where(eq(sitesTable.orgId, orgId));
     const validIds = new Set(existingSites.map((site) => site.id));
     if (uniqueSiteIds.some((siteId) => !validIds.has(siteId))) {
       throw new Error("One or more associated sites do not exist");
@@ -68,14 +69,14 @@ router.get("/staff", async (req, res): Promise<void> => {
     const staff = await db
       .select()
       .from(staffTable)
-      .where(ne(staffTable.isSuperAdmin, true))
+      .where(and(ne(staffTable.isSuperAdmin, true), eq(staffTable.organisationId, organisationId(res))))
       .orderBy(staffTable.lastName);
     const visibleStaff = isOnboarding(req.session.user?.role)
       ? staff.filter((member) => member.id === req.session.user?.id)
       : isEducatorRole(req.session.user?.role)
       ? staff.filter((member) => member.role !== "admin_support")
       : staff;
-    res.json(ListStaffResponse.parse(await addAssociatedSites(visibleStaff)));
+    res.json(ListStaffResponse.parse(await addAssociatedSites(visibleStaff, organisationId(res))));
   } catch (err) {
     req.log.error({ err }, "Failed to fetch staff");
     res.status(500).json({ error: "Failed to fetch staff" });
@@ -97,15 +98,18 @@ router.post("/staff", async (req, res): Promise<void> => {
     const staffData = isProfileOnlyRole(parsedStaffData.role)
       ? { ...parsedStaffData, siteId: null }
       : parsedStaffData;
+    if (!(await ownsSites(organisationId(res), [staffData.siteId, ...(isProfileOnlyRole(staffData.role) ? [] : associatedSiteIds ?? [])]))) {
+      res.status(400).json({ error: "Invalid service" }); return;
+    }
     const [member] = await db.insert(staffTable).values({
-      ...staffData, organisationId: res.locals.organisationId,
+      ...staffData, email: staffData.email.trim().toLowerCase(), organisationId: organisationId(res),
     }).returning();
     if (isProfileOnlyRole(staffData.role)) {
-      await replaceAssociatedSites(member.id, []);
+      await replaceAssociatedSites(member.id, [], organisationId(res));
     } else if (associatedSiteIds !== undefined) {
-      await replaceAssociatedSites(member.id, associatedSiteIds.filter((siteId) => siteId !== member.siteId));
+      await replaceAssociatedSites(member.id, associatedSiteIds.filter((siteId) => siteId !== member.siteId), organisationId(res));
     }
-    const [withSites] = await addAssociatedSites([member]);
+    const [withSites] = await addAssociatedSites([member], organisationId(res));
     res.status(201).json(GetStaffResponse.parse(withSites));
   } catch (err) {
     req.log.error({ err }, "Failed to create staff member");
@@ -120,7 +124,8 @@ router.get("/staff/:id", async (req, res): Promise<void> => {
     return;
   }
   try {
-    const [member] = await db.select().from(staffTable).where(eq(staffTable.id, params.data.id));
+    const [member] = await db.select().from(staffTable)
+      .where(and(eq(staffTable.id, params.data.id), eq(staffTable.organisationId, organisationId(res))));
     if (!member) {
       res.status(404).json({ error: "Staff member not found" });
       return;
@@ -133,7 +138,7 @@ router.get("/staff/:id", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Staff member not found" });
       return;
     }
-    const [withSites] = await addAssociatedSites([member]);
+    const [withSites] = await addAssociatedSites([member], organisationId(res));
     res.json(GetStaffResponse.parse(withSites));
   } catch (err) {
     req.log.error({ err, staffId: params.data.id }, "Failed to fetch staff member");
@@ -153,7 +158,9 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
     return;
   }
   try {
-    const [existing] = await db.select().from(staffTable).where(eq(staffTable.id, params.data.id));
+    const [existing] = await db.select().from(staffTable)
+      .where(and(eq(staffTable.id, params.data.id), eq(staffTable.organisationId, organisationId(res))));
+    if (!existing) { res.status(404).json({ error: "Staff member not found" }); return; }
     if (existing?.isSuperAdmin) {
       res.status(403).json({ error: "This account cannot be modified." });
       return;
@@ -161,6 +168,7 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
     const user = req.session?.user;
     const { associatedSiteIds, ...staffFields } = parsed.data;
     const updateData = { ...staffFields };
+    if (updateData.email !== undefined) updateData.email = updateData.email.trim().toLowerCase();
     const targetRole = staffFields.role ?? existing?.role;
     if (isOnboarding(user?.role)) {
       if (params.data.id !== user?.id) {
@@ -177,21 +185,25 @@ router.patch("/staff/:id", async (req, res): Promise<void> => {
     } else if (isProfileOnlyRole(targetRole)) {
       updateData.siteId = null;
     }
+    const canAssignSites = !isEducatorRole(user?.role) && !isOnboarding(user?.role) && !isProfileOnlyRole(targetRole);
+    if (!(await ownsSites(organisationId(res), [updateData.siteId, ...(canAssignSites ? associatedSiteIds ?? [] : [])]))) {
+      res.status(400).json({ error: "Invalid service" }); return;
+    }
     const [member] = await db
       .update(staffTable)
       .set(updateData)
-      .where(eq(staffTable.id, params.data.id))
+      .where(and(eq(staffTable.id, params.data.id), eq(staffTable.organisationId, organisationId(res))))
       .returning();
     if (!member) {
       res.status(404).json({ error: "Staff member not found" });
       return;
     }
     if (isProfileOnlyRole(targetRole)) {
-      await replaceAssociatedSites(member.id, []);
+      await replaceAssociatedSites(member.id, [], organisationId(res));
     } else if (associatedSiteIds !== undefined && !isEducatorRole(user?.role) && !isOnboarding(user?.role)) {
-      await replaceAssociatedSites(member.id, associatedSiteIds.filter((siteId) => siteId !== member.siteId));
+      await replaceAssociatedSites(member.id, associatedSiteIds.filter((siteId) => siteId !== member.siteId), organisationId(res));
     }
-    const [withSites] = await addAssociatedSites([member]);
+    const [withSites] = await addAssociatedSites([member], organisationId(res));
     res.json(UpdateStaffResponse.parse(withSites));
   } catch (err) {
     req.log.error({ err, staffId: params.data.id }, "Failed to update staff member");
@@ -211,7 +223,8 @@ router.patch("/staff/:id/archive", async (req, res): Promise<void> => {
     return;
   }
   try {
-    const [existing] = await db.select().from(staffTable).where(eq(staffTable.id, params.data.id));
+    const [existing] = await db.select().from(staffTable)
+      .where(and(eq(staffTable.id, params.data.id), eq(staffTable.organisationId, organisationId(res))));
     if (existing?.isSuperAdmin) {
       res.status(403).json({ error: "This account cannot be modified." });
       return;
@@ -219,7 +232,7 @@ router.patch("/staff/:id/archive", async (req, res): Promise<void> => {
     const [member] = await db
       .update(staffTable)
       .set({ status: "inactive", blockedAt: new Date() } as any)
-      .where(eq(staffTable.id, params.data.id))
+      .where(and(eq(staffTable.id, params.data.id), eq(staffTable.organisationId, organisationId(res))))
       .returning();
     if (!member) {
       res.status(404).json({ error: "Staff member not found" });
@@ -244,14 +257,15 @@ router.delete("/staff/:id", async (req, res): Promise<void> => {
     return;
   }
   try {
-    const [existing] = await db.select().from(staffTable).where(eq(staffTable.id, params.data.id));
+    const [existing] = await db.select().from(staffTable)
+      .where(and(eq(staffTable.id, params.data.id), eq(staffTable.organisationId, organisationId(res))));
     if (existing?.isSuperAdmin) {
       res.status(403).json({ error: "This account cannot be modified." });
       return;
     }
     const [deleted] = await db
       .delete(staffTable)
-      .where(eq(staffTable.id, params.data.id))
+      .where(and(eq(staffTable.id, params.data.id), eq(staffTable.organisationId, organisationId(res))))
       .returning();
     if (!deleted) {
       res.status(404).json({ error: "Staff member not found" });

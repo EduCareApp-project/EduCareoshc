@@ -82,7 +82,7 @@ router.post("/children/:id/behavioural-notifications", async (req, res): Promise
       setImmediate(async () => {
         try {
           if (!await isEmailChannelEnabled("guardian_behavioural")) return;
-          const branding = await getEmailBranding();
+          const branding = await getEmailBranding(res.locals.organisationId);
           await sendBehaviouralNotificationEmail(recipients, {
             childName: `${child.firstName} ${child.lastName}`,
             behaviourDescription,

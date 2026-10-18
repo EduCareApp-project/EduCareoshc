@@ -355,7 +355,7 @@ async function createGuardianExcursionNotifications(
       referenceId: excursion.id,
       referenceType: "excursion",
       dedupeKey: `excursion:${excursion.id}:recipient:${recipient.id}:sent`,
-    }).onConflictDoNothing({ target: guardianNotificationsTable.dedupeKey });
+    }).onConflictDoNothing({ target: [guardianNotificationsTable.organisationId, guardianNotificationsTable.dedupeKey] });
   }
 }
 
@@ -677,7 +677,7 @@ router.post("/excursions/:id/recipients", async (req, res): Promise<void> => {
       })));
       await createGuardianExcursionNotifications(excursion, inserted);
       if (await isEmailChannelEnabled("guardian_excursion")) {
-        const branding = await getEmailBranding();
+        const branding = await getEmailBranding(res.locals.organisationId);
         for (const recipient of inserted) {
           await sendGuardianExcursionEmail([recipient.guardianEmail], {
             excursionHeading: excursion.heading,
@@ -777,7 +777,7 @@ router.put("/excursions/:id/recipients/:recipientId/notification", async (req, r
           referenceId: id,
           referenceType: "excursion",
           dedupeKey: `excursion:${id}:recipient:${recipientId}:sent`,
-        }).onConflictDoNothing({ target: guardianNotificationsTable.dedupeKey });
+        }).onConflictDoNothing({ target: [guardianNotificationsTable.organisationId, guardianNotificationsTable.dedupeKey] });
       }
     });
     res.status(204).send();
@@ -827,7 +827,7 @@ router.post("/excursions/:id/send", async (req, res): Promise<void> => {
     await createGuardianExcursionNotifications(excursion, recipientsToNotify);
     const emails = [...new Set(recipientsToNotify.map((recipient) => recipient.guardianEmail))];
     if (emails.length > 0 && await isEmailChannelEnabled("guardian_excursion")) {
-      const branding = await getEmailBranding();
+      const branding = await getEmailBranding(res.locals.organisationId);
       for (const recipient of recipientsToNotify) {
         await sendGuardianExcursionEmail([recipient.guardianEmail], {
           excursionHeading: excursion.heading,
@@ -867,7 +867,7 @@ router.post("/excursions/:id/reminder", async (req, res): Promise<void> => {
       event: "reminder",
     })));
     if (await isEmailChannelEnabled("guardian_excursion")) {
-      const branding = await getEmailBranding();
+      const branding = await getEmailBranding(res.locals.organisationId);
       for (const recipient of recipients) {
         await sendGuardianExcursionEmail([recipient.guardianEmail], {
           excursionHeading: excursion.heading,

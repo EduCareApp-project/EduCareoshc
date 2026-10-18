@@ -7,6 +7,8 @@ import { Loader2, ShieldCheck, ArrowLeft, CheckCircle2 } from "lucide-react";
 
 export default function ResetPassword() {
   const token = new URLSearchParams(window.location.search).get("token") ?? "";
+  const organisationCode = new URLSearchParams(window.location.search).get("organisationCode");
+  const companyQuery = organisationCode ? `?organisationCode=${encodeURIComponent(organisationCode)}` : "";
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -59,7 +61,7 @@ export default function ResetPassword() {
             <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #4CAF50, #2196F3, #F44336, #FF9800)" }} />
             <div className="px-8 py-8 text-center">
               <p className="text-sm text-muted-foreground mb-4">This reset link is invalid or has expired.</p>
-              <Link href="/forgot-password">
+              <Link href={`/forgot-password${companyQuery}`}>
                 <Button className="w-full">Request a new link</Button>
               </Link>
             </div>
@@ -101,7 +103,7 @@ export default function ResetPassword() {
                   <p className="text-sm text-muted-foreground mb-6">
                     Your password has been changed. You can now sign in with your new password.
                   </p>
-                  <Link href="/login">
+                  <Link href={`/login${companyQuery}`}>
                     <Button className="w-full">Sign in</Button>
                   </Link>
                 </div>
@@ -151,7 +153,7 @@ export default function ResetPassword() {
                     ) : "Update password"}
                   </Button>
 
-                  <Link href="/login">
+                  <Link href={`/login${companyQuery}`}>
                     <Button variant="ghost" className="w-full h-10 mt-1" type="button">
                       <ArrowLeft className="h-4 w-4 mr-2" />
                       Back to sign in

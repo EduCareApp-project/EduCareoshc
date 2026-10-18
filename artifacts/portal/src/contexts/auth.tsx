@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export type AuthUser = {
   id: number;
@@ -7,6 +8,7 @@ export type AuthUser = {
   email: string;
   name: string;
   siteId?: number | null;
+  organisationId?: number;
 };
 
 type AuthContextValue = {
@@ -19,7 +21,15 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, updateUser] = useState<AuthUser | null>(null);
+  const queryClient = useQueryClient();
+  const setUser = useCallback((next: AuthUser | null) => {
+    // Query keys are shared endpoint names. Never reuse account A's responses
+    // when account B signs in, including when both accounts share an email.
+    void queryClient.cancelQueries();
+    queryClient.clear();
+    updateUser(next);
+  }, [queryClient]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -33,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setIsLoading(false);
       });
-  }, []);
+  }, [setUser]);
 
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });

@@ -3,18 +3,48 @@ import emergencyHeadingPreferencesRouter from "./emergency-heading-preferences";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { eq, asc, and, or, gt, isNull, isNotNull, inArray, sql, ne } from "drizzle-orm";
-import { db, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, postsTable, sitesTable, planningExperiencesTable, noticesTable, guardianLoginLogsTable, schoolAccountsTable } from "@workspace/db";
+import { db, systemDb, withOrganisationContext, staffTable, parentAccountsTable, childrenTable, passwordResetTokensTable, postsTable, sitesTable, planningExperiencesTable, noticesTable, guardianLoginLogsTable, schoolAccountsTable } from "@workspace/db";
 import { sendPasswordResetEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 import { getAppUrl } from "../lib/appUrl";
+import { organisationContext } from "../middlewares/organisation-context";
+import { guardianChildren, organisationId, tenantStaffIds } from "../lib/tenant";
+import { organisationRoutingQuery, resolveAccountOrganisation } from "../lib/accountOrganisation";
 
 const router: IRouter = Router();
+// Credential entry points are public. Every account-backed endpoint, including
+// /auth/me, must re-read membership just like the main protected router.
+const publicAuthPaths = new Set(["/auth/login", "/auth/logout", "/auth/forgot-password", "/auth/reset-password"]);
+router.use(async (req, _res, next) => {
+  try {
+    if (req.path === "/auth/login" || req.path === "/auth/forgot-password") {
+      const { email, organisationCode } = req.body ?? {};
+      if (typeof email !== "string" || (organisationCode !== undefined && typeof organisationCode !== "string")) {
+        next(); return;
+      }
+      const owner = await resolveAccountOrganisation(email.toLowerCase().trim(), organisationCode);
+      if (owner) { withOrganisationContext(owner, next); return; }
+    } else if (req.path === "/auth/reset-password" && typeof req.body?.token === "string") {
+      // The unguessable, single-use token is the capability here; the reset
+      // transaction still validates its exact account, company and expiry.
+      const [record] = await systemDb.select({ organisationId: passwordResetTokensTable.organisationId })
+        .from(passwordResetTokensTable).where(eq(passwordResetTokensTable.token, req.body.token)).limit(1);
+      if (record?.organisationId) { withOrganisationContext(record.organisationId, next); return; }
+    }
+    next();
+  } catch (error) { next(error); }
+});
+router.use((req, res, next) => {
+  if (!req.path.startsWith("/auth/") || publicAuthPaths.has(req.path)) { next(); return; }
+  return organisationContext(req, res, next);
+});
 router.use(emergencyHeadingPreferencesRouter);
 
 router.post("/auth/login", async (req, res): Promise<void> => {
-  const { email, password } = req.body ?? {};
+  const { email, password, organisationCode } = req.body ?? {};
 
-  if (!email || !password) {
+  if (typeof email !== "string" || typeof password !== "string" || !email.trim() || !password ||
+      (organisationCode !== undefined && typeof organisationCode !== "string")) {
     res.status(400).json({ error: "Email and password are required." });
     return;
   }
@@ -22,11 +52,16 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   const normalised = String(email).toLowerCase().trim();
 
   try {
+    const orgId = await resolveAccountOrganisation(normalised, organisationCode);
+    if (!orgId) {
+      res.status(401).json({ error: "Invalid credentials or organisation code. If you have accounts with more than one company, enter your organisation code." });
+      return;
+    }
     // --- Check staff ---
     const [staff] = await db
       .select()
       .from(staffTable)
-      .where(eq(staffTable.email, normalised));
+      .where(and(eq(staffTable.email, normalised), eq(staffTable.organisationId, orgId)));
 
     if (staff) {
       if (!staff.passwordHash) {
@@ -55,7 +90,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
       );
       // Update last login timestamp
       await db.update(staffTable).set({ lastLoginAt: new Date() as any }).where(eq(staffTable.id, staff.id));
-      res.json({ user: req.session.user });
+      res.json({ user: { ...req.session.user, organisationId: orgId } });
       return;
     }
 
@@ -63,7 +98,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     const [guardian] = await db
       .select()
       .from(parentAccountsTable)
-      .where(eq(parentAccountsTable.guardianEmail, normalised));
+      .where(and(eq(parentAccountsTable.guardianEmail, normalised), eq(parentAccountsTable.organisationId, orgId)));
 
     if (guardian) {
       if (!guardian.passwordHash) {
@@ -87,12 +122,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
           guardian2Email: childrenTable.guardian2Email,
         })
         .from(childrenTable)
-        .where(
-          or(
-            eq(childrenTable.guardianEmail, guardian.guardianEmail),
-            eq(childrenTable.guardian2Email, guardian.guardianEmail),
-          )
-        )
+        .where(guardianChildren(guardian.organisationId!, guardian.guardianEmail))
         .limit(1);
 
       let displayName = guardian.guardianEmail;
@@ -119,16 +149,19 @@ router.post("/auth/login", async (req, res): Promise<void> => {
         .update(parentAccountsTable)
         .set({ lastLoginAt: new Date() as any })
         .where(eq(parentAccountsTable.id, guardian.id));
-      await db.insert(guardianLoginLogsTable).values({ guardianEmail: guardian.guardianEmail });
+      await db.insert(guardianLoginLogsTable).values({
+        guardianEmail: guardian.guardianEmail, organisationId: guardian.organisationId,
+      });
 
-      res.json({ user: req.session.user });
+      res.json({ user: { ...req.session.user, organisationId: orgId } });
       return;
     }
 
     const [school] = await db
       .select({ id: schoolAccountsTable.id, siteId: schoolAccountsTable.siteId, username: schoolAccountsTable.username, passwordHash: schoolAccountsTable.passwordHash, blockedAt: schoolAccountsTable.blockedAt })
       .from(schoolAccountsTable)
-      .where(eq(schoolAccountsTable.username, normalised));
+      .innerJoin(sitesTable, eq(schoolAccountsTable.siteId, sitesTable.id))
+      .where(and(eq(schoolAccountsTable.username, normalised), eq(sitesTable.orgId, orgId)));
     if (school) {
       if (!school.passwordHash) { res.status(401).json({ error: "No password has been set for this school account." }); return; }
       if (school.blockedAt) { res.status(401).json({ error: "This school account has been blocked." }); return; }
@@ -138,7 +171,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
       req.session.user = { id: school.id, type: "school", role: "school", email: school.username, name: site?.name ?? "School", siteId: school.siteId };
       await new Promise<void>((resolve, reject) => req.session.save((err) => (err ? reject(err) : resolve())));
       await db.update(schoolAccountsTable).set({ lastLoginAt: new Date() as any }).where(eq(schoolAccountsTable.id, school.id));
-      res.json({ user: req.session.user });
+      res.json({ user: { ...req.session.user, organisationId: orgId } });
       return;
     }
 
@@ -154,7 +187,7 @@ router.get("/auth/me", (req, res): void => {
     res.status(401).json({ error: "Not authenticated" });
     return;
   }
-  res.json({ user: req.session.user });
+  res.json({ user: { ...req.session.user, organisationId: organisationId(res) } });
 });
 
 router.post("/auth/logout", (req, res): void => {
@@ -165,43 +198,53 @@ router.post("/auth/logout", (req, res): void => {
 });
 
 router.post("/auth/forgot-password", async (req, res): Promise<void> => {
-  const { email } = req.body ?? {};
+  const { email, organisationCode } = req.body ?? {};
   if (!email || typeof email !== "string") {
     res.status(400).json({ error: "Email is required." });
     return;
   }
   const normalised = email.toLowerCase().trim();
+  if (organisationCode !== undefined && typeof organisationCode !== "string") {
+    res.status(400).json({ error: "Invalid organisation code." }); return;
+  }
 
   try {
+    const orgId = await resolveAccountOrganisation(normalised, organisationCode);
+    if (!orgId) { res.json({ ok: true }); return; }
     // Look up user — always respond with 200 to avoid email enumeration
     let userType: "staff" | "guardian" | null = null;
+    let account: { id: number; organisationId: number | null } | undefined;
 
-    const [staff] = await db.select({ id: staffTable.id }).from(staffTable).where(eq(staffTable.email, normalised));
-    if (staff) userType = "staff";
+    const [staff] = await db.select({ id: staffTable.id, organisationId: staffTable.organisationId })
+      .from(staffTable).where(and(eq(staffTable.email, normalised), eq(staffTable.organisationId, orgId)));
+    if (staff) { userType = "staff"; account = staff; }
 
     if (!userType) {
       const [guardian] = await db
-        .select({ id: parentAccountsTable.id })
+        .select({ id: parentAccountsTable.id, organisationId: parentAccountsTable.organisationId })
         .from(parentAccountsTable)
-        .where(eq(parentAccountsTable.guardianEmail, normalised));
-      if (guardian) userType = "guardian";
+        .where(and(eq(parentAccountsTable.guardianEmail, normalised), eq(parentAccountsTable.organisationId, orgId)));
+      if (guardian) { userType = "guardian"; account = guardian; }
     }
 
-    if (userType) {
+    if (userType && account?.organisationId) {
       const token = randomBytes(32).toString("hex");
       const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000); // 4 hours
 
       await db.insert(passwordResetTokensTable).values({
         token,
+        organisationId: account.organisationId,
+        accountId: account.id,
         email: normalised,
         userType,
         expiresAt,
       });
 
-      const resetUrl = `${getAppUrl()}/reset-password?token=${token}`;
+      const query = await organisationRoutingQuery(account.organisationId);
+      const resetUrl = `${getAppUrl()}/reset-password?token=${token}${query ? `&${query}` : ""}`;
 
       try {
-        const branding = await getEmailBranding();
+        const branding = await getEmailBranding(account.organisationId);
         await sendPasswordResetEmail(normalised, resetUrl, branding);
       } catch (err) {
         req.log.error({ err, email: normalised }, "Failed to send password reset email");
@@ -227,6 +270,9 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Password must be at least 8 characters." });
     return;
   }
+  const [owner] = await systemDb.select({ id: passwordResetTokensTable.organisationId }).from(passwordResetTokensTable)
+    .where(eq(passwordResetTokensTable.token, token)).limit(1);
+  if (!owner?.id) { res.status(400).json({ error: "This reset link is invalid or has expired." }); return; }
 
   try {
     const now = new Date();
@@ -249,12 +295,23 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
         .returning();
 
       if (!claimed) return null;
+      // Legacy email-only tokens are deliberately not allowed to change a
+      // password: an email is not an account identity across companies.
+      if (!claimed.organisationId || !claimed.accountId) return null;
 
       if (claimed.userType === "staff") {
-        await tx.update(staffTable).set({ passwordHash: hash }).where(eq(staffTable.email, claimed.email));
-      } else {
-        await tx.update(parentAccountsTable).set({ passwordHash: hash }).where(eq(parentAccountsTable.guardianEmail, claimed.email));
-      }
+        const [updated] = await tx.update(staffTable).set({ passwordHash: hash }).where(and(
+          eq(staffTable.id, claimed.accountId), eq(staffTable.organisationId, claimed.organisationId),
+          eq(staffTable.email, claimed.email),
+        )).returning({ id: staffTable.id });
+        if (!updated) return null;
+      } else if (claimed.userType === "guardian") {
+        const [updated] = await tx.update(parentAccountsTable).set({ passwordHash: hash }).where(and(
+          eq(parentAccountsTable.id, claimed.accountId), eq(parentAccountsTable.organisationId, claimed.organisationId),
+          eq(parentAccountsTable.guardianEmail, claimed.email),
+        )).returning({ id: parentAccountsTable.id });
+        if (!updated) return null;
+      } else return null;
 
       return claimed;
     });
@@ -281,7 +338,7 @@ router.get("/auth/my-children", async (req, res): Promise<void> => {
     const children = await db
       .select()
       .from(childrenTable)
-      .where(or(eq(childrenTable.guardianEmail, email), eq(childrenTable.guardian2Email, email)))
+      .where(guardianChildren(organisationId(res), email))
       .orderBy(asc(childrenTable.lastName), asc(childrenTable.firstName));
     res.json(children);
   } catch (err) {
@@ -301,7 +358,7 @@ router.get("/auth/my-posts", async (req, res): Promise<void> => {
     const children = await db
       .select({ id: childrenTable.id, firstName: childrenTable.firstName, lastName: childrenTable.lastName })
       .from(childrenTable)
-      .where(or(eq(childrenTable.guardianEmail, email), eq(childrenTable.guardian2Email, email)));
+      .where(guardianChildren(organisationId(res), email));
 
     if (children.length === 0) {
       res.json([]);
@@ -315,11 +372,12 @@ router.get("/auth/my-posts", async (req, res): Promise<void> => {
         .where(
           and(
             isNotNull(postsTable.publishedAt),
+            eq(postsTable.organisationId, organisationId(res)),
             sql`${postsTable.childIds} && ARRAY[${sql.join(childIds.map((id) => sql`${id}`), sql`, `)}]::integer[]`,
           )
         )
         .orderBy(postsTable.publishedAt),
-      db.select().from(sitesTable),
+      db.select().from(sitesTable).where(eq(sitesTable.orgId, organisationId(res))),
     ]);
 
     const enriched = posts.map((p) => {
@@ -354,7 +412,7 @@ router.get("/auth/my-plans", async (req, res): Promise<void> => {
     const children = await db
       .select({ siteId: childrenTable.siteId })
       .from(childrenTable)
-      .where(or(eq(childrenTable.guardianEmail, email), eq(childrenTable.guardian2Email, email)));
+      .where(guardianChildren(organisationId(res), email));
 
     const siteIds = [...new Set(children.map((c) => c.siteId).filter((id): id is number => id != null))];
 
@@ -374,7 +432,7 @@ router.get("/auth/my-plans", async (req, res): Promise<void> => {
           )
         )
         .orderBy(planningExperiencesTable.startDate),
-      db.select().from(sitesTable),
+      db.select().from(sitesTable).where(eq(sitesTable.orgId, organisationId(res))),
     ]);
 
     const enriched = plans.map((p) => ({
@@ -409,13 +467,14 @@ router.put("/auth/my-children/:id/pickups", async (req, res): Promise<void> => {
     const [child] = await db
       .select({ id: childrenTable.id })
       .from(childrenTable)
-      .where(and(eq(childrenTable.id, childId), or(eq(childrenTable.guardianEmail, email), eq(childrenTable.guardian2Email, email))));
+      .where(and(eq(childrenTable.id, childId), guardianChildren(organisationId(res), email)));
     if (!child) { res.status(404).json({ error: "Not found" }); return; }
 
     const pickups = req.body as Array<{ id: string; fullName: string; phone: string; relationship: string }>;
     if (!Array.isArray(pickups)) { res.status(400).json({ error: "Expected array" }); return; }
 
-    await db.update(childrenTable).set({ approvedPickups: pickups } as any).where(eq(childrenTable.id, childId));
+    await db.update(childrenTable).set({ approvedPickups: pickups } as any)
+      .where(and(eq(childrenTable.id, childId), guardianChildren(organisationId(res), email)));
     res.json({ ok: true });
   } catch (err) {
     req.log.error({ err, childId, email }, "Failed to update pickups");
@@ -436,7 +495,7 @@ router.post("/auth/acknowledge-comm-entry", async (req, res): Promise<void> => {
     const [child] = await db
       .select()
       .from(childrenTable)
-      .where(and(eq(childrenTable.id, childId), or(eq(childrenTable.guardianEmail, email), eq(childrenTable.guardian2Email, email))));
+      .where(and(eq(childrenTable.id, childId), guardianChildren(organisationId(res), email)));
     if (!child) { res.status(404).json({ error: "Not found" }); return; }
 
     const plan = child.communicationPlan as any;
@@ -449,7 +508,8 @@ router.post("/auth/acknowledge-comm-entry", async (req, res): Promise<void> => {
       ),
     };
 
-    await db.update(childrenTable).set({ communicationPlan: updated } as any).where(eq(childrenTable.id, childId));
+    await db.update(childrenTable).set({ communicationPlan: updated } as any)
+      .where(and(eq(childrenTable.id, childId), guardianChildren(organisationId(res), email)));
     res.json({ ok: true });
   } catch (err) {
     req.log.error({ err, childId, email }, "Failed to acknowledge comm entry");
@@ -470,7 +530,7 @@ router.get("/auth/my-educators", async (req, res): Promise<void> => {
       .select({ siteId: childrenTable.siteId })
       .from(childrenTable)
       .where(and(
-        or(eq(childrenTable.guardianEmail, email), eq(childrenTable.guardian2Email, email)),
+        guardianChildren(organisationId(res), email),
         eq(childrenTable.status, "active"),
       ));
 
@@ -488,7 +548,7 @@ router.get("/auth/my-educators", async (req, res): Promise<void> => {
         siteId: staffTable.siteId,
       })
       .from(staffTable)
-      .where(and(eq(staffTable.status, "active"), ne(staffTable.isSuperAdmin, true)))
+      .where(and(eq(staffTable.status, "active"), ne(staffTable.isSuperAdmin, true), eq(staffTable.organisationId, organisationId(res))))
       .orderBy(staffTable.lastName);
 
     // Site staff (educator + coordinator at guardian's child's site)
@@ -496,7 +556,7 @@ router.get("/auth/my-educators", async (req, res): Promise<void> => {
       (s) =>
         (s.role === "educator" || s.role === "coordinator") &&
         s.siteId != null &&
-        (siteIds.length === 0 || siteIds.includes(s.siteId)),
+        siteIds.includes(s.siteId),
     );
 
     // Educational leaders (service-wide)
@@ -524,7 +584,7 @@ router.get("/auth/my-notices", async (req, res): Promise<void> => {
     const children = await db
       .select({ siteId: childrenTable.siteId })
       .from(childrenTable)
-      .where(or(eq(childrenTable.guardianEmail, email), eq(childrenTable.guardian2Email, email)));
+      .where(guardianChildren(organisationId(res), email));
 
     const siteIds = [...new Set(children.map((c) => c.siteId).filter((id): id is number => id != null))];
 
@@ -537,6 +597,7 @@ router.get("/auth/my-notices", async (req, res): Promise<void> => {
       .where(
         and(
           eq(noticesTable.audience, "guardian"),
+          eq(noticesTable.organisationId, organisationId(res)),
           siteIds.length > 0
             ? or(isNull(noticesTable.siteId), inArray(noticesTable.siteId, siteIds))
             : isNull(noticesTable.siteId),
@@ -567,15 +628,20 @@ router.put("/auth/change-password", async (req, res): Promise<void> => {
     return;
   }
 
-  const { type, email } = req.session.user;
+  const { type, email, id } = req.session.user;
+  if (type !== "staff" && type !== "guardian") {
+    res.status(403).json({ error: "Not permitted" }); return;
+  }
 
   try {
     let currentHash: string | null = null;
     if (type === "staff") {
-      const [row] = await db.select({ h: staffTable.passwordHash }).from(staffTable).where(eq(staffTable.email, email));
+      const [row] = await db.select({ h: staffTable.passwordHash }).from(staffTable)
+        .where(and(eq(staffTable.id, id), eq(staffTable.organisationId, organisationId(res))));
       currentHash = row?.h ?? null;
     } else {
-      const [row] = await db.select({ h: parentAccountsTable.passwordHash }).from(parentAccountsTable).where(eq(parentAccountsTable.guardianEmail, email));
+      const [row] = await db.select({ h: parentAccountsTable.passwordHash }).from(parentAccountsTable)
+        .where(and(eq(parentAccountsTable.id, id), eq(parentAccountsTable.organisationId, organisationId(res))));
       currentHash = row?.h ?? null;
     }
 
@@ -586,9 +652,11 @@ router.put("/auth/change-password", async (req, res): Promise<void> => {
 
     const newHash = await bcrypt.hash(newPassword, 12);
     if (type === "staff") {
-      await db.update(staffTable).set({ passwordHash: newHash }).where(eq(staffTable.email, email));
+      await db.update(staffTable).set({ passwordHash: newHash })
+        .where(and(eq(staffTable.id, id), eq(staffTable.organisationId, organisationId(res))));
     } else {
-      await db.update(parentAccountsTable).set({ passwordHash: newHash }).where(eq(parentAccountsTable.guardianEmail, email));
+      await db.update(parentAccountsTable).set({ passwordHash: newHash })
+        .where(and(eq(parentAccountsTable.id, id), eq(parentAccountsTable.organisationId, organisationId(res))));
     }
 
     res.json({ ok: true });

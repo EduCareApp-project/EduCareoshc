@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { and, asc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { pool, sitesTable, organisationTable, kidsoftServiceMappingsTable, kidsoftRollSnapshotsTable, type KidsoftRollBooking } from "@workspace/db";
+import { tenantConnectionPool as pool, currentOrganisationId, sitesTable, organisationTable, kidsoftServiceMappingsTable, kidsoftRollSnapshotsTable, type KidsoftRollBooking } from "@workspace/db";
 import { z, GetKidsoftSetupResponse, GetSchoolKidsoftRollResponse } from "@workspace/api-zod";
 import { getKidsoftRoll, getKidsoftServices, kidsoftConfigured, kidsoftToday, KidsoftError } from "../lib/kidsoft";
 
@@ -47,7 +47,7 @@ async function siteAccess(req: Request, res: Response): Promise<number | null> {
     res.status(403).json({ error: "You can only view your own service's roll" }); return null;
   }
   if (req.session.user!.type === "school") {
-    const [org] = await db.select().from(organisationTable).limit(1);
+    const [org] = await db.select().from(organisationTable).where(eq(organisationTable.id, currentOrganisationId())).limit(1);
     const tabs = org?.featureSettings?.schoolPortalVisibleTabs;
     if (tabs && !tabs.includes("roll")) {
       res.status(403).json({ error: "Kidsoft Roll is not enabled for schools" }); return null;
@@ -90,14 +90,15 @@ function failure(req: Request, res: Response, error: unknown) {
 router.get("/kidsoft/setup", async (req, res) => {
   if (!admin(req, res)) return;
   try {
+    const connected = await kidsoftConfigured();
     const [sites, mappings, services] = await Promise.all([
       db.select({ id: sitesTable.id, name: sitesTable.name }).from(sitesTable)
         .where(eq(sitesTable.status, "active")).orderBy(asc(sitesTable.name)),
       db.select().from(kidsoftServiceMappingsTable),
-      kidsoftConfigured() ? getKidsoftServices() : Promise.resolve([]),
+      connected ? getKidsoftServices() : Promise.resolve([]),
     ]);
     res.json(GetKidsoftSetupResponse.parse({
-      connected: kidsoftConfigured(), services,
+      connected, services,
       sites: sites.map((site) => {
         const mapping = mappings.find((row) => row.siteId === site.id);
         return { siteId: site.id, siteName: site.name, serviceId: mapping?.serviceId ?? null, serviceName: mapping?.serviceName ?? null };
@@ -146,12 +147,12 @@ router.get("/schools/:siteId/kidsoft-roll", async (req, res) => {
   } catch (error) { failure(req, res, error); }
 });
 
-const refreshing = new Set<number>();
+const refreshing = new Set<string>();
 router.post("/schools/:siteId/kidsoft-roll/refresh", async (req, res) => {
   const body = z.object({ date: dateSchema }).safeParse(req.body);
   if (!body.success) { res.status(400).json({ error: "Choose a valid day" }); return; }
   if (!schoolDayAccess(req, res, body.data.date)) return;
-  let claimed: number | null = null;
+  let claimed: string | null = null;
   try {
     const siteId = await siteAccess(req, res);
     if (siteId === null) return;
@@ -161,11 +162,12 @@ router.post("/schools/:siteId/kidsoft-roll/refresh", async (req, res) => {
       eq(kidsoftRollSnapshotsTable.siteId, siteId), eq(kidsoftRollSnapshotsTable.rollDate, body.data.date),
       eq(kidsoftRollSnapshotsTable.serviceId, mapping.serviceId),
     ));
-    if (refreshing.has(siteId) || (previous && Date.now() - previous.refreshedAt.getTime() < 30_000)) {
+    const refreshKey = `${currentOrganisationId()}:${siteId}`;
+    if (refreshing.has(refreshKey) || (previous && Date.now() - previous.refreshedAt.getTime() < 30_000)) {
       res.setHeader("Retry-After", "30");
       res.status(429).json({ error: "Please wait 30 seconds before refreshing this roll again" }); return;
     }
-    refreshing.add(siteId); claimed = siteId;
+    refreshing.add(refreshKey); claimed = refreshKey;
     const activeService = (await getKidsoftServices()).some((service) => service.id === mapping.serviceId);
     if (!activeService) throw new KidsoftError("The mapped Kidsoft service is no longer active. Ask your administrator to check the mapping.");
     const bookings = await getKidsoftRoll(mapping.serviceId, body.data.date);

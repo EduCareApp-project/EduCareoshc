@@ -9,6 +9,7 @@ const { mockDb, tables, setRows, getQueryOperations } = vi.hoisted(() => {
   const tables = {
     financialAccounts: { guardianEmail: "financial.guardianEmail", status: "financial.status" },
     communications: {
+      organisationId: "communications.organisationId",
       id: "communications.id",
       guardianEmail: "communications.guardianEmail",
       createdAt: "communications.createdAt",
@@ -19,11 +20,12 @@ const { mockDb, tables, setRows, getQueryOperations } = vi.hoisted(() => {
       createdAt: "paymentPlans.createdAt",
     },
     children: {
+      organisationId: "children.organisationId",
       guardianEmail: "children.guardianEmail",
       guardian2Email: "children.guardian2Email",
       siteId: "children.siteId",
     },
-    sites: { id: "sites.id", status: "sites.status" },
+    sites: { id: "sites.id", status: "sites.status", orgId: "sites.orgId" },
   };
 
   let rows = {
@@ -64,7 +66,7 @@ const { mockDb, tables, setRows, getQueryOperations } = vi.hoisted(() => {
         queryOperations.where.push(conditionText);
 
         if (selectedTable === tables.children) {
-          const siteMatch = conditionText.match(/^eq\(children\.siteId,(\d+)\)$/);
+          const siteMatch = conditionText.match(/eq\(children\.siteId,(\d+)\)/);
           if (siteMatch) {
             selectedRows = selectedRows.filter((child) => child.siteId === Number(siteMatch[1]));
           } else if (conditionText.includes("children.guardianEmail")) {
@@ -220,7 +222,9 @@ function buildApp(user: TestUser) {
       })),
     }),
   );
-  app.use((req, _res, next) => {
+  app.use((req, res, next) => {
+    res.locals.organisationId = 1;
+    res.locals.organisationContextVerified = true;
     (req as any).session = { user };
     next();
   });
@@ -487,7 +491,9 @@ describe("GET /api/guardians/financial/communication-log", () => {
       childNames: ["Luca Stone"],
       siteNames: ["North Site"],
     });
-    expect(getQueryOperations().where).toContain("eq(children.siteId,1)");
+    expect(getQueryOperations().where.some((condition) =>
+      condition.includes("eq(children.siteId,1)") && condition.includes("eq(children.organisationId,1)"),
+    )).toBe(true);
     expect(
       getQueryOperations().where.some((condition) =>
         condition.includes("communications.guardianEmail"),

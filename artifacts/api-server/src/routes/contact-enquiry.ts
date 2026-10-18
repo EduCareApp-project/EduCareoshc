@@ -20,7 +20,7 @@ router.post("/contact-enquiry", async (req, res) => {
   }
 
   try {
-    const branding = await getEmailBranding();
+    const branding = await getEmailBranding(null);
     await sendContactEnquiryEmail({
       firstName: firstName.trim(),
       lastName: lastName.trim(),

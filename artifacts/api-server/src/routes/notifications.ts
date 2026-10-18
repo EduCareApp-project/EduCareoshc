@@ -278,7 +278,9 @@ async function computeDeadlineNotifications(): Promise<void> {
           // Attempt to insert a dedupe record for each candidate. ON CONFLICT DO
           // NOTHING returns 0 rows when the record already exists — meaning this
           // recipient already received the email this month for this medication.
-          const branding = await getEmailBranding();
+          const [owner] = await db.select({ id: childrenTable.organisationId }).from(childrenTable).where(eq(childrenTable.id, med.childId));
+          if (!owner?.id) continue;
+          const branding = await getEmailBranding(owner.id);
           for (const email of allCandidateEmails) {
             const key = `medication_expiry_email:${med.id}:${monthKey}:${email}`;
             // Check dedupe before sending — skip if already recorded this month

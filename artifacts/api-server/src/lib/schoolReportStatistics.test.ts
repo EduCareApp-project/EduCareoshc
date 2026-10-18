@@ -16,6 +16,7 @@ function row(
 ): SchoolReportRow {
   return {
     id,
+    organisationId: 1,
     termId: 1,
     weekNumber,
     weekBeginning: "2026-01-26",
@@ -36,6 +37,7 @@ function row(
 
 function term(rows: SchoolReportRow[]): SchoolReportTerm & { rows: SchoolReportRow[] } {
   return {
+    organisationId: 1,
     id: 1,
     siteId: 1,
     reportYear: 2026,

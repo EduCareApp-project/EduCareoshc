@@ -29,7 +29,10 @@ vi.mock("@workspace/db", () => {
   m.transaction.mockImplementation((fn) => fn(db));
   db.transaction = m.transaction;
   return {
-    db, staffTable: { id: "staff.id", organisationId: "staff.org" },
+    db, systemDb: db,
+    withOrganisationContext: (_id: number, next: () => unknown) => next(),
+    currentOrganisationId: () => 1,
+    staffTable: { id: "staff.id", organisationId: "staff.org" },
     parentAccountsTable: {}, schoolAccountsTable: {}, sitesTable: {},
     dashboardLayoutsTable: { name: "shared", organisationId: "shared.org", dashboard: "shared.view" },
     dashboardLayoutDraftsTable: { name: "draft", organisationId: "draft.org", dashboard: "draft.view",

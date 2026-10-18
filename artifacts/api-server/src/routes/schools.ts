@@ -1,3 +1,4 @@
+import { currentOrganisationId } from "@workspace/db";
 import { Readable } from "stream";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { and, asc, eq, inArray, isNull, ne, or } from "drizzle-orm";
@@ -105,7 +106,7 @@ async function portalForSite(siteId: number, schoolView = false) {
       .orderBy(asc(vecraVisitsTable.visitDate)),
     db.select({ username: schoolAccountsTable.username, blockedAt: schoolAccountsTable.blockedAt, lastLoginAt: schoolAccountsTable.lastLoginAt })
       .from(schoolAccountsTable).where(eq(schoolAccountsTable.siteId, siteId)).limit(1),
-    db.select({ featureSettings: organisationTable.featureSettings }).from(organisationTable).limit(1),
+    db.select({ featureSettings: organisationTable.featureSettings }).from(organisationTable).where(eq(organisationTable.id, currentOrganisationId())).limit(1),
   ]);
   const staffIds = staff.map((member) => member.id);
   const associationRows = staffIds.length > 0
@@ -232,7 +233,7 @@ router.get("/schools/:siteId/staff/:staffId", async (req, res): Promise<void> =>
     }
 
     const [organisation] = user?.type === "school"
-      ? await db.select({ featureSettings: organisationTable.featureSettings }).from(organisationTable).limit(1)
+      ? await db.select({ featureSettings: organisationTable.featureSettings }).from(organisationTable).where(eq(organisationTable.id, currentOrganisationId())).limit(1)
       : [];
     const visibleTabs = organisation?.featureSettings?.schoolPortalVisibleTabs ?? [...DEFAULT_SCHOOL_PORTAL_TABS];
     if (user?.type === "school" && !visibleTabs.includes("staff")) {
@@ -299,7 +300,7 @@ router.get("/schools/:siteId/staff/:staffId/photo", async (req, res): Promise<vo
     }
     if (user?.type === "school") {
       const [organisation] = await db.select({ featureSettings: organisationTable.featureSettings })
-        .from(organisationTable).limit(1);
+        .from(organisationTable).where(eq(organisationTable.id, currentOrganisationId())).limit(1);
       const visibleTabs = organisation?.featureSettings?.schoolPortalVisibleTabs ?? [...DEFAULT_SCHOOL_PORTAL_TABS];
       if (!visibleTabs.includes("staff")) {
         res.status(404).json({ error: "Profile picture not found" });
@@ -356,7 +357,7 @@ router.get("/schools/:siteId/staff/:staffId/qualifications/:qualificationId/docu
     }
     if (user?.type === "school") {
       const [organisation] = await db.select({ featureSettings: organisationTable.featureSettings })
-        .from(organisationTable).limit(1);
+        .from(organisationTable).where(eq(organisationTable.id, currentOrganisationId())).limit(1);
       const visibleNames = organisation?.featureSettings?.schoolPortalVisibleQualificationNames
         ?? organisation?.featureSettings?.staffQualificationNames
         ?? [];

@@ -1,4 +1,6 @@
-import { pgTable, serial, text, timestamp, integer, boolean, unique } from "drizzle-orm/pg-core";
+import { serial, text, timestamp, integer, boolean, unique, uniqueIndex } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { tenantTable as pgTable } from "./tenant-table";
 import { staffTable } from "./staff";
 import { sitesTable } from "./sites";
 
@@ -28,7 +30,8 @@ export const notificationSettingsTable = pgTable("notification_settings", {
   advanceDays: integer("advance_days").default(14),
   siteId: integer("site_id").references(() => sitesTable.id, { onDelete: "cascade" }),
 }, (t) => [
-  unique("uq_notification_settings_type_site").on(t.type, t.siteId),
+  unique("uq_notification_settings_type_site").on(t.organisationId, t.type, t.siteId),
+  uniqueIndex("notification_settings_org_default_unique").on(t.organisationId, t.type).where(sql`site_id IS NULL`),
 ]);
 
 export type NotificationSetting = typeof notificationSettingsTable.$inferSelect;

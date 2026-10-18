@@ -6,6 +6,7 @@ import { sendGuardianNoticeEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
 import { isEmailChannelEnabled } from "../lib/channelMap";
 import { getAppUrl } from "../lib/appUrl";
+import { organisationId, ownsSites } from "../lib/tenant";
 
 const router: IRouter = Router();
 
@@ -17,7 +18,7 @@ router.get("/notices", async (req, res): Promise<void> => {
   try {
     let query = db.select().from(noticesTable).$dynamic();
 
-    const conditions = [];
+    const conditions = [eq(noticesTable.organisationId, organisationId(res))];
     if (audience) conditions.push(eq(noticesTable.audience, audience));
     if (siteId) conditions.push(eq(noticesTable.siteId, siteId));
 
@@ -38,13 +39,19 @@ router.post("/notices", async (req, res): Promise<void> => {
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
   try {
-    const [notice] = await db.insert(noticesTable).values(parsed.data as any).returning();
+    const orgId = organisationId(res);
+    if (!(await ownsSites(orgId, [parsed.data.siteId]))) {
+      res.status(400).json({ error: "Invalid service" }); return;
+    }
+    const [notice] = await db.insert(noticesTable).values({ ...parsed.data, organisationId: orgId } as any).returning();
 
     if (notice.audience === "guardian") {
       // Build the guardian query — scope to site when notice has a siteId
       const baseConditions = [
         isNotNull(parentAccountsTable.passwordHash),
         isNull(parentAccountsTable.blockedAt),
+        eq(parentAccountsTable.organisationId, orgId),
+        eq(childrenTable.organisationId, orgId),
       ];
 
       let guardians;
@@ -79,7 +86,7 @@ router.post("/notices", async (req, res): Promise<void> => {
       const strippedContent = notice.content.replace(/<[^>]*>/g, "").trim().slice(0, 300);
       isEmailChannelEnabled("guardian_notice").then((emailEnabled) => {
         if (!emailEnabled || recipients.length === 0) return;
-        return getEmailBranding().then((branding) =>
+        return getEmailBranding(orgId).then((branding) =>
           sendGuardianNoticeEmail(recipients, {
             noticeTitle: notice.title,
             priority: notice.priority,
@@ -104,10 +111,13 @@ router.patch("/notices/:id", async (req, res): Promise<void> => {
   if (!body.success) { res.status(400).json({ error: body.error.message }); return; }
 
   try {
+    if (!(await ownsSites(organisationId(res), [body.data.siteId]))) {
+      res.status(400).json({ error: "Invalid service" }); return;
+    }
     const [notice] = await db
       .update(noticesTable)
       .set(body.data as any)
-      .where(eq(noticesTable.id, params.data.id))
+      .where(and(eq(noticesTable.id, params.data.id), eq(noticesTable.organisationId, organisationId(res))))
       .returning();
     if (!notice) { res.status(404).json({ error: "Notice not found" }); return; }
     res.json(ListNoticesResponseItem.parse(notice));
@@ -122,7 +132,8 @@ router.delete("/notices/:id", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 
   try {
-    const [notice] = await db.delete(noticesTable).where(eq(noticesTable.id, params.data.id)).returning();
+    const [notice] = await db.delete(noticesTable)
+      .where(and(eq(noticesTable.id, params.data.id), eq(noticesTable.organisationId, organisationId(res)))).returning();
     if (!notice) { res.status(404).json({ error: "Notice not found" }); return; }
     res.sendStatus(204);
   } catch (err) {

@@ -1,6 +1,6 @@
 import type { RequestHandler } from "express";
 import { eq } from "drizzle-orm";
-import { db, staffTable, parentAccountsTable, schoolAccountsTable, sitesTable } from "@workspace/db";
+import { systemDb as db, withOrganisationContext, staffTable, parentAccountsTable, schoolAccountsTable, sitesTable } from "@workspace/db";
 
 /**
  * Resolve ownership from the authenticated account, never a URL, request body,
@@ -16,18 +16,28 @@ export const organisationContext: RequestHandler = async (req, res, next) => {
   try {
     let organisationId: number | null | undefined;
     if (user.type === "staff") {
-      const [account] = await db.select({ organisationId: staffTable.organisationId })
+      const [account] = await db.select({ organisationId: staffTable.organisationId,
+        role: staffTable.role, siteId: staffTable.siteId, email: staffTable.email,
+        blockedAt: staffTable.blockedAt })
         .from(staffTable).where(eq(staffTable.id, user.id)).limit(1);
       organisationId = account?.organisationId;
+      if (account?.blockedAt) { res.status(403).json({ error: "Account access has been disabled" }); return; }
+      if (account?.role !== undefined) user.role = account.role;
+      if (account?.siteId !== undefined) user.siteId = account.siteId;
+      if (account?.email !== undefined) user.email = account.email;
     } else if (user.type === "guardian") {
-      const [account] = await db.select({ organisationId: parentAccountsTable.organisationId })
+      const [account] = await db.select({ organisationId: parentAccountsTable.organisationId,
+        email: parentAccountsTable.guardianEmail, blockedAt: parentAccountsTable.blockedAt })
         .from(parentAccountsTable).where(eq(parentAccountsTable.id, user.id)).limit(1);
       organisationId = account?.organisationId;
+      if (account?.blockedAt) { res.status(403).json({ error: "Account access has been disabled" }); return; }
+      if (account?.email !== undefined) user.email = account.email;
     } else if (user.type === "school") {
-      const [account] = await db.select({ organisationId: sitesTable.orgId, siteId: schoolAccountsTable.siteId })
+      const [account] = await db.select({ organisationId: sitesTable.orgId, siteId: schoolAccountsTable.siteId, blockedAt: schoolAccountsTable.blockedAt })
         .from(schoolAccountsTable)
         .innerJoin(sitesTable, eq(schoolAccountsTable.siteId, sitesTable.id))
         .where(eq(schoolAccountsTable.id, user.id)).limit(1);
+      if (account?.blockedAt) { res.status(403).json({ error: "Account access has been disabled" }); return; }
       // The downstream school guard still scopes paths using the session site.
       // Do not let a moved account combine its new company with an old site.
       if (account && account.siteId !== user.siteId) {
@@ -42,7 +52,7 @@ export const organisationContext: RequestHandler = async (req, res, next) => {
     }
     res.locals.organisationId = organisationId;
     res.locals.organisationContextVerified = true;
-    next();
+    withOrganisationContext(organisationId!, next);
   } catch (err) {
     req.log.error({ err }, "Unable to verify account organisation");
     res.status(503).json({ error: "Unable to verify your organisation. Please try again." });

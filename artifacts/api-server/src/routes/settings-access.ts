@@ -30,7 +30,7 @@ router.put("/settings/access", async (req, res): Promise<void> => {
         .insert(accessSettingsTable)
         .values({ role, disabledHrefs: disabled })
         .onConflictDoUpdate({
-          target: accessSettingsTable.role,
+          target: [accessSettingsTable.organisationId, accessSettingsTable.role],
           set: { disabledHrefs: disabled },
         });
     }

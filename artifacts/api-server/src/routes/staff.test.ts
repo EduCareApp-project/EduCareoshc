@@ -73,6 +73,7 @@ vi.mock("@workspace/db", () => ({
 }));
 
 vi.mock("drizzle-orm", () => ({
+  and: (...conditions: unknown[]) => `and(${conditions.join(",")})`,
   asc: (column: unknown) => `asc(${String(column)})`,
   eq: (column: unknown, value: unknown) => `eq(${String(column)},${String(value)})`,
   inArray: (column: unknown, values: unknown[]) => `inArray(${String(column)},${values.join(",")})`,
@@ -106,7 +107,9 @@ function buildApp(role: "admin" | "educator" | "coordinator" | "onboarding" = "a
   app.use(pinoHttp({
     logger: pino({ level: "silent" }, new Writable({ write(_chunk, _encoding, callback) { callback(); } })),
   }));
-  app.use((req, _res, next) => {
+  app.use((req, res, next) => {
+    res.locals.organisationId = 1;
+    res.locals.organisationContextVerified = true;
     (req as any).session = { user: { id: 1, role } };
     next();
   });

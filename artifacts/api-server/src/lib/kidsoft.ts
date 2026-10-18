@@ -1,5 +1,6 @@
 import { z } from "@workspace/api-zod";
 import type { KidsoftRollBooking } from "@workspace/db";
+import { tenantIntegrationSecret } from "./tenantIntegration";
 
 export class KidsoftError extends Error {
   constructor(message = "Kidsoft could not supply the roll. The saved roll has not been changed.") {
@@ -15,8 +16,8 @@ const bookingSchema = z.object({
 const childSchema = z.object({ ChildID: z.string(), FirstName: z.string(), LastName: z.string() });
 const typeSchema = z.object({ BookingTypeID: z.string(), Name: z.string() });
 
-export function kidsoftConfigured(): boolean {
-  return Boolean(process.env.KIDSOFT_SERVICE_KEY);
+export async function kidsoftConfigured(): Promise<boolean> {
+  return Boolean(await tenantIntegrationSecret("kidsoft"));
 }
 
 export function kidsoftToday(): string {
@@ -26,7 +27,7 @@ export function kidsoftToday(): string {
 }
 
 async function request(path: string, parameters: Record<string, string | string[]> = {}): Promise<Record<string, unknown>> {
-  const key = process.env.KIDSOFT_SERVICE_KEY;
+  const key = await tenantIntegrationSecret("kidsoft");
   if (!key) throw new KidsoftError("Kidsoft has not been connected. Ask your administrator to complete setup.");
   const url = new URL(`https://app.kidsoft.com.au/api/v1/Kidsoft/${path}`);
   url.searchParams.set("ServiceKey", key);

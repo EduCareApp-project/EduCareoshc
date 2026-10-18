@@ -1,5 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { organisationId } from "../lib/tenant";
 import { Readable } from "stream";
 import { db, emailSettingsTable } from "@workspace/db";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
@@ -7,11 +8,11 @@ import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage"
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
 
-async function getOrCreateSettings() {
-  let [row] = await db.select().from(emailSettingsTable).limit(1);
+async function getOrCreateSettings(orgId: number) {
+  let [row] = await db.select().from(emailSettingsTable).where(eq(emailSettingsTable.organisationId, orgId)).limit(1);
   if (!row) {
-    await db.insert(emailSettingsTable).values({});
-    [row] = await db.select().from(emailSettingsTable).limit(1);
+    await db.insert(emailSettingsTable).values({ organisationId: orgId }).onConflictDoNothing();
+    [row] = await db.select().from(emailSettingsTable).where(eq(emailSettingsTable.organisationId, orgId)).limit(1);
   }
   return row;
 }
@@ -19,7 +20,7 @@ async function getOrCreateSettings() {
 // GET /email-settings — returns current settings (creates defaults on first access)
 router.get("/email-settings", async (req: Request, res: Response): Promise<void> => {
   try {
-    const row = await getOrCreateSettings();
+    const row = await getOrCreateSettings(organisationId(res));
     res.json(row);
   } catch (err) {
     req.log.error({ err }, "Failed to fetch email settings");
@@ -31,7 +32,7 @@ router.get("/email-settings", async (req: Request, res: Response): Promise<void>
 router.put("/email-settings", async (req: Request, res: Response): Promise<void> => {
   const { senderName, logoPath, companyLogoPath, templates } = req.body;
   try {
-    const row = await getOrCreateSettings();
+    const row = await getOrCreateSettings(organisationId(res));
     await db
       .update(emailSettingsTable)
       .set({
@@ -41,8 +42,8 @@ router.put("/email-settings", async (req: Request, res: Response): Promise<void>
         templates: templates ?? row.templates,
         updatedAt: new Date(),
       })
-      .where(eq(emailSettingsTable.id, row.id));
-    const [updated] = await db.select().from(emailSettingsTable).where(eq(emailSettingsTable.id, row.id));
+      .where(and(eq(emailSettingsTable.id, row.id), eq(emailSettingsTable.organisationId, organisationId(res))));
+    const [updated] = await db.select().from(emailSettingsTable).where(eq(emailSettingsTable.organisationId, organisationId(res)));
     res.json(updated);
   } catch (err) {
     req.log.error({ err }, "Failed to update email settings");
@@ -52,7 +53,8 @@ router.put("/email-settings", async (req: Request, res: Response): Promise<void>
 
 router.get("/email-settings/company-logo", async (req: Request, res: Response): Promise<void> => {
   try {
-    const [row] = await db.select({ companyLogoPath: emailSettingsTable.companyLogoPath }).from(emailSettingsTable).limit(1);
+    const [row] = await db.select({ companyLogoPath: emailSettingsTable.companyLogoPath }).from(emailSettingsTable)
+      .where(eq(emailSettingsTable.organisationId, organisationId(res))).limit(1);
     if (!row?.companyLogoPath) {
       res.status(404).json({ error: "No company logo configured" });
       return;
@@ -79,7 +81,15 @@ router.get("/email-settings/company-logo", async (req: Request, res: Response): 
 // This route is registered before the auth guard so email clients can load the logo.
 router.get("/email-settings/logo", async (req: Request, res: Response): Promise<void> => {
   try {
-    const [row] = await db.select({ logoPath: emailSettingsTable.logoPath }).from(emailSettingsTable).limit(1);
+    const orgId = req.session?.user ? organisationId(res) : Number(req.query.organisationId ?? res.locals.publicOrganisationId);
+    if (req.session?.user && req.query.organisationId !== undefined && Number(req.query.organisationId) !== orgId) {
+      res.status(404).json({ error: "Logo not found" }); return;
+    }
+    if (!Number.isSafeInteger(orgId) || orgId <= 0) {
+      res.status(404).json({ error: "Logo not found" }); return;
+    }
+    const [row] = await db.select({ logoPath: emailSettingsTable.logoPath }).from(emailSettingsTable)
+      .where(eq(emailSettingsTable.organisationId, orgId)).limit(1);
     if (!row?.logoPath) {
       res.status(404).json({ error: "No logo configured" });
       return;

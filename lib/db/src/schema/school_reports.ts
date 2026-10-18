@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
-import { pgTable, serial, integer, text, date, timestamp, boolean, unique, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
+import { serial, integer, text, date, timestamp, boolean, unique, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
+import { tenantTable as pgTable } from "./tenant-table";
 import { sitesTable } from "./sites";
 import { staffTable } from "./staff";
 

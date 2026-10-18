@@ -1,87 +1,110 @@
-# Multi-tenancy development rollout
+# Company isolation
 
 ## Release restriction
 
-**This is a staged implementation, not a multi-tenant release. Do not onboard a
-second organisation into the portal or publish this stage on its own.** Remaining
-routes still contain unscoped queries. Verified ownership is necessary, but is
-not equivalent to full data isolation.
+**Development isolation is implemented. Production release remains blocked until
+the separate production preparation and recovery procedure has been reviewed.**
+Do not publish these changes or onboard real production companies on this basis.
+Production startup also requires `TENANT_ISOLATION_RELEASE_APPROVED=reviewed`,
+as well as the provisioned database safeguards and complete ownership backfill.
+Do not set that approval flag as a substitute for the review.
 
-The user authorised development implementation only. Production data and schema
-have not been changed. Existing records belong to the existing Elysium OSHC
-organisation; never create a replacement company or assign invented service
-codes.
+Only development data and schema have been prepared. Existing records belong to
+the existing Elysium OSHC company; do not create a replacement company, rewrite
+passwords or record IDs, or invent service codes.
 
-## Foundation implemented
+## Request and database boundary
 
-- Staff, guardian accounts and children have nullable `organisation_id` foreign
-  keys. The existing service `org_id` now has an organisation foreign key.
-- Nullable columns are deliberate for the staged rollout. They must become
-  required only after legacy data in the target environment is safely assigned.
-  There is no permanent default organisation.
-- The development backfill assigned existing roots to the verified Elysium
-  record. Historical, inactive and archived roots were included. Record IDs,
-  credentials, files and business fields were not rewritten.
-- `organisation-context.ts` resolves the authenticated account's current
-  database ownership on each protected request. It does not trust a company ID
-  from a request or session. School ownership is derived through the account's
-  stored service, not the session's site ID. Missing ownership fails closed.
-- Ownership is request-local, so existing sessions do not need a guessed tenant
-  attached to them. Separate Super Admin routes remain outside the portal guard.
-- Existing school and onboarding access gates remain in place.
-- Portal creation/import paths for staff, children, guardians and services set
-  ownership server-side. Seed scripts and future background creation paths must
-  explicitly supply ownership.
-- Organisation calendar operations and dashboard layout operations use verified
-  account ownership. Company settings select/update that organisation, not the
-  first database row. Company writes require administrator/director access.
-- Insert validation schemas exclude the server-owned organisation field.
+- Account membership is re-read on every protected request. Staff role, site and
+  email are refreshed from the account; blocked accounts fail closed. Guardian
+  ownership comes from the stored account, and school ownership from its stored
+  service. Caller/session company IDs cannot override membership.
+- Normal `db` queries use request-local ownership and a restricted, non-login,
+  non-superuser, non-RLS-bypass database role. Connections establish the company
+  before queries and reset their role/settings before returning to the pool.
+  Missing context or missing provisioning is an error, never a global fallback.
+- All 82 portal data tables have managed row-level policies. Reads, aggregates,
+  exports, updates and deletes cannot see another company. Writes require the
+  verified owner and same-company parent references, including integer child and
+  outcome arrays. MTOP text codes are not database record IDs.
+- Ownership remains nullable for migration staging. Runtime policies reject
+  unowned writes/reads, and startup refuses unassigned records. Context-derived
+  defaults are not permanent defaults to Elysium.
+- The privileged database handle is limited to authenticated support control
+  plane operations, membership/credential routing, opaque session storage,
+  readiness checks and explicitly authorised development setup. Do not use it
+  to bypass a failed tenant query. Kidsoft's quiet database connection uses the
+  same restricted pool as other portal queries.
+- Existing staff, school-site and onboarding restrictions remain. Guardians
+  cannot enter generic staff routes or use their numeric account IDs as staff
+  identities; their comments, posts, plans and excursions are child-scoped.
 
-## Remaining isolation work — release blockers
+## Identity, files and background work
 
-1. **All application data paths:** scope every list, detail, aggregate, create,
-   update and delete, including observations, jottings, posts, planning,
-   compliance, notifications, financial records, reports and exports. Scope
-   related-ID lookups, imports and conflict/update paths as well, not only lists.
-2. **Relationship integrity:** enforce same-organisation site/child/staff links,
-   including staff-site assignments and account creation. Add ownership to
-   independently owned tables; inherited ownership must use enforced parents.
-   Distinguish truly global reference data from tenant-editable compliance data.
-3. **Authentication/account operations:** support organisation-scoped identities
-   and guardian-child matching, password resets and invitation flows. Current
-   email/username uniqueness and credential lookup remain global. Preserve
-   existing passwords and do not introduce ambiguous email-only tenant routing.
-4. **Uniqueness:** change global service-code uniqueness to company-level
-   uniqueness, with corresponding collision checks and safe schema rollout.
-5. **Files and integrations:** tenant-check all private file reads/downloads,
-   public links, merges, PDF generation, email branding, Kidsoft mappings and
-   snapshots, ClickUp and other integrations.
-6. **Background work:** give scheduled reminders, notifications, jobs and caches
-   explicit organisation context. Remove singleton/first-company lookups from
-   settings/branding helpers, not just the three scoped routers.
-7. **Whole-portal validation:** add two-company coverage for all roles and
-   tampered relationship IDs, imports, duplicate identities/codes, files,
-   exports, background notifications and school/guardian boundaries.
-8. **Production preparation:** review a supported production legacy-data backfill
-   and recovery procedure before release, then enforce required ownership and
-   ownership-safe constraints. Replit-managed schema changes go through Publish.
-   Never add startup DDL, production migration scripts, deployment schema hooks
-   or replace production data with the development database.
+- Staff emails, guardian emails, school usernames, financial account identities,
+  notification deduplication and service codes are company-scoped. An identity
+  shared by companies requires the correct organisation code at sign-in or
+  password-reset request. Unique existing identities still work without a code.
+- Invitation/reset links include company routing. Reset tokens bind both owner
+  and exact account ID. Historical tokens without an unambiguous account binding
+  fail closed and require a fresh request; existing passwords are unchanged.
+- Guardian-child email matching is company-scoped and case/whitespace tolerant.
+  Related staff, children, services, medications and financial plan IDs cannot
+  be substituted across companies.
+- Service identifiers are optional, manually supplied and company-unique; they
+  are never assigned from service names or sequence IDs.
+- Private uploads and generated documents have company file provenance. Storage
+  rejects an unowned path before contacting cloud storage. Stored document paths
+  must reference that company's registered files. Failed merges retain their
+  original source records/files.
+- Public document/QIP/logo routes resolve ownership from a stored public
+  resource, service, or explicit company identifier before querying. Legacy
+  anonymous links without routing work only when there is exactly one company;
+  ambiguity fails closed. Signed-in requests stay in their verified company.
+- Branding and PDFs use that company, not the first organisation. Protected
+  responses are not browser/shared-cacheable; switching accounts clears the
+  portal query cache.
+- Background document cleanup iterates explicit company contexts. Inbox and
+  Kidsoft refresh state include company ownership. Business integrations require
+  an owned credential-name binding; there is no global Kidsoft/ClickUp fallback.
+  Tenants cannot choose or edit secret-name bindings. Shared platform services
+  such as transactional email remain infrastructure, without an Elysium BCC.
 
-## Checks
+## Development preparation
 
-API unit tests cover context resolution, tampered company parameters, stale
-session ownership, missing membership and database failure, plus existing
-calendar and dashboard draft behavior.
+`scripts/post-merge.sh` runs the development-only setup before and after schema
+sync. It provisions policy dependencies, safely assigns legacy ownership only
+when the existing Elysium company is unambiguous, records file provenance and
+restores restricted grants. Multiple companies plus unassigned data require
+explicit review rather than guessed ownership.
 
-`tenant-foundation.integration.test.ts` uses two temporary organisations inside
-transactions that always roll back. It exercises calendar CRUD isolation,
-company settings, layout reads, guardian ownership and school ownership against
-PostgreSQL. It is opt-in and refuses production:
+The schema tracks policies and the support registry so schema sync cannot
+silently remove RLS or discard an excluded table's serial sequence. The schema
+push wrapper uses a TTY, accepts only the explicit no-truncation constraint
+choice, and requires a real success marker with no reported SQL error.
+
+**Never run the development setup against production.** Production needs a
+separately reviewed, supported schema/role/function/backfill procedure, verified
+file provenance and integration ownership, backup/recovery checks, and only
+then release approval. Never replace production data with the development DB.
+The API performs readiness checks, not startup business-data migrations.
+
+## Verification
+
+The opt-in PostgreSQL checks always roll back and refuse production:
 
 ```sh
-RUN_TENANT_DB_TESTS=1 pnpm --filter @workspace/api-server exec vitest run \
-  --config vitest.config.ts src/routes/tenant-foundation.integration.test.ts
+RUN_TENANT_DB_TESTS=1 pnpm --filter @workspace/api-server run test
 ```
 
-Passing foundation tests does not certify unscoped parts of the portal.
+The foundation suite covers tampered CRUD/nested IDs, shared staff/guardian
+emails, account-bound resets, financial records, settings, layouts and every
+portal account role. The native isolation suite exercises every portal table,
+parent references, child/outcome arrays, file references and concurrently reused
+connections. Storage unit tests confirm rejected paths never reach the cloud.
+
+A browser account-switch check additionally verifies ambiguous login refusal,
+company A/B child lists, sign-out/sign-in with a shared email, persisted company
+B sessions, and a 404 for company A's child from B. Browser fixtures are removed
+after verification. Passing development checks does not remove the production
+release restriction.

@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getKidsoftRoll, getKidsoftServices, KidsoftError } from "./kidsoft";
+vi.mock("./tenantIntegration", () => ({
+  tenantIntegrationSecret: async () => "unit-test-key-not-a-credential",
+}));
 
 const serviceId = "10000000-0000-4000-8000-000000000001";
 const child = { ChildID: "child-1", FirstName: "Test", LastName: "Child", DOB: "2018-01-01", CRN: "private" };

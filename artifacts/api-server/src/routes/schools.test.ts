@@ -49,6 +49,7 @@ const { mockDb, queuePortalQueries, whereCalls } = vi.hoisted(() => {
 });
 
 vi.mock("@workspace/db", () => ({
+  currentOrganisationId: () => 1,
   db: mockDb,
   organisationTable: { featureSettings: "organisation.feature_settings" },
   schoolAccountsTable: {

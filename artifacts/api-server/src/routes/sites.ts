@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { isValidCalendarDate } from "../lib/rollCompliance";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { organisationId } from "../lib/tenant";
 import { db, sitesTable } from "@workspace/db";
 import { ensureSchoolAccount } from "../lib/schoolAccounts";
 import { normalizeSiteIdentifierBody, isDuplicateSiteIdentifier } from "../lib/siteIdentifiers";
@@ -20,10 +21,11 @@ router.get("/sites", async (req, res): Promise<void> => {
     // ?all=true is used by the Sites management page to show pending/closed sites too.
     // All other callers (dropdowns, roll marking, etc.) get active sites only.
     const showAll = req.query.all === "true";
-    const query = db.select().from(sitesTable).orderBy(sitesTable.name);
+    const scope = eq(sitesTable.orgId, organisationId(res));
+    const query = db.select().from(sitesTable).where(scope).orderBy(sitesTable.name);
     const sites = showAll
       ? await query
-      : await db.select().from(sitesTable).where(eq(sitesTable.status, "active")).orderBy(sitesTable.name);
+      : await db.select().from(sitesTable).where(and(scope, eq(sitesTable.status, "active"))).orderBy(sitesTable.name);
     res.json(ListSitesResponse.parse(sites));
   } catch (err) {
     req.log.error({ err }, "Failed to fetch sites");
@@ -43,7 +45,7 @@ router.post("/sites", async (req, res): Promise<void> => {
   try {
     const [site] = await db.insert(sitesTable).values({
       ...parsed.data,
-      orgId: res.locals.organisationId,
+      orgId: organisationId(res),
       identifier: parsed.data.identifier ?? null,
     }).returning();
     if (!site) throw new Error("Site creation returned no record");
@@ -77,7 +79,7 @@ router.patch("/sites/:id", async (req, res): Promise<void> => {
     const [site] = await db
       .update(sitesTable)
       .set(parsed.data)
-      .where(eq(sitesTable.id, params.data.id))
+      .where(and(eq(sitesTable.id, params.data.id), eq(sitesTable.orgId, organisationId(res))))
       .returning();
     if (!site) {
       res.status(404).json({ error: "Site not found" });
@@ -101,7 +103,9 @@ router.delete("/sites/:id", async (req, res): Promise<void> => {
     return;
   }
   try {
-    await db.delete(sitesTable).where(eq(sitesTable.id, params.data.id));
+    const [deleted] = await db.delete(sitesTable)
+      .where(and(eq(sitesTable.id, params.data.id), eq(sitesTable.orgId, organisationId(res)))).returning({ id: sitesTable.id });
+    if (!deleted) { res.status(404).json({ error: "Site not found" }); return; }
     res.status(204).send();
   } catch (err) {
     req.log.error({ err, siteId: params.data.id }, "Failed to delete site");

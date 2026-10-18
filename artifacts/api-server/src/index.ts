@@ -1,9 +1,8 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { logEmailConfig } from "./lib/email";
-import { migrateSiteIdentifiers } from "./lib/siteIdentifiers";
-import { migrateKidsoftRoll } from "./lib/kidsoftMigration";
-import { db, notificationSettingsTable, pool } from "@workspace/db";
+import { assertTenantIsolationReady } from "./lib/tenantReadiness";
+import { systemDb as db, organisationTable, withOrganisationContext, notificationSettingsTable, pool } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import {
   cleanupAbandonedDocumentMergeUploads,
@@ -48,12 +47,15 @@ async function seedNotificationSettings(): Promise<void> {
     { type: "medication_expiry",         label: "Medication expiry alert",          enabled: true,  advanceDays: 14   },
   ];
 
-  for (const row of defaults) {
-    await db.execute(sql`
-      INSERT INTO notification_settings (type, label, enabled, advance_days)
-      VALUES (${row.type}, ${row.label}, ${row.enabled}, ${row.advanceDays})
-      ON CONFLICT (type) DO NOTHING
-    `);
+  const owners = await db.select({ id: organisationTable.id }).from(organisationTable);
+  for (const owner of owners) {
+    for (const row of defaults) {
+      await db.execute(sql`
+        INSERT INTO notification_settings (organisation_id, type, label, enabled, advance_days)
+        VALUES (${owner.id}, ${row.type}, ${row.label}, ${row.enabled}, ${row.advanceDays})
+        ON CONFLICT (organisation_id,type) WHERE site_id IS NULL DO NOTHING
+      `);
+    }
   }
 }
 
@@ -164,7 +166,7 @@ async function seedSuperAdminStaff(): Promise<void> {
         (first_name, last_name, email, role, qualifications, status,
          password_hash, is_super_admin, site_id)
       VALUES ($1, $2, $3, $4, $5, $6, $7, true, NULL)
-      ON CONFLICT (email) DO UPDATE
+      ON CONFLICT (email) WHERE is_super_admin = true DO UPDATE
         SET is_super_admin = true,
             password_hash  = EXCLUDED.password_hash,
             role           = EXCLUDED.role
@@ -189,7 +191,11 @@ function startDocumentMergeUploadCleanup(): void {
     if (cleanupInProgress) return;
     cleanupInProgress = true;
     try {
-      const deletedCount = await cleanupAbandonedDocumentMergeUploads();
+      let deletedCount = 0;
+      const owners = await db.select({ id: organisationTable.id }).from(organisationTable);
+      for (const owner of owners) {
+        deletedCount += await withOrganisationContext(owner.id, () => cleanupAbandonedDocumentMergeUploads());
+      }
       logger.info({ deletedCount }, "Document merge upload cleanup completed");
     } catch (err) {
       // Keep scheduled maintenance failures isolated from the API server and
@@ -208,22 +214,9 @@ function startDocumentMergeUploadCleanup(): void {
 }
 
 async function startServer(): Promise<void> {
-  try {
-    await migratePolicyDistribution();
-    logger.info("Policy distribution migration applied");
-  } catch (migrationError) {
-    logger.error({ err: migrationError }, "Failed to apply policy distribution migration");
-    process.exit(1);
-  }
-
-  await migrateSitesColumns();
-  logger.info("Sites columns migration applied");
-  await pool.query("ALTER TABLE staff ADD COLUMN IF NOT EXISTS emergency_record_headings jsonb");
-  await pool.query("ALTER TABLE staff ADD COLUMN IF NOT EXISTS recent_observations_collapsed boolean NOT NULL DEFAULT false");
-  await migrateSiteIdentifiers(pool);
-  logger.info("Site identifiers migration applied");
-  await migrateKidsoftRoll(pool);
-  logger.info("Kidsoft Roll schema ready");
+  await assertTenantIsolationReady();
+  // Schema and tenant policies are provisioned before startup, never by a
+  // production request or a startup migration that could restore global keys.
 
   app.listen(port, async (err) => {
     if (err) {
@@ -234,12 +227,6 @@ async function startServer(): Promise<void> {
     logger.info({ port }, "Server listening");
     logEmailConfig();
 
-    try {
-      await fixRollSubmissionWeekStarts();
-      logger.info("Roll submission week starts verified");
-    } catch (fixErr) {
-      logger.warn({ err: fixErr }, "Failed to fix roll submission week starts");
-    }
 
     try {
       await seedNotificationSettings();
@@ -248,12 +235,6 @@ async function startServer(): Promise<void> {
       logger.warn({ err: seedErr }, "Failed to seed notification settings");
     }
 
-    try {
-      await seedSuperAdminStaff();
-      logger.info("Super admin staff account ensured");
-    } catch (seedErr) {
-      logger.warn({ err: seedErr }, "Failed to seed super admin staff account");
-    }
 
     startDocumentMergeUploadCleanup();
   });

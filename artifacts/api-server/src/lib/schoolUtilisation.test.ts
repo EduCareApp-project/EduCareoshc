@@ -9,6 +9,7 @@ const sites = [
 ];
 function row(id: number, serviceType: string, overrides: Partial<SchoolReportRow> = {}): SchoolReportRow {
   return {
+    organisationId: 1,
     id, termId: 1, weekNumber: 1, weekBeginning: "2026-10-05", serviceType,
     monday: "1", tuesday: "2", wednesday: "3", thursday: "4", friday: "5",
     mondayPupilFree: false, tuesdayPupilFree: false, wednesdayPupilFree: false,

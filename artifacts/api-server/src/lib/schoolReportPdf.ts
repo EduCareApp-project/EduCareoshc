@@ -411,7 +411,7 @@ function drawAveragePanel(
 export async function createSchoolReportPdf(
   report: SchoolReportSummary,
   siteName: string,
-  organisationName = "Elysium OSHC",
+  organisationName = "Organisation",
   branding: PdfBranding = {},
 ): Promise<Uint8Array> {
   const document = await PDFDocument.create();

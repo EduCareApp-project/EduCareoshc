@@ -11,7 +11,7 @@ const { mockDb, chain, ensureSchoolAccount } = vi.hoisted(() => {
   };
 });
 vi.mock("@workspace/db", () => ({ db: mockDb, sitesTable: { id: "id" } }));
-vi.mock("drizzle-orm", () => ({ eq: vi.fn(() => "site-id-condition") }));
+vi.mock("drizzle-orm", () => ({ eq: vi.fn(() => "site-id-condition"), and: vi.fn((...conditions) => conditions) }));
 vi.mock("../lib/schoolAccounts", () => ({ ensureSchoolAccount }));
 
 import sitesRouter from "./sites";
@@ -22,7 +22,9 @@ const duplicate = { cause: { code: "23505", constraint: "sites_identifier_unique
 function app() {
   const app = express();
   app.use(express.json());
-  app.use((req, _res, next) => {
+  app.use((req, res, next) => {
+    res.locals.organisationId = 1;
+    res.locals.organisationContextVerified = true;
     req.log = { error: vi.fn() } as any;
     next();
   });
@@ -43,7 +45,7 @@ describe("Site identifiers", () => {
     chain.returning.mockResolvedValueOnce([{ ...site, identifier }]);
     const response = await request(app()).post("/api/sites").send({ name: site.name, identifier });
     expect(response.status).toBe(201);
-    expect(chain.values).toHaveBeenCalledWith({ name: site.name, identifier });
+    expect(chain.values).toHaveBeenCalledWith({ name: site.name, identifier, orgId: 1 });
     expect(response.body.identifier).toBe(identifier);
     expect(ensureSchoolAccount).toHaveBeenCalledWith(site.id, site.name);
   });
@@ -64,7 +66,7 @@ describe("Site identifiers", () => {
     chain.returning.mockResolvedValueOnce([{ ...site, identifier: null }]);
     const response = await request(app()).post("/api/sites").send({ name: site.name });
     expect(response.status).toBe(201);
-    expect(chain.values).toHaveBeenCalledWith({ name: site.name, identifier: null });
+    expect(chain.values).toHaveBeenCalledWith({ name: site.name, identifier: null, orgId: 1 });
     expect(response.body.identifier).toBeNull();
   });
 
@@ -94,7 +96,7 @@ describe("Site identifiers", () => {
     chain.returning.mockResolvedValueOnce([{ ...site, identifier: null }]);
     const response = await request(app()).post("/api/sites").send({ name: site.name, identifier });
     expect(response.status).toBe(201);
-    expect(chain.values).toHaveBeenCalledWith({ name: site.name, identifier: null });
+    expect(chain.values).toHaveBeenCalledWith({ name: site.name, identifier: null, orgId: 1 });
     expect(response.body.identifier).toBeNull();
   });
 
@@ -112,7 +114,7 @@ describe("Site identifiers", () => {
     const response = await request(app())[method](method === "post" ? "/api/sites" : "/api/sites/4").send(data);
     expect(response.status).toBe(method === "post" ? 201 : 200);
     expect(method === "post" ? chain.values : chain.set).toHaveBeenCalledWith(
-      method === "post" ? { ...data, identifier: null } : data,
+      method === "post" ? { ...data, identifier: null, orgId: 1 } : data,
     );
     expect(response.body.serviceStartDate).toBe("2026-09-23");
   });

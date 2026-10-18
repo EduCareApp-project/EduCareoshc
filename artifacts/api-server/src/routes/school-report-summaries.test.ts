@@ -72,6 +72,7 @@ const { mockDb, queueSelect, writes, mockRefresh, columns, mockPdf, mockGetObjec
 });
 
 vi.mock("@workspace/db", () => ({
+  currentOrganisationId: () => 1,
   db: mockDb,
   schoolReportSummariesTable: columns,
   schoolReportTermsTable: columns,

@@ -5,6 +5,41 @@
  * Education & Care Management Portal API
  * OpenAPI spec version: 0.2.0
  */
+export interface PortalLoginInput {
+  /** @minLength 1 */
+  email: string;
+  /** @minLength 1 */
+  password: string;
+  /** Required when this identity belongs to more than one company. */
+  organisationCode?: string;
+}
+
+export interface PortalForgotPasswordInput {
+  /** @minLength 1 */
+  email: string;
+  organisationCode?: string;
+}
+
+export type PortalAuthUserType =
+  (typeof PortalAuthUserType)[keyof typeof PortalAuthUserType];
+
+export const PortalAuthUserType = {
+  staff: "staff",
+  guardian: "guardian",
+  school: "school",
+} as const;
+
+export interface PortalAuthUser {
+  id: number;
+  organisationId?: number;
+  type: PortalAuthUserType;
+  role: string;
+  email: string;
+  name: string;
+  /** @nullable */
+  siteId?: number | null;
+}
+
 export type KidsoftSetupServicesItem = {
   id: string;
   name: string;
@@ -3157,6 +3192,14 @@ export interface WeeklyReview {
   createdAt: string;
   updatedAt: string;
 }
+
+export type Login200 = {
+  user: PortalAuthUser;
+};
+
+export type ForgotPassword200 = {
+  ok: boolean;
+};
 
 export type ListOrganisationCalendarEventsParams = {
   from: string;

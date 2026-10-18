@@ -1,6 +1,8 @@
+import { seedCompanyNotificationDefaults } from "../lib/companyNotificationDefaults";
 import { Router } from "express";
 import bcrypt from "bcrypt";
-import { pool, db, postsTable, childrenTable, parentAccountsTable, sitesTable } from "@workspace/db";
+import { randomInt } from "node:crypto";
+import { pool, systemDb as db, withOrganisationContext, postsTable, childrenTable, parentAccountsTable, sitesTable } from "@workspace/db";
 import { and, eq, gte, inArray, isNotNull, isNull } from "drizzle-orm";
 import { sendPostNotificationEmail } from "../lib/email";
 import { getEmailBranding } from "../lib/emailBranding";
@@ -8,6 +10,12 @@ import { getAppUrl } from "../lib/appUrl";
 import { logger } from "../lib/logger";
 
 const router = Router();
+async function canonicalCompany(registryId: number): Promise<number> {
+  if (!Number.isSafeInteger(registryId) || registryId <= 0) throw new Error("Invalid company");
+  const { rows } = await pool.query("SELECT portal_org_id FROM super_admin_orgs WHERE id=$1", [registryId]);
+  if (!rows[0]?.portal_org_id) throw new Error("The company must be connected to its portal organisation before this operation");
+  return rows[0].portal_org_id;
+}
 
 router.post("/super-admin/login", async (req, res) => {
   const { email, password } = req.body as { email?: string; password?: string };
@@ -64,15 +72,16 @@ router.get("/super-admin/orgs", requireSuperAdmin, async (req, res) => {
   const client = await pool.connect();
   try {
     const result = await client.query(`
-      SELECT o.*,
+      SELECT o.*, p.organisation_id AS organisation_code,
         COALESCE(
           json_agg(json_build_object('id', s.id, 'name', s.name) ORDER BY s.name)
           FILTER (WHERE s.id IS NOT NULL),
           '[]'::json
         ) AS sites
       FROM super_admin_orgs o
-      LEFT JOIN sites s ON s.org_id = o.id
-      GROUP BY o.id
+      LEFT JOIN organisation p ON p.id=o.portal_org_id
+      LEFT JOIN sites s ON s.org_id = o.portal_org_id
+      GROUP BY o.id,p.id
       ORDER BY o.created_at DESC
     `);
     res.json(result.rows);
@@ -89,13 +98,19 @@ router.post("/super-admin/orgs", requireSuperAdmin, async (req, res) => {
   if (!name) { res.status(400).json({ error: "Name is required" }); return; }
   const client = await pool.connect();
   try {
+    await client.query("BEGIN");
+    const code = `${randomInt(100000, 1000000)}${String.fromCharCode(65 + randomInt(26))}`;
+    const { rows: owners } = await client.query("INSERT INTO organisation(name,organisation_id) VALUES($1,$2) RETURNING id", [name, code]);
     const result = await client.query(
-      `INSERT INTO super_admin_orgs (name, domain, logo_url, contact_name, contact_email, status, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [name, domain || null, logo_url || null, contact_name || null, contact_email || null, status || "active", notes || null]
+      `INSERT INTO super_admin_orgs (name, domain, logo_url, contact_name, contact_email, status, notes,portal_org_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [name, domain || null, logo_url || null, contact_name || null, contact_email || null, status || "active", notes || null,owners[0].id]
     );
-    res.status(201).json(result.rows[0]);
+    await seedCompanyNotificationDefaults((text, values) => client.query(text, values), owners[0].id);
+    await client.query("COMMIT");
+    res.status(201).json({ ...result.rows[0], organisation_code: code });
   } catch (err) {
+    await client.query("ROLLBACK");
     req.log.error({ err }, "Failed to create super-admin org");
     res.status(500).json({ error: "Failed to create org" });
   } finally {
@@ -142,10 +157,11 @@ router.delete("/super-admin/orgs/:id", requireSuperAdmin, async (req, res) => {
 router.get("/super-admin/sites", requireSuperAdmin, async (req, res) => {
   const orgId = req.query.orgId ? parseInt(req.query.orgId as string, 10) : null;
   try {
+    const ownerId = orgId !== null ? await canonicalCompany(orgId) : null;
     const sites = await db
       .select({ id: sitesTable.id, name: sitesTable.name, orgId: sitesTable.orgId })
       .from(sitesTable)
-      .where(orgId ? eq(sitesTable.orgId, orgId) : undefined)
+      .where(ownerId !== null ? eq(sitesTable.orgId, ownerId) : undefined)
       .orderBy(sitesTable.name);
     res.json(sites);
   } catch (err) {
@@ -158,10 +174,11 @@ router.get("/super-admin/sites", requireSuperAdmin, async (req, res) => {
 async function orgPostConditions(since: Date, orgId: number | null) {
   const conditions: ReturnType<typeof gte>[] = [gte(postsTable.publishedAt, since)];
   if (orgId) {
+    const ownerId = await canonicalCompany(orgId);
     const orgSites = await db
       .select({ id: sitesTable.id })
       .from(sitesTable)
-      .where(eq(sitesTable.orgId, orgId));
+      .where(eq(sitesTable.orgId, ownerId));
     const siteIds = orgSites.map((s) => s.id);
     if (siteIds.length > 0) {
       conditions.push(inArray(postsTable.siteId, siteIds) as any);
@@ -213,13 +230,15 @@ router.post("/super-admin/resend-post-notifications", requireSuperAdmin, async (
     }
 
     const appUrl = getAppUrl();
-    const branding = await getEmailBranding();
     const portalUrl = `${appUrl}/notices`;
 
     const summary: { postId: number; title: string; sent: number }[] = [];
     const allErrors: string[] = [];
 
     for (const post of posts) {
+      const [owner] = await db.select({ id: sitesTable.orgId }).from(sitesTable).where(eq(sitesTable.id, post.siteId!));
+      if (!owner?.id || owner.id !== post.organisationId) { allErrors.push(`post:${post.id}:missing-or-mismatched-company`); continue; }
+      const branding = await withOrganisationContext(owner.id, () => getEmailBranding(owner.id!));
       const taggedChildIds = Array.isArray(post.childIds) ? (post.childIds as number[]) : [];
 
       // Skip posts with no site or no tagged children — cannot scope recipients safely
@@ -233,6 +252,7 @@ router.post("/super-admin/resend-post-notifications", requireSuperAdmin, async (
         .from(childrenTable)
         .where(and(
           inArray(childrenTable.id, taggedChildIds),
+          eq(childrenTable.organisationId, post.organisationId!),
           eq(childrenTable.status, "active"),
           eq(childrenTable.siteId, post.siteId),
         ));

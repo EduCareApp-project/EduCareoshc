@@ -1,4 +1,5 @@
-import { pgTable, serial, text, timestamp, date, integer, boolean, jsonb, index } from "drizzle-orm/pg-core";
+import { serial, text, timestamp, date, integer, boolean, jsonb, index } from "drizzle-orm/pg-core";
+import { scopedTable as pgTable } from "./scoped-table";
 import { sitesTable } from "./sites";
 import { organisationTable } from "./organisation";
 import { createInsertSchema } from "drizzle-zod";

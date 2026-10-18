@@ -1,10 +1,17 @@
 ---
 name: Post-merge schema sync
-description: Non-interactive post-merge database setup behavior.
+description: Safety requirements for unattended schema reconciliation.
 ---
 
-The post-merge schema synchronization must explicitly answer “no” to Drizzle’s populated-table truncation prompts because post-merge runs with stdin closed. It also needs a timeout that covers dependency installation and schema introspection. Never accept an unrelated-table rename suggestion for a genuinely new table; create the new table explicitly instead.
+Treat successful schema synchronization as a verified postcondition, not an
+assumption based on exit status. Never approve data truncation or an unrelated
+table rename to make an unattended setup proceed.
 
-**Why:** Drizzle’s force mode does not suppress every destructive-data confirmation, and schema introspection can misidentify an unrelated existing table as a rename candidate for a new table.
+**Why:** Schema tools can stop at interactive choices or report SQL errors without
+a failing exit status. Apparently successful setup can leave application
+constraints or isolation safeguards incomplete.
 
-**How to apply:** Keep post-merge database commands idempotent and pipe a safe no-truncate response where prompts remain. When a new-table prompt offers unrelated rename candidates, reject the rename and use idempotent `CREATE TABLE IF NOT EXISTS` DDL in development.
+**How to apply:** Require explicit non-destructive completion, keep setup
+idempotent, and manage policy dependencies and intentionally unmanaged database
+objects deliberately. If safe completion cannot be established, stop release
+rather than guessing or discarding existing data.

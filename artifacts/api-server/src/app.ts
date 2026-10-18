@@ -36,6 +36,11 @@ app.use(
 );
 
 app.use(cors({ origin: true, credentials: true }));
+app.use((_req, res, next) => {
+  res.setHeader("Cache-Control", "private, no-store");
+  res.vary("Cookie");
+  next();
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -1,3 +1,4 @@
+import { currentOrganisationId } from "@workspace/db";
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, organisationTable } from "@workspace/db";
@@ -9,7 +10,7 @@ const VALID_MODES = ["letter_icon", "profile_picture"] as const;
 router.get("/settings/children", async (req, res): Promise<void> => {
   try {
     const [row] = await db.select({ childDisplayMode: organisationTable.childDisplayMode })
-      .from(organisationTable).limit(1);
+      .from(organisationTable).where(eq(organisationTable.id, currentOrganisationId())).limit(1);
     res.json({ childDisplayMode: row?.childDisplayMode ?? "letter_icon" });
   } catch (err) {
     req.log.error({ err }, "Failed to fetch children settings");
@@ -25,13 +26,13 @@ router.put("/settings/children", async (req, res): Promise<void> => {
   }
 
   try {
-    const [existing] = await db.select().from(organisationTable).limit(1);
+    const [existing] = await db.select().from(organisationTable).where(eq(organisationTable.id, currentOrganisationId())).limit(1);
     if (existing) {
       await db.update(organisationTable)
         .set({ childDisplayMode, updatedAt: new Date() })
         .where(eq(organisationTable.id, existing.id));
     } else {
-      await db.insert(organisationTable).values({ childDisplayMode, updatedAt: new Date() } as any);
+      res.status(404).json({ error: "Company not found" }); return;
     }
     res.json({ childDisplayMode });
   } catch (err) {

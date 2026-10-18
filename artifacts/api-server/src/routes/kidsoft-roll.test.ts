@@ -17,9 +17,13 @@ const mocks = vi.hoisted(() => {
   return { state, db, getServices: vi.fn(), getRoll: vi.fn() };
 });
 vi.mock("drizzle-orm/node-postgres", () => ({ drizzle: () => mocks.db }));
+vi.mock("@workspace/db", async (original) => ({
+  ...await original<typeof import("@workspace/db")>(),
+  currentOrganisationId: () => 1,
+}));
 vi.mock("../lib/kidsoft", async (importOriginal) => {
   const original = await importOriginal<typeof import("../lib/kidsoft")>();
-  return { ...original, getKidsoftServices: mocks.getServices, getKidsoftRoll: mocks.getRoll };
+  return { ...original, kidsoftConfigured: async () => true, getKidsoftServices: mocks.getServices, getKidsoftRoll: mocks.getRoll };
 });
 import router, { canAccessKidsoftSite } from "./kidsoft-roll";
 import { KidsoftError } from "../lib/kidsoft";

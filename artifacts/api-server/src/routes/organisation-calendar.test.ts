@@ -38,6 +38,9 @@ vi.mock("@workspace/db", () => {
       endDate: "event.end", startTime: "event.time", createdBy: "event.owner",
     },
     db: { select: vi.fn(chain), insert: mock.insert, update: mock.update, delete: mock.delete },
+    systemDb: { select: vi.fn(chain) },
+    withOrganisationContext: (_id: number, next: () => unknown) => next(),
+    currentOrganisationId: () => 1,
   };
 });
 import router, { calendarCreateInput, canManageCalendarEvent } from "./organisation-calendar";

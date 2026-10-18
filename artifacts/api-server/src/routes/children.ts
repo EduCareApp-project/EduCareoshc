@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, asc, inArray, and, isNotNull } from "drizzle-orm";
 import { db, childrenTable, observationsTable, staffTable, outcomesTable, programsTable, childDocumentsTable, childMedicationsTable } from "@workspace/db";
+import { organisationId, ownsChild, ownsSites, tenantChildIds } from "../lib/tenant";
 import {
   CreateChildBody,
   GetChildParams,
@@ -58,7 +59,8 @@ function normalizeChildPayload(body: unknown): unknown {
 
 router.get("/children", async (req, res): Promise<void> => {
   try {
-    const children = await db.select().from(childrenTable).orderBy(asc(childrenTable.firstName), asc(childrenTable.lastName));
+    const children = await db.select().from(childrenTable).where(eq(childrenTable.organisationId, organisationId(res)))
+      .orderBy(asc(childrenTable.firstName), asc(childrenTable.lastName));
     const medRows = children.length
       ? await db.selectDistinct({ childId: childMedicationsTable.childId })
           .from(childMedicationsTable)
@@ -82,9 +84,12 @@ router.post("/children", async (req, res): Promise<void> => {
     return;
   }
   try {
+    if (!(await ownsSites(organisationId(res), [parsed.data.siteId]))) {
+      res.status(400).json({ error: "Invalid service" }); return;
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [child] = await db.insert(childrenTable).values({
-      ...parsed.data, organisationId: res.locals.organisationId,
+      ...parsed.data, organisationId: organisationId(res),
     } as any).returning();
     res.status(201).json(GetChildResponse.parse(child));
   } catch (err) {
@@ -100,7 +105,8 @@ router.get("/children/:id", async (req, res): Promise<void> => {
     return;
   }
   try {
-    const [child] = await db.select().from(childrenTable).where(eq(childrenTable.id, params.data.id));
+    const [child] = await db.select().from(childrenTable)
+      .where(and(eq(childrenTable.id, params.data.id), eq(childrenTable.organisationId, organisationId(res))));
     if (!child) {
       res.status(404).json({ error: "Child not found" });
       return;
@@ -138,7 +144,7 @@ router.get("/children/:id/medical-plans/print", async (req, res): Promise<void> 
         communicationPlan: childrenTable.communicationPlan,
       })
       .from(childrenTable)
-      .where(eq(childrenTable.id, params.data.id));
+      .where(and(eq(childrenTable.id, params.data.id), eq(childrenTable.organisationId, organisationId(res))));
     if (!child) {
       res.status(404).json({ error: "Child not found" });
       return;
@@ -168,11 +174,14 @@ router.patch("/children/:id", async (req, res): Promise<void> => {
   }
   req.log.info({ id: params.data.id, body: req.body, parsedKeys: Object.keys(parsed.data) }, "PATCH /children/:id");
   try {
+    if (!(await ownsSites(organisationId(res), [parsed.data.siteId]))) {
+      res.status(400).json({ error: "Invalid service" }); return;
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [child] = await db
       .update(childrenTable)
       .set(parsed.data as any)
-      .where(eq(childrenTable.id, params.data.id))
+      .where(and(eq(childrenTable.id, params.data.id), eq(childrenTable.organisationId, organisationId(res))))
       .returning();
     if (!child) {
       res.status(404).json({ error: "Child not found" });
@@ -193,7 +202,8 @@ router.delete("/children/:id", async (req, res): Promise<void> => {
     return;
   }
   try {
-    const [child] = await db.delete(childrenTable).where(eq(childrenTable.id, params.data.id)).returning();
+    const [child] = await db.delete(childrenTable)
+      .where(and(eq(childrenTable.id, params.data.id), eq(childrenTable.organisationId, organisationId(res)))).returning();
     if (!child) {
       res.status(404).json({ error: "Child not found" });
       return;
@@ -209,6 +219,9 @@ router.get("/children/:id/documents", async (req, res): Promise<void> => {
   const params = ListChildDocumentsParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   try {
+    if (!(await ownsChild(organisationId(res), params.data.id))) {
+      res.status(404).json({ error: "Child not found" }); return;
+    }
     const docs = await db.select().from(childDocumentsTable).where(eq(childDocumentsTable.childId, params.data.id)).orderBy(childDocumentsTable.uploadedAt);
     res.json(ListChildDocumentsResponse.parse(docs));
   } catch (err) {
@@ -223,6 +236,9 @@ router.post("/children/:id/documents", async (req, res): Promise<void> => {
   const parsed = CreateChildDocumentBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
   try {
+    if (!(await ownsChild(organisationId(res), params.data.id))) {
+      res.status(404).json({ error: "Child not found" }); return;
+    }
     const [doc] = await db.insert(childDocumentsTable).values({ childId: params.data.id, ...parsed.data }).returning();
     res.status(201).json(ListChildDocumentsResponseItem.parse(doc));
   } catch (err) {
@@ -235,7 +251,11 @@ router.delete("/children/:id/documents/:docId", async (req, res): Promise<void> 
   const params = DeleteChildDocumentParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   try {
-    const [doc] = await db.delete(childDocumentsTable).where(eq(childDocumentsTable.id, params.data.docId)).returning();
+    if (!(await ownsChild(organisationId(res), params.data.id))) {
+      res.status(404).json({ error: "Child not found" }); return;
+    }
+    const [doc] = await db.delete(childDocumentsTable)
+      .where(and(eq(childDocumentsTable.id, params.data.docId), eq(childDocumentsTable.childId, params.data.id))).returning();
     if (!doc) { res.status(404).json({ error: "Document not found" }); return; }
     res.sendStatus(204);
   } catch (err) {
@@ -251,9 +271,15 @@ router.get("/children/:id/observations", async (req, res): Promise<void> => {
     return;
   }
   try {
-    const staffList = await db.select().from(staffTable);
-    const childList = await db.select().from(childrenTable);
-    const programList = await db.select().from(programsTable);
+    const orgId = organisationId(res);
+    if (!(await ownsChild(orgId, params.data.id))) {
+      res.status(404).json({ error: "Child not found" }); return;
+    }
+    const staffList = await db.select().from(staffTable).where(eq(staffTable.organisationId, orgId));
+    const childList = await db.select().from(childrenTable).where(eq(childrenTable.organisationId, orgId));
+    const programList = await db.select().from(programsTable).where(inArray(programsTable.id,
+      db.select({ id: observationsTable.programId }).from(observationsTable)
+        .where(inArray(observationsTable.childId, tenantChildIds(orgId)))));
 
     const observations = await db
       .select()

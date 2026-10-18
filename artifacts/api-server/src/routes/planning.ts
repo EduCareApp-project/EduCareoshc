@@ -95,7 +95,7 @@ router.patch("/planning/:id", async (req, res): Promise<void> => {
       const recipients = guardians.map((g) => g.email);
       Promise.all([isTypeEnabled("planning_published"), isEmailChannelEnabled("guardian_weekly_plan")]).then(([typeEnabled, emailEnabled]) => {
         if (!typeEnabled || !emailEnabled || recipients.length === 0) return;
-        return getEmailBranding().then((branding) =>
+        return getEmailBranding(res.locals.organisationId).then((branding) =>
           sendWeeklyPlanPublishedEmail(recipients, {
             planTitle: exp.title ?? "Calendar",
             weekOf,

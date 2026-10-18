@@ -7,16 +7,39 @@ import { logger } from "../lib/logger";
 import { createNotificationsForRoles } from "../lib/notify";
 import { isEmailChannelEnabled } from "../lib/channelMap";
 import { getAppUrl } from "../lib/appUrl";
+import { guardianChildren, organisationId, ownsChild, tenantChildIds } from "../lib/tenant";
 
 const router: IRouter = Router();
 
-async function enrichLog(log: typeof medicationLogsTable.$inferSelect) {
+// All staff medication operations inherit company ownership from the child.
+// Validate nested medication IDs against that exact child, not just the company.
+router.use("/children/:id/medications", async (req, res, next) => {
+  if (req.session.user?.type !== "staff") {
+    res.status(403).json({ error: "Staff access required" }); return;
+  }
+  const childId = Number(req.params.id);
+  if (!Number.isSafeInteger(childId) || childId <= 0) {
+    res.status(400).json({ error: "Invalid child id" }); return;
+  }
+  if (!(await ownsChild(organisationId(res), childId))) {
+    res.status(404).json({ error: "Child not found" }); return;
+  }
+  const medicationPath = req.path.match(/^\/(\d+)\/logs(?:\/|$)/);
+  if (medicationPath) {
+    const [medication] = await db.select({ id: childMedicationsTable.id }).from(childMedicationsTable)
+      .where(and(eq(childMedicationsTable.id, Number(medicationPath[1])), eq(childMedicationsTable.childId, childId)));
+    if (!medication) { res.status(404).json({ error: "Medication not found" }); return; }
+  }
+  next();
+});
+
+async function enrichLog(log: typeof medicationLogsTable.$inferSelect, orgId: number) {
   const [admin, witness] = await Promise.all([
     db.select({ firstName: staffTable.firstName, lastName: staffTable.lastName })
-      .from(staffTable).where(eq(staffTable.id, log.administeredById)).then((r) => r[0]),
+      .from(staffTable).where(and(eq(staffTable.id, log.administeredById), eq(staffTable.organisationId, orgId))).then((r) => r[0]),
     log.witnessId
       ? db.select({ firstName: staffTable.firstName, lastName: staffTable.lastName })
-          .from(staffTable).where(eq(staffTable.id, log.witnessId)).then((r) => r[0])
+          .from(staffTable).where(and(eq(staffTable.id, log.witnessId), eq(staffTable.organisationId, orgId))).then((r) => r[0])
       : Promise.resolve(null),
   ]);
   return {
@@ -120,10 +143,10 @@ router.get("/children/:id/medications/:medicationId/logs", async (req, res): Pro
 
   try {
     const rows = await db.select().from(medicationLogsTable)
-      .where(eq(medicationLogsTable.medicationId, medicationId))
+      .where(and(eq(medicationLogsTable.medicationId, medicationId), eq(medicationLogsTable.childId, Number(req.params.id))))
       .orderBy(desc(medicationLogsTable.administeredAt));
 
-    const enriched = await Promise.all(rows.map(enrichLog));
+    const enriched = await Promise.all(rows.map((log) => enrichLog(log, organisationId(res))));
     res.json(enriched);
   } catch (err) {
     req.log.error({ err, medicationId }, "Failed to get medication logs");
@@ -153,6 +176,16 @@ router.post("/children/:id/medications/:medicationId/logs", async (req, res): Pr
   }
 
   try {
+    const orgId = organisationId(res);
+    const staffIds = [...new Set([administeredById, witnessId].filter((id): id is number => id != null))];
+    if (staffIds.some((id) => !Number.isSafeInteger(id) || id <= 0)) {
+      res.status(400).json({ error: "Invalid administering staff or witness" }); return;
+    }
+    const staff = await db.select({ id: staffTable.id }).from(staffTable)
+      .where(and(inArray(staffTable.id, staffIds), eq(staffTable.organisationId, orgId)));
+    if (staff.length !== staffIds.length) {
+      res.status(400).json({ error: "Invalid administering staff or witness" }); return;
+    }
     const [log] = await db.insert(medicationLogsTable).values({
       medicationId,
       childId,
@@ -163,21 +196,21 @@ router.post("/children/:id/medications/:medicationId/logs", async (req, res): Pr
       witnessId: witnessId ?? null,
     }).returning();
 
-    const enriched = await enrichLog(log);
+    const enriched = await enrichLog(log, orgId);
     res.status(201).json(enriched);
 
     // ── Notify guardian ────────────────────────────────────────────────────────
     setImmediate(async () => {
       try {
         const [medication] = await db.select().from(childMedicationsTable)
-          .where(eq(childMedicationsTable.id, medicationId));
+          .where(and(eq(childMedicationsTable.id, medicationId), eq(childMedicationsTable.childId, childId)));
         const [child] = await db.select({
           firstName: childrenTable.firstName,
           lastName: childrenTable.lastName,
           guardianEmail: childrenTable.guardianEmail,
           guardian2Email: childrenTable.guardian2Email,
           siteId: childrenTable.siteId,
-        }).from(childrenTable).where(eq(childrenTable.id, childId));
+        }).from(childrenTable).where(and(eq(childrenTable.id, childId), eq(childrenTable.organisationId, orgId)));
 
         if (!child || !medication) return;
 
@@ -204,7 +237,8 @@ router.post("/children/:id/medications/:medicationId/logs", async (req, res): Pr
         const accounts = await db.select({ guardianEmail: parentAccountsTable.guardianEmail })
           .from(parentAccountsTable)
           .where(and(
-            eq(parentAccountsTable.guardianEmail, child.guardianEmail),
+            inArray(parentAccountsTable.guardianEmail, recipients),
+            eq(parentAccountsTable.organisationId, orgId),
           ));
 
         const validRecipients = recipients.filter((email) =>
@@ -216,7 +250,7 @@ router.post("/children/:id/medications/:medicationId/logs", async (req, res): Pr
 
         const portalUrl = `${getAppUrl()}/medication-logs`;
 
-        const branding = await getEmailBranding();
+        const branding = await getEmailBranding(orgId);
         await sendMedicationLogEmail(validRecipients, {
           childName: `${child.firstName} ${child.lastName}`,
           medicationName: medication.name,
@@ -243,7 +277,11 @@ router.delete("/children/:id/medications/:medicationId/logs/:logId", async (req,
   if (isNaN(logId)) { res.status(400).json({ error: "Invalid logId" }); return; }
 
   try {
-    await db.delete(medicationLogsTable).where(eq(medicationLogsTable.id, logId));
+    const [deleted] = await db.delete(medicationLogsTable).where(and(
+      eq(medicationLogsTable.id, logId), eq(medicationLogsTable.childId, Number(req.params.id)),
+      eq(medicationLogsTable.medicationId, Number(req.params.medicationId)),
+    )).returning({ id: medicationLogsTable.id });
+    if (!deleted) { res.status(404).json({ error: "Medication log not found" }); return; }
     res.sendStatus(204);
   } catch (err) {
     req.log.error({ err, logId }, "Failed to delete medication log");
@@ -280,6 +318,7 @@ router.get("/medications/expiring", async (req, res): Promise<void> => {
         and(
           // Must have a name (slot is in use)
           ne(childMedicationsTable.name, ""),
+          inArray(childMedicationsTable.childId, tenantChildIds(organisationId(res))),
         )
       );
 
@@ -304,7 +343,7 @@ router.get("/medications/expiring", async (req, res): Promise<void> => {
       })
       .from(childrenTable)
       .leftJoin(sitesTable, eq(sitesTable.id, childrenTable.siteId))
-      .where(inArray(childrenTable.id, childIds));
+      .where(and(inArray(childrenTable.id, childIds), eq(childrenTable.organisationId, organisationId(res))));
 
     // Apply site filter
     const filteredChildIds = new Set(
@@ -369,7 +408,7 @@ router.get("/guardian/medication-logs", async (req, res): Promise<void> => {
   try {
     const children = await db.select({ id: childrenTable.id, firstName: childrenTable.firstName, lastName: childrenTable.lastName })
       .from(childrenTable)
-      .where(or(eq(childrenTable.guardianEmail, guardianEmail), eq(childrenTable.guardian2Email, guardianEmail)));
+      .where(guardianChildren(organisationId(res), guardianEmail));
 
     if (children.length === 0) { res.json([]); return; }
 
@@ -383,11 +422,11 @@ router.get("/guardian/medication-logs", async (req, res): Promise<void> => {
 
       for (const med of meds) {
         const logs = await db.select().from(medicationLogsTable)
-          .where(eq(medicationLogsTable.medicationId, med.id))
+          .where(and(eq(medicationLogsTable.medicationId, med.id), eq(medicationLogsTable.childId, childId)))
           .orderBy(desc(medicationLogsTable.administeredAt));
 
         for (const log of logs) {
-          const enriched = await enrichLog(log);
+          const enriched = await enrichLog(log, organisationId(res));
           allLogs.push({
             ...enriched,
             childName: childMap.get(log.childId) ?? "Unknown",

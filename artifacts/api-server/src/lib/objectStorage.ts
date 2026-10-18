@@ -1,6 +1,8 @@
 import { Storage, File } from "@google-cloud/storage";
 import { Readable } from "stream";
 import { randomUUID } from "crypto";
+import { db, tenantFilesTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import {
   ObjectAclPolicy,
   ObjectPermission,
@@ -71,6 +73,9 @@ export class ObjectStorageService {
   }
 
   async searchPublicObject(filePath: string): Promise<File | null> {
+    const [owned] = await db.select().from(tenantFilesTable)
+      .where(eq(tenantFilesTable.objectPath, `/public-objects/${filePath}`)).limit(1);
+    if (!owned) return null;
     for (const searchPath of this.getPublicObjectSearchPaths()) {
       const fullPath = `${searchPath}/${filePath}`;
 
@@ -97,7 +102,10 @@ export class ObjectStorageService {
 
     const headers: Record<string, string> = {
       "Content-Type": (metadata.contentType as string) || "application/octet-stream",
-      "Cache-Control": `${isPublic ? "public" : "private"}, max-age=${cacheTtlSec}`,
+      // Even a public object belongs to a company. Do not reuse an authenticated
+      // response after a different company signs in in this browser.
+      "Cache-Control": "private, no-store",
+      "Vary": "Cookie",
     };
     if (metadata.size) {
       headers["Content-Length"] = String(metadata.size);
@@ -118,6 +126,7 @@ export class ObjectStorageService {
     const objectId = randomUUID();
     const safeFolder = folder.replace(/[^a-zA-Z0-9_-]/g, "");
     const fullPath = `${privateObjectDir}/${safeFolder}/${objectId}`;
+    await db.insert(tenantFilesTable).values({ objectPath: `/objects/${safeFolder}/${objectId}` });
 
     const { bucketName, objectName } = parseObjectPath(fullPath);
 
@@ -138,6 +147,7 @@ export class ObjectStorageService {
     const objectId = randomUUID();
     const relativePath = `${folder.replace(/^\/|\/$/g, "")}/${objectId}`;
     const { bucketName, objectName } = parseObjectPath(`${privateObjectDir}/${relativePath}`);
+    await db.insert(tenantFilesTable).values({ objectPath: `/objects/${relativePath}` });
     await objectStorageClient.bucket(bucketName).file(objectName).save(Buffer.from(data), {
       contentType,
       resumable: false,
@@ -149,6 +159,10 @@ export class ObjectStorageService {
     if (!objectPath.startsWith("/objects/")) {
       throw new ObjectNotFoundError();
     }
+    if (objectPath.split("/").some((part) => part === ".." || part === ".")) throw new ObjectNotFoundError();
+    const [owned] = await db.select().from(tenantFilesTable)
+      .where(eq(tenantFilesTable.objectPath, objectPath)).limit(1);
+    if (!owned) throw new ObjectNotFoundError();
 
     const parts = objectPath.slice(1).split("/");
     if (parts.length < 2) {
@@ -174,6 +188,7 @@ export class ObjectStorageService {
   async deleteObjectEntity(objectPath: string): Promise<void> {
     const objectFile = await this.getObjectEntityFile(objectPath);
     await objectFile.delete();
+    await db.delete(tenantFilesTable).where(eq(tenantFilesTable.objectPath, objectPath));
   }
 
   normalizeObjectEntityPath(rawPath: string): string {

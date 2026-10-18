@@ -18,6 +18,7 @@ vi.mock("@workspace/db", () => ({
 
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn(() => "child-id-condition"),
+  and: vi.fn((...conditions) => conditions),
 }));
 
 import childrenRouter from "./children";
@@ -41,7 +42,9 @@ const child = {
 function buildApp() {
   const app = express();
   app.use(express.json());
-  app.use((req, _res, next) => {
+  app.use((req, res, next) => {
+    res.locals.organisationId = 1;
+    res.locals.organisationContextVerified = true;
     req.log = { info: vi.fn(), warn: vi.fn(), error: vi.fn() } as any;
     next();
   });

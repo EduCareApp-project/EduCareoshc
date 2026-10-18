@@ -1,4 +1,6 @@
-import { pgTable, serial, text, timestamp, integer, boolean, jsonb, index } from "drizzle-orm/pg-core";
+import { serial, text, timestamp, integer, boolean, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { scopedTable as pgTable } from "./scoped-table";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { sitesTable } from "./sites";
@@ -10,7 +12,7 @@ export const staffTable = pgTable("staff", {
   organisationId: integer("organisation_id").references(() => organisationTable.id, { onDelete: "restrict" }),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
-  email: text("email").notNull().unique(),
+  email: text("email").notNull(),
   role: text("role").notNull().default("educator"),
   qualifications: text("qualifications").notNull(),
   status: text("status").notNull().default("active"),
@@ -27,7 +29,12 @@ export const staffTable = pgTable("staff", {
   isSuperAdmin: boolean("is_super_admin").notNull().default(false),
   emergencyRecordHeadings: jsonb("emergency_record_headings").$type<Partial<Record<"evacuation" | "lockdown" | "shelter_in_place" | "other", boolean>>>(),
   recentObservationsCollapsed: boolean("recent_observations_collapsed").notNull().default(false),
-}, (table) => [index("staff_organisation_idx").on(table.organisationId)]);
+}, (table) => [
+  index("staff_organisation_idx").on(table.organisationId),
+  uniqueIndex("staff_org_email_unique").on(table.organisationId, table.email),
+  // Control-plane support accounts remain separate from portal memberships.
+  uniqueIndex("staff_support_email_unique").on(table.email).where(sql`${table.isSuperAdmin} = true`),
+]);
 
 export const insertStaffSchema = createInsertSchema(staffTable).omit({ id: true, createdAt: true, organisationId: true });
 export type InsertStaff = z.infer<typeof insertStaffSchema>;

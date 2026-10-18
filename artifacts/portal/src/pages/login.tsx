@@ -10,6 +10,7 @@ export default function Login() {
   const { setUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [organisationCode, setOrganisationCode] = useState(new URLSearchParams(window.location.search).get("organisationCode") ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -28,7 +29,7 @@ export default function Login() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, organisationCode: organisationCode.trim() || undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -71,6 +72,12 @@ export default function Login() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
+                  <Label htmlFor="organisation-code">Organisation code (if supplied)</Label>
+                  <Input id="organisation-code" value={organisationCode} onChange={(e) => setOrganisationCode(e.target.value)}
+                    autoComplete="organization" className="h-10" />
+                  <p className="text-xs text-muted-foreground">Required if you have accounts with more than one company.</p>
+                </div>
+                <div className="space-y-1.5">
                   <Label htmlFor="email">Email or school username</Label>
                   <Input
                     id="email"
@@ -87,7 +94,7 @@ export default function Login() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
-                    <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+                    <Link href={`/forgot-password${organisationCode.trim() ? `?organisationCode=${encodeURIComponent(organisationCode.trim())}` : ""}`} className="text-xs text-primary hover:underline">
                       Forgot password?
                     </Link>
                   </div>

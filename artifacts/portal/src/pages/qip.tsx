@@ -7,6 +7,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useAuth } from "@/contexts/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -600,6 +601,7 @@ function SourcesDialog() {
 }
 
 export default function Qip() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { isEducatorRole, ownSiteId } = usePermissions();
@@ -635,7 +637,7 @@ export default function Qip() {
 
   const publicPageUrl = (() => {
     const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-    const siteParam = siteFilter ? `?siteId=${siteFilter}` : "";
+    const siteParam = siteFilter ? `?siteId=${siteFilter}` : `?organisationId=${user?.organisationId ?? ""}`;
     return `${window.location.origin}${base}/qip-public${siteParam}`;
   })();
 

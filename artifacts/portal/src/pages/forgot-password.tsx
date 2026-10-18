@@ -7,6 +7,7 @@ import { Loader2, ShieldCheck, ArrowLeft, Mail } from "lucide-react";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
+  const [organisationCode, setOrganisationCode] = useState(new URLSearchParams(window.location.search).get("organisationCode") ?? "");
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +20,7 @@ export default function ForgotPassword() {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, organisationCode: organisationCode.trim() || undefined }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -91,6 +92,13 @@ export default function ForgotPassword() {
                       required
                       className="h-10"
                     />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="organisation-code">Organisation code (if supplied)</Label>
+                    <Input id="organisation-code" value={organisationCode} onChange={(e) => setOrganisationCode(e.target.value)}
+                      autoComplete="organization" className="h-10" />
+                    <p className="text-xs text-muted-foreground">Required if you have accounts with more than one company.</p>
                   </div>
 
                   {error && (

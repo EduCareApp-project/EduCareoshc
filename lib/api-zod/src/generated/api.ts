@@ -7,6 +7,36 @@
  */
 import * as zod from "zod";
 
+export const LoginBody = zod.object({
+  email: zod.string().min(1),
+  password: zod.string().min(1),
+  organisationCode: zod
+    .string()
+    .optional()
+    .describe("Required when this identity belongs to more than one company."),
+});
+
+export const LoginResponse = zod.object({
+  user: zod.object({
+    id: zod.number(),
+    organisationId: zod.number().optional(),
+    type: zod.enum(["staff", "guardian", "school"]),
+    role: zod.string(),
+    email: zod.string(),
+    name: zod.string(),
+    siteId: zod.number().nullish(),
+  }),
+});
+
+export const ForgotPasswordBody = zod.object({
+  email: zod.string().min(1),
+  organisationCode: zod.string().optional(),
+});
+
+export const ForgotPasswordResponse = zod.object({
+  ok: zod.boolean(),
+});
+
 export const GetDashboardLayoutParams = zod.object({
   dashboard: zod.enum(["educator", "leadership"]),
 });

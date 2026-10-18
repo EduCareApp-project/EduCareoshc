@@ -1,4 +1,5 @@
-import { pgTable, serial, integer, text, boolean, timestamp, date, uniqueIndex, check, index } from "drizzle-orm/pg-core";
+import { serial, integer, text, boolean, timestamp, date, uniqueIndex, check, index } from "drizzle-orm/pg-core";
+import { scopedTable as pgTable } from "./scoped-table";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -17,7 +18,7 @@ export const sitesTable = pgTable("sites", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index("sites_organisation_idx").on(table.orgId),
-  uniqueIndex("sites_identifier_unique").on(table.identifier),
+  uniqueIndex("sites_organisation_identifier_unique").on(table.orgId, table.identifier),
   check("sites_identifier_format", sql`${table.identifier} ~ '^[A-Z0-9]{1,5}$'`),
 ]);
 
